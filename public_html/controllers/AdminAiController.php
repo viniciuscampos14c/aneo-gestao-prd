@@ -1,0 +1,648 @@
+<?php
+
+class AdminAiController extends BaseController
+{
+    private AdminAiChatModel $chat;
+    private AdminAiKnowledgeModel $knowledge;
+    private AdminAiService $assistant;
+
+    public function __construct()
+    {
+        $this->chat = new AdminAiChatModel();
+        $this->knowledge = new AdminAiKnowledgeModel();
+        $this->assistant = new AdminAiService();
+    }
+
+    public function index(): void
+    {
+        require_auth();
+        require_permission('help');
+
+        $userId = (int) (current_user()['id'] ?? 0);
+        $sessionId = max(0, (int) request('session_id', 0));
+        $historyAvailable = $this->chat->featureAvailable();
+
+        $sessions = [];
+        $messages = [];
+
+        if ($historyAvailable) {
+            $sessions = $this->chat->listSessions($userId, 30);
+
+            if ($sessionId > 0 && !$this->chat->findSession($sessionId, $userId)) {
+                $sessionId = 0;
+            }
+
+            if ($sessionId <= 0 && $sessions !== []) {
+                $sessionId = (int) ($sessions[0]['id'] ?? 0);
+            }
+
+            if ($sessionId > 0) {
+                $messages = $this->chat->listMessages($sessionId, $userId, 80);
+            }
+        } else {
+            $messages = $this->memoryMessages(80);
+            $sessionId = 0;
+        }
+
+        $this->render('admin_ai/index', [
+            'title' => 'Assistente IA',
+            'sessions' => $sessions,
+            'messages' => $messages,
+            'sessionId' => $sessionId,
+            'historyAvailable' => $historyAvailable,
+            'aiEnabled' => $this->assistant->isEnabled(),
+            'aiConfigured' => $this->assistant->isConfigured(),
+            'aiProvider' => $this->assistant->provider(),
+            'aiModel' => $this->assistant->model(),
+        ]);
+    }
+
+    public function createSession(): void
+    {
+        require_auth();
+        require_permission('help');
+        csrf_validate();
+
+        $requestedReturn = trim((string) post('return_route', 'ai-chat'));
+        $returnRoute = in_array($requestedReturn, ['help', 'ai-chat'], true) ? $requestedReturn : 'ai-chat';
+        $sessionParam = $returnRoute === 'help' ? 'chat_session_id' : 'session_id';
+
+        if (!$this->chat->featureAvailable()) {
+            $this->error('Historico de chat indisponivel. Execute a migracao 20260310_admin_ai_chat.sql.');
+            $this->redirect($returnRoute);
+        }
+
+        $userId = (int) (current_user()['id'] ?? 0);
+        $title = trim((string) post('title', 'Novo chat'));
+        if ($title === '') {
+            $title = 'Novo chat';
+        }
+
+        $sessionId = $this->chat->createSession($userId, $title);
+        if ($sessionId <= 0) {
+            $this->error('Nao foi possivel criar o chat no momento.');
+            $this->redirect($returnRoute);
+        }
+
+        $this->redirect($returnRoute . '&' . $sessionParam . '=' . $sessionId);
+    }
+
+    public function ask(): void
+    {
+        require_auth();
+        require_permission('help');
+        csrf_validate();
+
+        $userId = (int) (current_user()['id'] ?? 0);
+        $question = trim((string) post('message'));
+        if ($question === '') {
+            $this->json([
+                'ok' => false,
+                'message' => 'Digite uma pergunta antes de enviar.',
+            ], 422);
+        }
+
+        if (strlen($question) > 2000) {
+            $question = substr($question, 0, 2000);
+        }
+
+        $historyAvailable = $this->chat->featureAvailable();
+        $sessionId = max(0, (int) post('session_id', 0));
+
+        if ($historyAvailable) {
+            if ($sessionId <= 0 || !$this->chat->findSession($sessionId, $userId)) {
+                $sessionId = $this->chat->createSession($userId, 'Novo chat');
+            }
+
+            if ($sessionId > 0) {
+                $this->chat->appendMessage($sessionId, $userId, 'user', $question, [
+                    'from' => 'admin_ui',
+                ]);
+            }
+        } else {
+            $this->appendMemoryMessage('user', $question, ['from' => 'admin_ui']);
+        }
+
+        $history = $historyAvailable
+            ? $this->chat->listMessages($sessionId, $userId, 12)
+            : $this->memoryMessages(12);
+
+        if ($history !== []) {
+            $lastIndex = count($history) - 1;
+            $lastRole = strtolower(trim((string) ($history[$lastIndex]['role'] ?? '')));
+            $lastContent = trim((string) ($history[$lastIndex]['content'] ?? ''));
+            if ($lastRole === 'user' && $lastContent === $question) {
+                array_pop($history);
+            }
+        }
+
+        $questionForContext = $this->resolveQuestionForContext($question, $history);
+        $context = $this->knowledge->buildContext($questionForContext);
+        $fallback = false;
+        $warning = null;
+        $ai = [
+            'provider' => $this->assistant->provider(),
+            'model' => $this->assistant->model(),
+        ];
+        $answer = '';
+
+        $directAnswer = $this->directAnswerFromContext($questionForContext, $context);
+        if ($directAnswer !== null) {
+            $answer = $directAnswer;
+            $ai['provider'] = 'internal_context';
+            $ai['model'] = 'deterministic';
+        } else {
+            $ai = $this->assistant->ask($questionForContext, (string) ($context['context_json'] ?? '{}'), $history);
+
+            if (!($ai['ok'] ?? false)) {
+                $fallback = true;
+                $rawReason = (string) ($ai['message'] ?? 'Nao foi possivel consultar o provedor de IA.');
+                $warning = $this->shouldExposeWarning($rawReason) ? $rawReason : null;
+                $answer = $this->buildFallbackAnswer($question, $context, $rawReason);
+            } else {
+                $answer = trim((string) ($ai['answer'] ?? ''));
+                if ($answer === '') {
+                    $fallback = true;
+                    $rawReason = 'IA retornou resposta vazia. Exibindo resumo do banco interno.';
+                    $warning = $this->shouldExposeWarning($rawReason) ? $rawReason : null;
+                    $answer = $this->buildFallbackAnswer($question, $context, $rawReason);
+                }
+            }
+        }
+
+        $metadata = [
+            'sources' => $context['sources'] ?? [],
+            'fallback' => $fallback ? 1 : 0,
+            'warning' => $warning,
+            'provider' => $ai['provider'] ?? $this->assistant->provider(),
+            'model' => $ai['model'] ?? $this->assistant->model(),
+        ];
+
+        if ($historyAvailable && $sessionId > 0) {
+            $this->chat->appendMessage($sessionId, $userId, 'assistant', $answer, $metadata);
+
+            $session = $this->chat->findSession($sessionId, $userId);
+            $sessionTitle = trim((string) ($session['title'] ?? ''));
+            if ($sessionTitle === '' || str_starts_with(strtolower($sessionTitle), 'novo chat')) {
+                $this->chat->renameSession($sessionId, $userId, $this->titleFromQuestion($question));
+            }
+        } else {
+            $this->appendMemoryMessage('assistant', $answer, $metadata);
+        }
+
+        $this->json([
+            'ok' => true,
+            'session_id' => $sessionId,
+            'answer' => $answer,
+            'fallback' => $fallback,
+            'warning' => $warning,
+            'sources' => $context['sources'] ?? [],
+        ]);
+    }
+
+    private function buildFallbackAnswer(string $question, array $context, string $reason): string
+    {
+        $summary = (array) ($context['summary'] ?? []);
+        $matches = (array) ($context['matches'] ?? []);
+        $payload = (array) ($context['payload'] ?? []);
+        $searchTerms = is_array($payload['search_terms'] ?? null) ? $payload['search_terms'] : [];
+
+        $lines = [];
+        $lines[] = 'Resposta baseada no banco interno da escola (modo administrativo).';
+        if (trim($reason) !== '' && str_contains(strtolower($reason), 'http')) {
+            $lines[] = 'Observacao tecnica: ' . trim($reason);
+        }
+        $lines[] = 'Panorama atual:';
+        $lines[] = '- Alunos totais: ' . (int) ($summary['total_students'] ?? 0);
+        $lines[] = '- Alunos ativos: ' . (int) ($summary['active_students'] ?? 0);
+        $lines[] = '- Alunos inativos: ' . (int) ($summary['inactive_students'] ?? max(0, (int) ($summary['total_students'] ?? 0) - (int) ($summary['active_students'] ?? 0)));
+        $lines[] = '- Leads totais: ' . (int) ($summary['total_leads'] ?? 0);
+        $lines[] = '- Faturas abertas: ' . (int) ($summary['open_invoices'] ?? 0);
+        $lines[] = '- Faturas vencidas: ' . (int) ($summary['overdue_invoices'] ?? 0);
+        $lines[] = '- Saldo em aberto: R$ ' . number_format((float) ($summary['open_balance'] ?? 0), 2, ',', '.');
+        $lines[] = '- Recebido no mes: R$ ' . number_format((float) ($summary['received_this_month'] ?? 0), 2, ',', '.');
+        if (array_key_exists('support_open_tickets', $summary) || array_key_exists('support_in_progress_tickets', $summary)) {
+            $lines[] = '- Chamados abertos: ' . (int) ($summary['support_open_tickets'] ?? 0);
+            $lines[] = '- Chamados em andamento: ' . (int) ($summary['support_in_progress_tickets'] ?? 0);
+            $lines[] = '- Chamados resolvidos: ' . (int) ($summary['support_resolved_tickets'] ?? 0);
+        }
+
+        if ($searchTerms !== []) {
+            $lines[] = 'Termos analisados: ' . implode(', ', array_map('strval', $searchTerms)) . '.';
+        }
+
+        $matchedSections = [];
+        foreach ($matches as $section => $rows) {
+            if (is_array($rows) && count($rows) > 0) {
+                $matchedSections[] = $section . ' (' . count($rows) . ')';
+            }
+        }
+
+        if ($matchedSections !== []) {
+            $lines[] = 'Registros localizados para a pergunta "' . $question . '": ' . implode(', ', $matchedSections) . '.';
+
+            foreach ($matches as $section => $rows) {
+                if (!is_array($rows) || $rows === []) {
+                    continue;
+                }
+
+                $label = match ($section) {
+                    'students' => 'Alunos',
+                    'leads' => 'Leads',
+                    'invoices' => 'Faturas',
+                    'courses' => 'Cursos',
+                    'payments' => 'Pagamentos',
+                    'support_tickets' => 'Chamados',
+                    default => ucfirst((string) $section),
+                };
+
+                $lines[] = $label . ' encontrados:';
+                foreach (array_slice($rows, 0, 3) as $row) {
+                    $lines[] = '  - ' . $this->formatMatchLine((string) $section, (array) $row);
+                }
+            }
+        } else {
+            $lines[] = 'Nao encontrei registros diretamente relacionados ao termo pesquisado.';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function titleFromQuestion(string $question): string
+    {
+        $title = trim(preg_replace('/\s+/', ' ', $question) ?? '');
+        if ($title === '') {
+            return 'Novo chat';
+        }
+        if (strlen($title) > 80) {
+            $title = substr($title, 0, 77) . '...';
+        }
+        return $title;
+    }
+
+    private function memoryStoreKey(): string
+    {
+        return '_admin_ai_memory_' . (int) (current_company_id() ?? 0) . '_' . (int) (current_user()['id'] ?? 0);
+    }
+
+    private function memoryMessages(int $limit = 80): array
+    {
+        $key = $this->memoryStoreKey();
+        $rows = $_SESSION[$key] ?? [];
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $rows = array_values(array_filter($rows, fn ($row) => is_array($row)));
+        if ($limit > 0 && count($rows) > $limit) {
+            $rows = array_slice($rows, -$limit);
+        }
+
+        return $rows;
+    }
+
+    private function appendMemoryMessage(string $role, string $content, array $metadata = []): void
+    {
+        $role = strtolower(trim($role));
+        if (!in_array($role, ['user', 'assistant'], true)) {
+            $role = 'assistant';
+        }
+
+        $content = trim($content);
+        if ($content === '') {
+            return;
+        }
+
+        $key = $this->memoryStoreKey();
+        $rows = $_SESSION[$key] ?? [];
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+
+        $rows[] = [
+            'role' => $role,
+            'content' => $content,
+            'created_at' => now(),
+            'metadata' => $metadata,
+        ];
+
+        if (count($rows) > 120) {
+            $rows = array_slice($rows, -120);
+        }
+
+        $_SESSION[$key] = $rows;
+    }
+
+    private function shouldExposeWarning(string $reason): bool
+    {
+        $reason = strtolower(trim($reason));
+        if ($reason === '') {
+            return false;
+        }
+
+        if (str_contains($reason, 'desativado') || str_contains($reason, 'faltam credenciais')) {
+            return false;
+        }
+
+        return str_contains($reason, 'http')
+            || str_contains($reason, 'erro');
+    }
+
+    private function directAnswerFromContext(string $question, array $context): ?string
+    {
+        $normalized = $this->normalizeIntent($question);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $summary = is_array($context['summary'] ?? null) ? $context['summary'] : [];
+        $matches = is_array($context['matches'] ?? null) ? $context['matches'] : [];
+
+        $asksReceivable = (str_contains($normalized, 'receb') || str_contains($normalized, 'conta a receber'))
+            && (str_contains($normalized, 'conta') || str_contains($normalized, 'fatura') || str_contains($normalized, 'titulo'));
+        if ($asksReceivable) {
+            $openInvoices = (int) ($summary['open_invoices'] ?? 0);
+            $openBalance = (float) ($summary['open_balance'] ?? 0);
+            return 'No momento, ha ' . $openInvoices . ' conta(s) a receber em aberto, totalizando R$ '
+                . number_format($openBalance, 2, ',', '.') . '.';
+        }
+
+        $asksOverdue = (str_contains($normalized, 'vencid') || str_contains($normalized, 'atras'))
+            && (str_contains($normalized, 'conta') || str_contains($normalized, 'fatura') || str_contains($normalized, 'receb'));
+        if ($asksOverdue) {
+            $overdue = (int) ($summary['overdue_invoices'] ?? 0);
+            return 'Temos ' . $overdue . ' conta(s) vencida(s) no contas a receber.';
+        }
+
+        $asksLeadContact = str_contains($normalized, 'lead')
+            && (str_contains($normalized, 'contat') || str_contains($normalized, 'precis') || str_contains($normalized, 'aguard'));
+        if ($asksLeadContact) {
+            $leads = is_array($matches['leads'] ?? null) ? $matches['leads'] : [];
+            if ($leads === []) {
+                return 'Nao encontrei leads com esse criterio de contato na base interna.';
+            }
+
+            $names = [];
+            foreach ($leads as $row) {
+                $name = trim((string) ($row['full_name'] ?? ''));
+                if ($name !== '') {
+                    $names[] = $name;
+                }
+            }
+            $names = array_values(array_unique($names));
+            $preview = implode(', ', array_slice($names, 0, 5));
+            if ($preview === '') {
+                $preview = 'sem nomes disponiveis';
+            }
+
+            $asksNames = str_contains($normalized, 'qual')
+                || str_contains($normalized, 'quem')
+                || str_contains($normalized, 'nome');
+            if ($asksNames) {
+                return 'Leads que precisam de contato: ' . $preview . '.';
+            }
+
+            return 'Existe(m) ' . count($leads) . ' lead(s) que precisa(m) de contato: ' . $preview . '.';
+        }
+
+        $asksSupport = str_contains($normalized, 'solicit')
+            || str_contains($normalized, 'ticket')
+            || str_contains($normalized, 'chamad')
+            || str_contains($normalized, 'suporte');
+        $asksInProgress = str_contains($normalized, 'andamento')
+            || str_contains($normalized, 'em progresso')
+            || str_contains($normalized, 'in progress');
+        $asksOpen = str_contains($normalized, 'abert');
+        $asksResolved = str_contains($normalized, 'resolvid') || str_contains($normalized, 'fechad');
+
+        if ($asksSupport && ($asksInProgress || $asksOpen || $asksResolved || str_contains($normalized, 'quant') || str_contains($normalized, 'tem') || str_contains($normalized, 'ha'))) {
+            $supportOpen = (int) ($summary['support_open_tickets'] ?? 0);
+            $supportInProgress = (int) ($summary['support_in_progress_tickets'] ?? 0);
+            $supportResolved = (int) ($summary['support_resolved_tickets'] ?? 0);
+            $supportClosed = (int) ($summary['support_closed_tickets'] ?? 0);
+            $supportOpenTotal = (int) ($summary['open_support_tickets'] ?? ($supportOpen + $supportInProgress));
+
+            if ($asksInProgress) {
+                if ($supportInProgress > 0) {
+                    return 'Sim. Temos ' . $supportInProgress . ' ticket(s) de suporte em andamento.';
+                }
+                return 'Nao. No momento nao ha tickets de suporte em andamento.';
+            }
+
+            if ($asksResolved) {
+                return 'Temos ' . $supportResolved . ' ticket(s) resolvido(s) e ' . $supportClosed . ' fechado(s) no suporte.';
+            }
+
+            if ($asksOpen) {
+                return 'Temos ' . $supportOpenTotal . ' ticket(s) de suporte abertos (abertos: ' . $supportOpen . ', em andamento: ' . $supportInProgress . ').';
+            }
+
+            return 'No suporte, temos ' . $supportOpenTotal . ' ticket(s) abertos no total (abertos: ' . $supportOpen . ', em andamento: ' . $supportInProgress . ', resolvidos: ' . $supportResolved . ').';
+        }
+
+        $asksCourseEnrollments = (str_contains($normalized, 'curso') || str_contains($normalized, 'turma'))
+            && (str_contains($normalized, 'matricul') || str_contains($normalized, 'inscrit') || str_contains($normalized, 'alun'));
+        if ($asksCourseEnrollments) {
+            $enrollments = is_array($matches['course_enrollments'] ?? null) ? $matches['course_enrollments'] : [];
+            if ($enrollments === []) {
+                return 'Nao encontrei alunos matriculados para esse curso no banco interno.';
+            }
+
+            $byCourse = [];
+            foreach ($enrollments as $row) {
+                $courseName = trim((string) ($row['course_name'] ?? ''));
+                $studentName = trim((string) ($row['student_name'] ?? ''));
+                if ($courseName === '' || $studentName === '') {
+                    continue;
+                }
+
+                if (!array_key_exists($courseName, $byCourse)) {
+                    $byCourse[$courseName] = [];
+                }
+
+                if (!in_array($studentName, $byCourse[$courseName], true)) {
+                    $byCourse[$courseName][] = $studentName;
+                }
+            }
+
+            if ($byCourse === []) {
+                return 'Encontrei registros de matricula, mas sem nomes de alunos para exibir.';
+            }
+
+            $courseNames = array_keys($byCourse);
+            if (count($courseNames) === 1) {
+                $courseName = (string) $courseNames[0];
+                $studentsInCourse = $byCourse[$courseName];
+                $total = count($studentsInCourse);
+                $preview = implode(', ', array_slice($studentsInCourse, 0, 8));
+                $suffix = $total > 8 ? ' (mostrando 8 de ' . $total . ')' : '';
+
+                return 'No curso ' . $courseName . ' encontrei ' . $total . ' aluno(s) matriculado(s): ' . $preview . $suffix . '.';
+            }
+
+            $summary = [];
+            foreach ($byCourse as $courseName => $studentsInCourse) {
+                $summary[] = $courseName . ': ' . count($studentsInCourse) . ' aluno(s)';
+            }
+
+            return 'Encontrei alunos matriculados em ' . count($byCourse) . ' curso(s): '
+                . implode('; ', array_slice($summary, 0, 3)) . '.';
+        }
+
+        $asksInactive = str_contains($normalized, 'alun')
+            && str_contains($normalized, 'inativ')
+            && (str_contains($normalized, 'quant') || str_contains($normalized, 'qtd') || str_contains($normalized, 'numero') || str_contains($normalized, 'tem'));
+        if ($asksInactive) {
+            $inactive = (int) ($summary['inactive_students'] ?? max(0, (int) ($summary['total_students'] ?? 0) - (int) ($summary['active_students'] ?? 0)));
+            return 'Temos ' . $inactive . ' aluno(s) inativo(s) na base interna.';
+        }
+
+        if (str_contains($normalized, 'quant')
+            && str_contains($normalized, 'alun')
+            && str_contains($normalized, 'ativ')
+            && !str_contains($normalized, 'inativ')) {
+            $active = (int) ($summary['active_students'] ?? 0);
+            return 'Temos ' . $active . ' aluno(s) ativo(s) na base interna.';
+        }
+
+        $students = is_array($matches['students'] ?? null) ? $matches['students'] : [];
+        $isNameLookup = (str_contains($normalized, 'alun') || str_contains($normalized, 'nome'))
+            && (str_contains($normalized, 'tem') || str_contains($normalized, 'existe'))
+            && (str_contains($normalized, 'chamad') || str_contains($normalized, 'nome'));
+        if ($isNameLookup) {
+            if ($students === []) {
+                return 'Nao encontrei aluno com esse nome na base interna.';
+            }
+
+            $names = [];
+            foreach ($students as $row) {
+                $name = trim((string) ($row['full_name'] ?? ''));
+                if ($name !== '') {
+                    $names[] = $name;
+                }
+            }
+            $names = array_values(array_unique($names));
+            $preview = implode(', ', array_slice($names, 0, 3));
+            if ($preview === '') {
+                $preview = 'registro sem nome';
+            }
+
+            return 'Sim. Encontrei ' . count($students) . ' aluno(s) com esse termo: ' . $preview . '.';
+        }
+
+        return null;
+    }
+
+    private function normalizeIntent(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (function_exists('mb_strtolower')) {
+            $value = mb_strtolower($value, 'UTF-8');
+        } else {
+            $value = strtolower($value);
+        }
+
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+            if (is_string($converted) && trim($converted) !== '') {
+                $value = $converted;
+            }
+        }
+
+        $value = preg_replace('/[^a-z0-9\\s]/', ' ', $value) ?? $value;
+        $value = preg_replace('/\\s+/', ' ', $value) ?? $value;
+
+        return trim($value);
+    }
+
+    private function resolveQuestionForContext(string $question, array $history): string
+    {
+        $question = trim($question);
+        if ($question === '') {
+            return '';
+        }
+
+        $normalized = $this->normalizeIntent($question);
+        if ($normalized === '') {
+            return $question;
+        }
+
+        $wordCount = $this->wordCount($normalized);
+        $hasFollowupPronoun = str_contains($normalized, 'dele')
+            || str_contains($normalized, 'deles')
+            || str_contains($normalized, 'dela')
+            || str_contains($normalized, 'delas')
+            || str_contains($normalized, 'isso')
+            || str_contains($normalized, 'isto')
+            || str_contains($normalized, 'esse')
+            || str_contains($normalized, 'essa')
+            || str_contains($normalized, 'esses')
+            || str_contains($normalized, 'essas');
+        $hasStatusFollowup = str_contains($normalized, 'status')
+            || str_contains($normalized, 'andamento')
+            || str_contains($normalized, 'aberto')
+            || str_contains($normalized, 'resolvido')
+            || str_contains($normalized, 'fechado');
+
+        $shouldAppendPrevious = $wordCount <= 2 || (($hasFollowupPronoun || $hasStatusFollowup) && $wordCount <= 10);
+        if (!$shouldAppendPrevious) {
+            return $question;
+        }
+
+        for ($i = count($history) - 1; $i >= 0; $i--) {
+            $row = $history[$i] ?? null;
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $role = strtolower(trim((string) ($row['role'] ?? '')));
+            if ($role !== 'user') {
+                continue;
+            }
+
+            $candidate = trim((string) ($row['content'] ?? ''));
+            if ($candidate === '' || $candidate === $question) {
+                continue;
+            }
+
+            $candidateWords = $this->wordCount($this->normalizeIntent($candidate));
+            if ($candidateWords < 3) {
+                continue;
+            }
+
+            return $candidate . ' ' . $question;
+        }
+
+        return $question;
+    }
+
+    private function wordCount(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $parts = preg_split('/\\s+/', $value) ?: [];
+        $parts = array_values(array_filter($parts, fn ($item) => trim((string) $item) !== ''));
+
+        return count($parts);
+    }
+
+    private function formatMatchLine(string $section, array $row): string
+    {
+        return match ($section) {
+            'students' => trim((string) ($row['full_name'] ?? 'Aluno')) . ' | email: ' . trim((string) ($row['email_primary'] ?? '-')),
+            'leads' => trim((string) ($row['full_name'] ?? 'Lead')) . ' | status: ' . trim((string) ($row['status_name'] ?? '-')),
+            'invoices' => trim((string) ($row['invoice_number'] ?? 'Fatura')) . ' | aluno: ' . trim((string) ($row['student_name'] ?? '-')) . ' | status: ' . trim((string) ($row['status'] ?? '-')),
+            'courses' => trim((string) ($row['name'] ?? 'Curso')) . ' | status: ' . trim((string) ($row['status'] ?? '-')),
+            'payments' => trim((string) ($row['payment_ref'] ?? 'Pagamento')) . ' | valor: R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.'),
+            'support_tickets' => trim((string) ($row['ticket_code'] ?? 'Chamado')) . ' | assunto: ' . trim((string) ($row['subject'] ?? '-')),
+            default => trim((string) ($row['id'] ?? '-')),
+        };
+    }
+}

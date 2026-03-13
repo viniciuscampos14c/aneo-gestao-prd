@@ -1,0 +1,11 @@
+{
+  "company_id": 1,
+  "lead_id": 10,
+  "course_id": 3,
+  "payment_status": "confirmed",
+  "contract_status": "signed",
+  "create_portal_account": true,
+  "portal_login": "aluno.teste@exemplo.com",
+  "portal_password": "123456",
+  "activate_student": true
+}

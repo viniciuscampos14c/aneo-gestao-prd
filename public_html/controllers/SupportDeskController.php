@@ -1,0 +1,311 @@
+<?php
+
+class SupportDeskController extends BaseController
+{
+    private SupportTicketModel $tickets;
+    private UserModel $users;
+
+    public function __construct()
+    {
+        $this->tickets = new SupportTicketModel();
+        $this->users = new UserModel();
+    }
+
+    public function showLogin(): void
+    {
+        if ($this->isAuthenticated()) {
+            $this->redirectTo('support');
+        }
+
+        $this->render('support_desk/login', [
+            'title' => 'Central Tecnica - Login',
+            'enabled' => (bool) config('support_desk.enabled', false),
+        ], 'layouts/guest');
+    }
+
+    public function login(): void
+    {
+        csrf_validate();
+
+        if (!(bool) config('support_desk.enabled', false)) {
+            flash('error', 'Portal tecnico desativado na configuracao.');
+            $this->redirectTo('support/login');
+        }
+
+        $login = trim((string) post('username'));
+        $password = (string) post('password');
+
+        if ($login === '' || $password === '') {
+            flash('error', 'Informe usuario ou email e senha.');
+            $this->redirectTo('support/login');
+        }
+
+        $user = $this->users->findByLogin($login);
+        $validPassword = false;
+        if ($user) {
+            $validPassword = password_verify($password, (string) $user['password_hash']) || hash_equals((string) $user['password_hash'], $password);
+        }
+
+        if (!$user || !$validPassword) {
+            flash('error', 'Credenciais invalidas.');
+            $this->redirectTo('support/login');
+        }
+
+        if (hash_equals((string) $user['password_hash'], $password)) {
+            $rehash = db()->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+            $rehash->execute([
+                ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                ':id' => (int) $user['id'],
+            ]);
+        }
+
+        $permissionKeys = $this->users->permissionKeys((int) $user['id']);
+        if (!$this->hasDeskPermission((string) ($user['role'] ?? ''), $permissionKeys)) {
+            flash('error', 'Usuario sem permissao para a central tecnica. Libere `support.desk` ou `requests.manage`.');
+            $this->redirectTo('support/login');
+        }
+
+        $companies = $this->users->companiesForUser((int) $user['id']);
+        $companyIds = array_values(array_unique(array_filter(array_map(
+            fn ($row) => (int) ($row['id'] ?? 0),
+            $companies
+        ), fn ($id) => $id > 0)));
+
+        if ($companyIds === []) {
+            flash('error', 'Usuario sem empresa vinculada. Vincule ao menos um CNPJ.');
+            $this->redirectTo('support/login');
+        }
+
+        $_SESSION['support_desk_auth'] = [
+            'id' => (int) $user['id'],
+            'name' => (string) ($user['name'] ?? ''),
+            'email' => (string) ($user['email'] ?? ''),
+            'username' => (string) ($user['username'] ?? ''),
+            'role' => (string) ($user['role'] ?? ''),
+            'permission_keys' => $permissionKeys,
+            'company_ids' => $companyIds,
+            'logged_at' => now(),
+        ];
+
+        $stmt = db()->prepare('UPDATE users SET last_login_at = :last_login_at WHERE id = :id');
+        $stmt->execute([
+            ':last_login_at' => now(),
+            ':id' => (int) $user['id'],
+        ]);
+
+        flash('success', 'Acesso liberado na central tecnica.');
+        $this->redirectTo('support');
+    }
+
+    public function logout(): void
+    {
+        unset($_SESSION['support_desk_auth']);
+        flash('success', 'Sessao da central tecnica encerrada.');
+        $this->redirectTo('support/login');
+    }
+
+    public function index(): void
+    {
+        $this->requireAuth();
+
+        $allowedCompanyIds = $this->allowedCompanyIds();
+        $filters = [
+            'q' => trim((string) request('q', '')),
+            'status' => trim((string) request('status', '')),
+            'priority' => trim((string) request('priority', '')),
+            'source' => trim((string) request('source', '')),
+            'company_id' => (int) request('company_id', 0),
+            'email_sent' => trim((string) request('email_sent', '')),
+            'webhook_forwarded' => trim((string) request('webhook_forwarded', '')),
+            'company_ids' => $allowedCompanyIds,
+        ];
+
+        if ($filters['company_id'] > 0 && !in_array($filters['company_id'], $allowedCompanyIds, true)) {
+            $filters['company_id'] = 0;
+        }
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        $result = $this->tickets->listAllTickets($filters, $perPage, $page);
+        $ticketIds = array_map(fn ($row) => (int) ($row['id'] ?? 0), $result['rows']);
+
+        $this->render('support_desk/index', [
+            'title' => 'Central Tecnica de Chamados',
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'filters' => $filters,
+            'stats' => $this->tickets->statsAll($allowedCompanyIds),
+            'dispatchStats' => $this->tickets->dispatchStatsAll($allowedCompanyIds),
+            'attachmentsByTicket' => $this->tickets->attachmentsByTicketIdsAny($ticketIds),
+            'commentsByTicket' => $this->tickets->commentsByTicketIdsAny($ticketIds),
+            'featureAvailable' => $this->tickets->featureAvailable(),
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+            'companies' => $this->activeCompanies($allowedCompanyIds),
+        ], 'layouts/support_desk');
+    }
+
+    public function addComment(): void
+    {
+        $this->requireAuth();
+        csrf_validate();
+
+        $auth = $this->authUser();
+        $ticketId = (int) post('ticket_id');
+        $comment = trim((string) post('comment'));
+
+        if ($ticketId <= 0 || $comment === '') {
+            flash('error', 'Informe um comentario valido para o chamado.');
+            $this->redirectTo('support');
+        }
+
+        $ticket = $this->tickets->findTicketAny($ticketId);
+        if (!$ticket || !$this->canAccessTicket((int) ($ticket['company_id'] ?? 0))) {
+            flash('error', 'Chamado nao encontrado para as empresas permitidas.');
+            $this->redirectTo('support');
+        }
+
+        $author = trim((string) ($auth['name'] ?? '')) !== '' ? (string) $auth['name'] : (string) ($auth['username'] ?? 'suporte');
+        $this->tickets->addCommentAny($ticketId, '[Suporte ' . $author . '] ' . $comment, (int) ($auth['id'] ?? 0));
+
+        flash('success', 'Comentario registrado na central tecnica.');
+        $this->redirectTo('support');
+    }
+
+    public function updateStatus(): void
+    {
+        $this->requireAuth();
+        csrf_validate();
+
+        $auth = $this->authUser();
+        $ticketId = (int) post('ticket_id');
+        $status = strtolower(trim((string) post('status', 'open')));
+        $statusNote = trim((string) post('status_note'));
+
+        if (!in_array($status, ['open', 'in_progress', 'resolved', 'closed'], true)) {
+            $status = 'open';
+        }
+
+        if ($ticketId <= 0) {
+            flash('error', 'Chamado invalido.');
+            $this->redirectTo('support');
+        }
+
+        $ticket = $this->tickets->findTicketAny($ticketId);
+        if (!$ticket || !$this->canAccessTicket((int) ($ticket['company_id'] ?? 0))) {
+            flash('error', 'Chamado nao encontrado para as empresas permitidas.');
+            $this->redirectTo('support');
+        }
+
+        $this->tickets->updateStatusAny($ticketId, $status);
+
+        if ($statusNote !== '') {
+            $author = trim((string) ($auth['name'] ?? '')) !== '' ? (string) $auth['name'] : (string) ($auth['username'] ?? 'suporte');
+            $this->tickets->addCommentAny($ticketId, '[Suporte ' . $author . '][Status ' . $status . '] ' . $statusNote, (int) ($auth['id'] ?? 0));
+        }
+
+        flash('success', 'Status atualizado pela central tecnica.');
+        $this->redirectTo('support');
+    }
+
+    private function activeCompanies(array $allowedCompanyIds): array
+    {
+        $allowedCompanyIds = array_values(array_unique(array_filter(array_map('intval', $allowedCompanyIds), fn ($id) => $id > 0)));
+        if ($allowedCompanyIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($allowedCompanyIds), '?'));
+        $stmt = db()->prepare("SELECT id, legal_name, trade_name
+            FROM companies
+            WHERE is_active = 1
+              AND id IN ({$placeholders})
+            ORDER BY legal_name ASC");
+        $stmt->execute($allowedCompanyIds);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function requireAuth(): void
+    {
+        if (!(bool) config('support_desk.enabled', false) || !$this->isAuthenticated()) {
+            $this->redirectTo('support/login');
+        }
+
+        $auth = $this->authUser();
+        if (!$auth || !$this->hasDeskPermission((string) ($auth['role'] ?? ''), (array) ($auth['permission_keys'] ?? []))) {
+            flash('error', 'Sessao sem permissao para a central tecnica.');
+            $this->redirectTo('support/logout');
+        }
+
+        if ($this->allowedCompanyIds() === []) {
+            flash('error', 'Usuario sem empresas vinculadas para atendimento.');
+            $this->redirectTo('support/logout');
+        }
+    }
+
+    private function isAuthenticated(): bool
+    {
+        return (int) ($_SESSION['support_desk_auth']['id'] ?? 0) > 0;
+    }
+
+    private function authUser(): ?array
+    {
+        $auth = $_SESSION['support_desk_auth'] ?? null;
+        return is_array($auth) ? $auth : null;
+    }
+
+    private function allowedCompanyIds(): array
+    {
+        $auth = $this->authUser();
+        if (!$auth) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', (array) ($auth['company_ids'] ?? [])), fn ($id) => $id > 0)));
+    }
+
+    private function canAccessTicket(int $companyId): bool
+    {
+        if ($companyId <= 0) {
+            return false;
+        }
+
+        return in_array($companyId, $this->allowedCompanyIds(), true);
+    }
+
+    private function hasDeskPermission(string $role, array $permissionKeys): bool
+    {
+        if ($role === 'admin') {
+            return true;
+        }
+
+        if (in_array('*', $permissionKeys, true)) {
+            return true;
+        }
+
+        $rolePermissions = (array) config('roles.' . $role . '.permissions', []);
+        if (in_array('*', $rolePermissions, true)) {
+            return true;
+        }
+
+        $required = (array) config('support_desk.required_permissions', ['support.desk', 'requests.manage']);
+        foreach ($required as $key) {
+            $key = trim((string) $key);
+            if ($key !== '' && (in_array($key, $permissionKeys, true) || in_array($key, $rolePermissions, true))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function redirectTo(string $route): void
+    {
+        header('Location: support.php?route=' . rawurlencode(trim($route, '/')));
+        exit;
+    }
+}

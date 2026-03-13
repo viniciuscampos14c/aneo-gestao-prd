@@ -1,0 +1,670 @@
+﻿<?php
+
+class CourseController extends BaseController
+{
+    private CourseModel $courses;
+    private StudentModel $students;
+    private AcademicCalendarModel $calendar;
+
+    public function __construct()
+    {
+        $this->courses = new CourseModel();
+        $this->students = new StudentModel();
+        $this->calendar = new AcademicCalendarModel();
+    }
+
+    public function index(): void
+    {
+        require_auth();
+        require_permission('courses');
+
+        $filters = [
+            'q' => trim((string) request('q', '')),
+            'status' => trim((string) request('status', '')),
+        ];
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        $result = $this->courses->listCourses($filters, $perPage, $page);
+
+        $this->render('courses/index', [
+            'title' => 'Cursos EAD',
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'filters' => $filters,
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+        ]);
+    }
+
+    public function create(): void
+    {
+        require_auth();
+        require_permission('courses.create');
+
+        $this->render('courses/form', [
+            'title' => 'Criar Curso',
+            'course' => null,
+            'materialFiles' => [],
+            'categories' => $this->courses->categories(),
+            'action' => route('courses/store'),
+        ]);
+    }
+
+    public function store(): void
+    {
+        require_auth();
+        require_permission('courses.create');
+        csrf_validate();
+
+        $data = $this->collectFormData();
+        if ($data['name'] === '') {
+            $this->error('Informe o nome do curso.');
+            $this->redirect('courses/create');
+        }
+
+        $id = $this->courses->createCourse($data, (int) current_user()['id']);
+        $this->success('Curso criado #' . $id . '.');
+        $this->redirect('courses');
+    }
+
+    public function edit(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+
+        $id = (int) request('id');
+        $course = $this->courses->findCourse($id);
+
+        if (!$course) {
+            $this->error('Curso nao encontrado.');
+            $this->redirect('courses');
+        }
+
+        $this->render('courses/form', [
+            'title' => 'Editar Curso',
+            'course' => $course,
+            'materialFiles' => $this->courses->listCourseMaterials($id),
+            'categories' => $this->courses->categories(),
+            'action' => route('courses/update&id=' . $id),
+        ]);
+    }
+
+    public function update(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $id = (int) request('id');
+        $course = $this->courses->findCourse($id);
+
+        if (!$course) {
+            $this->error('Curso nao encontrado.');
+            $this->redirect('courses');
+        }
+
+        $data = $this->collectFormData();
+        $this->courses->updateCourse($id, $data);
+
+        $this->success('Curso atualizado.');
+        $this->redirect('courses');
+    }
+
+    public function delete(): void
+    {
+        require_auth();
+        require_permission('courses.delete');
+        csrf_validate();
+
+        $id = (int) post('id');
+        if ($id > 0) {
+            $this->courses->deleteCourse($id);
+            $this->success('Curso removido.');
+        }
+
+        $this->redirect('courses');
+    }
+
+    public function uploadMaterial(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) request('id');
+        if ($courseId <= 0 || !$this->courses->findCourse($courseId)) {
+            $this->error('Curso nao encontrado.');
+            $this->redirect('courses');
+        }
+
+        $uploaded = $this->handleMaterialUpload($courseId, $_FILES['material_files'] ?? null);
+        if ($uploaded > 0) {
+            $this->success($uploaded . ' arquivo(s) de material anexado(s).');
+        } else {
+            $this->error('Nenhum arquivo valido foi enviado.');
+        }
+
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function deleteMaterial(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $uploadId = (int) post('upload_id');
+
+        if ($courseId <= 0 || $uploadId <= 0) {
+            $this->error('Material invalido.');
+            $this->redirect('courses');
+        }
+
+        $course = $this->courses->findCourse($courseId);
+        if (!$course) {
+            $this->error('Curso nao encontrado.');
+            $this->redirect('courses');
+        }
+
+        $material = $this->courses->findCourseMaterial($uploadId);
+        if (!$material || (int) $material['entity_id'] !== $courseId) {
+            $this->error('Arquivo nao encontrado para este curso.');
+            $this->redirect('courses/edit&id=' . $courseId);
+        }
+
+        $this->safeRemoveCourseMaterialFile((string) $material['file_path']);
+        $this->courses->deleteCourseMaterial($uploadId);
+
+        $this->success('Arquivo removido.');
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function categories(): void
+    {
+        require_auth();
+        require_permission('courses.category');
+
+        $this->render('courses/categories', [
+            'title' => 'Categorias de Cursos',
+            'categories' => $this->courses->categories(),
+        ]);
+    }
+
+    public function storeCategory(): void
+    {
+        require_auth();
+        require_permission('courses.category');
+        csrf_validate();
+
+        $name = trim((string) post('name'));
+        if ($name !== '') {
+            $this->courses->createCategory($name, (int) current_user()['id']);
+            $this->success('Categoria criada.');
+        }
+
+        $this->redirect('courses/categories');
+    }
+
+    public function deleteCategory(): void
+    {
+        require_auth();
+        require_permission('courses.category');
+        csrf_validate();
+
+        $id = (int) post('id');
+        if ($id > 0) {
+            $this->courses->deleteCategory($id);
+            $this->success('Categoria removida.');
+        }
+
+        $this->redirect('courses/categories');
+    }
+
+    public function enrollments(): void
+    {
+        require_auth();
+        require_permission('courses.enrollment');
+
+        $filters = [
+            'q' => trim((string) request('q', '')),
+            'status' => trim((string) request('status', '')),
+        ];
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        $result = $this->courses->listEnrollments($filters, $perPage, $page);
+
+        $allCourses = $this->courses->listCourses([], 1000, 1);
+        $allStudents = $this->students->list([], 1000, 1);
+
+        $this->render('courses/enrollments', [
+            'title' => 'Matriculas',
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'courses' => $allCourses['rows'],
+            'students' => $allStudents['rows'],
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+        ]);
+    }
+
+    public function storeEnrollment(): void
+    {
+        require_auth();
+        require_permission('courses.enrollment');
+        csrf_validate();
+
+        $data = [
+            'student_id' => (int) post('student_id'),
+            'course_id' => (int) post('course_id'),
+            'status' => trim((string) post('status', 'active')),
+            'progress_percent' => (int) post('progress_percent', 0),
+            'started_at' => trim((string) post('started_at')),
+            'completed_at' => trim((string) post('completed_at')),
+        ];
+
+        if ($data['student_id'] > 0 && $data['course_id'] > 0) {
+            $this->courses->createEnrollment($data, (int) current_user()['id']);
+            $this->success('Matricula criada.');
+        } else {
+            $this->error('Aluno e curso sao obrigatorios.');
+        }
+
+        $this->redirect('courses/enrollments');
+    }
+
+    public function exams(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+
+        $filters = [
+            'q' => trim((string) request('q', '')),
+        ];
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        $result = $this->courses->listExams($filters, $perPage, $page);
+        $courses = $this->courses->listCourses([], 1000, 1);
+        $students = $this->students->list([], 1000, 1);
+        $examScheduleEnabled = $this->courses->examScheduleFeatureAvailable();
+        $upcomingExams = $this->courses->upcomingExamCalendar(90, 14);
+
+        $this->render('courses/exams', [
+            'title' => 'Exames',
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'courses' => $courses['rows'],
+            'students' => $students['rows'],
+            'upcomingExams' => $upcomingExams,
+            'examScheduleEnabled' => $examScheduleEnabled,
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+        ]);
+    }
+
+    public function storeExam(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+        csrf_validate();
+
+        $data = [
+            'course_id' => (int) post('course_id'),
+            'title' => trim((string) post('title')),
+            'description' => trim((string) post('description')),
+            'passing_score' => parse_decimal((string) post('passing_score', '7')),
+            'scheduled_at' => $this->normalizeDateTime((string) post('scheduled_at')),
+        ];
+
+        if ($data['course_id'] <= 0 || $data['title'] === '') {
+            $this->error('Curso e titulo sao obrigatorios.');
+            $this->redirect('courses/exams');
+        }
+
+        $examId = $this->courses->createExam($data, (int) current_user()['id']);
+        if ($examId <= 0) {
+            $this->error('Curso invalido para esta empresa.');
+            $this->redirect('courses/exams');
+        }
+
+        $question = trim((string) post('question_text'));
+        $questionType = trim((string) post('question_type', 'objective'));
+        $optionsJson = trim((string) post('options_json'));
+        $correctAnswer = trim((string) post('correct_answer'));
+        $optionsText = trim((string) post('options_text'));
+
+        if ($optionsText !== '' && $optionsJson === '') {
+            $lines = preg_split('/\r\n|\r|\n/', $optionsText) ?: [];
+            $options = array_values(array_filter(array_map('trim', $lines), fn ($item) => $item !== ''));
+            if ($options !== []) {
+                $optionsJson = json_encode($options, JSON_UNESCAPED_UNICODE);
+            }
+        }
+
+        if ($question !== '') {
+            $this->courses->createQuestion(
+                $examId,
+                $questionType,
+                $question,
+                $optionsJson !== '' ? $optionsJson : null,
+                $correctAnswer !== '' ? $correctAnswer : null,
+                (int) current_user()['id']
+            );
+        }
+
+        $this->success('Exame criado.');
+        $this->redirect('courses/exams');
+    }
+
+    public function storeExamResult(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+        csrf_validate();
+
+        $data = [
+            'exam_id' => (int) post('exam_id'),
+            'student_id' => (int) post('student_id'),
+            'score' => parse_decimal((string) post('score', '0')),
+            'passing_score' => parse_decimal((string) post('passing_score', '7')),
+            'submitted_at' => trim((string) post('submitted_at')),
+        ];
+
+        if ($data['exam_id'] <= 0 || $data['student_id'] <= 0) {
+            $this->error('Exame e aluno sao obrigatorios.');
+            $this->redirect('courses/exams');
+        }
+
+        $this->courses->registerExamResult($data, (int) current_user()['id']);
+        $this->success('Resultado registrado.');
+        $this->redirect('courses/exams');
+    }
+
+    public function comments(): void
+    {
+        require_auth();
+        require_permission('courses.comment');
+
+        $rows = $this->courses->listComments(200);
+
+        $courses = $this->courses->listCourses([], 1000, 1);
+
+        $this->render('courses/comments', [
+            'title' => 'Gerenciar Comentarios',
+            'rows' => $rows,
+            'courses' => $courses['rows'],
+        ]);
+    }
+
+    public function storeComment(): void
+    {
+        require_auth();
+        require_permission('courses.comment');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $comment = trim((string) post('comment'));
+
+        if ($courseId > 0 && $comment !== '') {
+            $ok = $this->courses->createComment($courseId, $comment, (int) current_user()['id']);
+            if ($ok) {
+                $this->success('Comentario registrado.');
+            } else {
+                $this->error('Curso invalido para esta empresa.');
+            }
+        } else {
+            $this->error('Curso e comentario sao obrigatorios.');
+        }
+
+        $this->redirect('courses/comments');
+    }
+
+    public function calendar(): void
+    {
+        require_auth();
+        require_permission('courses');
+
+        $fromDate = $this->normalizeDate((string) request('from'), date('Y-m-01'));
+        $toDate = $this->normalizeDate((string) request('to'), date('Y-m-d', strtotime('+45 days')));
+        $fromDateTime = $fromDate . ' 00:00:00';
+        $toDateTime = $toDate . ' 23:59:59';
+        $companyId = (int) (current_company_id() ?? 0);
+
+        $automation = $this->calendar->processAutomaticReminders(45, $companyId);
+        $events = $this->calendar->adminUnifiedEvents($fromDateTime, $toDateTime, $companyId);
+        $activities = $this->calendar->listActivities($fromDateTime, $toDateTime, 120, $companyId);
+        $recentReminders = $this->calendar->adminRecentReminders(25, $companyId);
+        $courses = $this->calendar->listCoursesForActivities($companyId);
+
+        $this->render('courses/calendar', [
+            'title' => 'Agenda Academica',
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'events' => $events,
+            'activities' => $activities,
+            'recentReminders' => $recentReminders,
+            'courses' => $courses,
+            'calendarFeatureAvailable' => $this->calendar->featureAvailable(),
+            'automationSummary' => $automation,
+        ]);
+    }
+
+    public function storeActivity(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        if (!$this->calendar->featureAvailable()) {
+            $this->error('Agenda academica nao habilitada no banco. Execute a migracao correspondente.');
+            $this->redirect('courses/calendar');
+        }
+
+        $data = [
+            'course_id' => (int) post('course_id'),
+            'title' => trim((string) post('title')),
+            'description' => trim((string) post('description')),
+            'due_datetime' => $this->normalizeDateTime((string) post('due_datetime')),
+            'reminder_hours_before' => (int) post('reminder_hours_before', 24),
+            'is_active' => 1,
+        ];
+
+        if ($data['course_id'] <= 0 || $data['title'] === '' || !$data['due_datetime']) {
+            $this->error('Curso, titulo e prazo da atividade sao obrigatorios.');
+            $this->redirect('courses/calendar');
+        }
+
+        if ($data['reminder_hours_before'] <= 0) {
+            $data['reminder_hours_before'] = 24;
+        }
+
+        $companyId = (int) (current_company_id() ?? 0);
+        $activityId = $this->calendar->createActivity($data, (int) current_user()['id'], $companyId);
+        if ($activityId > 0) {
+            $this->calendar->processAutomaticReminders(45, $companyId);
+            $this->success('Atividade cadastrada e calendario atualizado.');
+        } else {
+            $this->error('Nao foi possivel cadastrar a atividade.');
+        }
+
+        $this->redirect('courses/calendar');
+    }
+
+    public function deleteActivity(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $activityId = (int) post('activity_id');
+        if ($activityId > 0) {
+            $this->calendar->deleteActivity($activityId, (int) (current_company_id() ?? 0));
+            $this->success('Atividade removida.');
+        } else {
+            $this->error('Atividade invalida.');
+        }
+
+        $this->redirect('courses/calendar');
+    }
+
+    private function normalizeDate(string $value, string $fallback): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return $fallback;
+        }
+
+        $ts = strtotime($value);
+        if ($ts === false) {
+            return $fallback;
+        }
+
+        return date('Y-m-d', $ts);
+    }
+
+    private function normalizeDateTime(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = str_replace('T', ' ', $value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $normalized)) {
+            $normalized .= ':00';
+        }
+
+        $ts = strtotime($normalized);
+        if ($ts === false) {
+            return null;
+        }
+
+        return date('Y-m-d H:i:s', $ts);
+    }
+
+    private function collectFormData(): array
+    {
+        $cover = trim((string) post('cover_image'));
+
+        if (!empty($_FILES['cover_file']['name']) && ($_FILES['cover_file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo((string) $_FILES['cover_file']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'], true)) {
+                $targetDir = __DIR__ . '/../uploads/courses';
+                if (!is_dir($targetDir)) {
+                    mkdir($targetDir, 0775, true);
+                }
+                $fileName = 'course_' . date('YmdHis') . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $_FILES['cover_file']['name']);
+                if (move_uploaded_file((string) $_FILES['cover_file']['tmp_name'], $targetDir . '/' . $fileName)) {
+                    $cover = 'uploads/courses/' . $fileName;
+                }
+            }
+        }
+
+        return [
+            'name' => trim((string) post('name')),
+            'description' => trim((string) post('description')),
+            'category_id' => post('category_id'),
+            'cover_image' => $cover,
+            'status' => trim((string) post('status', 'draft')),
+            'workload_hours' => trim((string) post('workload_hours')),
+            'curriculum' => trim((string) post('curriculum')),
+            'materials' => trim((string) post('materials')),
+            'live_link' => trim((string) post('live_link')),
+            'live_password' => trim((string) post('live_password')),
+            'live_meeting_id' => trim((string) post('live_meeting_id')),
+            'live_datetime' => trim((string) post('live_datetime')),
+        ];
+    }
+
+    private function handleMaterialUpload(int $courseId, $fileBag): int
+    {
+        if (!$fileBag || !isset($fileBag['name'])) {
+            return 0;
+        }
+
+        $targetDir = __DIR__ . '/../uploads/course_materials';
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0775, true);
+        }
+
+        $allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'txt', 'mp4'];
+        $uploaded = 0;
+
+        $isMulti = is_array($fileBag['name']);
+        $names = $isMulti ? $fileBag['name'] : [$fileBag['name']];
+        $tmpNames = $isMulti ? $fileBag['tmp_name'] : [$fileBag['tmp_name']];
+        $errors = $isMulti ? $fileBag['error'] : [$fileBag['error']];
+        $sizes = $isMulti ? $fileBag['size'] : [$fileBag['size']];
+
+        foreach ($names as $idx => $name) {
+            $name = (string) $name;
+            if ($name === '') {
+                continue;
+            }
+
+            $errorCode = (int) ($errors[$idx] ?? UPLOAD_ERR_NO_FILE);
+            if ($errorCode !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if (!in_array($extension, $allowed, true)) {
+                continue;
+            }
+
+            $safeOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', $name);
+            $fileName = 'course_material_' . $courseId . '_' . date('YmdHis') . '_' . $idx . '_' . $safeOriginal;
+            $finalPath = $targetDir . '/' . $fileName;
+
+            if (!move_uploaded_file((string) ($tmpNames[$idx] ?? ''), $finalPath)) {
+                continue;
+            }
+
+            $this->courses->addCourseMaterial(
+                $courseId,
+                $name,
+                'uploads/course_materials/' . $fileName,
+                $extension,
+                (int) ($sizes[$idx] ?? 0),
+                (int) current_user()['id']
+            );
+
+            $uploaded++;
+        }
+
+        return $uploaded;
+    }
+
+    private function safeRemoveCourseMaterialFile(string $relativePath): void
+    {
+        $uploadsBase = realpath(__DIR__ . '/../uploads');
+        if (!$uploadsBase) {
+            return;
+        }
+
+        $fullPath = realpath(__DIR__ . '/../' . ltrim($relativePath, '/\\'));
+        if (!$fullPath) {
+            return;
+        }
+
+        if (!str_starts_with($fullPath, $uploadsBase)) {
+            return;
+        }
+
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
+    }
+}

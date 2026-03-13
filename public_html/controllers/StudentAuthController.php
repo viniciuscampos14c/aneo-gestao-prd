@@ -1,0 +1,86 @@
+<?php
+
+class StudentAuthController extends BaseController
+{
+    private StudentPortalModel $portal;
+
+    public function __construct()
+    {
+        $this->portal = new StudentPortalModel();
+    }
+
+    public function showLogin(): void
+    {
+        if (is_student_logged_in()) {
+            $this->redirect('student/dashboard');
+        }
+
+        $this->render('student_auth/login', ['title' => 'Portal do Aluno'], 'layouts/student_guest');
+    }
+
+    public function login(): void
+    {
+        csrf_validate();
+
+        $login = trim((string) post('login'));
+        $password = (string) post('password');
+
+        if ($login === '' || $password === '') {
+            $this->error('Informe login e senha do aluno.');
+            $this->redirect('student/login');
+        }
+
+        if (!$this->portal->portalFeatureAvailable()) {
+            $this->error('Portal do aluno ainda nao configurado no banco. Execute o SQL atualizado.');
+            $this->redirect('student/login');
+        }
+
+        $account = $this->portal->findAccountByLogin($login);
+        if (!$account || (int) $account['is_active'] !== 1 || (int) $account['student_is_active'] !== 1) {
+            $this->error('Acesso do aluno invalido ou inativo.');
+            $this->redirect('student/login');
+        }
+
+        $validPassword = password_verify($password, (string) $account['password_hash'])
+            || hash_equals((string) $account['password_hash'], $password);
+
+        if (!$validPassword) {
+            $this->error('Credenciais invalidas.');
+            $this->redirect('student/login');
+        }
+
+        if (hash_equals((string) $account['password_hash'], $password)) {
+            $stmt = db()->prepare('UPDATE student_portal_accounts SET password_hash = :password_hash, updated_at = :updated_at WHERE id = :id');
+            $stmt->execute([
+                ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                ':updated_at' => now(),
+                ':id' => (int) $account['id'],
+            ]);
+        }
+
+        session_regenerate_id(true);
+
+        $_SESSION['student'] = [
+            'account_id' => (int) $account['id'],
+            'id' => (int) $account['student_id'],
+            'company_id' => (int) ($account['company_id'] ?? 0),
+            'name' => $account['full_name'],
+            'email' => $account['email_primary'],
+            'phone' => $account['phone'],
+            'profile_photo' => $account['profile_photo'],
+            'login' => $account['login'],
+        ];
+
+        $this->portal->updateLastLogin((int) $account['id']);
+
+        $this->success('Login do aluno realizado com sucesso.');
+        $this->redirect('student/dashboard');
+    }
+
+    public function logout(): void
+    {
+        unset($_SESSION['student']);
+        $this->success('Sessao do aluno encerrada.');
+        $this->redirect('student/login');
+    }
+}

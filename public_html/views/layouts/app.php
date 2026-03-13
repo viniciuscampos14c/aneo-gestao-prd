@@ -1,0 +1,128 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= e(($title ?? 'Sistema') . ' | ' . config('app.name')); ?></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+<?php
+$currentRoute = parse_route();
+$user = current_user();
+$company = current_company();
+$menu = [
+    ['module' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'dashboard'],
+    ['module' => 'kanban', 'label' => 'Kanban Cliente', 'icon' => 'view-columns', 'route' => 'kanban'],
+    ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students'],
+    ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
+    ['module' => 'finance', 'label' => 'Financeiro', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
+    ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot'],
+    ['module' => 'courses', 'label' => 'Cursos EAD', 'icon' => 'academic-cap', 'route' => 'courses'],
+    ['module' => 'signatures', 'label' => 'Assinaturas', 'icon' => 'document-check', 'route' => 'signatures'],
+    ['module' => 'arsenal', 'label' => 'Arsenal Digital', 'icon' => 'book-open', 'route' => 'arsenal'],
+    ['module' => 'requests', 'label' => 'Solicitações', 'icon' => 'inbox-arrow-down', 'route' => 'requests'],
+    ['module' => 'automations', 'label' => 'Automações', 'icon' => 'bolt', 'route' => 'automations'],
+    ['module' => 'help', 'label' => 'Chat IA Jully', 'icon' => 'question-mark-circle', 'route' => 'help'],
+    ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office-2', 'route' => 'companies'],
+    ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'shield-check', 'route' => 'users'],
+];
+?>
+<div class="flex min-h-screen">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
+        <div class="flex h-16 items-center justify-between border-b border-slate-800 px-6">
+            <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-cyan-400">ANEO</p>
+                <h1 class="text-lg font-semibold">Gestao Integrada</h1>
+            </div>
+            <button class="lg:hidden" data-sidebar-close>
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <nav class="h-[calc(100vh-10rem)] overflow-y-auto p-4">
+            <ul class="space-y-1">
+                <?php foreach ($menu as $item): ?>
+                    <?php if (!has_permission($item['module'])) { continue; } ?>
+                    <?php $active = str_starts_with($currentRoute, $item['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>
+                    <li>
+                        <a href="<?= route($item['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $active; ?>">
+                            <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                            <?= e($item['label']); ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </nav>
+        <div class="border-t border-slate-800 px-6 py-4">
+            <?php if ($company): ?>
+                <?php $companyName = trim((string) ($company['trade_name'] ?? '')) !== '' ? (string) $company['trade_name'] : (string) ($company['legal_name'] ?? 'Empresa'); ?>
+                <p class="text-xs uppercase tracking-[0.16em] text-cyan-400">Empresa</p>
+                <p class="text-sm font-semibold"><?= e($companyName); ?></p>
+                <p class="text-[11px] text-slate-400"><?= e((string) ($company['cnpj'] ?? '')); ?></p>
+                <a href="<?= route('select-company'); ?>" class="mt-1 inline-flex text-[11px] text-cyan-300 hover:text-cyan-200">Trocar empresa</a>
+                <div class="my-3 h-px bg-slate-800"></div>
+            <?php endif; ?>
+            <p class="text-sm font-semibold"><?= e($user['name'] ?? ''); ?></p>
+            <p class="text-xs text-slate-400"><?= e(role_label($user['role'] ?? '')); ?></p>
+            <a href="<?= route('logout'); ?>" class="mt-2 inline-flex text-xs text-rose-300 hover:text-rose-200">Sair</a>
+        </div>
+    </aside>
+
+    <div class="flex w-full flex-col lg:pl-72">
+        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+            <div class="flex h-16 items-center gap-3 px-4 lg:px-8">
+                <button class="rounded-lg border border-slate-200 p-2 lg:hidden" data-sidebar-open>
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <a href="<?= route('dashboard'); ?>" class="hidden items-center rounded-lg border border-slate-800/20 bg-slate-900 px-2 py-1 shadow-sm md:flex">
+                    <img src="assets/img/logo_aneo.png" alt="Logo ANEO" class="h-10 w-auto rounded">
+                </a>
+                <form class="flex-1" action="<?= route('search'); ?>" method="get">
+                    <input type="hidden" name="route" value="search">
+                    <input type="text" name="q" value="<?= e($_GET['q'] ?? ''); ?>" placeholder="Busca global..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm outline-none focus:border-cyan-500 focus:bg-white">
+                </form>
+                <a href="<?= route('logout'); ?>" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100" title="Sair do sistema">
+                    Sair
+                </a>
+                <button class="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Notificacoes">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                </button>
+                <button class="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Atalhos">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6v12M6 12h12"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+            <?php if ($msg = flash('success')): ?>
+                <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><?= e($msg); ?></div>
+            <?php endif; ?>
+            <?php if ($msg = flash('error')): ?>
+                <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"><?= e($msg); ?></div>
+            <?php endif; ?>
+            <?= $content; ?>
+        </main>
+    </div>
+</div>
+
+<div class="fixed bottom-6 right-6 z-50">
+    <button id="fab-toggle" class="flex h-14 w-14 items-center justify-center rounded-full bg-cyan-600 text-white shadow-lg shadow-cyan-600/30 hover:bg-cyan-700">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 5v14m-7-7h14"/></svg>
+    </button>
+    <div id="fab-menu" class="mt-3 hidden w-56 space-y-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+        <?php if (has_permission('students.create')): ?>
+            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-50" href="<?= route('students/create'); ?>">+ Novo Aluno</a>
+        <?php endif; ?>
+        <?php if (has_permission('leads.create')): ?>
+            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-50" href="<?= route('leads/create'); ?>">+ Novo Lead</a>
+        <?php endif; ?>
+        <?php if (has_permission('finance.invoice.create')): ?>
+            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-50" href="<?= route('finance/invoices/create'); ?>">+ Nova Fatura</a>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

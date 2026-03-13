@@ -1,0 +1,103 @@
+<?php $canPaymentCreate = has_permission('finance.payment.create'); ?>
+<section class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-semibold">Pagamentos</h2>
+            <p class="text-sm text-slate-500">Registre pagamento total, parcial ou em lote para varias faturas.</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="<?= route('finance/invoices'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Ver Faturas</a>
+            <a href="<?= route('finance/reports'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Relatorios</a>
+        </div>
+    </div>
+
+    <?php if ($canPaymentCreate): ?>
+        <form method="post" action="<?= route('finance/payments/store'); ?>" class="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+
+            <h3 class="text-lg font-semibold">Novo pagamento</h3>
+            <div class="grid gap-3 lg:grid-cols-4">
+                <label class="block lg:col-span-2">
+                    <span class="mb-1 block text-sm">Selecionar faturas (lote)</span>
+                    <select name="invoice_ids[]" multiple size="6" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <?php foreach ($invoicesPool as $invoice): ?>
+                            <option value="<?= (int) $invoice['id']; ?>">
+                                <?= e($invoice['invoice_number']); ?> - <?= e($invoice['student_name']); ?> - <?= e(format_currency($invoice['amount'] - $invoice['paid_amount'])); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="text-xs text-slate-500">Use Ctrl/Cmd para selecionar varias.</small>
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-sm">Valor pago *</span>
+                    <input type="text" name="amount" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="0,00">
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-sm">Metodo</span>
+                    <select name="method" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option>PIX</option>
+                        <option>Boleto</option>
+                        <option>Cartao</option>
+                        <option>Transferencia</option>
+                        <option>Dinheiro</option>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-sm">Data pagamento</span>
+                    <input type="date" name="paid_at" value="<?= date('Y-m-d'); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-3">
+                    <span class="mb-1 block text-sm">Observacoes</span>
+                    <input type="text" name="notes" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+            </div>
+
+            <button class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Registrar Pagamento</button>
+        </form>
+    <?php endif; ?>
+
+    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <table class="min-w-full text-sm">
+            <thead>
+                <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th class="px-3 py-3">Referencia</th>
+                    <th class="px-3 py-3">Metodo</th>
+                    <th class="px-3 py-3">Valor</th>
+                    <th class="px-3 py-3">Data pagamento</th>
+                    <th class="px-3 py-3">Qtd. faturas</th>
+                    <th class="px-3 py-3">Notas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($rows as $row): ?>
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="px-3 py-3 font-medium"><?= e($row['payment_ref']); ?></td>
+                        <td class="px-3 py-3"><?= e($row['method']); ?></td>
+                        <td class="px-3 py-3"><?= e(format_currency($row['amount'])); ?></td>
+                        <td class="px-3 py-3"><?= e($row['paid_at']); ?></td>
+                        <td class="px-3 py-3"><?= (int) $row['invoices_qty']; ?></td>
+                        <td class="px-3 py-3"><?= e($row['notes']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                <?php if ($rows === []): ?>
+                    <tr>
+                        <td colspan="6" class="px-3 py-6 text-center text-slate-500">Nenhum pagamento encontrado.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <div class="flex gap-2">
+            <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
+                <a href="index.php?<?= build_query(['route' => 'finance/payments', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
+            <?php endfor; ?>
+        </div>
+    </div>
+</section>

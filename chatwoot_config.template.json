@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "base_url": "https://app.chatwoot.com",
+  "account_id": "SEU_ACCOUNT_ID",
+  "inbox_id": "SEU_INBOX_ID",
+  "api_access_token": "SEU_TOKEN_AQUI",
+  "webhook_token": "TOKEN_WEBHOOK_FORTE"
+}

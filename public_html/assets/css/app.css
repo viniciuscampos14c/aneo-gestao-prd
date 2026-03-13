@@ -1,0 +1,21 @@
+﻿html, body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.kanban-column {
+    min-height: 240px;
+}
+
+.kanban-card[draggable="true"] {
+    cursor: grab;
+}
+
+.kanban-card.dragging {
+    opacity: 0.5;
+    transform: rotate(1deg);
+}
+
+[data-dropzone].drag-over {
+    border-color: #0ea5e9 !important;
+    background: #f0f9ff;
+}
