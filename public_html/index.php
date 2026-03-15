@@ -20,6 +20,7 @@ $requests = new RequestsController();
 $search = new SearchController();
 $users = new UserController();
 $companies = new CompanyController();
+$systemLogs = new SystemLogController();
 $chatwoot = new ChatwootController();
 $chatwootWebhook = new ChatwootWebhookController();
 $signatures = new SignatureController();
@@ -72,6 +73,7 @@ $router->post('companies/toggle', fn () => $companies->toggle());
 $router->post('companies/integrations/update', fn () => $companies->updateIntegrations());
 $router->post('companies/smtp/save', fn () => $companies->saveSmtp());
 $router->post('companies/smtp/test', fn () => $companies->testSmtp());
+$router->get('system/logs', fn () => $systemLogs->index());
 
 $router->get('ai-chat', fn () => $adminAi->index());
 $router->post('ai-chat/session', fn () => $adminAi->createSession());

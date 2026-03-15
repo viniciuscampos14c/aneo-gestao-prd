@@ -3,10 +3,12 @@
 class FinanceController extends BaseController
 {
     private FinanceModel $finance;
+    private AuditLogService $audit;
 
     public function __construct()
     {
         $this->finance = new FinanceModel();
+        $this->audit = new AuditLogService();
     }
 
     public function invoices(): void
@@ -199,12 +201,16 @@ class FinanceController extends BaseController
         csrf_validate();
 
         $invoiceId = (int) post('invoice_id');
+        $before = $this->invoiceSnapshotById($invoiceId);
         $result = $this->finance->generateBankSlip($invoiceId, (int) current_user()['id']);
 
         if (!$result['ok']) {
             $this->error($result['message']);
             $this->redirect('finance/invoices');
         }
+
+        $after = $this->invoiceSnapshotById($invoiceId);
+        $this->auditInvoiceEvent('generate_boleto', $invoiceId, $before, $after, (string) ($result['message'] ?? 'Boleto gerado.'));
 
         $this->success($result['message']);
         $this->redirect('finance/invoices');
@@ -217,12 +223,16 @@ class FinanceController extends BaseController
         csrf_validate();
 
         $invoiceId = (int) post('invoice_id');
+        $before = $this->invoiceSnapshotById($invoiceId);
         $result = $this->finance->syncBankSlipStatus($invoiceId, (int) current_user()['id']);
 
         if (!$result['ok']) {
             $this->error($result['message']);
             $this->redirect('finance/invoices');
         }
+
+        $after = $this->invoiceSnapshotById($invoiceId);
+        $this->auditInvoiceEvent('sync_boleto', $invoiceId, $before, $after, (string) ($result['message'] ?? 'Boleto sincronizado.'));
 
         $this->success($result['message']);
         $this->redirect('finance/invoices');
@@ -272,6 +282,9 @@ class FinanceController extends BaseController
         $id = $this->finance->createInvoice($data, (int) current_user()['id']);
         $this->finance->syncStudentFinanceKanban((int) $data['student_id'], (int) current_user()['id']);
 
+        $after = $this->invoiceSnapshotById($id);
+        $this->auditInvoiceEvent('create', $id, [], $after, 'Fatura criada.');
+
         $this->success('Fatura criada #' . $id . '.');
         $this->redirect('finance/invoices');
     }
@@ -284,10 +297,12 @@ class FinanceController extends BaseController
 
         $id = (int) post('id');
         $invoice = $this->finance->findInvoice($id);
+        $before = $this->invoiceSnapshot($invoice);
 
         if ($invoice) {
             $this->finance->deleteInvoice($id);
             $this->finance->syncStudentFinanceKanban((int) $invoice['student_id'], (int) current_user()['id']);
+            $this->auditInvoiceEvent('delete', $id, $before, [], 'Fatura removida.');
             $this->success('Fatura removida.');
         }
 
@@ -304,6 +319,7 @@ class FinanceController extends BaseController
         $method = trim((string) post('method', 'PIX'));
         $paidAt = trim((string) post('paid_at', date('Y-m-d')));
         $notes = trim((string) post('notes'));
+        $before = $this->invoiceSnapshotById($invoiceId);
 
         $result = $this->finance->settleInvoice($invoiceId, $method, $paidAt, $notes, (int) current_user()['id']);
 
@@ -311,6 +327,13 @@ class FinanceController extends BaseController
             $this->error($result['message']);
             $this->redirect('finance/invoices');
         }
+
+        $after = $this->invoiceSnapshotById($invoiceId);
+        $this->auditInvoiceEvent('settle', $invoiceId, $before, $after, 'Baixa de fatura registrada.', [
+            'payment_id' => (int) ($result['payment_id'] ?? 0),
+            'method' => $method,
+            'paid_at' => $paidAt,
+        ]);
 
         $this->success('Baixa efetuada com sucesso. Pagamento #' . (int) $result['payment_id'] . ' registrado.');
         $this->redirect('finance/invoices');
@@ -323,12 +346,16 @@ class FinanceController extends BaseController
         csrf_validate();
 
         $invoiceId = (int) post('invoice_id');
+        $before = $this->invoiceSnapshotById($invoiceId);
         $result = $this->finance->generateFiscalInvoice($invoiceId, (int) current_user()['id']);
 
         if (!$result['ok']) {
             $this->error($result['message']);
             $this->redirect('finance/invoices');
         }
+
+        $after = $this->invoiceSnapshotById($invoiceId);
+        $this->auditInvoiceEvent('generate_nfe', $invoiceId, $before, $after, (string) ($result['message'] ?? 'Emissao fiscal solicitada.'));
 
         $this->success($result['message']);
         $this->redirect('finance/invoices');
@@ -391,6 +418,19 @@ class FinanceController extends BaseController
             $this->finance->syncStudentFinanceKanban((int) $student['id'], (int) current_user()['id']);
         }
 
+        $this->audit->log([
+            'module' => 'finance.faturas',
+            'action' => 'generate_recurring',
+            'entity_type' => 'invoice_batch',
+            'entity_id' => null,
+            'entity_label' => 'Recorrencia ' . date('m/Y', strtotime($ref)),
+            'description' => $qty . ' fatura(s) recorrente(s) gerada(s).',
+            'before' => [],
+            'after' => ['generated_qty' => $qty],
+            'metadata' => ['reference_month' => date('Y-m', strtotime($ref))],
+            'company_id' => (int) (current_company_id() ?? 0),
+        ]);
+
         $this->success($qty . ' fatura(s) recorrente(s) gerada(s).');
         $this->redirect('finance/invoices');
     }
@@ -443,6 +483,15 @@ class FinanceController extends BaseController
             $this->redirect('finance/payments');
         }
 
+        $invoiceIds = array_values(array_unique(array_filter(array_map('intval', $invoiceIds), fn ($id) => $id > 0)));
+        $before = [];
+        foreach ($invoiceIds as $invoiceId) {
+            $snap = $this->invoiceSnapshotById($invoiceId);
+            if ($snap) {
+                $before[(string) $invoiceId] = $snap;
+            }
+        }
+
         $paymentId = $this->finance->recordBatchPayment($invoiceIds, $amount, $method, $paidAt, $notes, (int) current_user()['id']);
 
         if ($paymentId <= 0) {
@@ -450,8 +499,86 @@ class FinanceController extends BaseController
             $this->redirect('finance/payments');
         }
 
+        $after = [];
+        foreach ($invoiceIds as $invoiceId) {
+            $snap = $this->invoiceSnapshotById($invoiceId);
+            if ($snap) {
+                $after[(string) $invoiceId] = $snap;
+            }
+        }
+
+        $this->audit->log([
+            'module' => 'finance.pagamentos',
+            'action' => 'create',
+            'entity_type' => 'payment_batch',
+            'entity_id' => $paymentId,
+            'entity_label' => 'Pagamento #' . $paymentId,
+            'description' => 'Pagamento em lote registrado.',
+            'before' => ['invoices' => $before],
+            'after' => ['invoices' => $after],
+            'metadata' => [
+                'invoice_ids' => $invoiceIds,
+                'amount' => $amount,
+                'method' => $method,
+                'paid_at' => $paidAt,
+            ],
+            'company_id' => (int) (current_company_id() ?? 0),
+        ]);
+
         $this->success('Pagamento registrado #' . $paymentId . '.');
         $this->redirect('finance/payments');
+    }
+
+    private function invoiceSnapshotById(int $invoiceId): ?array
+    {
+        return $this->invoiceSnapshot($this->finance->findInvoice($invoiceId));
+    }
+
+    private function invoiceSnapshot(?array $invoice): ?array
+    {
+        if (!$invoice) {
+            return null;
+        }
+
+        return [
+            'id' => (int) ($invoice['id'] ?? 0),
+            'invoice_number' => (string) ($invoice['invoice_number'] ?? ''),
+            'student_id' => (int) ($invoice['student_id'] ?? 0),
+            'due_date' => (string) ($invoice['due_date'] ?? ''),
+            'amount' => (float) ($invoice['amount'] ?? 0),
+            'paid_amount' => (float) ($invoice['paid_amount'] ?? 0),
+            'status' => (string) ($invoice['status'] ?? ''),
+            'paid_at' => (string) ($invoice['paid_at'] ?? ''),
+            'tax_amount' => (float) ($invoice['tax_amount'] ?? 0),
+            'project_name' => (string) ($invoice['project_name'] ?? ''),
+            'tags' => (string) ($invoice['tags'] ?? ''),
+            'boleto_url' => (string) ($invoice['boleto_url'] ?? ''),
+            'is_recurring' => (int) ($invoice['is_recurring'] ?? 0),
+            'recurrence_interval' => (string) ($invoice['recurrence_interval'] ?? ''),
+        ];
+    }
+
+    private function auditInvoiceEvent(string $action, int $invoiceId, $before, $after, string $description, array $metadata = []): void
+    {
+        $label = 'Fatura #' . $invoiceId;
+        if (is_array($after) && trim((string) ($after['invoice_number'] ?? '')) !== '') {
+            $label = 'Fatura ' . (string) $after['invoice_number'];
+        } elseif (is_array($before) && trim((string) ($before['invoice_number'] ?? '')) !== '') {
+            $label = 'Fatura ' . (string) $before['invoice_number'];
+        }
+
+        $this->audit->log([
+            'module' => 'finance.faturas',
+            'action' => $action,
+            'entity_type' => 'invoice',
+            'entity_id' => $invoiceId,
+            'entity_label' => $label,
+            'description' => $description,
+            'before' => $before,
+            'after' => $after,
+            'metadata' => $metadata,
+            'company_id' => (int) (current_company_id() ?? 0),
+        ]);
     }
 
     private function collectReportFilters(): array

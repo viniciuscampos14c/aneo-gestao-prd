@@ -3,10 +3,12 @@
 class UserController extends BaseController
 {
     private UserModel $users;
+    private AuditLogService $audit;
 
     public function __construct()
     {
         $this->users = new UserModel();
+        $this->audit = new AuditLogService();
     }
 
     public function index(): void
@@ -78,6 +80,18 @@ class UserController extends BaseController
             $this->redirect('users/create');
         }
 
+        $after = $this->userSnapshot($id);
+        $this->audit->log([
+            'module' => 'cadastro.usuarios',
+            'action' => 'create',
+            'entity_type' => 'user',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['name'] ?? 'Usuario #' . $id),
+            'description' => 'Usuario criado.',
+            'before' => [],
+            'after' => $after,
+        ]);
+
         $this->success('Usuario criado #' . $id . '.');
         $this->redirect('users');
     }
@@ -119,6 +133,7 @@ class UserController extends BaseController
 
         $id = (int) request('id');
         $existing = $this->users->findForEdit($id);
+        $before = $existing ? $this->userSnapshot($id) : null;
 
         if (!$existing) {
             $this->error('Usuario nao encontrado.');
@@ -147,6 +162,18 @@ class UserController extends BaseController
             $this->refreshCurrentUserCompanySession($id);
         }
 
+        $after = $this->userSnapshot($id);
+        $this->audit->log([
+            'module' => 'cadastro.usuarios',
+            'action' => 'update',
+            'entity_type' => 'user',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['name'] ?? ($before['name'] ?? ('Usuario #' . $id))),
+            'description' => 'Usuario atualizado.',
+            'before' => $before,
+            'after' => $after,
+        ]);
+
         $this->success('Usuario atualizado.');
         $this->redirect('users');
     }
@@ -169,7 +196,21 @@ class UserController extends BaseController
             $this->redirect('users');
         }
 
+        $before = $this->userSnapshot($id);
         $this->users->setActive($id, $active);
+        $after = $this->userSnapshot($id);
+
+        $this->audit->log([
+            'module' => 'cadastro.usuarios',
+            'action' => 'toggle',
+            'entity_type' => 'user',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['name'] ?? ($before['name'] ?? ('Usuario #' . $id))),
+            'description' => (int) $active === 1 ? 'Usuario ativado.' : 'Usuario inativado.',
+            'before' => $before,
+            'after' => $after,
+        ]);
+
         $this->success('Status do usuario atualizado.');
         $this->redirect('users');
     }
@@ -191,7 +232,20 @@ class UserController extends BaseController
             $this->redirect('users');
         }
 
+        $before = $this->userSnapshot($id);
         $this->users->deleteUser($id);
+
+        $this->audit->log([
+            'module' => 'cadastro.usuarios',
+            'action' => 'delete',
+            'entity_type' => 'user',
+            'entity_id' => $id,
+            'entity_label' => (string) ($before['name'] ?? ('Usuario #' . $id)),
+            'description' => 'Usuario removido.',
+            'before' => $before,
+            'after' => [],
+        ]);
+
         $this->success('Usuario removido.');
         $this->redirect('users');
     }
@@ -313,6 +367,25 @@ class UserController extends BaseController
             'modules' => $modules,
             'functions' => $functions,
             'all' => $modules + $functions,
+        ];
+    }
+
+    private function userSnapshot(int $id): ?array
+    {
+        $user = $this->users->findForEdit($id);
+        if (!$user) {
+            return null;
+        }
+
+        return [
+            'id' => (int) ($user['id'] ?? 0),
+            'name' => (string) ($user['name'] ?? ''),
+            'username' => (string) ($user['username'] ?? ''),
+            'email' => (string) ($user['email'] ?? ''),
+            'role' => (string) ($user['role'] ?? ''),
+            'is_active' => (int) ($user['is_active'] ?? 0),
+            'permission_keys' => $this->users->permissionKeys($id),
+            'company_ids' => $this->users->companyIdsForUser($id),
         ];
     }
 }

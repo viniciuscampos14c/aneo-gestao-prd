@@ -119,6 +119,12 @@ function is_logged_in(): bool
     return current_user() !== null;
 }
 
+function is_admin(): bool
+{
+    $user = current_user();
+    return is_array($user) && ((string) ($user['role'] ?? '')) === 'admin';
+}
+
 function current_student(): ?array
 {
     return $_SESSION['student'] ?? null;
@@ -175,6 +181,15 @@ function require_permission(string $module): void
 {
     if (!has_permission($module)) {
         flash('error', 'Voce nao possui permissao para este modulo.');
+        redirect('dashboard');
+    }
+}
+
+function require_admin(): void
+{
+    require_auth();
+    if (!is_admin()) {
+        flash('error', 'Acesso restrito ao administrador.');
         redirect('dashboard');
     }
 }

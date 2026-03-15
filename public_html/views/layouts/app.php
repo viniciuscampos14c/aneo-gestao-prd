@@ -33,6 +33,10 @@ $cadastroMenu = [
     ['module' => 'companies', 'label' => 'SMTP Email', 'route' => 'companies/smtp'],
 ];
 
+if (($user['role'] ?? '') === 'admin') {
+    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Logs de Sistema', 'route' => 'system/logs'];
+}
+
 $cadastroItemsVisible = [];
 foreach ($cadastroMenu as $cadItem) {
     if (has_permission($cadItem['module'])) {
@@ -68,7 +72,7 @@ $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('Ymd
                 <?php endforeach; ?>
 
                 <?php if ($showCadastro): ?>
-                    <?php $cadastroActive = str_starts_with($currentRoute, 'users') || str_starts_with($currentRoute, 'companies'); ?>
+                    <?php $cadastroActive = str_starts_with($currentRoute, 'users') || str_starts_with($currentRoute, 'companies') || str_starts_with($currentRoute, 'system/logs'); ?>
                     <li class="pt-1">
                         <button type="button" data-cadastro-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $cadastroActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
                             <span class="flex items-center gap-3">

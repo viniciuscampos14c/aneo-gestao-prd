@@ -4,11 +4,13 @@ class CompanyController extends BaseController
 {
     private CompanyModel $companies;
     private CompanyIntegrationModel $integrations;
+    private AuditLogService $audit;
 
     public function __construct()
     {
         $this->companies = new CompanyModel();
         $this->integrations = new CompanyIntegrationModel();
+        $this->audit = new AuditLogService();
     }
 
     public function index(): void
@@ -77,6 +79,19 @@ class CompanyController extends BaseController
             $this->redirect('companies');
         }
 
+        $after = $this->companySnapshot($id);
+        $this->audit->log([
+            'module' => 'cadastro.empresas',
+            'action' => 'create',
+            'entity_type' => 'company',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['trade_name'] ?? $after['legal_name'] ?? ('Empresa #' . $id)),
+            'description' => 'Empresa cadastrada.',
+            'before' => [],
+            'after' => $after,
+            'company_id' => $id,
+        ]);
+
         $this->success('Empresa cadastrada #' . $id . '.');
         $this->redirect('companies');
     }
@@ -88,7 +103,8 @@ class CompanyController extends BaseController
         csrf_validate();
 
         $id = (int) post('id');
-        if ($id <= 0 || !$this->companies->find($id)) {
+        $before = $this->companySnapshot($id);
+        if ($id <= 0 || !$before) {
             $this->error('Empresa nao encontrada.');
             $this->redirect('companies');
         }
@@ -110,6 +126,19 @@ class CompanyController extends BaseController
             $this->refreshSessionCompany($id);
         }
 
+        $after = $this->companySnapshot($id);
+        $this->audit->log([
+            'module' => 'cadastro.empresas',
+            'action' => 'update',
+            'entity_type' => 'company',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['trade_name'] ?? $after['legal_name'] ?? ($before['legal_name'] ?? ('Empresa #' . $id))),
+            'description' => 'Empresa atualizada.',
+            'before' => $before,
+            'after' => $after,
+            'company_id' => $id,
+        ]);
+
         $this->success('Empresa atualizada.');
         $this->redirect('companies');
     }
@@ -123,7 +152,8 @@ class CompanyController extends BaseController
         $id = (int) post('id');
         $active = (int) post('active', 1);
 
-        if ($id <= 0 || !$this->companies->find($id)) {
+        $before = $this->companySnapshot($id);
+        if ($id <= 0 || !$before) {
             $this->error('Empresa nao encontrada.');
             $this->redirect('companies');
         }
@@ -135,6 +165,19 @@ class CompanyController extends BaseController
         } elseif ((int) $active === 1 && current_company_id() === $id) {
             $this->refreshSessionCompany($id);
         }
+
+        $after = $this->companySnapshot($id);
+        $this->audit->log([
+            'module' => 'cadastro.empresas',
+            'action' => 'toggle',
+            'entity_type' => 'company',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['trade_name'] ?? $after['legal_name'] ?? ($before['legal_name'] ?? ('Empresa #' . $id))),
+            'description' => (int) $active === 1 ? 'Empresa ativada.' : 'Empresa inativada.',
+            'before' => $before,
+            'after' => $after,
+            'company_id' => $id,
+        ]);
 
         $this->success('Status da empresa atualizado.');
         $this->redirect('companies');
@@ -192,6 +235,7 @@ class CompanyController extends BaseController
         }
 
         $existing = $this->integrations->get($companyId, 'smtp');
+        $before = $this->smtpSnapshot($companyId, $existing);
         $existingSettings = is_array($existing['settings'] ?? null) ? $existing['settings'] : [];
         $smtp = $this->collectSmtpSettings($existingSettings);
 
@@ -202,6 +246,19 @@ class CompanyController extends BaseController
 
         $changedBy = (int) (current_user()['id'] ?? 0);
         $this->integrations->save($companyId, 'smtp', $smtp['enabled'], $smtp['settings'], $changedBy);
+
+        $after = $this->smtpSnapshot($companyId);
+        $this->audit->log([
+            'module' => 'cadastro.smtp',
+            'action' => 'update',
+            'entity_type' => 'company_smtp',
+            'entity_id' => $companyId,
+            'entity_label' => (string) ($company['trade_name'] ?? $company['legal_name'] ?? ('Empresa #' . $companyId)),
+            'description' => 'Configuracao SMTP atualizada.',
+            'before' => $before,
+            'after' => $after,
+            'company_id' => $companyId,
+        ]);
 
         $this->success('Configuracao SMTP atualizada com sucesso.');
         $this->redirect('companies/smtp&company_id=' . $companyId);
@@ -751,6 +808,59 @@ class CompanyController extends BaseController
             'error' => null,
             'data' => $data,
         ];
+    }
+
+    private function companySnapshot(int $companyId): ?array
+    {
+        if ($companyId <= 0) {
+            return null;
+        }
+
+        $company = $this->companies->find($companyId);
+        if (!$company) {
+            return null;
+        }
+
+        return [
+            'id' => (int) ($company['id'] ?? 0),
+            'legal_name' => (string) ($company['legal_name'] ?? ''),
+            'trade_name' => (string) ($company['trade_name'] ?? ''),
+            'cnpj' => (string) ($company['cnpj'] ?? ''),
+            'is_active' => (int) ($company['is_active'] ?? 0),
+        ];
+    }
+
+    private function smtpSnapshot(int $companyId, ?array $integration = null): array
+    {
+        if ($companyId <= 0 || !$this->integrations->tableExists()) {
+            return [];
+        }
+
+        if ($integration === null) {
+            $integration = $this->integrations->get($companyId, 'smtp');
+        }
+
+        $settings = is_array($integration['settings'] ?? null) ? $integration['settings'] : [];
+        $snapshot = [
+            'enabled' => !empty($integration['is_enabled']),
+            'host' => trim((string) ($settings['host'] ?? '')),
+            'port' => isset($settings['port']) ? (int) $settings['port'] : null,
+            'security' => trim((string) ($settings['security'] ?? '')),
+            'username' => trim((string) ($settings['username'] ?? '')),
+            'has_password' => trim((string) ($settings['password'] ?? '')) !== '',
+            'from_email' => trim((string) ($settings['from_email'] ?? '')),
+            'from_name' => trim((string) ($settings['from_name'] ?? '')),
+            'reply_to' => trim((string) ($settings['reply_to'] ?? '')),
+            'timeout' => isset($settings['timeout']) ? (int) $settings['timeout'] : null,
+        ];
+
+        foreach ($snapshot as $key => $value) {
+            if ($value === '' || $value === null) {
+                unset($snapshot[$key]);
+            }
+        }
+
+        return $snapshot;
     }
 
     private function refreshSessionCompany(int $companyId): void

@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS system_audit_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT NULL,
+    user_id INT NULL,
+    user_name VARCHAR(150) NOT NULL DEFAULT '',
+    user_email VARCHAR(190) NOT NULL DEFAULT '',
+    user_role VARCHAR(50) NOT NULL DEFAULT '',
+    module VARCHAR(80) NOT NULL,
+    action VARCHAR(40) NOT NULL,
+    entity_type VARCHAR(80) NOT NULL,
+    entity_id INT NULL,
+    entity_label VARCHAR(255) NULL,
+    description VARCHAR(255) NULL,
+    changes_json LONGTEXT NULL,
+    metadata_json LONGTEXT NULL,
+    created_at DATETIME NOT NULL,
+    INDEX idx_system_audit_logs_created_at (created_at),
+    INDEX idx_system_audit_logs_module (module),
+    INDEX idx_system_audit_logs_user (user_id),
+    INDEX idx_system_audit_logs_company (company_id),
+    INDEX idx_system_audit_logs_entity (entity_type, entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
