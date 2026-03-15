@@ -14,6 +14,8 @@ class DashboardModel extends BaseModel
                 'invoices_open' => 0,
                 'invoices_paid' => 0,
                 'receivable' => 0.0,
+                'due_today_count' => 0,
+                'due_today_alerts' => [],
                 'lead_pipeline' => [],
                 'kanban' => [],
                 'bi' => $this->emptyBi(),
@@ -36,6 +38,26 @@ class DashboardModel extends BaseModel
               AND status IN ('open','partial','overdue')",
             [':company_id' => $companyId]
         );
+
+        $dueTodayStmt = $this->db->prepare("SELECT
+                i.id,
+                i.invoice_number,
+                i.due_date,
+                i.amount,
+                i.paid_amount,
+                GREATEST(i.amount - i.paid_amount, 0) AS outstanding_amount,
+                s.full_name AS student_name
+            FROM invoices i
+            INNER JOIN students s ON s.id = i.student_id
+            WHERE i.company_id = :company_id
+              AND i.status IN ('open','partial','overdue')
+              AND GREATEST(i.amount - i.paid_amount, 0) > 0
+              AND i.due_date = CURDATE()
+            ORDER BY i.id ASC
+            LIMIT 12");
+        $dueTodayStmt->execute([':company_id' => $companyId]);
+        $metrics['due_today_alerts'] = $dueTodayStmt->fetchAll();
+        $metrics['due_today_count'] = count($metrics['due_today_alerts']);
 
         $pipelineStmt = $this->db->prepare('SELECT
                 s.name,

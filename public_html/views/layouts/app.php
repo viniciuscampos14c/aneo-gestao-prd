@@ -25,9 +25,23 @@ $menu = [
     ['module' => 'requests', 'label' => 'Solicitações', 'icon' => 'inbox-arrow-down', 'route' => 'requests'],
     ['module' => 'automations', 'label' => 'Automações', 'icon' => 'bolt', 'route' => 'automations'],
     ['module' => 'help', 'label' => 'Chat IA Jully', 'icon' => 'question-mark-circle', 'route' => 'help'],
-    ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office-2', 'route' => 'companies'],
-    ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'shield-check', 'route' => 'users'],
 ];
+
+$cadastroMenu = [
+    ['module' => 'users', 'label' => 'Usuarios', 'route' => 'users'],
+    ['module' => 'companies', 'label' => 'Empresas', 'route' => 'companies'],
+    ['module' => 'companies', 'label' => 'SMTP Email', 'route' => 'companies/smtp'],
+];
+
+$cadastroItemsVisible = [];
+foreach ($cadastroMenu as $cadItem) {
+    if (has_permission($cadItem['module'])) {
+        $cadastroItemsVisible[] = $cadItem;
+    }
+}
+$showCadastro = $cadastroItemsVisible !== [];
+$appJsPath = __DIR__ . '/../../assets/js/app.js';
+$appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('YmdHis');
 ?>
 <div class="flex min-h-screen">
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
@@ -52,8 +66,36 @@ $menu = [
                         </a>
                     </li>
                 <?php endforeach; ?>
+
+                <?php if ($showCadastro): ?>
+                    <?php $cadastroActive = str_starts_with($currentRoute, 'users') || str_starts_with($currentRoute, 'companies'); ?>
+                    <li class="pt-1">
+                        <button type="button" data-cadastro-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $cadastroActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
+                            <span class="flex items-center gap-3">
+                                <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                                Cadastro
+                            </span>
+                            <svg data-cadastro-chevron class="h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/>
+                            </svg>
+                        </button>
+                    </li>
+                <?php endif; ?>
             </ul>
         </nav>
+
+        <?php if ($showCadastro): ?>
+            <div data-cadastro-panel class="hidden fixed z-[80] min-w-[220px] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+                <?php foreach ($cadastroItemsVisible as $cadItem): ?>
+                    <?php $cadActive = str_starts_with($currentRoute, $cadItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white'; ?>
+                    <a href="<?= route($cadItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $cadActive; ?>">
+                        <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                        <?= e($cadItem['label']); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <div class="border-t border-slate-800 px-6 py-4">
             <?php if ($company): ?>
                 <?php $companyName = trim((string) ($company['trade_name'] ?? '')) !== '' ? (string) $company['trade_name'] : (string) ($company['legal_name'] ?? 'Empresa'); ?>
@@ -123,6 +165,6 @@ $menu = [
     </div>
 </div>
 
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=<?= e($appJsVersion); ?>"></script>
 </body>
 </html>

@@ -24,6 +24,7 @@ $chatwoot = new ChatwootController();
 $chatwootWebhook = new ChatwootWebhookController();
 $signatures = new SignatureController();
 $automationWebhook = new AutomationWebhookController();
+$financeAutomation = new FinanceAutomationController();
 $adminAi = new AdminAiController();
 $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
@@ -64,10 +65,13 @@ $router->post('users/toggle', fn () => $users->toggle());
 $router->post('users/delete', fn () => $users->delete());
 
 $router->get('companies', fn () => $companies->index());
+$router->get('companies/smtp', fn () => $companies->smtp());
 $router->post('companies/store', fn () => $companies->store());
 $router->post('companies/update', fn () => $companies->update());
 $router->post('companies/toggle', fn () => $companies->toggle());
 $router->post('companies/integrations/update', fn () => $companies->updateIntegrations());
+$router->post('companies/smtp/save', fn () => $companies->saveSmtp());
+$router->post('companies/smtp/test', fn () => $companies->testSmtp());
 
 $router->get('ai-chat', fn () => $adminAi->index());
 $router->post('ai-chat/session', fn () => $adminAi->createSession());
@@ -138,6 +142,8 @@ $router->post('signatures/sync', fn () => $signatures->sync());
 $router->post('signatures/delete', fn () => $signatures->delete());
 $router->post('signatures/webhook', fn () => $signatures->webhook());
 $router->post('automations/webhook/enrollment', fn () => $automationWebhook->enrollment());
+$router->get('automations/webhook/finance-notifications', fn () => $financeAutomation->billingNotifications());
+$router->post('automations/webhook/finance-notifications', fn () => $financeAutomation->billingNotifications());
 
 $router->get('arsenal', fn () => $arsenal->index());
 $router->post('arsenal/item/store', fn () => $arsenal->storeItem());

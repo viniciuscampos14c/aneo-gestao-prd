@@ -92,6 +92,9 @@ return [
     'automation' => [
         'enabled' => true,
         'enrollment_webhook_token' => 'e9da9a6c717449839848e582ed22d7fdb97e6e3dcf084610b3e22030719c3e6b',
+        'finance_webhook_token' => 'b47c51f972f5ef1303c52cd6586f0dd5c865ec76b122d307b76bb980f452a314',
+        'finance_reminder_days_before' => 3,
+        'finance_admin_email' => 'vinicius14c@hotmail.com',
         'payment_approved_statuses' => ['confirmed', 'received', 'paid'],
         'contract_signed_statuses' => ['signed', 'completed', 'concluded', 'done'],
     ],
@@ -102,6 +105,18 @@ return [
         'external_webhook_url' => '',
         'external_webhook_token' => 'trocar_token_chamados',
         'webhook_company_id' => 1,
+    ],
+    'smtp' => [
+        'enabled' => false,
+        'host' => '',
+        'port' => 587,
+        'security' => 'tls',
+        'username' => '',
+        'password' => '',
+        'from_email' => 'nao-responda@aneo.local',
+        'from_name' => 'ANEO Gestao',
+        'reply_to' => '',
+        'timeout' => 20,
     ],
     'support_desk' => [
         'enabled' => true,

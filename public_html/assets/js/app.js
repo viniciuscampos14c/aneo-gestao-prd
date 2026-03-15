@@ -25,6 +25,119 @@
         });
     }
 
+    const cadastroTrigger = document.querySelector('[data-cadastro-trigger]');
+    const cadastroPanel = document.querySelector('[data-cadastro-panel]');
+    const cadastroChevron = document.querySelector('[data-cadastro-chevron]');
+
+    if (cadastroTrigger && cadastroPanel) {
+        let closeTimer = null;
+
+        const clearCloseTimer = () => {
+            if (closeTimer !== null) {
+                window.clearTimeout(closeTimer);
+                closeTimer = null;
+            }
+        };
+
+        const setExpanded = (expanded) => {
+            cadastroTrigger.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            if (cadastroChevron) {
+                if (expanded) {
+                    cadastroChevron.classList.add('rotate-90');
+                } else {
+                    cadastroChevron.classList.remove('rotate-90');
+                }
+            }
+        };
+
+        const isOpen = () => !cadastroPanel.classList.contains('hidden');
+
+        const positionPanel = () => {
+            const triggerRect = cadastroTrigger.getBoundingClientRect();
+            const panelRect = cadastroPanel.getBoundingClientRect();
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+            let left = Math.round(triggerRect.right + 12);
+            if (left + panelRect.width > viewportWidth - 12) {
+                left = Math.max(12, Math.round(triggerRect.left - panelRect.width - 12));
+            }
+
+            let top = Math.round(triggerRect.top);
+            if (top + panelRect.height > viewportHeight - 12) {
+                top = Math.max(12, viewportHeight - panelRect.height - 12);
+            }
+
+            cadastroPanel.style.left = `${left}px`;
+            cadastroPanel.style.top = `${top}px`;
+        };
+
+        const openPanel = () => {
+            clearCloseTimer();
+            cadastroPanel.classList.remove('hidden');
+            positionPanel();
+            setExpanded(true);
+        };
+
+        const closePanel = () => {
+            clearCloseTimer();
+            cadastroPanel.classList.add('hidden');
+            setExpanded(false);
+        };
+
+        const scheduleClose = () => {
+            clearCloseTimer();
+            closeTimer = window.setTimeout(closePanel, 220);
+        };
+
+        cadastroTrigger.addEventListener('mouseenter', openPanel);
+        cadastroTrigger.addEventListener('mouseleave', scheduleClose);
+        cadastroTrigger.addEventListener('focus', openPanel);
+        cadastroTrigger.addEventListener('blur', scheduleClose);
+
+        cadastroPanel.addEventListener('mouseenter', clearCloseTimer);
+        cadastroPanel.addEventListener('mouseleave', scheduleClose);
+
+        cadastroTrigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (isOpen()) {
+                closePanel();
+            } else {
+                openPanel();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!isOpen()) {
+                return;
+            }
+
+            if (cadastroTrigger.contains(event.target) || cadastroPanel.contains(event.target)) {
+                return;
+            }
+
+            closePanel();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && isOpen()) {
+                closePanel();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (isOpen()) {
+                positionPanel();
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            if (isOpen()) {
+                positionPanel();
+            }
+        }, true);
+    }
+
     const cards = document.querySelectorAll('[data-student-card]');
     const zones = document.querySelectorAll('[data-dropzone]');
 

@@ -7,6 +7,8 @@ $bi = $metrics['bi'] ?? [
 $biOverview = $bi['overview'] ?? [];
 $monthlySeries = $bi['monthly_series'] ?? [];
 $coursesPerformance = $bi['courses_performance'] ?? [];
+$dueTodayAlerts = $metrics['due_today_alerts'] ?? [];
+$dueTodayCount = (int) ($metrics['due_today_count'] ?? 0);
 
 $maxMonthlyValue = 1.0;
 foreach ($monthlySeries as $row) {
@@ -18,6 +20,33 @@ foreach ($monthlySeries as $row) {
         <h2 class="text-2xl font-semibold">Visao Geral</h2>
         <p class="text-sm text-slate-500">Resumo operacional, comercial e financeiro.</p>
     </div>
+
+    <?php if ($dueTodayCount > 0): ?>
+        <div id="due-today-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/55 p-4">
+            <div class="w-full max-w-2xl rounded-xl border border-rose-200 bg-white shadow-xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-rose-700">Alertas de vencimento de hoje</h3>
+                        <p class="text-xs text-slate-500"><?= (int) $dueTodayCount; ?> fatura(s) vence(m) hoje.</p>
+                    </div>
+                    <button type="button" data-due-modal-close class="rounded-lg border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50">Fechar</button>
+                </div>
+                <div class="max-h-[60vh] overflow-y-auto p-4">
+                    <div class="space-y-2">
+                        <?php foreach ($dueTodayAlerts as $alert): ?>
+                            <article class="rounded-lg border border-rose-100 bg-rose-50/40 px-3 py-2 text-sm">
+                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['invoice_number'] ?? 'Fatura')); ?> - <?= e((string) ($alert['student_name'] ?? 'Aluno')); ?></p>
+                                <p class="text-xs text-slate-600">Vencimento: <?= e(date('d/m/Y', strtotime((string) ($alert['due_date'] ?? '')))); ?> | Em aberto: <?= e(format_currency((float) ($alert['outstanding_amount'] ?? 0))); ?></p>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="border-t border-slate-200 px-4 py-3 text-right">
+                    <button type="button" data-due-modal-close class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">Entendi</button>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -179,3 +208,36 @@ foreach ($monthlySeries as $row) {
         </section>
     </div>
 </section>
+
+<?php if ($dueTodayCount > 0): ?>
+    <script>
+        (function () {
+            const modal = document.getElementById('due-today-modal');
+            if (!modal) return;
+
+            const todayKey = 'aneo_due_today_popup_' + new Date().toISOString().slice(0, 10);
+            if (sessionStorage.getItem(todayKey)) {
+                return;
+            }
+
+            const close = function () {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                sessionStorage.setItem(todayKey, '1');
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            modal.querySelectorAll('[data-due-modal-close]').forEach((btn) => {
+                btn.addEventListener('click', close);
+            });
+
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    close();
+                }
+            });
+        })();
+    </script>
+<?php endif; ?>

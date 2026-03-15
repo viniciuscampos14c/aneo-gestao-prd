@@ -214,7 +214,7 @@ class SignatureModel extends BaseModel
             ) VALUES (
                 :company_id, :student_id, :title, :description, :signer_name, :signer_email, :signer_phone,
                 :file_original_path, NULL, :d4sign_safe_uuid, NULL, NULL,
-                :status, NULL, NULL, NULL, NULL, NULL, NULL,
+                :status, NULL, NULL, NULL, NULL, NULL, :metadata_json,
                 :created_by, :created_at, :updated_at
             )');
 
@@ -229,6 +229,7 @@ class SignatureModel extends BaseModel
                 ':file_original_path' => trim((string) $data['file_original_path']),
                 ':d4sign_safe_uuid' => trim((string) ($data['d4sign_safe_uuid'] ?? '')) ?: null,
                 ':status' => 'draft',
+                ':metadata_json' => $this->encodeMetadata($data['metadata'] ?? null),
                 ':created_by' => $createdBy > 0 ? $createdBy : null,
                 ':created_at' => $now,
                 ':updated_at' => $now,
@@ -244,7 +245,7 @@ class SignatureModel extends BaseModel
         ) VALUES (
             :student_id, :title, :description, :signer_name, :signer_email, :signer_phone,
             :file_original_path, NULL, :d4sign_safe_uuid, NULL, NULL,
-            :status, NULL, NULL, NULL, NULL, NULL, NULL,
+            :status, NULL, NULL, NULL, NULL, NULL, :metadata_json,
             :created_by, :created_at, :updated_at
         )');
 
@@ -258,6 +259,7 @@ class SignatureModel extends BaseModel
             ':file_original_path' => trim((string) $data['file_original_path']),
             ':d4sign_safe_uuid' => trim((string) ($data['d4sign_safe_uuid'] ?? '')) ?: null,
             ':status' => 'draft',
+            ':metadata_json' => $this->encodeMetadata($data['metadata'] ?? null),
             ':created_by' => $createdBy > 0 ? $createdBy : null,
             ':created_at' => $now,
             ':updated_at' => $now,
@@ -547,6 +549,16 @@ class SignatureModel extends BaseModel
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchColumn();
+    }
+
+    private function encodeMetadata($metadata): ?string
+    {
+        if (!is_array($metadata) || $metadata === []) {
+            return null;
+        }
+
+        $encoded = json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $encoded !== false ? $encoded : null;
     }
 
     private function normalizeCompanyId(?int $companyId = null): int

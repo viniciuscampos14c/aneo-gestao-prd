@@ -94,6 +94,26 @@ $statusOptions = [
                 <span class="mb-1 block text-sm font-medium">Descricao</span>
                 <input type="text" name="description" placeholder="Observacoes internas do contrato" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Parcelas</span>
+                <input type="number" min="0" name="billing_installments_qty" placeholder="Ex: 20" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Valor da parcela</span>
+                <input type="text" name="billing_installment_amount" placeholder="Ex: 350,00" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Primeiro vencimento</span>
+                <input type="date" name="billing_first_due_date" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Dia vencimento</span>
+                <input type="number" min="1" max="31" name="billing_day" placeholder="1-31" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Lembrete (dias)</span>
+                <input type="number" min="0" max="30" name="billing_reminder_days" value="3" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            </label>
             <div class="flex items-end">
                 <button class="w-full rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Criar solicitacao</button>
             </div>

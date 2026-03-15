@@ -140,6 +140,174 @@ class CompanyController extends BaseController
         $this->redirect('companies');
     }
 
+    public function smtp(): void
+    {
+        require_auth();
+        require_permission('companies');
+
+        $companyOptions = $this->companies->activeCompanies();
+        $selectedCompanyId = (int) request('company_id', (int) (current_company_id() ?? 0));
+
+        if ($selectedCompanyId <= 0 && $companyOptions !== []) {
+            $selectedCompanyId = (int) ($companyOptions[0]['id'] ?? 0);
+        }
+
+        $selectedCompany = $selectedCompanyId > 0 ? $this->companies->find($selectedCompanyId) : null;
+        if (!$selectedCompany && $companyOptions !== []) {
+            $selectedCompanyId = (int) ($companyOptions[0]['id'] ?? 0);
+            $selectedCompany = $selectedCompanyId > 0 ? $this->companies->find($selectedCompanyId) : null;
+        }
+
+        $integrationAvailable = $this->integrations->tableExists();
+        $smtpSettings = $this->normalizeSmtpSettings(
+            $this->integrations->mergeWithGlobalConfig('smtp', $selectedCompanyId)
+        );
+
+        $this->render('companies/smtp', [
+            'title' => 'Cadastro SMTP',
+            'companyOptions' => $companyOptions,
+            'selectedCompanyId' => $selectedCompanyId,
+            'selectedCompany' => $selectedCompany,
+            'smtpSettings' => $smtpSettings,
+            'integrationAvailable' => $integrationAvailable,
+        ]);
+    }
+
+    public function saveSmtp(): void
+    {
+        require_auth();
+        require_permission('companies');
+        csrf_validate();
+
+        if (!$this->integrations->tableExists()) {
+            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->redirect('companies/smtp');
+        }
+
+        $companyId = (int) post('company_id');
+        $company = $companyId > 0 ? $this->companies->find($companyId) : null;
+        if (!$company) {
+            $this->error('Empresa invalida para salvar SMTP.');
+            $this->redirect('companies/smtp');
+        }
+
+        $existing = $this->integrations->get($companyId, 'smtp');
+        $existingSettings = is_array($existing['settings'] ?? null) ? $existing['settings'] : [];
+        $smtp = $this->collectSmtpSettings($existingSettings);
+
+        if ($smtp['error'] !== null) {
+            $this->error((string) $smtp['error']);
+            $this->redirect('companies/smtp&company_id=' . $companyId);
+        }
+
+        $changedBy = (int) (current_user()['id'] ?? 0);
+        $this->integrations->save($companyId, 'smtp', $smtp['enabled'], $smtp['settings'], $changedBy);
+
+        $this->success('Configuracao SMTP atualizada com sucesso.');
+        $this->redirect('companies/smtp&company_id=' . $companyId);
+    }
+
+    public function testSmtp(): void
+    {
+        require_auth();
+        require_permission('companies');
+        csrf_validate();
+
+        $companyId = (int) post('company_id');
+        $company = $companyId > 0 ? $this->companies->find($companyId) : null;
+        if (!$company) {
+            $this->error('Empresa invalida para teste SMTP.');
+            $this->redirect('companies/smtp');
+        }
+
+        $existing = $this->integrations->tableExists() ? $this->integrations->get($companyId, 'smtp') : null;
+        $existingSettings = is_array($existing['settings'] ?? null) ? $existing['settings'] : [];
+        $smtp = $this->collectSmtpSettings($existingSettings);
+
+        if ($smtp['error'] !== null) {
+            $this->error((string) $smtp['error']);
+            $this->redirect('companies/smtp&company_id=' . $companyId);
+        }
+
+        $smtpSettings = is_array($smtp['settings'] ?? null) ? $smtp['settings'] : [];
+        $host = trim((string) ($smtpSettings['host'] ?? ''));
+        $fromEmail = strtolower(trim((string) ($smtpSettings['from_email'] ?? '')));
+        $fromName = trim((string) ($smtpSettings['from_name'] ?? config('app.name', 'ANEO Gestao')));
+        $replyTo = strtolower(trim((string) ($smtpSettings['reply_to'] ?? '')));
+
+        if ($host === '') {
+            $this->error('Informe o host SMTP para testar.');
+            $this->redirect('companies/smtp&company_id=' . $companyId);
+        }
+
+        if ($fromEmail === '' || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->error('Informe um e-mail remetente valido para teste.');
+            $this->redirect('companies/smtp&company_id=' . $companyId);
+        }
+
+        if ($replyTo !== '' && !filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+            $this->error('Informe um Reply-To valido para teste.');
+            $this->redirect('companies/smtp&company_id=' . $companyId);
+        }
+
+        $testEmail = strtolower(trim((string) post('smtp_test_email', (string) (current_user()['email'] ?? ''))));
+        if ($testEmail === '' || !filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->error('Informe um e-mail valido para receber o teste SMTP.');
+            $this->redirect('companies/smtp&company_id=' . $companyId);
+        }
+
+        $smtpOverride = $smtpSettings;
+        $smtpOverride['enabled'] = true;
+
+        $security = strtolower(trim((string) ($smtpOverride['security'] ?? 'tls')));
+        if (!in_array($security, ['none', 'tls', 'ssl'], true)) {
+            $security = 'tls';
+        }
+        $smtpOverride['security'] = $security;
+
+        $port = isset($smtpOverride['port']) && is_numeric((string) $smtpOverride['port'])
+            ? (int) $smtpOverride['port']
+            : 0;
+        if ($port <= 0) {
+            $port = $security === 'ssl' ? 465 : 587;
+        }
+        $smtpOverride['port'] = $port;
+
+        $timeout = isset($smtpOverride['timeout']) && is_numeric((string) $smtpOverride['timeout'])
+            ? (int) $smtpOverride['timeout']
+            : 20;
+        $smtpOverride['timeout'] = max(5, min(120, $timeout));
+
+        $mailer = new EmailService();
+        $subject = '[ANEO] Teste SMTP - ' . date('d/m/Y H:i:s');
+        $body = implode(PHP_EOL, [
+            'Teste de envio SMTP realizado com sucesso.',
+            '',
+            'Empresa ID: ' . $companyId,
+            'Host SMTP: ' . $host,
+            'Seguranca: ' . strtoupper($security),
+            'Data/Hora: ' . now(),
+            '',
+            'Mensagem automatica do sistema ANEO.',
+        ]);
+
+        $result = $mailer->send($testEmail, $subject, $body, [
+            'company_id' => $companyId,
+            'from_email' => $fromEmail,
+            'from_name' => $fromName !== '' ? $fromName : config('app.name', 'ANEO Gestao'),
+            'reply_to' => $replyTo,
+            'smtp_override' => $smtpOverride,
+        ]);
+
+        if (!empty($result['ok'])) {
+            $this->success('E-mail de teste enviado para ' . $testEmail . '.');
+        } else {
+            $this->error('Falha no teste SMTP: ' . (string) ($result['message'] ?? 'erro desconhecido.'));
+        }
+
+        $this->redirect('companies/smtp&company_id=' . $companyId);
+    }
+
     public function updateIntegrations(): void
     {
         require_auth();
@@ -256,6 +424,25 @@ class CompanyController extends BaseController
         $settings['max_tokens'] = isset($settings['max_tokens']) ? (string) $settings['max_tokens'] : '700';
         $settings['timeout_seconds'] = isset($settings['timeout_seconds']) ? (string) $settings['timeout_seconds'] : '30';
         $settings['history_messages'] = isset($settings['history_messages']) ? (string) $settings['history_messages'] : '8';
+        return $settings;
+    }
+
+    private function normalizeSmtpSettings(array $settings): array
+    {
+        $settings['enabled'] = !empty($settings['enabled']);
+        $settings['host'] = trim((string) ($settings['host'] ?? ''));
+        $settings['port'] = (string) ($settings['port'] ?? '587');
+        $settings['security'] = strtolower(trim((string) ($settings['security'] ?? 'tls')));
+        if (!in_array($settings['security'], ['none', 'tls', 'ssl'], true)) {
+            $settings['security'] = 'tls';
+        }
+        $settings['username'] = trim((string) ($settings['username'] ?? ''));
+        $settings['password'] = (string) ($settings['password'] ?? '');
+        $settings['from_email'] = trim((string) ($settings['from_email'] ?? config('support.from_email', '')));
+        $settings['from_name'] = trim((string) ($settings['from_name'] ?? config('app.name', 'ANEO Gestao')));
+        $settings['reply_to'] = trim((string) ($settings['reply_to'] ?? ''));
+        $settings['timeout'] = (string) ($settings['timeout'] ?? '20');
+
         return $settings;
     }
 
@@ -432,6 +619,74 @@ class CompanyController extends BaseController
 
         return [
             'enabled' => post('admin_ai_enabled') ? true : false,
+            'settings' => $settings,
+        ];
+    }
+
+    private function collectSmtpSettings(array $existingSettings = []): array
+    {
+        $enabled = post('smtp_enabled') ? true : false;
+        $host = trim((string) post('smtp_host'));
+        $portRaw = trim((string) post('smtp_port'));
+        $security = strtolower(trim((string) post('smtp_security', 'tls')));
+        $username = trim((string) post('smtp_username'));
+        $passwordRaw = (string) post('smtp_password');
+        $fromEmail = strtolower(trim((string) post('smtp_from_email')));
+        $fromName = trim((string) post('smtp_from_name'));
+        $replyTo = strtolower(trim((string) post('smtp_reply_to')));
+        $timeoutRaw = trim((string) post('smtp_timeout'));
+
+        if (!in_array($security, ['none', 'tls', 'ssl'], true)) {
+            $security = 'tls';
+        }
+
+        $port = is_numeric($portRaw) ? (int) $portRaw : 0;
+        if ($port <= 0) {
+            $port = $security === 'ssl' ? 465 : 587;
+        }
+        $port = max(1, min(65535, $port));
+
+        $timeout = is_numeric($timeoutRaw) ? (int) $timeoutRaw : 20;
+        $timeout = max(5, min(120, $timeout));
+
+        $password = trim($passwordRaw) !== '' ? $passwordRaw : (string) ($existingSettings['password'] ?? '');
+
+        if ($enabled) {
+            if ($host === '') {
+                return ['error' => 'Informe o host SMTP.', 'enabled' => $enabled, 'settings' => []];
+            }
+            if ($fromEmail === '' || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+                return ['error' => 'Informe um e-mail remetente valido.', 'enabled' => $enabled, 'settings' => []];
+            }
+            if ($replyTo !== '' && !filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                return ['error' => 'Informe um e-mail de resposta valido.', 'enabled' => $enabled, 'settings' => []];
+            }
+            if (($username !== '' && $password === '') || ($username === '' && $password !== '')) {
+                return ['error' => 'Usuario e senha SMTP devem ser informados juntos.', 'enabled' => $enabled, 'settings' => []];
+            }
+        }
+
+        $settings = [
+            'host' => $host,
+            'port' => $port,
+            'security' => $security,
+            'username' => $username,
+            'password' => $password,
+            'from_email' => $fromEmail,
+            'from_name' => $fromName,
+            'reply_to' => $replyTo,
+            'timeout' => $timeout,
+        ];
+
+        foreach ($settings as $key => $value) {
+            if (is_string($value) && trim($value) === '') {
+                unset($settings[$key]);
+            }
+        }
+
+        return [
+            'error' => null,
+            'enabled' => $enabled,
             'settings' => $settings,
         ];
     }

@@ -20,20 +20,8 @@ class SupportTicketDispatchService
             ];
         }
 
-        if (!function_exists('mail')) {
-            return [
-                'ok' => false,
-                'message' => 'Funcao mail() indisponivel neste servidor.',
-            ];
-        }
-
         $subject = '[Chamado ' . (string) ($ticket['ticket_code'] ?? '#') . '] ' . (string) ($ticket['subject'] ?? 'Novo chamado');
         $from = trim((string) config('support.from_email', 'nao-responda@aneo.local'));
-        $headers = [
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'From: ' . $from,
-        ];
 
         $bodyLines = [
             'Novo chamado registrado no ANEO.',
@@ -59,10 +47,24 @@ class SupportTicketDispatchService
             }
         }
 
-        $sent = @mail($to, $subject, implode(PHP_EOL, $bodyLines), implode("\r\n", $headers));
+        $companyId = (int) ($ticket['company_id'] ?? current_company_id() ?? 0);
+        $mailer = new EmailService();
+        $result = $mailer->send(
+            $to,
+            $subject,
+            implode(PHP_EOL, $bodyLines),
+            [
+                'company_id' => $companyId,
+                'from_email' => $from,
+                'from_name' => config('app.name', 'ANEO Gestao'),
+            ]
+        );
+
         return [
-            'ok' => $sent ? true : false,
-            'message' => $sent ? 'Email enviado para ' . $to . '.' : 'Falha ao enviar email para ' . $to . '.',
+            'ok' => !empty($result['ok']),
+            'message' => !empty($result['ok'])
+                ? 'Email enviado para ' . $to . '.'
+                : ((string) ($result['message'] ?? 'Falha ao enviar email para ' . $to . '.')),
             'to' => $to,
         ];
     }
