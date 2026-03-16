@@ -5,12 +5,14 @@ class CourseController extends BaseController
     private CourseModel $courses;
     private StudentModel $students;
     private AcademicCalendarModel $calendar;
+    private AuditLogService $audit;
 
     public function __construct()
     {
         $this->courses = new CourseModel();
         $this->students = new StudentModel();
         $this->calendar = new AcademicCalendarModel();
+        $this->audit = new AuditLogService();
     }
 
     public function index(): void
@@ -279,6 +281,151 @@ class CourseController extends BaseController
         }
 
         $this->redirect('courses/enrollments');
+    }
+
+    public function trialAccess(): void
+    {
+        require_auth();
+        require_permission('courses.enrollment');
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        $featureAvailable = $this->courses->trialAccessFeatureAvailable();
+        $trialResult = $featureAvailable
+            ? $this->courses->listTrialAccesses($perPage, $page)
+            : ['rows' => [], 'meta' => pagination_meta(0, $perPage, $page)];
+
+        $publishedCourses = $this->courses->listCourses(['status' => 'published'], 1000, 1);
+
+        $this->render('courses/trial_access', [
+            'title' => 'Acesso de Degustacao',
+            'featureAvailable' => $featureAvailable,
+            'rows' => $trialResult['rows'],
+            'meta' => $trialResult['meta'],
+            'courses' => $publishedCourses['rows'],
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+        ]);
+    }
+
+    public function storeTrialAccess(): void
+    {
+        require_auth();
+        require_permission('courses.enrollment');
+        csrf_validate();
+
+        if (!$this->courses->trialAccessFeatureAvailable()) {
+            $this->error('Funcionalidade de degustacao indisponivel no banco. Execute a migracao correspondente.');
+            $this->redirect('courses/trial-access');
+        }
+
+        try {
+            $created = $this->courses->createTrialAccess([
+                'student_name' => trim((string) post('student_name')),
+                'student_email' => trim((string) post('student_email')),
+                'student_phone' => trim((string) post('student_phone')),
+                'course_id' => (int) post('course_id'),
+                'access_date' => trim((string) post('access_date')),
+            ], (int) current_user()['id']);
+
+            $this->audit->log([
+                'module' => 'cursos.degustacao',
+                'action' => 'create',
+                'entity_type' => 'course_trial_access',
+                'entity_id' => (int) ($created['id'] ?? 0),
+                'entity_label' => (string) ($created['student_name'] ?? 'Aluno degustacao'),
+                'description' => 'Acesso de degustacao criado para curso EAD.',
+                'before' => [],
+                'after' => [
+                    'student_id' => (int) ($created['student_id'] ?? 0),
+                    'student_name' => (string) ($created['student_name'] ?? ''),
+                    'course_id' => (int) ($created['course_id'] ?? 0),
+                    'course_name' => (string) ($created['course_name'] ?? ''),
+                    'access_date' => (string) ($created['access_date'] ?? ''),
+                    'portal_login' => (string) ($created['portal_login'] ?? ''),
+                    'status' => 'active',
+                ],
+                'metadata' => [
+                    'access_scope' => 'live_only',
+                ],
+            ]);
+
+            $accessDate = trim((string) ($created['access_date'] ?? ''));
+            $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
+
+            $this->success(
+                'Acesso de degustacao criado com sucesso. Login: '
+                . (string) ($created['portal_login'] ?? '')
+                . ' | Senha: '
+                . (string) ($created['portal_password'] ?? '')
+                . ' | Data liberada: '
+                . $formattedDate
+                . '.'
+            );
+        } catch (Throwable $e) {
+            $this->error('Falha ao criar acesso de degustacao: ' . $e->getMessage());
+        }
+
+        $this->redirect('courses/trial-access');
+    }
+
+    public function revokeTrialAccess(): void
+    {
+        require_auth();
+        require_permission('courses.enrollment');
+        csrf_validate();
+
+        if (!$this->courses->trialAccessFeatureAvailable()) {
+            $this->error('Funcionalidade de degustacao indisponivel no banco.');
+            $this->redirect('courses/trial-access');
+        }
+
+        $trialAccessId = (int) post('id');
+        if ($trialAccessId <= 0) {
+            $this->error('Acesso de degustacao invalido.');
+            $this->redirect('courses/trial-access');
+        }
+
+        $before = $this->courses->findTrialAccess($trialAccessId);
+        if (!$before) {
+            $this->error('Acesso de degustacao nao encontrado.');
+            $this->redirect('courses/trial-access');
+        }
+
+        if (!$this->courses->revokeTrialAccess($trialAccessId)) {
+            $this->error('Nao foi possivel revogar o acesso de degustacao.');
+            $this->redirect('courses/trial-access');
+        }
+
+        $after = $before;
+        $after['status'] = 'revoked';
+
+        $this->audit->log([
+            'module' => 'cursos.degustacao',
+            'action' => 'revoke',
+            'entity_type' => 'course_trial_access',
+            'entity_id' => $trialAccessId,
+            'entity_label' => (string) ($before['student_name'] ?? 'Aluno degustacao'),
+            'description' => 'Acesso de degustacao revogado.',
+            'before' => [
+                'status' => (string) ($before['status'] ?? 'active'),
+            ],
+            'after' => [
+                'status' => 'revoked',
+            ],
+            'metadata' => [
+                'course_id' => (int) ($before['course_id'] ?? 0),
+                'course_name' => (string) ($before['course_name'] ?? ''),
+                'access_date' => (string) ($before['access_date'] ?? ''),
+                'portal_login' => (string) ($before['portal_login'] ?? ''),
+            ],
+        ]);
+
+        $this->success('Acesso de degustacao revogado.');
+        $this->redirect('courses/trial-access');
     }
 
     public function exams(): void

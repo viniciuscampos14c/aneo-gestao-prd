@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS course_trial_accesses (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    student_id INT UNSIGNED NOT NULL,
+    course_id INT UNSIGNED NOT NULL,
+    access_date DATE NOT NULL,
+    access_scope ENUM('live_only') NOT NULL DEFAULT 'live_only',
+    status ENUM('active', 'expired', 'revoked') NOT NULL DEFAULT 'active',
+    last_login_at DATETIME NULL,
+    created_by INT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_course_trial_access_company_date (company_id, access_date),
+    INDEX idx_course_trial_access_student (student_id),
+    INDEX idx_course_trial_access_course (course_id),
+    INDEX idx_course_trial_access_status (status),
+    CONSTRAINT fk_course_trial_access_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_course_trial_access_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_course_trial_access_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_course_trial_access_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

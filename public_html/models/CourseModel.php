@@ -5,6 +5,7 @@ class CourseModel extends BaseModel
     private ?bool $examScheduleColumnExists = null;
     private ?bool $courseCompanyColumnExists = null;
     private ?bool $categoryCompanyColumnExists = null;
+    private ?bool $trialAccessTableExists = null;
 
     public function categories(): array
     {
@@ -446,6 +447,289 @@ class CourseModel extends BaseModel
         ]);
     }
 
+    public function trialAccessFeatureAvailable(): bool
+    {
+        return $this->hasTrialAccessTable();
+    }
+
+    public function listTrialAccesses(int $perPage, int $page): array
+    {
+        if (!$this->hasTrialAccessTable()) {
+            return [
+                'rows' => [],
+                'meta' => pagination_meta(0, $perPage, $page),
+            ];
+        }
+
+        $countSql = "SELECT COUNT(*)
+            FROM course_trial_accesses ta
+            INNER JOIN students s ON s.id = ta.student_id
+            INNER JOIN courses c ON c.id = ta.course_id
+            WHERE ta.company_id = :company_id";
+
+        $dataSql = "SELECT
+                ta.id,
+                ta.student_id,
+                ta.course_id,
+                ta.access_date,
+                ta.access_scope,
+                ta.status,
+                ta.last_login_at,
+                ta.created_at,
+                s.full_name AS student_name,
+                s.email_primary AS student_email,
+                s.phone AS student_phone,
+                spa.login AS portal_login,
+                c.name AS course_name
+            FROM course_trial_accesses ta
+            INNER JOIN students s ON s.id = ta.student_id
+            INNER JOIN courses c ON c.id = ta.course_id
+            LEFT JOIN student_portal_accounts spa ON spa.student_id = s.id
+            WHERE ta.company_id = :company_id
+            ORDER BY ta.id DESC";
+
+        return $this->paginate($countSql, $dataSql, [':company_id' => $this->companyId()], $perPage, $page);
+    }
+
+    public function findTrialAccess(int $trialAccessId): ?array
+    {
+        if (!$this->hasTrialAccessTable() || $trialAccessId <= 0) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                ta.id,
+                ta.student_id,
+                ta.course_id,
+                ta.access_date,
+                ta.access_scope,
+                ta.status,
+                ta.last_login_at,
+                ta.created_at,
+                s.full_name AS student_name,
+                s.email_primary AS student_email,
+                spa.login AS portal_login,
+                c.name AS course_name
+            FROM course_trial_accesses ta
+            INNER JOIN students s ON s.id = ta.student_id
+            INNER JOIN courses c ON c.id = ta.course_id
+            LEFT JOIN student_portal_accounts spa ON spa.student_id = s.id
+            WHERE ta.id = :id
+              AND ta.company_id = :company_id
+            LIMIT 1");
+        $stmt->execute([
+            ':id' => $trialAccessId,
+            ':company_id' => $this->companyId(),
+        ]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function createTrialAccess(array $data, int $createdBy): array
+    {
+        if (!$this->hasTrialAccessTable()) {
+            throw new RuntimeException('Tabela de degustacao nao encontrada no banco.');
+        }
+
+        $companyId = $this->companyId();
+        if ($companyId <= 0) {
+            throw new RuntimeException('Empresa atual nao definida.');
+        }
+
+        $studentName = trim((string) ($data['student_name'] ?? ''));
+        $studentEmail = trim((string) ($data['student_email'] ?? ''));
+        $studentPhone = trim((string) ($data['student_phone'] ?? ''));
+        $courseId = (int) ($data['course_id'] ?? 0);
+        $accessDate = $this->normalizeDate((string) ($data['access_date'] ?? ''));
+
+        if ($studentName === '') {
+            throw new RuntimeException('Nome do aluno obrigatorio.');
+        }
+
+        if ($courseId <= 0 || !$this->findCourse($courseId)) {
+            throw new RuntimeException('Curso invalido para esta empresa.');
+        }
+
+        if ($accessDate === null) {
+            throw new RuntimeException('Data de acesso invalida.');
+        }
+
+        $course = $this->findCourse($courseId);
+        if (!$course) {
+            throw new RuntimeException('Curso nao encontrado.');
+        }
+
+        $login = $this->generateTrialPortalLogin($studentName);
+        $plainPassword = $this->generateTrialPassword();
+
+        try {
+            $this->db->beginTransaction();
+
+            $studentStmt = $this->db->prepare('INSERT INTO students (
+                company_id, full_name, primary_contact, email_primary, phone, is_active,
+                admin_info, notes, monthly_fee, billing_day, kanban_status_id, created_by, created_at, updated_at
+            ) VALUES (
+                :company_id, :full_name, :primary_contact, :email_primary, :phone, :is_active,
+                :admin_info, :notes, :monthly_fee, :billing_day, :kanban_status_id, :created_by, :created_at, :updated_at
+            )');
+
+            $studentStmt->execute([
+                ':company_id' => $companyId,
+                ':full_name' => $studentName,
+                ':primary_contact' => $studentName,
+                ':email_primary' => $studentEmail !== '' ? $studentEmail : null,
+                ':phone' => $studentPhone !== '' ? $studentPhone : null,
+                ':is_active' => 1,
+                ':admin_info' => 'Acesso degustacao Cursos EAD',
+                ':notes' => 'Acesso de degustacao para o curso "' . trim((string) ($course['name'] ?? '')) . '" em ' . $accessDate,
+                ':monthly_fee' => 0,
+                ':billing_day' => null,
+                ':kanban_status_id' => null,
+                ':created_by' => $createdBy,
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+
+            $studentId = (int) $this->db->lastInsertId();
+
+            $portalStmt = $this->db->prepare('INSERT INTO student_portal_accounts (
+                student_id, login, password_hash, is_active, created_at, updated_at
+            ) VALUES (
+                :student_id, :login, :password_hash, :is_active, :created_at, :updated_at
+            )');
+            $portalStmt->execute([
+                ':student_id' => $studentId,
+                ':login' => $login,
+                ':password_hash' => password_hash($plainPassword, PASSWORD_DEFAULT),
+                ':is_active' => 1,
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+
+            $enrollmentStmt = $this->db->prepare('INSERT INTO enrollments (
+                student_id, course_id, status, progress_percent, started_at, completed_at, created_by, created_at, updated_at
+            ) VALUES (
+                :student_id, :course_id, :status, :progress_percent, :started_at, :completed_at, :created_by, :created_at, :updated_at
+            )');
+            $enrollmentStmt->execute([
+                ':student_id' => $studentId,
+                ':course_id' => $courseId,
+                ':status' => 'active',
+                ':progress_percent' => 0,
+                ':started_at' => $accessDate,
+                ':completed_at' => $accessDate,
+                ':created_by' => $createdBy,
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+
+            $trialStmt = $this->db->prepare('INSERT INTO course_trial_accesses (
+                company_id, student_id, course_id, access_date, access_scope, status, last_login_at, created_by, created_at, updated_at
+            ) VALUES (
+                :company_id, :student_id, :course_id, :access_date, :access_scope, :status, :last_login_at, :created_by, :created_at, :updated_at
+            )');
+            $trialStmt->execute([
+                ':company_id' => $companyId,
+                ':student_id' => $studentId,
+                ':course_id' => $courseId,
+                ':access_date' => $accessDate,
+                ':access_scope' => 'live_only',
+                ':status' => 'active',
+                ':last_login_at' => null,
+                ':created_by' => $createdBy,
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+
+            $trialAccessId = (int) $this->db->lastInsertId();
+
+            $this->db->commit();
+
+            return [
+                'id' => $trialAccessId,
+                'student_id' => $studentId,
+                'course_id' => $courseId,
+                'course_name' => trim((string) ($course['name'] ?? '')),
+                'student_name' => $studentName,
+                'student_email' => $studentEmail,
+                'portal_login' => $login,
+                'portal_password' => $plainPassword,
+                'access_date' => $accessDate,
+            ];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            throw $e;
+        }
+    }
+
+    public function revokeTrialAccess(int $trialAccessId): bool
+    {
+        if (!$this->hasTrialAccessTable() || $trialAccessId <= 0) {
+            return false;
+        }
+
+        $current = $this->findTrialAccess($trialAccessId);
+        if (!$current) {
+            return false;
+        }
+
+        $studentId = (int) ($current['student_id'] ?? 0);
+        if ($studentId <= 0) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $trialStmt = $this->db->prepare('UPDATE course_trial_accesses SET
+                status = :status,
+                updated_at = :updated_at
+                WHERE id = :id
+                  AND company_id = :company_id');
+            $trialStmt->execute([
+                ':status' => 'revoked',
+                ':updated_at' => now(),
+                ':id' => $trialAccessId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            $portalStmt = $this->db->prepare("UPDATE student_portal_accounts spa
+                INNER JOIN students s ON s.id = spa.student_id
+                SET spa.is_active = 0, spa.updated_at = :updated_at
+                WHERE spa.student_id = :student_id
+                  AND s.company_id = :company_id");
+            $portalStmt->execute([
+                ':updated_at' => now(),
+                ':student_id' => $studentId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            $studentStmt = $this->db->prepare('UPDATE students SET
+                is_active = 0,
+                updated_at = :updated_at
+                WHERE id = :student_id
+                  AND company_id = :company_id');
+            $studentStmt->execute([
+                ':updated_at' => now(),
+                ':student_id' => $studentId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            $this->db->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            return false;
+        }
+    }
+
     public function listExams(array $filters, int $perPage, int $page): array
     {
         $where = ['1=1'];
@@ -786,6 +1070,78 @@ class CourseModel extends BaseModel
         return (bool) $stmt->fetchColumn();
     }
 
+    private function normalizeDate(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return null;
+        }
+
+        $ts = strtotime($value . ' 00:00:00');
+        if ($ts === false) {
+            return null;
+        }
+
+        return date('Y-m-d', $ts);
+    }
+
+    private function generateTrialPortalLogin(string $studentName): string
+    {
+        $base = $this->buildLoginBase($studentName);
+        for ($i = 0; $i < 30; $i++) {
+            $candidate = $base . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+            if (!$this->portalLoginExists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return 'degustacao' . date('YmdHis') . random_int(100, 999);
+    }
+
+    private function buildLoginBase(string $studentName): string
+    {
+        $normalized = strtolower($studentName);
+        if (function_exists('iconv')) {
+            $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized);
+            if ($converted !== false) {
+                $normalized = $converted;
+            }
+        }
+        $normalized = preg_replace('/[^a-z0-9]/', '', $normalized) ?: '';
+        if ($normalized === '') {
+            $normalized = 'degustacao';
+        }
+
+        $normalized = substr($normalized, 0, 12);
+
+        return $normalized . '.';
+    }
+
+    private function portalLoginExists(string $login): bool
+    {
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM student_portal_accounts WHERE login = :login');
+        $stmt->execute([':login' => $login]);
+        return ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    private function generateTrialPassword(int $length = 8): string
+    {
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        $max = strlen($chars) - 1;
+        $length = max(6, $length);
+        $password = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $chars[random_int(0, $max)];
+        }
+
+        return $password;
+    }
+
     private function hasExamScheduleColumn(): bool
     {
         if ($this->examScheduleColumnExists !== null) {
@@ -835,5 +1191,21 @@ class CourseModel extends BaseModel
         $this->categoryCompanyColumnExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->categoryCompanyColumnExists;
+    }
+
+    private function hasTrialAccessTable(): bool
+    {
+        if ($this->trialAccessTableExists !== null) {
+            return $this->trialAccessTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_trial_accesses'");
+        $stmt->execute();
+        $this->trialAccessTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->trialAccessTableExists;
     }
 }

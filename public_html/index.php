@@ -20,6 +20,7 @@ $requests = new RequestsController();
 $search = new SearchController();
 $users = new UserController();
 $companies = new CompanyController();
+$license = new LicenseController();
 $systemLogs = new SystemLogController();
 $chatwoot = new ChatwootController();
 $chatwootWebhook = new ChatwootWebhookController();
@@ -67,12 +68,14 @@ $router->post('users/delete', fn () => $users->delete());
 
 $router->get('companies', fn () => $companies->index());
 $router->get('companies/smtp', fn () => $companies->smtp());
+$router->get('companies/license', fn () => $license->index());
 $router->post('companies/store', fn () => $companies->store());
 $router->post('companies/update', fn () => $companies->update());
 $router->post('companies/toggle', fn () => $companies->toggle());
 $router->post('companies/integrations/update', fn () => $companies->updateIntegrations());
 $router->post('companies/smtp/save', fn () => $companies->saveSmtp());
 $router->post('companies/smtp/test', fn () => $companies->testSmtp());
+$router->post('companies/license/activate', fn () => $license->activate());
 $router->get('system/logs', fn () => $systemLogs->index());
 
 $router->get('ai-chat', fn () => $adminAi->index());
@@ -175,6 +178,9 @@ $router->post('courses/categories/delete', fn () => $courses->deleteCategory());
 
 $router->get('courses/enrollments', fn () => $courses->enrollments());
 $router->post('courses/enrollments/store', fn () => $courses->storeEnrollment());
+$router->get('courses/trial-access', fn () => $courses->trialAccess());
+$router->post('courses/trial-access/store', fn () => $courses->storeTrialAccess());
+$router->post('courses/trial-access/revoke', fn () => $courses->revokeTrialAccess());
 
 $router->get('courses/calendar', fn () => $courses->calendar());
 $router->post('courses/activities/store', fn () => $courses->storeActivity());

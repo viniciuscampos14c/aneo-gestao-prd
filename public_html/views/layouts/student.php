@@ -11,6 +11,8 @@
 <?php
 $currentRoute = parse_route();
 $student = current_student();
+$trialAccess = current_student_trial_access();
+$isTrialAccess = $trialAccess !== null;
 $studentPhoto = trim((string) ($student['profile_photo'] ?? ''));
 $studentName = trim((string) ($student['name'] ?? 'Aluno'));
 $nameParts = array_values(array_filter(preg_split('/\s+/', $studentName) ?: [], fn ($part) => $part !== ''));
@@ -21,16 +23,21 @@ if ($nameParts !== []) {
     $last = strtoupper(substr($lastPart, 0, 1));
     $studentInitials = $first . ($last ?: '');
 }
-$menu = [
-    ['label' => 'Inicio', 'route' => 'student/dashboard'],
-    ['label' => 'Meus Cursos', 'route' => 'student/courses'],
-    ['label' => 'Agenda', 'route' => 'student/calendar'],
-    ['label' => 'Aulas ao Vivo', 'route' => 'student/live'],
-    ['label' => 'Materiais', 'route' => 'student/materials'],
-    ['label' => 'Arsenal', 'route' => 'student/arsenal'],
-    ['label' => 'Progresso', 'route' => 'student/progress'],
-    ['label' => 'Avaliacoes', 'route' => 'student/exams'],
-];
+$menu = $isTrialAccess
+    ? [
+        ['label' => 'Inicio', 'route' => 'student/dashboard'],
+        ['label' => 'Aulas ao Vivo', 'route' => 'student/live'],
+    ]
+    : [
+        ['label' => 'Inicio', 'route' => 'student/dashboard'],
+        ['label' => 'Meus Cursos', 'route' => 'student/courses'],
+        ['label' => 'Agenda', 'route' => 'student/calendar'],
+        ['label' => 'Aulas ao Vivo', 'route' => 'student/live'],
+        ['label' => 'Materiais', 'route' => 'student/materials'],
+        ['label' => 'Arsenal', 'route' => 'student/arsenal'],
+        ['label' => 'Progresso', 'route' => 'student/progress'],
+        ['label' => 'Avaliacoes', 'route' => 'student/exams'],
+    ];
 ?>
 <div class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-sky-100 bg-white/90 backdrop-blur">
@@ -63,6 +70,13 @@ $menu = [
             <?php endforeach; ?>
             <a href="<?= route('student/logout'); ?>" class="rounded-lg border border-rose-200 bg-white/90 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">Sair</a>
         </nav>
+        <?php if ($isTrialAccess): ?>
+            <div class="mx-auto max-w-7xl px-4 pb-4 lg:px-8">
+                <div class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
+                    Acesso degustacao ativo para o curso <strong><?= e((string) ($trialAccess['course_name'] ?? '')); ?></strong> em <?= e(date('d/m/Y', strtotime((string) ($trialAccess['access_date'] ?? date('Y-m-d'))))); ?>.
+                </div>
+            </div>
+        <?php endif; ?>
     </header>
 
     <main class="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">

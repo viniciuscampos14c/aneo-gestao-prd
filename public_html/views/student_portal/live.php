@@ -1,8 +1,17 @@
+<?php
+$trialAccess = current_student_trial_access();
+?>
 <section class="space-y-6">
     <div>
         <h2 class="text-2xl font-semibold">Proximas Aulas ao Vivo</h2>
-        <p class="text-sm text-slate-500">Encontros sincronos vinculados aos seus cursos ativos.</p>
+        <p class="text-sm text-slate-500">Encontros sincronos vinculados ao seu acesso atual.</p>
     </div>
+
+    <?php if ($trialAccess !== null): ?>
+        <div class="rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+            Seu acesso de degustacao permite visualizar apenas a aula ao vivo do curso liberado para hoje.
+        </div>
+    <?php endif; ?>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table class="min-w-full text-sm">

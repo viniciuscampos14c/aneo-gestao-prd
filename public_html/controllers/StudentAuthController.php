@@ -49,6 +49,26 @@ class StudentAuthController extends BaseController
             $this->redirect('student/login');
         }
 
+        $trialContext = $this->portal->trialAccessContext((int) $account['student_id']);
+        if (!empty($trialContext['is_trial']) && empty($trialContext['allowed_today'])) {
+            $accessDate = trim((string) ($trialContext['access_date'] ?? ''));
+            $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
+            $status = trim((string) ($trialContext['status'] ?? ''));
+
+            if ($status === 'revoked') {
+                $this->error('Este acesso de degustacao foi revogado pelo administrador.');
+                $this->redirect('student/login');
+            }
+
+            if ($status === 'expired') {
+                $this->error('Este acesso de degustacao expirou. O dia liberado foi ' . $formattedDate . '.');
+                $this->redirect('student/login');
+            }
+
+            $this->error('Acesso de degustacao permitido apenas em ' . $formattedDate . '.');
+            $this->redirect('student/login');
+        }
+
         if (hash_equals((string) $account['password_hash'], $password)) {
             $stmt = db()->prepare('UPDATE student_portal_accounts SET password_hash = :password_hash, updated_at = :updated_at WHERE id = :id');
             $stmt->execute([
@@ -69,9 +89,21 @@ class StudentAuthController extends BaseController
             'phone' => $account['phone'],
             'profile_photo' => $account['profile_photo'],
             'login' => $account['login'],
+            'trial_access' => !empty($trialContext['is_trial']) ? [
+                'is_trial' => true,
+                'allowed_today' => true,
+                'course_id' => (int) ($trialContext['course_id'] ?? 0),
+                'course_name' => (string) ($trialContext['course_name'] ?? ''),
+                'access_date' => (string) ($trialContext['access_date'] ?? ''),
+                'status' => (string) ($trialContext['status'] ?? ''),
+                'access_scope' => (string) ($trialContext['access_scope'] ?? ''),
+            ] : null,
         ];
 
         $this->portal->updateLastLogin((int) $account['id']);
+        if (!empty($trialContext['is_trial'])) {
+            $this->portal->registerTrialLogin((int) $account['student_id']);
+        }
 
         $this->success('Login do aluno realizado com sucesso.');
         $this->redirect('student/dashboard');

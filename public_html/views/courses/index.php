@@ -6,6 +6,7 @@ $canComment = has_permission('courses.comment');
 $canCreate = has_permission('courses.create');
 $canEdit = has_permission('courses.edit');
 $canDelete = has_permission('courses.delete');
+$canTrial = has_permission('courses.enrollment');
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -19,6 +20,9 @@ $canDelete = has_permission('courses.delete');
             <?php endif; ?>
             <?php if ($canEnrollment): ?>
                 <a href="<?= route('courses/enrollments'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Matriculas</a>
+            <?php endif; ?>
+            <?php if ($canTrial): ?>
+                <a href="<?= route('courses/trial-access'); ?>" class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-100">Degustacao</a>
             <?php endif; ?>
             <a href="<?= route('courses/calendar'); ?>" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-100">Agenda Academica</a>
             <?php if ($canExam): ?>

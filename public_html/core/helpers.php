@@ -135,6 +135,26 @@ function is_student_logged_in(): bool
     return current_student() !== null;
 }
 
+function current_student_trial_access(): ?array
+{
+    $student = current_student();
+    if (!is_array($student)) {
+        return null;
+    }
+
+    $trial = $student['trial_access'] ?? null;
+    if (!is_array($trial) || empty($trial['is_trial'])) {
+        return null;
+    }
+
+    return $trial;
+}
+
+function is_student_trial_access(): bool
+{
+    return current_student_trial_access() !== null;
+}
+
 function role_label(?string $role): string
 {
     return config('roles.' . $role . '.label', ucfirst((string) $role));
@@ -175,6 +195,8 @@ function require_auth(): void
     if (!in_array($route, ['select-company', 'set-company', 'logout'], true) && current_company_id() === null) {
         redirect('select-company');
     }
+
+    enforce_current_company_license($route);
 }
 
 function require_permission(string $module): void
@@ -194,10 +216,139 @@ function require_admin(): void
     }
 }
 
+function licensing_enabled(): bool
+{
+    return (bool) config('licensing.enabled', false);
+}
+
+function licensing_enforced(): bool
+{
+    return licensing_enabled() && (bool) config('licensing.enforce', false);
+}
+
+function enforce_current_company_license(?string $route = null): void
+{
+    if (!licensing_enforced()) {
+        return;
+    }
+
+    $route = trim((string) ($route ?? parse_route()));
+    if ($route === '') {
+        return;
+    }
+
+    $allowedRoutes = [
+        'select-company',
+        'set-company',
+        'logout',
+        'companies/license',
+        'companies/license/activate',
+    ];
+    if (in_array($route, $allowedRoutes, true)) {
+        return;
+    }
+
+    $companyId = (int) (current_company_id() ?? 0);
+    if ($companyId <= 0) {
+        return;
+    }
+
+    $license = new LicenseService();
+    if (!$license->available()) {
+        return;
+    }
+
+    $status = $license->currentStatus($companyId);
+    if (!empty($status['is_valid']) || !empty($status['within_grace'])) {
+        return;
+    }
+
+    if (is_admin()) {
+        flash('error', 'Licenca expirada para a empresa atual. Renove em Cadastro > Licenca.');
+        redirect('companies/license&company_id=' . $companyId);
+    }
+
+    flash('error', 'Licenca expirada para a empresa atual. Contate um administrador.');
+    redirect('logout');
+}
+
 function require_student_auth(): void
 {
     if (!is_student_logged_in()) {
         redirect('student/login');
+    }
+
+    enforce_student_trial_access(parse_route());
+}
+
+function enforce_student_trial_access(?string $route = null): void
+{
+    $student = current_student();
+    if (!is_array($student)) {
+        return;
+    }
+
+    $trial = current_student_trial_access();
+    $studentId = (int) ($student['id'] ?? 0);
+    if ($studentId > 0) {
+        $portal = new StudentPortalModel();
+        $freshTrial = $portal->trialAccessContext($studentId);
+        if (!empty($freshTrial['is_trial'])) {
+            $_SESSION['student']['trial_access'] = [
+                'is_trial' => true,
+                'allowed_today' => !empty($freshTrial['allowed_today']),
+                'course_id' => (int) ($freshTrial['course_id'] ?? 0),
+                'course_name' => (string) ($freshTrial['course_name'] ?? ''),
+                'access_date' => (string) ($freshTrial['access_date'] ?? ''),
+                'status' => (string) ($freshTrial['status'] ?? ''),
+                'access_scope' => (string) ($freshTrial['access_scope'] ?? ''),
+            ];
+            $trial = $_SESSION['student']['trial_access'];
+        } else {
+            unset($_SESSION['student']['trial_access']);
+            $trial = null;
+        }
+    }
+
+    if ($trial === null || empty($trial['is_trial'])) {
+        return;
+    }
+
+    $accessDate = trim((string) ($trial['access_date'] ?? ''));
+    $today = date('Y-m-d');
+    $status = trim((string) ($trial['status'] ?? ''));
+
+    if ($status === 'revoked') {
+        unset($_SESSION['student']);
+        flash('error', 'Este acesso de degustacao foi revogado pelo administrador.');
+        redirect('student/login');
+    }
+
+    if ($status === 'expired') {
+        unset($_SESSION['student']);
+        $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
+        flash('error', 'Este acesso de degustacao expirou. O dia liberado foi ' . $formattedDate . '.');
+        redirect('student/login');
+    }
+
+    if ($accessDate === '' || $accessDate !== $today || empty($trial['allowed_today'])) {
+        unset($_SESSION['student']);
+        $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
+        flash('error', 'Acesso de degustacao permitido apenas em ' . $formattedDate . '.');
+        redirect('student/login');
+    }
+
+    $route = trim((string) ($route ?? parse_route()));
+    $allowedRoutes = [
+        'student',
+        'student/dashboard',
+        'student/live',
+        'student/logout',
+    ];
+
+    if (!in_array($route, $allowedRoutes, true)) {
+        flash('error', 'Acesso de degustacao permite apenas aula ao vivo do curso liberado.');
+        redirect('student/live');
     }
 }
 

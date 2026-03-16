@@ -13,6 +13,7 @@ class StudentPortalModel extends BaseModel
     private ?bool $arsenalItemCoursesTableExists = null;
     private ?bool $arsenalItemStudentsTableExists = null;
     private ?bool $arsenalAccessLogsTableExists = null;
+    private ?bool $trialAccessTableExists = null;
 
     public function portalFeatureAvailable(): bool
     {
@@ -81,8 +82,117 @@ class StudentPortalModel extends BaseModel
         ]);
     }
 
+    public function trialAccessContext(int $studentId, ?string $referenceDate = null): array
+    {
+        $context = [
+            'is_trial' => false,
+            'allowed_today' => false,
+            'course_id' => 0,
+            'course_name' => '',
+            'access_date' => '',
+            'status' => '',
+            'access_scope' => '',
+        ];
+
+        if ($studentId <= 0 || !$this->hasTrialAccessTable()) {
+            return $context;
+        }
+
+        $referenceDate = trim((string) $referenceDate);
+        if ($referenceDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $referenceDate)) {
+            $referenceDate = date('Y-m-d');
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                ta.id,
+                ta.course_id,
+                ta.access_date,
+                ta.access_scope,
+                ta.status,
+                ta.last_login_at,
+                c.name AS course_name
+            FROM course_trial_accesses ta
+            INNER JOIN courses c ON c.id = ta.course_id
+            WHERE ta.student_id = :student_id
+            ORDER BY ta.id DESC
+            LIMIT 1");
+        $stmt->execute([':student_id' => $studentId]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            return $context;
+        }
+
+        $status = trim((string) ($row['status'] ?? ''));
+        $accessDate = trim((string) ($row['access_date'] ?? ''));
+
+        if ($status === 'active' && $accessDate !== '' && $accessDate < $referenceDate) {
+            $expireStmt = $this->db->prepare('UPDATE course_trial_accesses SET status = :status, updated_at = :updated_at WHERE id = :id');
+            $expireStmt->execute([
+                ':status' => 'expired',
+                ':updated_at' => now(),
+                ':id' => (int) $row['id'],
+            ]);
+            $status = 'expired';
+        }
+
+        $context['is_trial'] = true;
+        $context['allowed_today'] = $status === 'active' && $accessDate === $referenceDate;
+        $context['course_id'] = (int) ($row['course_id'] ?? 0);
+        $context['course_name'] = trim((string) ($row['course_name'] ?? ''));
+        $context['access_date'] = $accessDate;
+        $context['status'] = $status;
+        $context['access_scope'] = trim((string) ($row['access_scope'] ?? ''));
+
+        return $context;
+    }
+
+    public function registerTrialLogin(int $studentId): void
+    {
+        if ($studentId <= 0 || !$this->hasTrialAccessTable()) {
+            return;
+        }
+
+        $today = date('Y-m-d');
+        $stmt = $this->db->prepare('UPDATE course_trial_accesses
+            SET last_login_at = :last_login_at, updated_at = :updated_at
+            WHERE student_id = :student_id
+              AND status = :status
+              AND access_date = :access_date');
+        $stmt->execute([
+            ':last_login_at' => now(),
+            ':updated_at' => now(),
+            ':student_id' => $studentId,
+            ':status' => 'active',
+            ':access_date' => $today,
+        ]);
+    }
+
     public function dashboardSummary(int $studentId): array
     {
+        $trial = $this->trialAccessContext($studentId);
+        if (!empty($trial['is_trial'])) {
+            $upcomingLive = [];
+            if (!empty($trial['allowed_today'])) {
+                $upcomingLive = $this->trialLiveClasses(
+                    $studentId,
+                    (int) ($trial['course_id'] ?? 0),
+                    (string) ($trial['access_date'] ?? '')
+                );
+            }
+
+            return [
+                'metrics' => [
+                    'courses_total' => $upcomingLive === [] ? 0 : 1,
+                    'courses_active' => $upcomingLive === [] ? 0 : 1,
+                    'courses_completed' => 0,
+                    'avg_progress' => 0,
+                ],
+                'upcoming_live' => $upcomingLive,
+                'recent_results' => [],
+                'upcoming_exams' => [],
+            ];
+        }
+
         $companyId = $this->resolveStudentCompanyId($studentId);
 
         $metricsSql = "SELECT
@@ -227,6 +337,19 @@ class StudentPortalModel extends BaseModel
 
     public function upcomingLiveClasses(int $studentId): array
     {
+        $trial = $this->trialAccessContext($studentId);
+        if (!empty($trial['is_trial'])) {
+            if (empty($trial['allowed_today'])) {
+                return [];
+            }
+
+            return $this->trialLiveClasses(
+                $studentId,
+                (int) ($trial['course_id'] ?? 0),
+                (string) ($trial['access_date'] ?? '')
+            );
+        }
+
         $companyId = $this->resolveStudentCompanyId($studentId);
 
         $sql = "SELECT
@@ -902,6 +1025,51 @@ class StudentPortalModel extends BaseModel
         return $stmt->fetchAll();
     }
 
+    private function trialLiveClasses(int $studentId, int $courseId, string $accessDate): array
+    {
+        if ($studentId <= 0 || $courseId <= 0 || $accessDate === '') {
+            return [];
+        }
+
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $sql = "SELECT
+                c.id,
+                c.name,
+                c.live_link,
+                c.live_password,
+                c.live_meeting_id,
+                c.live_datetime,
+                e.progress_percent,
+                e.status AS enrollment_status
+            FROM courses c
+            INNER JOIN enrollments e ON e.course_id = c.id
+            WHERE e.student_id = :student_id
+              AND c.id = :course_id
+              AND e.status = 'active'
+              AND c.status = 'published'
+              AND c.live_link IS NOT NULL
+              AND c.live_link <> ''
+              AND c.live_datetime IS NOT NULL
+              AND DATE(c.live_datetime) = :access_date";
+        $params = [
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+            ':access_date' => $accessDate,
+        ];
+
+        if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+            $sql .= ' AND c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        $sql .= ' ORDER BY c.live_datetime ASC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
     private function examBelongsToStudentCompany(int $examId, int $studentId): bool
     {
         if ($examId <= 0 || $studentId <= 0) {
@@ -1113,5 +1281,21 @@ class StudentPortalModel extends BaseModel
         $this->arsenalAccessLogsTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->arsenalAccessLogsTableExists;
+    }
+
+    private function hasTrialAccessTable(): bool
+    {
+        if ($this->trialAccessTableExists !== null) {
+            return $this->trialAccessTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_trial_accesses'");
+        $stmt->execute();
+        $this->trialAccessTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->trialAccessTableExists;
     }
 }
