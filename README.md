@@ -33,6 +33,22 @@ Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
    - o `localhost/aneo` executa em `C:\xampp\htdocs\aneo`
    - o repositorio fonte esta em `...\Estudos\Projeto ANEO\public_html`
 
+### 1.3) Atualizacao complementar em 16/03/2026
+
+1. Novo modulo `Licenca` em `Cadastro` (somente administrador).
+2. Fluxo de ativacao/renovacao anual por chave.
+3. Estrutura de banco adicionada:
+   - `migrations/20260316_company_licenses.sql`
+   - tabelas `company_licenses` e `company_license_history`
+4. Rotas administrativas adicionadas:
+   - `GET companies/license`
+   - `POST companies/license/activate`
+5. Modo de enforcement preparado no `config.php`:
+   - `licensing.enabled`
+   - `licensing.enforce`
+   - `licensing.grace_days`
+   - `licensing.fixed_keys`
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
@@ -79,8 +95,9 @@ Exemplo local:
 2. Inicie Apache e MySQL no XAMPP.
 3. Crie o banco MySQL.
 4. Importe `database.sql`.
-5. Se o banco ja existia antes da versao Arsenal, execute tambem:
+5. Se o banco ja existia antes das ultimas versoes, execute tambem:
    - `migrations/20260313_arsenal_digital.sql`
+   - `migrations/20260316_company_licenses.sql`
 6. Ajuste credenciais em `config.php` (bloco `db`).
 7. Acesse `http://localhost/aneo/index.php?route=login`.
 
@@ -172,7 +189,7 @@ Use uma unica instalacao do sistema e publique o conteudo desta pasta no `public
 1. Criar banco MySQL na Hostinger e importar `database.sql`.
 2. Publicar arquivos do projeto no `public_html`.
 3. Editar `config.php` com banco de producao.
-4. Se producao for incremental, executar migracoes pendentes (incluindo `20260313_arsenal_digital.sql`).
+4. Se producao for incremental, executar migracoes pendentes (incluindo `20260313_arsenal_digital.sql` e `20260316_company_licenses.sql`).
 5. Ajustar permissoes de escrita para `uploads/*`.
 6. Configurar SSL.
 7. Rodar smoke test nas 3 aplicacoes.
@@ -211,6 +228,7 @@ Arquivos principais:
 5. Criar item e testar abertura no admin.
 6. Fazer login do aluno e validar `route=student/arsenal`.
 7. Confirmar login na central tecnica (`support.php`).
+8. Abrir `route=companies/license` e validar status/licenca da empresa.
 
 ## 10) Seguranca (obrigatorio antes de producao)
 
@@ -259,3 +277,28 @@ Arquivos de apoio para n8n:
 
 1. `n8n/README_N8N_CLOUD_TESTE.md`
 2. `n8n/payload_teste_enrollment.json`
+
+## 12) Licenciamento anual por empresa
+
+Objetivo: habilitar o uso do sistema por empresa com validade anual de chave.
+
+1. Migracao obrigatoria:
+   - `migrations/20260316_company_licenses.sql`
+2. Tela administrativa:
+   - `Cadastro > Licenca`
+   - disponivel apenas para perfil `admin`
+3. Configuracao no `config.php`:
+   - `licensing.enabled`: liga/desliga o modulo
+   - `licensing.enforce`: bloqueia acesso de empresa sem licenca valida
+   - `licensing.grace_days`: dias extras apos vencimento
+   - `licensing.fixed_keys`: chaves fixas aceitas na fase inicial
+4. Comportamento da ativacao:
+   - ao ativar com chave valida, a licenca recebe `365` dias
+   - renovacao com chave valida estende a data de vencimento
+5. Historico e auditoria:
+   - eventos salvos em `company_license_history`
+   - alteracoes tambem registradas no log de auditoria (`cadastro.licenca`)
+
+Exemplo de chave fixa inicial (ambiente interno):
+
+`ANEO-LICENCA-2026-BASE`

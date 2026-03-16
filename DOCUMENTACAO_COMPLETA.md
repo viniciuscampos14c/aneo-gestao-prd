@@ -36,6 +36,24 @@ Atualizacoes aplicadas e validadas nesta data:
    - Portal do Aluno: `index.php?route=student/login`
    - Central Tecnica: `support.php?route=support/login`
 
+## 1.2) Atualizacao complementar (16/03/2026) - Licenciamento anual por empresa
+
+Atualizacoes aplicadas e validadas nesta data:
+
+1. Novo item `Licenca` no menu `Cadastro` (apenas perfil `admin`).
+2. Estrutura de banco para controle de licenca por empresa:
+   - `company_licenses`
+   - `company_license_history`
+3. Migracao criada e aplicada:
+   - `migrations/20260316_company_licenses.sql`
+4. Fluxo de ativacao/renovacao anual por chave na tela:
+   - `index.php?route=companies/license`
+5. Base de enforcement preparada no `core/helpers.php`, controlada por config:
+   - `licensing.enabled`
+   - `licensing.enforce`
+   - `licensing.grace_days`
+   - `licensing.fixed_keys`
+
 ---
 
 ## 2) O que foi entregue
@@ -62,6 +80,7 @@ Foram entregues os seguintes artefatos principais:
    - Assinaturas Eletronicas (D4Sign)
    - Cursos EAD (cursos/categorias/matriculas/comentarios/exames/agenda academica)
    - Portal do Aluno separado (login proprio + cursos + agenda + aulas + materiais + progresso + avaliacoes)
+   - Licenciamento anual por empresa (Cadastro > Licenca)
    - Solicitacoes, Automacoes e Chat IA Jully (CRUD basico)
    - Projetos e Tarefas desativados por regra de negocio atual
 5. Script local automatizado para XAMPP:
@@ -87,7 +106,8 @@ Raiz do projeto:
 12. `migrations/20260306_d4sign_signatures.sql`
 13. `migrations/20260306_phase1_multiempresa.sql`
 14. `migrations/20260313_arsenal_digital.sql`
-15. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
+15. `migrations/20260316_company_licenses.sql`
+16. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
 
 Dentro da raiz da aplicacao:
 
@@ -184,6 +204,8 @@ Arquivo principal: `database.sql`.
 40. `arsenal_item_courses`
 41. `arsenal_item_students`
 42. `arsenal_access_logs`
+43. `company_licenses`
+44. `company_license_history`
 
 ### 5.2 Seeds iniciais
 
@@ -471,17 +493,18 @@ Referencia rapida:
 2. Portal aluno: `student/login`, `student/logout`, `student/dashboard`, `student/courses`, `student/calendar`, `student/live`, `student/materials`, `student/arsenal`, `student/arsenal/open`, `student/progress`, `student/exams`, `student/exams/take`, `student/exams/submit`
 3. Usuarios: `users/*`
 4. Empresas: `companies`, `companies/store`, `companies/update`, `companies/toggle`
-5. Dashboard: `dashboard`
-6. Alunos: `students/*`
-7. Kanban: `kanban/*`
-8. Leads: `leads/*`
-9. Financeiro: `finance/invoices/*`, `finance/payments/*`
-10. Atendimento: `chatwoot`, `chatwoot/open-student`, `chatwoot/open-lead`, `chatwoot/open-phone`, `chatwoot/webhook`
-11. Assinaturas: `signatures`, `signatures/store`, `signatures/send`, `signatures/sync`, `signatures/delete`, `signatures/webhook`
-12. Arsenal Digital: `arsenal`, `arsenal/item/*`, `arsenal/category/*`, `arsenal/bind/*`, `arsenal/unbind/*`, `arsenal/download`
-13. Cursos: `courses/*` (inclui `courses/materials/upload`, `courses/materials/delete`, `courses/calendar`, `courses/activities/store`, `courses/activities/delete`)
-14. Modulos basicos ativos: `requests/*`, `automations/*`, `help/*` (projects/tasks desativados)
-15. Busca global: `search`
+5. Licenca: `companies/license`, `companies/license/activate`
+6. Dashboard: `dashboard`
+7. Alunos: `students/*`
+8. Kanban: `kanban/*`
+9. Leads: `leads/*`
+10. Financeiro: `finance/invoices/*`, `finance/payments/*`
+11. Atendimento: `chatwoot`, `chatwoot/open-student`, `chatwoot/open-lead`, `chatwoot/open-phone`, `chatwoot/webhook`
+12. Assinaturas: `signatures`, `signatures/store`, `signatures/send`, `signatures/sync`, `signatures/delete`, `signatures/webhook`
+13. Arsenal Digital: `arsenal`, `arsenal/item/*`, `arsenal/category/*`, `arsenal/bind/*`, `arsenal/unbind/*`, `arsenal/download`
+14. Cursos: `courses/*` (inclui `courses/materials/upload`, `courses/materials/delete`, `courses/calendar`, `courses/activities/store`, `courses/activities/delete`)
+15. Modulos basicos ativos: `requests/*`, `automations/*`, `help/*` (projects/tasks desativados)
+16. Busca global: `search`
 
 ---
 
@@ -1274,3 +1297,82 @@ Se o aluno nao visualizar material esperado:
 3. confirmar escopo correto (`global/course/student`)
 4. confirmar vinculo do curso/aluno quando aplicavel
 5. confirmar matricula ativa/concluida do aluno no curso vinculado
+
+
+---
+
+## 19) Atualizacao complementar (16/03/2026) - Licenciamento anual por empresa
+
+### 19.1) Resumo da entrega
+
+Foi implementada a estrutura inicial de licenciamento por empresa com renovacao anual:
+
+1. Tela administrativa para ativar/renovar licenca com chave.
+2. Persistencia de licenca atual por empresa.
+3. Historico de eventos de licenca para auditoria.
+4. Base de enforcement preparada por configuracao.
+
+### 19.2) Arquivos criados/alterados
+
+Novos arquivos principais:
+
+1. `migrations/20260316_company_licenses.sql`
+2. `controllers/LicenseController.php`
+3. `models/CompanyLicenseModel.php`
+4. `core/LicenseService.php`
+5. `views/companies/license.php`
+
+Arquivos alterados para integrar o modulo:
+
+1. `config.php` (bloco `licensing`)
+2. `index.php` (rotas `companies/license` e `companies/license/activate`)
+3. `views/layouts/app.php` (menu `Cadastro > Licenca`)
+4. `core/helpers.php` (hook de enforcement opcional)
+
+### 19.3) Estrutura de banco adicionada
+
+Tabelas criadas pela migracao `20260316_company_licenses.sql`:
+
+1. `company_licenses`: estado atual da licenca por empresa.
+2. `company_license_history`: historico de ativacoes/renovacoes e eventos tecnicos.
+
+### 19.4) Configuracao no `config.php`
+
+Bloco de configuracao:
+
+1. `licensing.enabled`: habilita o modulo de licenciamento.
+2. `licensing.enforce`: aplica bloqueio de acesso quando a licenca estiver invalida.
+3. `licensing.grace_days`: dias de tolerancia apos vencimento.
+4. `licensing.fixed_keys`: chaves aceitas na fase inicial.
+
+Exemplo de chave fixa inicial:
+
+`ANEO-LICENCA-2026-BASE`
+
+### 19.5) Fluxo operacional (admin)
+
+1. Acessar `Cadastro > Licenca`.
+2. Selecionar a empresa.
+3. Informar uma chave valida.
+4. Confirmar ativacao/renovacao.
+5. Validar status e vencimento na propria tela.
+6. Validar o historico gravado em `company_license_history`.
+
+### 19.6) Ativacao em qualquer ambiente
+
+Ordem recomendada:
+
+1. Publicar os arquivos de codigo da funcionalidade.
+2. Executar `migrations/20260316_company_licenses.sql`.
+3. Ajustar o bloco `licensing` no `config.php`.
+4. Validar acesso admin em `route=companies/license`.
+5. Testar ativacao com uma chave valida.
+6. Somente quando desejado, alterar `licensing.enforce` para `true`.
+
+### 19.7) Observacao de rollout
+
+No estado atual, o modulo pode operar sem bloqueio global enquanto a equipe cadastra e testa licencas:
+
+1. manter `licensing.enabled=true`
+2. manter `licensing.enforce=false`
+3. apos validacao operacional, habilitar enforcement em producao
