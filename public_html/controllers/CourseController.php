@@ -628,7 +628,11 @@ class CourseController extends BaseController
         $courses = $this->courses->listCourses([], 1000, 1);
         $students = $this->students->list([], 1000, 1);
         $examScheduleEnabled = $this->courses->examScheduleFeatureAvailable();
+        $externalExamFeatureAvailable = $this->courses->externalExamFeatureAvailable();
         $upcomingExams = $this->courses->upcomingExamCalendar(90, 14);
+        $externalLinks = $externalExamFeatureAvailable
+            ? $this->courses->listExternalExamLinks(300)
+            : [];
 
         $this->render('courses/exams', [
             'title' => 'Exames',
@@ -638,6 +642,8 @@ class CourseController extends BaseController
             'students' => $students['rows'],
             'upcomingExams' => $upcomingExams,
             'examScheduleEnabled' => $examScheduleEnabled,
+            'externalExamFeatureAvailable' => $externalExamFeatureAvailable,
+            'externalLinks' => $externalLinks,
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
         ]);
     }
@@ -717,6 +723,75 @@ class CourseController extends BaseController
 
         $this->courses->registerExamResult($data, (int) current_user()['id']);
         $this->success('Resultado registrado.');
+        $this->redirect('courses/exams');
+    }
+
+    public function storeExternalExamLink(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+        csrf_validate();
+
+        if (!$this->courses->externalExamFeatureAvailable()) {
+            $this->error('Prova externa nao habilitada no banco. Execute a migracao correspondente.');
+            $this->redirect('courses/exams');
+        }
+
+        $examId = (int) post('exam_id');
+        $studentId = (int) post('student_id');
+        $externalUrl = trim((string) post('external_url'));
+        $dueAt = $this->normalizeDateTime((string) post('due_at'));
+
+        if ($examId <= 0 || $studentId <= 0 || $externalUrl === '') {
+            $this->error('Exame, aluno e URL externa sao obrigatorios.');
+            $this->redirect('courses/exams');
+        }
+
+        if (!$this->isHttpUrl($externalUrl)) {
+            $this->error('Informe uma URL valida (http/https) para a prova externa.');
+            $this->redirect('courses/exams');
+        }
+
+        $ok = $this->courses->upsertExternalExamLink([
+            'exam_id' => $examId,
+            'student_id' => $studentId,
+            'external_url' => $externalUrl,
+            'instructions' => trim((string) post('instructions')),
+            'due_at' => $dueAt,
+        ], (int) current_user()['id']);
+
+        if ($ok) {
+            $this->success('Vinculo de prova externa salvo para o aluno.');
+        } else {
+            $this->error('Nao foi possivel salvar o vinculo. Verifique se o aluno esta matriculado no curso da prova.');
+        }
+
+        $this->redirect('courses/exams');
+    }
+
+    public function deactivateExternalExamLink(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+        csrf_validate();
+
+        if (!$this->courses->externalExamFeatureAvailable()) {
+            $this->error('Prova externa nao habilitada no banco.');
+            $this->redirect('courses/exams');
+        }
+
+        $linkId = (int) post('id');
+        if ($linkId <= 0) {
+            $this->error('Vinculo de prova externa invalido.');
+            $this->redirect('courses/exams');
+        }
+
+        if ($this->courses->deactivateExternalExamLink($linkId)) {
+            $this->success('Vinculo de prova externa desativado.');
+        } else {
+            $this->error('Nao foi possivel desativar o vinculo.');
+        }
+
         $this->redirect('courses/exams');
     }
 
@@ -880,6 +955,16 @@ class CourseController extends BaseController
         }
 
         return date('Y-m-d H:i:s', $ts);
+    }
+
+    private function isHttpUrl(string $url): bool
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https'], true);
     }
 
     private function collectFormData(): array

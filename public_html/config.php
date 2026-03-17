@@ -131,6 +131,21 @@ return [
             'label' => 'Suporte',
             'permissions' => ['dashboard', 'help'],
         ],
+        'professor' => [
+            'label' => 'Professor',
+            'permissions' => [
+                'students',
+                'students.create',
+                'students.edit',
+                'courses',
+                'courses.create',
+                'courses.edit',
+                'courses.category',
+                'courses.enrollment',
+                'courses.exam',
+                'courses.comment',
+            ],
+        ],
     ],
     'permissions_catalog' => [
         'modules' => [

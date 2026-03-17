@@ -57,6 +57,7 @@ $router->get('student/progress', fn () => $studentPortal->progress());
 $router->post('student/course/progress', fn () => $studentPortal->lessonProgress());
 $router->get('student/exams', fn () => $studentPortal->exams());
 $router->get('student/academic-history', fn () => $studentPortal->academicHistory());
+$router->get('student/exams/external', fn () => $studentPortal->openExternalExam());
 $router->get('student/exams/take', fn () => $studentPortal->takeExam());
 $router->post('student/exams/submit', fn () => $studentPortal->submitExam());
 
@@ -200,6 +201,8 @@ $router->post('courses/activities/delete', fn () => $courses->deleteActivity());
 $router->get('courses/exams', fn () => $courses->exams());
 $router->post('courses/exams/store', fn () => $courses->storeExam());
 $router->post('courses/exams/result', fn () => $courses->storeExamResult());
+$router->post('courses/exams/external-link/store', fn () => $courses->storeExternalExamLink());
+$router->post('courses/exams/external-link/deactivate', fn () => $courses->deactivateExternalExamLink());
 
 $router->get('courses/comments', fn () => $courses->comments());
 $router->post('courses/comments/store', fn () => $courses->storeComment());

@@ -100,6 +100,27 @@ Atualizacoes aplicadas e validadas nesta data:
 4. Impressao A4 disponivel diretamente na tela do historico.
 5. Sem necessidade de migracao de banco (uso de dados ja existentes).
 
+## 1.6) Atualizacao complementar (17/03/2026) - Perfil Professor + Prova Externa por Aluno
+
+Atualizacoes aplicadas e validadas nesta data:
+
+1. Novo perfil administrativo `Professor` adicionado no cadastro de usuarios.
+2. Escopo do professor restrito a:
+   - Dashboard
+   - Alunos (criar/editar)
+   - Cursos EAD (cursos/categorias/matriculas/exames/comentarios)
+3. Novo fluxo em `Cursos EAD > Exames` para vinculo de prova externa por aluno:
+   - URL externa (Forms, Quiz etc.)
+   - prazo opcional
+   - instrucoes opcionais
+   - controle de ativacao/desativacao do vinculo
+4. Portal do aluno atualizado:
+   - exibicao do botao `Abrir prova externa`
+   - rastreio de acessos ao link externo
+   - bloqueio de tentativa de resposta interna para prova externa
+5. Migracao criada:
+   - `migrations/20260317_professor_external_exam_links.sql`
+
 ---
 
 ## 2) O que foi entregue
@@ -115,7 +136,7 @@ Foram entregues os seguintes artefatos principais:
 4. Modulos:
    - Login e controle por perfil/permissao
    - Selecao de empresa/CNPJ no login administrativo (multiempresa fase 1)
-   - Administracao de usuarios (admin/suporte + permissoes por tela/funcao)
+   - Administracao de usuarios (admin/suporte/professor + permissoes por tela/funcao)
    - Empresas (cadastro de CNPJs e status ativo/inativo)
    - Dashboard (operacional + BI Gerencial)
    - Alunos
@@ -125,6 +146,7 @@ Foram entregues os seguintes artefatos principais:
    - Atendimento (Chatwoot)
    - Assinaturas Eletronicas (D4Sign)
    - Cursos EAD (cursos/categorias/matriculas/comentarios/exames/agenda academica)
+   - Prova externa por aluno (vinculo de URL externa dentro de Exames)
    - Degustacao de curso EAD (acesso rapido por data e curso)
    - Portal do Aluno separado (login proprio + cursos + agenda + aulas + materiais + progresso + avaliacoes)
    - Portal do Aluno com abertura de chamados tecnicos
@@ -158,7 +180,8 @@ Raiz do projeto:
 15. `migrations/20260316_company_licenses.sql`
 16. `migrations/20260316_courses_trial_access.sql`
 17. `migrations/20260317_support_ticket_codes_aneo.sql`
-18. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
+18. `migrations/20260317_professor_external_exam_links.sql`
+19. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
 
 Dentro da raiz da aplicacao:
 
@@ -204,6 +227,7 @@ Definidos em `config.php`:
 
 1. `admin`: acesso total (`*`).
 2. `suporte`: acesso limitado por checkboxes de telas e funcoes no modulo `Usuarios`.
+3. `professor`: acesso restrito a operacao academica (alunos e cursos EAD, incluindo matriculas e exames).
 
 ---
 
@@ -258,6 +282,7 @@ Arquivo principal: `database.sql`.
 43. `company_licenses`
 44. `company_license_history`
 45. `course_trial_accesses`
+46. `exam_external_links`
 
 ### 5.2 Seeds iniciais
 
@@ -295,6 +320,20 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
    - `invoices`
    - `payments`
 4. Indices e chaves estrangeiras adicionados para garantir isolamento por empresa.
+
+### 5.7 Estrutura nova (prova externa por aluno)
+
+1. `exam_external_links`: vinculo de URL externa de prova por `exame + aluno`.
+2. Campos principais:
+   - `external_url`
+   - `instructions`
+   - `due_at`
+   - `is_active`
+   - `open_count`, `first_opened_at`, `last_opened_at`
+3. Regras aplicadas:
+   - um vinculo ativo por combinacao `exam_id + student_id`
+   - apenas aluno matriculado no curso do exame pode ser vinculado
+   - ao registrar nota final, o vinculo externo e desativado automaticamente
 
 ---
 
@@ -1702,3 +1741,68 @@ Portal do aluno:
 2. Limpar cache do navegador (`Ctrl+F5`).
 3. Acessar `index.php?route=student/academic-history`.
 4. Validar impressao A4 e bloco de carimbo/assinatura.
+
+## 23) Perfil Professor + Prova Externa por Aluno
+
+### 23.1) Objetivo
+
+1. Criar perfil `Professor` com acesso administrativo restrito ao contexto academico.
+2. Permitir vincular prova externa (ex.: Microsoft Forms/Google Forms) por aluno.
+3. Exibir o acesso externo no portal do aluno e manter registro de abertura do link.
+
+### 23.2) Arquivos criados/alterados
+
+Arquivo novo:
+
+1. `migrations/20260317_professor_external_exam_links.sql`
+
+Arquivos alterados:
+
+1. `public_html/config.php`
+2. `public_html/controllers/UserController.php`
+3. `public_html/views/users/form.php`
+4. `public_html/controllers/CourseController.php`
+5. `public_html/models/CourseModel.php`
+6. `public_html/views/courses/exams.php`
+7. `public_html/controllers/StudentPortalController.php`
+8. `public_html/models/StudentPortalModel.php`
+9. `public_html/views/student_portal/exams.php`
+10. `public_html/index.php`
+11. `database.sql`
+
+### 23.3) Banco de dados
+
+1. `users.role` passa a aceitar `professor`.
+2. Nova tabela `exam_external_links`:
+   - vinculo unico por `exam_id + student_id`
+   - URL externa, instrucoes e prazo
+   - controle de ativacao
+   - rastreio de abertura (`open_count`, `first_opened_at`, `last_opened_at`)
+
+### 23.4) Rotas adicionadas
+
+Admin:
+
+1. `POST courses/exams/external-link/store`
+2. `POST courses/exams/external-link/deactivate`
+
+Portal do aluno:
+
+1. `GET student/exams/external`
+
+### 23.5) Regras de negocio
+
+1. So pode vincular prova externa para aluno matriculado no curso da prova.
+2. O aluno abre a prova externa diretamente pelo portal.
+3. A prova externa respeita data agendada do exame (quando existir `scheduled_at`).
+4. Ao registrar nota final em `courses/exams/result`, o vinculo externo ativo e desativado automaticamente.
+
+### 23.6) Ativacao
+
+1. Publicar arquivos no ambiente.
+2. Executar migracao:
+   - `migrations/20260317_professor_external_exam_links.sql`
+3. Limpar cache do navegador (`Ctrl+F5`).
+4. Criar usuario com perfil `Professor`.
+5. Acessar `Cursos EAD > Exames` e cadastrar um vinculo externo de teste.
+6. Fazer login no portal do aluno e validar botao `Abrir prova externa`.

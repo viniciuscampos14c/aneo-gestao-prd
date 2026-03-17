@@ -112,6 +112,24 @@ Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
    - impressao otimizada em A4
 5. Nao exige migracao de banco (reaproveita dados de aluno e `exam_results`).
 
+### 1.8) Atualizacao complementar em 17/03/2026
+
+1. Novo perfil `Professor` para acesso administrativo restrito.
+2. Permissoes do perfil professor:
+   - `Dashboard`
+   - `Alunos` (criar/editar)
+   - `Cursos EAD` (criar/editar/categorias/matriculas/exames/comentarios)
+3. Prova externa por aluno em `Cursos EAD > Exames`:
+   - professor vincula URL externa (ex.: Microsoft Forms / Google Forms) por aluno
+   - opcional de prazo e instrucoes
+   - controle de status e desativacao do vinculo
+4. Portal do aluno:
+   - exibicao de botao `Abrir prova externa` quando houver vinculo ativo
+   - registro de acessos ao link externo para acompanhamento
+   - bloqueio de resposta interna quando a avaliacao for externa
+5. Migracao criada:
+   - `migrations/20260317_professor_external_exam_links.sql`
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
@@ -164,6 +182,7 @@ Exemplo local:
    - `migrations/20260316_courses_trial_access.sql`
    - `migrations/20260317_lms_learning_path.sql`
    - `migrations/20260317_support_ticket_codes_aneo.sql`
+   - `migrations/20260317_professor_external_exam_links.sql`
 6. Ajuste credenciais em `config.php` (bloco `db`).
 7. Acesse `http://localhost/aneo/index.php?route=login`.
 
@@ -259,6 +278,7 @@ Use uma unica instalacao do sistema e publique o conteudo desta pasta no `public
    - incluir `migrations/20260316_courses_trial_access.sql` para liberar degustacao de curso
    - incluir `migrations/20260317_lms_learning_path.sql` para liberar trilha LMS modular no portal
    - incluir `migrations/20260317_support_ticket_codes_aneo.sql` para normalizar codigos de chamados no formato ANEO
+   - incluir `migrations/20260317_professor_external_exam_links.sql` para perfil professor e provas externas por aluno
 5. Ajustar permissoes de escrita para `uploads/*`.
 6. Configurar SSL.
 7. Rodar smoke test nas 3 aplicacoes.
@@ -304,6 +324,7 @@ Arquivos principais:
 12. Validar login no portal do aluno com o usuario de degustacao no dia liberado.
 13. Validar aba `Historico Academico` em `route=student/academic-history`.
 14. Acionar `Imprimir A4` e conferir bloco de carimbo/assinatura.
+15. Criar usuario `Professor`, acessar `Cursos EAD > Exames`, vincular prova externa e validar abertura no portal do aluno.
 
 ## 10) Seguranca (obrigatorio antes de producao)
 

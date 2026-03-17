@@ -128,7 +128,9 @@ $availableCompanies = $availableCompanies ?? [];
 
     function toggleSupportSection() {
         if (!roleSelect || !supportBox) return;
-        supportBox.classList.toggle('hidden', roleSelect.value !== 'suporte');
+        const isSupport = roleSelect.value === 'suporte';
+        supportBox.classList.toggle('hidden', !isSupport);
+        perms().forEach((el) => { el.disabled = !isSupport; });
     }
 
     roleSelect?.addEventListener('change', toggleSupportSection);

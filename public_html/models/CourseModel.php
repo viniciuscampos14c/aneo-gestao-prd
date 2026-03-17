@@ -9,6 +9,7 @@ class CourseModel extends BaseModel
     private ?bool $courseModulesTableExists = null;
     private ?bool $courseLessonsTableExists = null;
     private ?bool $studentLessonProgressTableExists = null;
+    private ?bool $examExternalLinksTableExists = null;
 
     public function categories(): array
     {
@@ -1113,6 +1114,17 @@ class CourseModel extends BaseModel
 
         $whereSql = implode(' AND ', $where);
         $scheduleSelect = $this->hasExamScheduleColumn() ? 'e.scheduled_at AS scheduled_at' : 'NULL AS scheduled_at';
+        $externalLinksSelect = '0 AS external_links_total';
+        $externalLinksJoin = '';
+        if ($this->hasExamExternalLinksTable()) {
+            $externalLinksSelect = 'COALESCE(el.external_links_total, 0) AS external_links_total';
+            $externalLinksJoin = "LEFT JOIN (
+                    SELECT exam_id, COUNT(*) AS external_links_total
+                    FROM exam_external_links
+                    WHERE is_active = 1
+                    GROUP BY exam_id
+                ) el ON el.exam_id = e.id";
+        }
         $orderSql = $this->hasExamScheduleColumn()
             ? 'ORDER BY (e.scheduled_at IS NULL) ASC, e.scheduled_at ASC, e.id DESC'
             : 'ORDER BY e.id DESC';
@@ -1128,9 +1140,11 @@ class CourseModel extends BaseModel
                 e.created_by,
                 e.created_at,
                 e.updated_at,
+                {$externalLinksSelect},
                 c.name AS course_name
             FROM exams e
             LEFT JOIN courses c ON c.id = e.course_id
+            {$externalLinksJoin}
             WHERE {$whereSql}
             {$orderSql}";
 
@@ -1264,7 +1278,11 @@ class CourseModel extends BaseModel
     {
         $examId = (int) ($data['exam_id'] ?? 0);
         $studentId = (int) ($data['student_id'] ?? 0);
-        if (!$this->canAccessExam($examId) || !$this->studentBelongsCompany($studentId)) {
+        if (
+            !$this->canAccessExam($examId)
+            || !$this->studentBelongsCompany($studentId)
+            || !$this->studentEnrolledInExamCourse($examId, $studentId)
+        ) {
             return;
         }
 
@@ -1285,6 +1303,176 @@ class CourseModel extends BaseModel
             ':created_by' => $createdBy,
             ':created_at' => now(),
         ]);
+
+        if ($this->hasExamExternalLinksTable()) {
+            $this->deactivateExternalExamLinkByExamStudent($examId, $studentId);
+        }
+    }
+
+    public function externalExamFeatureAvailable(): bool
+    {
+        return $this->hasExamExternalLinksTable();
+    }
+
+    public function listExternalExamLinks(int $limit = 250): array
+    {
+        if (!$this->hasExamExternalLinksTable()) {
+            return [];
+        }
+
+        $limit = max(1, min(1000, $limit));
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare("SELECT
+                    eel.id,
+                    eel.exam_id,
+                    eel.student_id,
+                    eel.external_url,
+                    eel.instructions,
+                    eel.due_at,
+                    eel.is_active,
+                    eel.first_opened_at,
+                    eel.last_opened_at,
+                    eel.open_count,
+                    eel.created_at,
+                    ex.title AS exam_title,
+                    c.name AS course_name,
+                    s.full_name AS student_name
+                FROM exam_external_links eel
+                INNER JOIN exams ex ON ex.id = eel.exam_id
+                INNER JOIN courses c ON c.id = ex.course_id
+                INNER JOIN students s ON s.id = eel.student_id
+                WHERE c.company_id = :company_id
+                ORDER BY eel.updated_at DESC, eel.id DESC
+                LIMIT {$limit}");
+            $stmt->execute([':company_id' => $this->companyId()]);
+            return $stmt->fetchAll();
+        }
+
+        $stmt = $this->db->query("SELECT
+                eel.id,
+                eel.exam_id,
+                eel.student_id,
+                eel.external_url,
+                eel.instructions,
+                eel.due_at,
+                eel.is_active,
+                eel.first_opened_at,
+                eel.last_opened_at,
+                eel.open_count,
+                eel.created_at,
+                ex.title AS exam_title,
+                c.name AS course_name,
+                s.full_name AS student_name
+            FROM exam_external_links eel
+            INNER JOIN exams ex ON ex.id = eel.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN students s ON s.id = eel.student_id
+            ORDER BY eel.updated_at DESC, eel.id DESC
+            LIMIT {$limit}");
+
+        return $stmt->fetchAll();
+    }
+
+    public function upsertExternalExamLink(array $data, int $createdBy): bool
+    {
+        if (!$this->hasExamExternalLinksTable()) {
+            return false;
+        }
+
+        $examId = (int) ($data['exam_id'] ?? 0);
+        $studentId = (int) ($data['student_id'] ?? 0);
+        $externalUrl = trim((string) ($data['external_url'] ?? ''));
+        $instructions = trim((string) ($data['instructions'] ?? ''));
+        $dueAt = $this->normalizeDateTimeOrNull((string) ($data['due_at'] ?? ''));
+
+        if (
+            $examId <= 0
+            || $studentId <= 0
+            || $externalUrl === ''
+            || !$this->isHttpUrl($externalUrl)
+            || !$this->canAccessExam($examId)
+            || !$this->studentBelongsCompany($studentId)
+            || !$this->studentEnrolledInExamCourse($examId, $studentId)
+        ) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO exam_external_links (
+            exam_id,
+            student_id,
+            external_url,
+            instructions,
+            due_at,
+            is_active,
+            created_by,
+            created_at,
+            updated_at
+        ) VALUES (
+            :exam_id,
+            :student_id,
+            :external_url,
+            :instructions,
+            :due_at,
+            1,
+            :created_by,
+            :created_at,
+            :updated_at
+        )
+        ON DUPLICATE KEY UPDATE
+            external_url = VALUES(external_url),
+            instructions = VALUES(instructions),
+            due_at = VALUES(due_at),
+            is_active = 1,
+            created_by = VALUES(created_by),
+            updated_at = VALUES(updated_at)');
+
+        $stmt->execute([
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+            ':external_url' => $externalUrl,
+            ':instructions' => $instructions !== '' ? $instructions : null,
+            ':due_at' => $dueAt,
+            ':created_by' => $createdBy,
+            ':created_at' => now(),
+            ':updated_at' => now(),
+        ]);
+
+        return true;
+    }
+
+    public function deactivateExternalExamLink(int $linkId): bool
+    {
+        if (!$this->hasExamExternalLinksTable() || $linkId <= 0) {
+            return false;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare("UPDATE exam_external_links eel
+                INNER JOIN exams ex ON ex.id = eel.exam_id
+                INNER JOIN courses c ON c.id = ex.course_id
+                SET eel.is_active = 0,
+                    eel.updated_at = :updated_at
+                WHERE eel.id = :id
+                  AND c.company_id = :company_id");
+            $stmt->execute([
+                ':updated_at' => now(),
+                ':id' => $linkId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            return $stmt->rowCount() > 0;
+        }
+
+        $stmt = $this->db->prepare('UPDATE exam_external_links
+            SET is_active = 0, updated_at = :updated_at
+            WHERE id = :id');
+        $stmt->execute([
+            ':updated_at' => now(),
+            ':id' => $linkId,
+        ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     public function listExamResults(int $examId): array
@@ -1510,6 +1698,115 @@ class CourseModel extends BaseModel
         return (bool) $stmt->fetchColumn();
     }
 
+    private function studentEnrolledInExamCourse(int $examId, int $studentId): bool
+    {
+        if ($examId <= 0 || $studentId <= 0) {
+            return false;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('SELECT ex.id
+                FROM exams ex
+                INNER JOIN courses c ON c.id = ex.course_id
+                INNER JOIN enrollments e ON e.course_id = c.id
+                WHERE ex.id = :exam_id
+                  AND e.student_id = :student_id
+                  AND e.status IN (\'active\', \'completed\')
+                  AND c.company_id = :company_id
+                LIMIT 1');
+            $stmt->execute([
+                ':exam_id' => $examId,
+                ':student_id' => $studentId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            return (bool) $stmt->fetchColumn();
+        }
+
+        $stmt = $this->db->prepare('SELECT ex.id
+            FROM exams ex
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN enrollments e ON e.course_id = c.id
+            WHERE ex.id = :exam_id
+              AND e.student_id = :student_id
+              AND e.status IN (\'active\', \'completed\')
+            LIMIT 1');
+        $stmt->execute([
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+        ]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
+    private function normalizeDateTimeOrNull(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = str_replace('T', ' ', $value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $normalized)) {
+            $normalized .= ':00';
+        }
+
+        $ts = strtotime($normalized);
+        if ($ts === false) {
+            return null;
+        }
+
+        return date('Y-m-d H:i:s', $ts);
+    }
+
+    private function isHttpUrl(string $url): bool
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https'], true);
+    }
+
+    private function deactivateExternalExamLinkByExamStudent(int $examId, int $studentId): void
+    {
+        if (!$this->hasExamExternalLinksTable() || $examId <= 0 || $studentId <= 0) {
+            return;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare("UPDATE exam_external_links eel
+                INNER JOIN exams ex ON ex.id = eel.exam_id
+                INNER JOIN courses c ON c.id = ex.course_id
+                SET eel.is_active = 0,
+                    eel.updated_at = :updated_at
+                WHERE eel.exam_id = :exam_id
+                  AND eel.student_id = :student_id
+                  AND eel.is_active = 1
+                  AND c.company_id = :company_id");
+            $stmt->execute([
+                ':updated_at' => now(),
+                ':exam_id' => $examId,
+                ':student_id' => $studentId,
+                ':company_id' => $this->companyId(),
+            ]);
+            return;
+        }
+
+        $stmt = $this->db->prepare('UPDATE exam_external_links
+            SET is_active = 0,
+                updated_at = :updated_at
+            WHERE exam_id = :exam_id
+              AND student_id = :student_id
+              AND is_active = 1');
+        $stmt->execute([
+            ':updated_at' => now(),
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+        ]);
+    }
+
     private function normalizeDate(string $value): ?string
     {
         $value = trim($value);
@@ -1597,6 +1894,22 @@ class CourseModel extends BaseModel
         $this->examScheduleColumnExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->examScheduleColumnExists;
+    }
+
+    private function hasExamExternalLinksTable(): bool
+    {
+        if ($this->examExternalLinksTableExists !== null) {
+            return $this->examExternalLinksTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'exam_external_links'");
+        $stmt->execute();
+        $this->examExternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->examExternalLinksTableExists;
     }
 
     private function hasCourseCompanyColumn(): bool

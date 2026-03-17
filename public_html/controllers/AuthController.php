@@ -12,7 +12,7 @@ class AuthController extends BaseController
     public function showLogin(): void
     {
         if (is_logged_in()) {
-            $this->redirect(current_company_id() ? 'dashboard' : 'select-company');
+            $this->redirect(current_company_id() ? default_admin_route() : 'select-company');
         }
 
         $this->render('auth/login', ['title' => 'Entrar'], 'layouts/guest');
@@ -117,7 +117,7 @@ class AuthController extends BaseController
             if ((int) ($company['id'] ?? 0) === $companyId) {
                 set_current_company($company);
                 $this->success('Empresa selecionada com sucesso.');
-                $this->redirect('dashboard');
+                $this->redirect(default_admin_route());
             }
         }
 

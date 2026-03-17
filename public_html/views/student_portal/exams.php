@@ -6,7 +6,7 @@ $calendarRows = $examCalendar ?? [];
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Avaliacoes</h2>
-            <p class="text-sm text-slate-500">Responda provas disponiveis e acompanhe seu historico.</p>
+            <p class="text-sm text-slate-500">Responda provas internas, acesse provas externas e acompanhe seu historico.</p>
         </div>
         <a href="<?= route('student/academic-history'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
             Historico Academico
@@ -55,10 +55,13 @@ $calendarRows = $examCalendar ?? [];
                         <?php
                         $hasResult = !empty($exam['result_id']);
                         $hasSubmission = !empty($exam['submission_id']);
+                        $hasExternal = trim((string) ($exam['external_url'] ?? '')) !== '';
                         $scheduledAt = trim((string) ($exam['scheduled_at'] ?? ''));
                         $scheduledTs = $scheduledAt !== '' ? strtotime($scheduledAt) : false;
                         $isLockedBySchedule = $scheduledTs !== false && $scheduledTs > time();
-                        $canTake = !$hasResult && !$hasSubmission && (int) $exam['questions_total'] > 0 && !$isLockedBySchedule;
+                        $canOpenExternal = !$hasResult && $hasExternal && !$isLockedBySchedule;
+                        $canTakeInternal = !$hasResult && !$hasExternal && !$hasSubmission && (int) $exam['questions_total'] > 0 && !$isLockedBySchedule;
+                        $externalDueAt = trim((string) ($exam['external_due_at'] ?? ''));
                         ?>
                         <tr class="border-b border-slate-100 hover:bg-slate-50">
                             <td class="px-3 py-2 font-medium"><?= e($exam['course_name']); ?></td>
@@ -69,11 +72,16 @@ $calendarRows = $examCalendar ?? [];
                                 <?php else: ?>
                                     <span class="text-xs text-slate-500">Nao definida</span>
                                 <?php endif; ?>
+                                <?php if ($externalDueAt !== ''): ?>
+                                    <p class="mt-1 text-xs text-slate-500">Prazo externo: <?= e(date('d/m/Y H:i', strtotime($externalDueAt))); ?></p>
+                                <?php endif; ?>
                             </td>
                             <td class="px-3 py-2"><?= (int) $exam['questions_total']; ?></td>
                             <td class="px-3 py-2">
                                 <?php if ($hasResult): ?>
                                     <span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">Resultado publicado</span>
+                                <?php elseif ($hasExternal): ?>
+                                    <span class="inline-flex rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-700">Prova externa</span>
                                 <?php elseif ($hasSubmission): ?>
                                     <span class="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Enviada (aguardando)</span>
                                 <?php elseif ($isLockedBySchedule): ?>
@@ -85,10 +93,17 @@ $calendarRows = $examCalendar ?? [];
                                 <?php endif; ?>
                             </td>
                             <td class="px-3 py-2">
-                                <?php if ($canTake): ?>
+                                <?php if ($canOpenExternal): ?>
+                                    <a href="<?= route('student/exams/external&id=' . (int) $exam['id']); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Abrir prova externa</a>
+                                    <?php if (trim((string) ($exam['external_instructions'] ?? '')) !== ''): ?>
+                                        <p class="mt-1 text-xs text-slate-500"><?= e((string) $exam['external_instructions']); ?></p>
+                                    <?php endif; ?>
+                                <?php elseif ($canTakeInternal): ?>
                                     <a href="<?= route('student/exams/take&id=' . (int) $exam['id']); ?>" class="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Responder agora</a>
                                 <?php elseif ($isLockedBySchedule): ?>
                                     <span class="text-xs text-slate-500">Liberada em <?= e(date('d/m H:i', (int) $scheduledTs)); ?></span>
+                                <?php elseif ($hasExternal && !$hasResult): ?>
+                                    <span class="text-xs text-slate-500">Aguardando realizacao/nota</span>
                                 <?php else: ?>
                                     <span class="text-xs text-slate-500">-</span>
                                 <?php endif; ?>

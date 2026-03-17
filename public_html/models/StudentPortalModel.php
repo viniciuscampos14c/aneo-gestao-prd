@@ -17,6 +17,7 @@ class StudentPortalModel extends BaseModel
     private ?bool $courseModulesTableExists = null;
     private ?bool $courseLessonsTableExists = null;
     private ?bool $studentLessonProgressTableExists = null;
+    private ?bool $examExternalLinksTableExists = null;
 
     public function portalFeatureAvailable(): bool
     {
@@ -1021,6 +1022,8 @@ class StudentPortalModel extends BaseModel
     {
         $submissionSelect = 'NULL AS submission_id, NULL AS submission_status, NULL AS submission_submitted_at';
         $submissionJoin = '';
+        $externalSelect = 'NULL AS external_link_id, NULL AS external_url, NULL AS external_instructions, NULL AS external_due_at';
+        $externalJoin = '';
         $hasScheduleColumn = $this->hasExamScheduleColumn();
         $scheduleSelect = $hasScheduleColumn ? 'ex.scheduled_at AS scheduled_at' : 'NULL AS scheduled_at';
         $orderSql = $hasScheduleColumn
@@ -1047,6 +1050,15 @@ class StudentPortalModel extends BaseModel
             $params[':student_id_submission'] = $studentId;
         }
 
+        if ($this->hasExamExternalLinksTable()) {
+            $externalSelect = 'eel.id AS external_link_id, eel.external_url AS external_url, eel.instructions AS external_instructions, eel.due_at AS external_due_at';
+            $externalJoin = 'LEFT JOIN exam_external_links eel
+                ON eel.exam_id = ex.id
+               AND eel.student_id = :student_id_external
+               AND eel.is_active = 1';
+            $params[':student_id_external'] = $studentId;
+        }
+
         $companyFilter = '';
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $companyFilter = ' AND c.company_id = :company_id';
@@ -1065,6 +1077,7 @@ class StudentPortalModel extends BaseModel
                 r.id AS result_id,
                 r.score AS result_score,
                 r.status AS result_status,
+                {$externalSelect},
                 {$submissionSelect}
             FROM exams ex
             INNER JOIN courses c ON c.id = ex.course_id
@@ -1078,6 +1091,7 @@ class StudentPortalModel extends BaseModel
                 GROUP BY exam_id
             ) q ON q.exam_id = ex.id
             LEFT JOIN exam_results r ON r.exam_id = ex.id AND r.student_id = :student_id_result
+            {$externalJoin}
             {$submissionJoin}
             WHERE c.status = 'published'
               AND e.status IN ('active', 'completed')
@@ -1093,12 +1107,22 @@ class StudentPortalModel extends BaseModel
     public function findAvailableExam(int $studentId, int $examId): ?array
     {
         $scheduleSelect = $this->hasExamScheduleColumn() ? 'ex.scheduled_at AS scheduled_at,' : '';
+        $externalSelect = 'NULL AS external_link_id, NULL AS external_url, NULL AS external_instructions, NULL AS external_due_at,';
+        $externalJoin = '';
         $companyId = $this->resolveStudentCompanyId($studentId);
         $companyFilter = '';
         $params = [
             ':exam_id' => $examId,
             ':student_id' => $studentId,
         ];
+        if ($this->hasExamExternalLinksTable()) {
+            $externalSelect = 'eel.id AS external_link_id, eel.external_url AS external_url, eel.instructions AS external_instructions, eel.due_at AS external_due_at,';
+            $externalJoin = 'LEFT JOIN exam_external_links eel
+                ON eel.exam_id = ex.id
+               AND eel.student_id = :student_id_external
+               AND eel.is_active = 1';
+            $params[':student_id_external'] = $studentId;
+        }
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $companyFilter = ' AND c.company_id = :company_id';
             $params[':company_id'] = $companyId;
@@ -1110,11 +1134,13 @@ class StudentPortalModel extends BaseModel
                 ex.description,
                 ex.passing_score,
                 {$scheduleSelect}
+                {$externalSelect}
                 c.id AS course_id,
                 c.name AS course_name
             FROM exams ex
             INNER JOIN courses c ON c.id = ex.course_id
             INNER JOIN enrollments e ON e.course_id = c.id
+            {$externalJoin}
             WHERE ex.id = :exam_id
               AND e.student_id = :student_id
               AND c.status = 'published'
@@ -1125,6 +1151,39 @@ class StudentPortalModel extends BaseModel
 
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    public function markExternalExamOpened(int $studentId, int $examId): void
+    {
+        if ($studentId <= 0 || $examId <= 0 || !$this->hasExamExternalLinksTable()) {
+            return;
+        }
+
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $companyFilter = '';
+        $params = [
+            ':opened_at' => now(),
+            ':updated_at' => now(),
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+        ];
+        if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+            $companyFilter = ' AND c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        $stmt = $this->db->prepare("UPDATE exam_external_links eel
+            INNER JOIN exams ex ON ex.id = eel.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            SET eel.first_opened_at = COALESCE(eel.first_opened_at, :opened_at),
+                eel.last_opened_at = :opened_at,
+                eel.open_count = COALESCE(eel.open_count, 0) + 1,
+                eel.updated_at = :updated_at
+            WHERE eel.exam_id = :exam_id
+              AND eel.student_id = :student_id
+              AND eel.is_active = 1
+              {$companyFilter}");
+        $stmt->execute($params);
     }
 
     public function upcomingExamCalendar(int $studentId, int $limit = 12): array
@@ -1819,6 +1878,22 @@ class StudentPortalModel extends BaseModel
         $this->examScheduleColumnExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->examScheduleColumnExists;
+    }
+
+    private function hasExamExternalLinksTable(): bool
+    {
+        if ($this->examExternalLinksTableExists !== null) {
+            return $this->examExternalLinksTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'exam_external_links'");
+        $stmt->execute();
+        $this->examExternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->examExternalLinksTableExists;
     }
 
     private function hasStudentProfilePhotoColumn(): bool

@@ -185,6 +185,42 @@ function has_permission(string $module): bool
     return in_array($module, $customPermissions, true) || in_array($module, $rolePermissions, true);
 }
 
+function default_admin_route(): string
+{
+    if (!is_logged_in()) {
+        return 'login';
+    }
+
+    if (current_company_id() === null) {
+        return 'select-company';
+    }
+
+    $priority = [
+        'dashboard' => 'dashboard',
+        'students' => 'students',
+        'courses' => 'courses',
+        'leads' => 'leads',
+        'kanban' => 'kanban',
+        'finance' => 'finance/invoices',
+        'chatwoot' => 'chatwoot',
+        'signatures' => 'signatures',
+        'arsenal' => 'arsenal',
+        'requests' => 'requests',
+        'automations' => 'automations',
+        'help' => 'help',
+        'companies' => 'companies',
+        'users' => 'users',
+    ];
+
+    foreach ($priority as $permission => $route) {
+        if (has_permission($permission)) {
+            return $route;
+        }
+    }
+
+    return 'logout';
+}
+
 function require_auth(): void
 {
     if (!is_logged_in()) {
@@ -203,7 +239,7 @@ function require_permission(string $module): void
 {
     if (!has_permission($module)) {
         flash('error', 'Voce nao possui permissao para este modulo.');
-        redirect('dashboard');
+        redirect(default_admin_route());
     }
 }
 
@@ -212,7 +248,7 @@ function require_admin(): void
     require_auth();
     if (!is_admin()) {
         flash('error', 'Acesso restrito ao administrador.');
-        redirect('dashboard');
+        redirect(default_admin_route());
     }
 }
 

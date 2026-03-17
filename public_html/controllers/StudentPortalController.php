@@ -536,6 +536,11 @@ class StudentPortalController extends BaseController
             $this->redirect('student/exams');
         }
 
+        $externalUrl = trim((string) ($exam['external_url'] ?? ''));
+        if ($externalUrl !== '') {
+            $this->redirect('student/exams/external&id=' . $examId);
+        }
+
         if ($this->portal->hasFinalExamResult($studentId, $examId)) {
             $this->error('Esse exame ja possui resultado registrado para voce.');
             $this->redirect('student/exams');
@@ -560,6 +565,48 @@ class StudentPortalController extends BaseController
         ], 'layouts/student');
     }
 
+    public function openExternalExam(): void
+    {
+        require_student_auth();
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $examId = (int) request('id');
+
+        if ($examId <= 0) {
+            $this->error('Exame invalido.');
+            $this->redirect('student/exams');
+        }
+
+        $exam = $this->portal->findAvailableExam($studentId, $examId);
+        if (!$exam) {
+            $this->error('Exame nao encontrado para sua matricula.');
+            $this->redirect('student/exams');
+        }
+
+        if ($this->portal->hasFinalExamResult($studentId, $examId)) {
+            $this->error('Esse exame ja possui resultado publicado.');
+            $this->redirect('student/exams');
+        }
+
+        $scheduledAt = trim((string) ($exam['scheduled_at'] ?? ''));
+        $scheduledTs = $scheduledAt !== '' ? strtotime($scheduledAt) : false;
+        if ($scheduledTs !== false && $scheduledTs > time()) {
+            $this->error('Essa prova externa sera liberada em ' . date('d/m/Y H:i', $scheduledTs) . '.');
+            $this->redirect('student/exams');
+        }
+
+        $externalUrl = trim((string) ($exam['external_url'] ?? ''));
+        if ($externalUrl === '' || !$this->isHttpUrl($externalUrl)) {
+            $this->error('Link externo da prova invalido. Contate seu professor.');
+            $this->redirect('student/exams');
+        }
+
+        $this->portal->markExternalExamOpened($studentId, $examId);
+        header('Location: ' . $externalUrl);
+        exit;
+    }
+
     public function submitExam(): void
     {
         require_student_auth();
@@ -577,6 +624,11 @@ class StudentPortalController extends BaseController
         $exam = $this->portal->findAvailableExam($studentId, $examId);
         if (!$exam) {
             $this->error('Exame nao encontrado para sua matricula.');
+            $this->redirect('student/exams');
+        }
+
+        if (trim((string) ($exam['external_url'] ?? '')) !== '') {
+            $this->error('Esta avaliacao e externa. Use o botao "Abrir prova externa" na lista de avaliacoes.');
             $this->redirect('student/exams');
         }
 
@@ -750,5 +802,15 @@ class StudentPortalController extends BaseController
         }
 
         return 'application/octet-stream';
+    }
+
+    private function isHttpUrl(string $url): bool
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https'], true);
     }
 }
