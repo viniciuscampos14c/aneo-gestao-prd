@@ -1366,6 +1366,35 @@ class StudentPortalModel extends BaseModel
         return $stmt->fetchAll();
     }
 
+    public function studentAcademicProfile(int $studentId): ?array
+    {
+        if ($studentId <= 0) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                s.id,
+                s.full_name,
+                s.email_primary,
+                s.phone,
+                s.ra,
+                s.birth_date,
+                s.rg,
+                s.cro,
+                s.company_id,
+                c.legal_name AS company_legal_name,
+                c.trade_name AS company_trade_name,
+                c.cnpj AS company_cnpj
+            FROM students s
+            LEFT JOIN companies c ON c.id = s.company_id
+            WHERE s.id = :student_id
+            LIMIT 1");
+        $stmt->execute([':student_id' => $studentId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     private function findStudentCourse(int $studentId, int $courseId): ?array
     {
         $companyId = $this->resolveStudentCompanyId($studentId);

@@ -38,6 +38,7 @@ $menu = $isTrialAccess
         ['label' => 'Chamados', 'route' => 'student/requests'],
         ['label' => 'Progresso', 'route' => 'student/progress'],
         ['label' => 'Avaliacoes', 'route' => 'student/exams'],
+        ['label' => 'Historico Academico', 'route' => 'student/academic-history'],
     ];
 ?>
 <div class="min-h-screen">

@@ -3,9 +3,14 @@ $scheduleEnabled = $examScheduleEnabled ?? false;
 $calendarRows = $examCalendar ?? [];
 ?>
 <section class="space-y-6">
-    <div>
-        <h2 class="text-2xl font-semibold">Avaliacoes</h2>
-        <p class="text-sm text-slate-500">Responda provas disponiveis e acompanhe seu historico.</p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <h2 class="text-2xl font-semibold">Avaliacoes</h2>
+            <p class="text-sm text-slate-500">Responda provas disponiveis e acompanhe seu historico.</p>
+        </div>
+        <a href="<?= route('student/academic-history'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            Historico Academico
+        </a>
     </div>
 
     <section class="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
@@ -154,4 +159,5 @@ $calendarRows = $examCalendar ?? [];
             </table>
         </div>
     </section>
+
 </section>

@@ -392,6 +392,104 @@ class StudentPortalController extends BaseController
         ], 'layouts/student');
     }
 
+    public function academicHistory(): void
+    {
+        require_student_auth();
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        if ($studentId <= 0) {
+            $this->error('Aluno invalido para emitir historico academico.');
+            $this->redirect('student/dashboard');
+        }
+
+        $profile = $this->portal->studentAcademicProfile($studentId) ?? [];
+        $history = $this->portal->examHistory($studentId);
+        $courses = $this->portal->myCourses($studentId);
+
+        $courseWorkload = [];
+        $totalWorkload = 0.0;
+        foreach ($courses as $course) {
+            $courseName = trim((string) ($course['name'] ?? ''));
+            $workload = (float) ($course['workload_hours'] ?? 0);
+            if ($courseName !== '' && $workload > 0) {
+                $courseWorkload[strtolower($courseName)] = $workload;
+                $totalWorkload += $workload;
+            }
+        }
+
+        $terms = [];
+        foreach ($history as $row) {
+            $submittedAt = trim((string) ($row['submitted_at'] ?? ''));
+            $timestamp = $submittedAt !== '' ? strtotime($submittedAt) : false;
+            $year = $timestamp !== false ? (int) date('Y', $timestamp) : (int) date('Y');
+            $semester = $timestamp !== false ? ((int) date('n', $timestamp) <= 6 ? 1 : 2) : 1;
+            $termKey = $year . '-' . $semester;
+
+            if (!isset($terms[$termKey])) {
+                $terms[$termKey] = [
+                    'sort_key' => sprintf('%04d-%d', $year, $semester),
+                    'term_label' => $semester . ' Semestre / ' . $year,
+                    'rows' => [],
+                ];
+            }
+
+            $courseName = trim((string) ($row['course_name'] ?? ''));
+            $workload = 0.0;
+            if ($courseName !== '') {
+                $workload = (float) ($courseWorkload[strtolower($courseName)] ?? 0);
+            }
+
+            $terms[$termKey]['rows'][] = [
+                'date' => $submittedAt,
+                'course_name' => $courseName,
+                'exam_title' => trim((string) ($row['exam_title'] ?? '')),
+                'passing_score' => (float) ($row['passing_score'] ?? 0),
+                'score' => (float) ($row['score'] ?? 0),
+                'status' => (string) ($row['status'] ?? 'failed'),
+                'workload' => $workload,
+                'absences' => 0,
+            ];
+        }
+
+        $termList = array_values($terms);
+        usort($termList, function (array $a, array $b): int {
+            return strcmp((string) ($b['sort_key'] ?? ''), (string) ($a['sort_key'] ?? ''));
+        });
+
+        $ra = trim((string) ($profile['ra'] ?? ''));
+        if ($ra === '') {
+            $ra = str_pad((string) $studentId, 9, '0', STR_PAD_LEFT);
+        }
+
+        $approvedCount = 0;
+        $sumScores = 0.0;
+        foreach ($history as $row) {
+            $sumScores += (float) ($row['score'] ?? 0);
+            if ((string) ($row['status'] ?? '') === 'approved') {
+                $approvedCount++;
+            }
+        }
+
+        $totalResults = count($history);
+        $failedCount = max(0, $totalResults - $approvedCount);
+        $averageScore = $totalResults > 0 ? ($sumScores / $totalResults) : 0.0;
+
+        $this->render('student_portal/academic_history', [
+            'title' => 'Historico Academico',
+            'student' => $student,
+            'profile' => $profile,
+            'ra' => $ra,
+            'terms' => $termList,
+            'totalResults' => $totalResults,
+            'approvedCount' => $approvedCount,
+            'failedCount' => $failedCount,
+            'averageScore' => $averageScore,
+            'totalWorkload' => $totalWorkload,
+            'issuedAt' => now(),
+        ], 'layouts/student');
+    }
+
     public function calendar(): void
     {
         require_student_auth();
