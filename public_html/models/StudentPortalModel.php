@@ -14,6 +14,9 @@ class StudentPortalModel extends BaseModel
     private ?bool $arsenalItemStudentsTableExists = null;
     private ?bool $arsenalAccessLogsTableExists = null;
     private ?bool $trialAccessTableExists = null;
+    private ?bool $courseModulesTableExists = null;
+    private ?bool $courseLessonsTableExists = null;
+    private ?bool $studentLessonProgressTableExists = null;
 
     public function portalFeatureAvailable(): bool
     {
@@ -36,6 +39,13 @@ class StudentPortalModel extends BaseModel
             && $this->hasArsenalCategoriesTable()
             && $this->hasArsenalItemCoursesTable()
             && $this->hasArsenalItemStudentsTable();
+    }
+
+    public function lmsFeatureAvailable(): bool
+    {
+        return $this->hasCourseModulesTable()
+            && $this->hasCourseLessonsTable()
+            && $this->hasStudentLessonProgressTable();
     }
 
     public function findAccountByLogin(string $login): ?array
@@ -300,6 +310,9 @@ class StudentPortalModel extends BaseModel
     public function myCourses(int $studentId): array
     {
         $companyId = $this->resolveStudentCompanyId($studentId);
+        $modulesSelect = $this->lmsFeatureAvailable()
+            ? '(SELECT COUNT(*) FROM course_modules cm WHERE cm.course_id = c.id AND cm.is_active = 1) AS modules_total,'
+            : '0 AS modules_total,';
 
         $sql = "SELECT
                 e.id,
@@ -316,6 +329,7 @@ class StudentPortalModel extends BaseModel
                 c.live_password,
                 c.live_meeting_id,
                 c.live_datetime,
+                {$modulesSelect}
                 cat.name AS category_name
             FROM enrollments e
             INNER JOIN courses c ON c.id = e.course_id
@@ -676,6 +690,333 @@ class StudentPortalModel extends BaseModel
         ];
     }
 
+    public function courseLearningPath(int $studentId, int $courseId, ?int $preferredLessonId = null): ?array
+    {
+        if ($studentId <= 0 || $courseId <= 0 || !$this->lmsFeatureAvailable()) {
+            return null;
+        }
+
+        $course = $this->findStudentCourse($studentId, $courseId);
+        if (!$course) {
+            return null;
+        }
+
+        $progressSync = $this->syncEnrollmentProgressFromLessons($studentId, $courseId);
+        $statusMap = $this->moduleStatusMap($studentId, $courseId);
+
+        $moduleStmt = $this->db->prepare('SELECT
+                id,
+                title,
+                description,
+                display_order
+            FROM course_modules
+            WHERE course_id = :course_id
+              AND is_active = 1
+            ORDER BY display_order ASC, id ASC');
+        $moduleStmt->execute([':course_id' => $courseId]);
+        $moduleRows = $moduleStmt->fetchAll();
+
+        $lessonStmt = $this->db->prepare('SELECT
+                cl.id,
+                cl.module_id,
+                cl.title,
+                cl.description,
+                cl.video_url,
+                cl.duration_seconds,
+                cl.min_progress_percent,
+                cl.is_required,
+                cl.display_order,
+                COALESCE(slp.watched_seconds, 0) AS watched_seconds,
+                COALESCE(slp.last_position_seconds, 0) AS last_position_seconds,
+                COALESCE(slp.progress_percent, 0) AS progress_percent,
+                slp.completed_at
+            FROM course_lessons cl
+            LEFT JOIN student_lesson_progress slp ON slp.lesson_id = cl.id AND slp.student_id = :student_id
+            WHERE cl.course_id = :course_id
+              AND cl.is_active = 1
+            ORDER BY cl.module_id ASC, cl.display_order ASC, cl.id ASC');
+        $lessonStmt->execute([
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+        ]);
+        $lessonRows = $lessonStmt->fetchAll();
+
+        $lessonsByModule = [];
+        foreach ($lessonRows as $lesson) {
+            $moduleId = (int) ($lesson['module_id'] ?? 0);
+            if (!isset($lessonsByModule[$moduleId])) {
+                $lessonsByModule[$moduleId] = [];
+            }
+
+            $progressPercent = (int) ($lesson['progress_percent'] ?? 0);
+            $threshold = (int) ($lesson['min_progress_percent'] ?? 70);
+            if ($threshold <= 0 || $threshold > 100) {
+                $threshold = 70;
+            }
+
+            $lesson['progress_percent'] = $progressPercent;
+            $lesson['min_progress_percent'] = $threshold;
+            $lesson['is_completed'] = $progressPercent >= $threshold;
+            $lessonsByModule[$moduleId][] = $lesson;
+        }
+
+        $modules = [];
+        $firstUnlockedIncomplete = null;
+        $firstUnlocked = null;
+
+        foreach ($moduleRows as $row) {
+            $moduleId = (int) ($row['id'] ?? 0);
+            $moduleStatus = $statusMap[$moduleId] ?? [
+                'is_unlocked' => false,
+                'is_completed' => false,
+                'required_lessons' => 0,
+                'required_completed_lessons' => 0,
+                'total_lessons' => 0,
+                'completed_lessons' => 0,
+                'next_module_id' => null,
+            ];
+
+            $moduleLessons = $lessonsByModule[$moduleId] ?? [];
+            $module = [
+                'id' => $moduleId,
+                'title' => (string) ($row['title'] ?? ''),
+                'description' => (string) ($row['description'] ?? ''),
+                'display_order' => (int) ($row['display_order'] ?? 0),
+                'is_unlocked' => !empty($moduleStatus['is_unlocked']),
+                'is_completed' => !empty($moduleStatus['is_completed']),
+                'required_lessons' => (int) ($moduleStatus['required_lessons'] ?? 0),
+                'required_completed_lessons' => (int) ($moduleStatus['required_completed_lessons'] ?? 0),
+                'total_lessons' => (int) ($moduleStatus['total_lessons'] ?? 0),
+                'completed_lessons' => (int) ($moduleStatus['completed_lessons'] ?? 0),
+                'next_module_id' => $moduleStatus['next_module_id'] ?? null,
+                'lessons' => $moduleLessons,
+            ];
+
+            if ($module['is_unlocked']) {
+                foreach ($moduleLessons as $lesson) {
+                    if ($firstUnlocked === null) {
+                        $firstUnlocked = $lesson;
+                    }
+                    if ($firstUnlockedIncomplete === null && empty($lesson['is_completed'])) {
+                        $firstUnlockedIncomplete = $lesson;
+                    }
+                }
+            }
+
+            $modules[] = $module;
+        }
+
+        $selectedLesson = null;
+        $preferredLessonId = (int) ($preferredLessonId ?? 0);
+        if ($preferredLessonId > 0) {
+            foreach ($modules as $module) {
+                if (empty($module['is_unlocked'])) {
+                    continue;
+                }
+                foreach ($module['lessons'] as $lesson) {
+                    if ((int) ($lesson['id'] ?? 0) === $preferredLessonId) {
+                        $selectedLesson = $lesson;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        if ($selectedLesson === null) {
+            $selectedLesson = $firstUnlockedIncomplete ?? $firstUnlocked;
+        }
+
+        return [
+            'course' => $course,
+            'modules' => $modules,
+            'selected_lesson' => $selectedLesson,
+            'summary' => [
+                'progress_percent' => (int) ($progressSync['progress_percent'] ?? (int) ($course['progress_percent'] ?? 0)),
+                'course_completed' => !empty($progressSync['course_completed']),
+                'required_lessons' => (int) ($progressSync['required_lessons'] ?? 0),
+                'required_completed_lessons' => (int) ($progressSync['required_completed_lessons'] ?? 0),
+            ],
+        ];
+    }
+
+    public function recordLessonProgress(
+        int $studentId,
+        int $courseId,
+        int $lessonId,
+        int $watchedSeconds,
+        int $durationSeconds,
+        int $positionSeconds
+    ): array {
+        $result = [
+            'ok' => false,
+            'message' => 'Nao foi possivel registrar o progresso.',
+        ];
+
+        if ($studentId <= 0 || $courseId <= 0 || $lessonId <= 0 || !$this->lmsFeatureAvailable()) {
+            $result['message'] = 'Funcionalidade de progresso indisponivel.';
+            return $result;
+        }
+
+        $course = $this->findStudentCourse($studentId, $courseId);
+        if (!$course) {
+            $result['message'] = 'Curso nao encontrado para sua matricula.';
+            return $result;
+        }
+
+        $lesson = $this->findStudentCourseLesson($studentId, $courseId, $lessonId);
+        if (!$lesson) {
+            $result['message'] = 'Aula nao encontrada para este curso.';
+            return $result;
+        }
+
+        $moduleId = (int) ($lesson['module_id'] ?? 0);
+        $statusBefore = $this->moduleStatusMap($studentId, $courseId);
+        if (!isset($statusBefore[$moduleId]) || empty($statusBefore[$moduleId]['is_unlocked'])) {
+            $result['message'] = 'Modulo ainda bloqueado. Conclua o modulo anterior primeiro.';
+            return $result;
+        }
+
+        $threshold = (int) ($lesson['min_progress_percent'] ?? 70);
+        if ($threshold <= 0 || $threshold > 100) {
+            $threshold = 70;
+        }
+
+        $durationFromLesson = (int) ($lesson['duration_seconds'] ?? 0);
+        if ($durationFromLesson > 0) {
+            $durationSeconds = max($durationSeconds, $durationFromLesson);
+        }
+        $durationSeconds = max(1, $durationSeconds);
+
+        $watchedSeconds = max(0, $watchedSeconds);
+        $positionSeconds = max(0, $positionSeconds);
+
+        $stmt = $this->db->prepare('SELECT
+                id,
+                watched_seconds,
+                last_position_seconds,
+                progress_percent,
+                completed_at
+            FROM student_lesson_progress
+            WHERE student_id = :student_id
+              AND lesson_id = :lesson_id
+            LIMIT 1');
+        $stmt->execute([
+            ':student_id' => $studentId,
+            ':lesson_id' => $lessonId,
+        ]);
+        $existing = $stmt->fetch() ?: null;
+
+        $existingWatched = (int) ($existing['watched_seconds'] ?? 0);
+        $existingPosition = (int) ($existing['last_position_seconds'] ?? 0);
+        $existingProgress = (int) ($existing['progress_percent'] ?? 0);
+        $wasCompleted = $existingProgress >= $threshold;
+
+        $newWatched = max($existingWatched, $watchedSeconds, $positionSeconds);
+        if ($newWatched > $durationSeconds) {
+            $newWatched = $durationSeconds;
+        }
+
+        $newPosition = max($existingPosition, $positionSeconds);
+        if ($newPosition > $durationSeconds) {
+            $newPosition = $durationSeconds;
+        }
+
+        $calculatedProgress = (int) round(($newWatched / max(1, $durationSeconds)) * 100);
+        $calculatedProgress = min(100, max(0, $calculatedProgress));
+        $newProgress = max($existingProgress, $calculatedProgress);
+        if ($newProgress > 100) {
+            $newProgress = 100;
+        }
+
+        $isCompleted = $newProgress >= $threshold;
+        $completedAt = $existing['completed_at'] ?? null;
+        if ($isCompleted && $completedAt === null) {
+            $completedAt = now();
+        }
+
+        if ($existing) {
+            $updateStmt = $this->db->prepare('UPDATE student_lesson_progress SET
+                watched_seconds = :watched_seconds,
+                last_position_seconds = :last_position_seconds,
+                progress_percent = :progress_percent,
+                completed_at = :completed_at,
+                last_event_at = :last_event_at,
+                updated_at = :updated_at
+                WHERE id = :id');
+            $updateStmt->execute([
+                ':watched_seconds' => $newWatched,
+                ':last_position_seconds' => $newPosition,
+                ':progress_percent' => $newProgress,
+                ':completed_at' => $completedAt,
+                ':last_event_at' => now(),
+                ':updated_at' => now(),
+                ':id' => (int) $existing['id'],
+            ]);
+        } else {
+            $insertStmt = $this->db->prepare('INSERT INTO student_lesson_progress (
+                student_id,
+                course_id,
+                module_id,
+                lesson_id,
+                watched_seconds,
+                last_position_seconds,
+                progress_percent,
+                completed_at,
+                last_event_at,
+                created_at,
+                updated_at
+            ) VALUES (
+                :student_id,
+                :course_id,
+                :module_id,
+                :lesson_id,
+                :watched_seconds,
+                :last_position_seconds,
+                :progress_percent,
+                :completed_at,
+                :last_event_at,
+                :created_at,
+                :updated_at
+            )');
+            $insertStmt->execute([
+                ':student_id' => $studentId,
+                ':course_id' => $courseId,
+                ':module_id' => $moduleId,
+                ':lesson_id' => $lessonId,
+                ':watched_seconds' => $newWatched,
+                ':last_position_seconds' => $newPosition,
+                ':progress_percent' => $newProgress,
+                ':completed_at' => $completedAt,
+                ':last_event_at' => now(),
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+        }
+
+        $progressSync = $this->syncEnrollmentProgressFromLessons($studentId, $courseId);
+        $statusAfter = $this->moduleStatusMap($studentId, $courseId);
+        $moduleStatus = $statusAfter[$moduleId] ?? [];
+        $nextModuleId = $moduleStatus['next_module_id'] ?? null;
+        $nextModuleUnlocked = false;
+        if ($nextModuleId !== null && isset($statusAfter[(int) $nextModuleId])) {
+            $nextModuleUnlocked = !empty($statusAfter[(int) $nextModuleId]['is_unlocked']);
+        }
+
+        $result['ok'] = true;
+        $result['message'] = 'Progresso salvo.';
+        $result['progress_percent'] = $newProgress;
+        $result['required_percent'] = $threshold;
+        $result['lesson_completed'] = $isCompleted;
+        $result['lesson_just_completed'] = !$wasCompleted && $isCompleted;
+        $result['module_completed'] = !empty($moduleStatus['is_completed']);
+        $result['next_module_id'] = $nextModuleId;
+        $result['next_module_unlocked'] = $nextModuleUnlocked;
+        $result['course_progress_percent'] = (int) ($progressSync['progress_percent'] ?? 0);
+        $result['course_completed'] = !empty($progressSync['course_completed']);
+
+        return $result;
+    }
+
     public function listAvailableExams(int $studentId): array
     {
         $submissionSelect = 'NULL AS submission_id, NULL AS submission_status, NULL AS submission_submitted_at';
@@ -1025,6 +1366,288 @@ class StudentPortalModel extends BaseModel
         return $stmt->fetchAll();
     }
 
+    private function findStudentCourse(int $studentId, int $courseId): ?array
+    {
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $companyFilter = '';
+        $params = [
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+        ];
+
+        if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+            $companyFilter = ' AND c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                e.id AS enrollment_id,
+                e.status AS enrollment_status,
+                e.progress_percent,
+                e.started_at,
+                e.completed_at,
+                c.id AS course_id,
+                c.name,
+                c.description,
+                c.cover_image,
+                c.workload_hours
+            FROM enrollments e
+            INNER JOIN courses c ON c.id = e.course_id
+            WHERE e.student_id = :student_id
+              AND e.course_id = :course_id
+              AND e.status IN ('active', 'completed')
+              AND c.status = 'published'
+              {$companyFilter}
+            LIMIT 1");
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    private function findStudentCourseLesson(int $studentId, int $courseId, int $lessonId): ?array
+    {
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $companyFilter = '';
+        $params = [
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+            ':lesson_id' => $lessonId,
+        ];
+
+        if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+            $companyFilter = ' AND c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                cl.id,
+                cl.course_id,
+                cl.module_id,
+                cl.title,
+                cl.video_url,
+                cl.duration_seconds,
+                cl.min_progress_percent
+            FROM course_lessons cl
+            INNER JOIN course_modules cm ON cm.id = cl.module_id
+            INNER JOIN courses c ON c.id = cl.course_id
+            INNER JOIN enrollments e ON e.course_id = c.id
+            WHERE cl.id = :lesson_id
+              AND cl.course_id = :course_id
+              AND cl.is_active = 1
+              AND cm.is_active = 1
+              AND e.student_id = :student_id
+              AND e.status IN ('active', 'completed')
+              AND c.status = 'published'
+              {$companyFilter}
+            LIMIT 1");
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    private function moduleStatusMap(int $studentId, int $courseId): array
+    {
+        if ($studentId <= 0 || $courseId <= 0 || !$this->lmsFeatureAvailable()) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare('SELECT
+                cm.id AS module_id,
+                cm.display_order,
+                COUNT(cl.id) AS total_lessons,
+                SUM(CASE WHEN cl.is_required = 1 THEN 1 ELSE 0 END) AS required_lessons,
+                SUM(CASE WHEN cl.is_required = 1 AND COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS required_completed_lessons,
+                SUM(CASE WHEN COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS completed_lessons
+            FROM course_modules cm
+            LEFT JOIN course_lessons cl ON cl.module_id = cm.id AND cl.is_active = 1
+            LEFT JOIN student_lesson_progress slp ON slp.lesson_id = cl.id AND slp.student_id = :student_id
+            WHERE cm.course_id = :course_id
+              AND cm.is_active = 1
+            GROUP BY cm.id, cm.display_order
+            ORDER BY cm.display_order ASC, cm.id ASC');
+        $stmt->execute([
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+        ]);
+        $rows = $stmt->fetchAll();
+        if ($rows === []) {
+            return [];
+        }
+
+        $map = [];
+        $previousModulesCompleted = true;
+        $total = count($rows);
+
+        foreach ($rows as $index => $row) {
+            $moduleId = (int) ($row['module_id'] ?? 0);
+            $totalLessons = (int) ($row['total_lessons'] ?? 0);
+            $requiredLessons = (int) ($row['required_lessons'] ?? 0);
+            $completedLessons = (int) ($row['completed_lessons'] ?? 0);
+            $requiredCompletedLessons = (int) ($row['required_completed_lessons'] ?? 0);
+
+            $isCompleted = $this->isModuleCompleted(
+                $totalLessons,
+                $requiredLessons,
+                $completedLessons,
+                $requiredCompletedLessons
+            );
+            $isUnlocked = $index === 0 ? true : $previousModulesCompleted;
+
+            $nextModuleId = null;
+            if ($index < ($total - 1)) {
+                $nextModuleId = (int) ($rows[$index + 1]['module_id'] ?? 0);
+                if ($nextModuleId <= 0) {
+                    $nextModuleId = null;
+                }
+            }
+
+            $map[$moduleId] = [
+                'module_id' => $moduleId,
+                'display_order' => (int) ($row['display_order'] ?? 0),
+                'total_lessons' => $totalLessons,
+                'required_lessons' => $requiredLessons,
+                'completed_lessons' => $completedLessons,
+                'required_completed_lessons' => $requiredCompletedLessons,
+                'is_completed' => $isCompleted,
+                'is_unlocked' => $isUnlocked,
+                'next_module_id' => $nextModuleId,
+            ];
+
+            if (!$isCompleted) {
+                $previousModulesCompleted = false;
+            }
+        }
+
+        return $map;
+    }
+
+    private function isModuleCompleted(
+        int $totalLessons,
+        int $requiredLessons,
+        int $completedLessons,
+        int $requiredCompletedLessons
+    ): bool {
+        if ($requiredLessons > 0) {
+            return $requiredCompletedLessons >= $requiredLessons;
+        }
+
+        if ($totalLessons > 0) {
+            return $completedLessons >= $totalLessons;
+        }
+
+        return true;
+    }
+
+    private function syncEnrollmentProgressFromLessons(int $studentId, int $courseId): array
+    {
+        $course = $this->findStudentCourse($studentId, $courseId);
+        if (!$course) {
+            return [
+                'progress_percent' => 0,
+                'course_completed' => false,
+                'required_lessons' => 0,
+                'required_completed_lessons' => 0,
+            ];
+        }
+
+        if (!$this->lmsFeatureAvailable()) {
+            return [
+                'progress_percent' => (int) ($course['progress_percent'] ?? 0),
+                'course_completed' => ((string) ($course['enrollment_status'] ?? '')) === 'completed',
+                'required_lessons' => 0,
+                'required_completed_lessons' => 0,
+            ];
+        }
+
+        $stmt = $this->db->prepare('SELECT
+                COUNT(cl.id) AS total_lessons,
+                SUM(CASE WHEN cl.is_required = 1 THEN 1 ELSE 0 END) AS required_lessons,
+                SUM(CASE WHEN COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS completed_lessons,
+                SUM(CASE WHEN cl.is_required = 1 AND COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS required_completed_lessons,
+                AVG(COALESCE(slp.progress_percent, 0)) AS avg_progress_all,
+                AVG(CASE WHEN cl.is_required = 1 THEN COALESCE(slp.progress_percent, 0) END) AS avg_progress_required
+            FROM course_lessons cl
+            INNER JOIN course_modules cm ON cm.id = cl.module_id
+            LEFT JOIN student_lesson_progress slp ON slp.lesson_id = cl.id AND slp.student_id = :student_id
+            WHERE cl.course_id = :course_id
+              AND cl.is_active = 1
+              AND cm.is_active = 1');
+        $stmt->execute([
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+        ]);
+        $row = $stmt->fetch() ?: [];
+
+        $totalLessons = (int) ($row['total_lessons'] ?? 0);
+        $requiredLessons = (int) ($row['required_lessons'] ?? 0);
+        $completedLessons = (int) ($row['completed_lessons'] ?? 0);
+        $requiredCompletedLessons = (int) ($row['required_completed_lessons'] ?? 0);
+        $avgProgressAll = (float) ($row['avg_progress_all'] ?? 0);
+        $avgProgressRequired = (float) ($row['avg_progress_required'] ?? 0);
+
+        if ($totalLessons <= 0) {
+            return [
+                'progress_percent' => (int) ($course['progress_percent'] ?? 0),
+                'course_completed' => ((string) ($course['enrollment_status'] ?? '')) === 'completed',
+                'required_lessons' => 0,
+                'required_completed_lessons' => 0,
+            ];
+        }
+
+        $progressPercent = 0;
+        $courseCompleted = false;
+
+        if ($requiredLessons > 0) {
+            $progressPercent = (int) round($avgProgressRequired);
+            $courseCompleted = $requiredCompletedLessons >= $requiredLessons;
+        } elseif ($totalLessons > 0) {
+            $progressPercent = (int) round($avgProgressAll);
+            $courseCompleted = $completedLessons >= $totalLessons;
+        }
+
+        $progressPercent = max(0, min(100, $progressPercent));
+        $enrollmentStatus = (string) ($course['enrollment_status'] ?? '');
+
+        if ($enrollmentStatus !== 'cancelled') {
+            $startedAt = $course['started_at'] ?? null;
+            if (($startedAt === null || $startedAt === '') && $progressPercent > 0) {
+                $startedAt = date('Y-m-d');
+            }
+
+            $completedAt = null;
+            $targetStatus = 'active';
+            if ($courseCompleted) {
+                $targetStatus = 'completed';
+                $completedAt = $course['completed_at'] ?: date('Y-m-d');
+            }
+
+            $updateStmt = $this->db->prepare('UPDATE enrollments SET
+                progress_percent = :progress_percent,
+                status = :status,
+                started_at = :started_at,
+                completed_at = :completed_at,
+                updated_at = :updated_at
+                WHERE id = :id');
+            $updateStmt->execute([
+                ':progress_percent' => $progressPercent,
+                ':status' => $targetStatus,
+                ':started_at' => $startedAt,
+                ':completed_at' => $completedAt,
+                ':updated_at' => now(),
+                ':id' => (int) ($course['enrollment_id'] ?? 0),
+            ]);
+        }
+
+        return [
+            'progress_percent' => $progressPercent,
+            'course_completed' => $courseCompleted,
+            'required_lessons' => $requiredLessons,
+            'required_completed_lessons' => $requiredCompletedLessons,
+        ];
+    }
+
     private function trialLiveClasses(int $studentId, int $courseId, string $accessDate): array
     {
         if ($studentId <= 0 || $courseId <= 0 || $accessDate === '') {
@@ -1297,5 +1920,53 @@ class StudentPortalModel extends BaseModel
         $this->trialAccessTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->trialAccessTableExists;
+    }
+
+    private function hasCourseModulesTable(): bool
+    {
+        if ($this->courseModulesTableExists !== null) {
+            return $this->courseModulesTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_modules'");
+        $stmt->execute();
+        $this->courseModulesTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->courseModulesTableExists;
+    }
+
+    private function hasCourseLessonsTable(): bool
+    {
+        if ($this->courseLessonsTableExists !== null) {
+            return $this->courseLessonsTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_lessons'");
+        $stmt->execute();
+        $this->courseLessonsTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->courseLessonsTableExists;
+    }
+
+    private function hasStudentLessonProgressTable(): bool
+    {
+        if ($this->studentLessonProgressTableExists !== null) {
+            return $this->studentLessonProgressTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'student_lesson_progress'");
+        $stmt->execute();
+        $this->studentLessonProgressTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->studentLessonProgressTableExists;
     }
 }

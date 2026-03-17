@@ -65,7 +65,11 @@ $menu = $isTrialAccess
         </div>
         <nav class="mx-auto flex max-w-7xl flex-wrap gap-2 px-4 pb-4 lg:px-8">
             <?php foreach ($menu as $item): ?>
-                <?php $active = str_starts_with($currentRoute, $item['route']) ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' : 'border border-sky-100 bg-white/90 text-slate-700 hover:bg-sky-50'; ?>
+                <?php
+                $isCoursePlayerRoute = $item['route'] === 'student/courses' && str_starts_with($currentRoute, 'student/course');
+                $isActiveRoute = str_starts_with($currentRoute, $item['route']) || $isCoursePlayerRoute;
+                $active = $isActiveRoute ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20' : 'border border-sky-100 bg-white/90 text-slate-700 hover:bg-sky-50';
+                ?>
                 <a href="<?= route($item['route']); ?>" class="rounded-lg px-3 py-2 text-sm font-medium <?= $active; ?>"><?= e($item['label']); ?></a>
             <?php endforeach; ?>
             <a href="<?= route('student/logout'); ?>" class="rounded-lg border border-rose-200 bg-white/90 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">Sair</a>

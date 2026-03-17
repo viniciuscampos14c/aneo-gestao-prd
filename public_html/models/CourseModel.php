@@ -6,6 +6,9 @@ class CourseModel extends BaseModel
     private ?bool $courseCompanyColumnExists = null;
     private ?bool $categoryCompanyColumnExists = null;
     private ?bool $trialAccessTableExists = null;
+    private ?bool $courseModulesTableExists = null;
+    private ?bool $courseLessonsTableExists = null;
+    private ?bool $studentLessonProgressTableExists = null;
 
     public function categories(): array
     {
@@ -377,6 +380,369 @@ class CourseModel extends BaseModel
             ':id' => $uploadId,
             ':entity_type' => 'course',
         ]);
+    }
+
+    public function lmsFeatureAvailable(): bool
+    {
+        return $this->hasCourseModulesTable()
+            && $this->hasCourseLessonsTable()
+            && $this->hasStudentLessonProgressTable();
+    }
+
+    public function listCourseModulesWithLessons(int $courseId): array
+    {
+        if ($courseId <= 0 || !$this->lmsFeatureAvailable() || !$this->findCourse($courseId)) {
+            return [];
+        }
+
+        $moduleStmt = $this->db->prepare('SELECT
+                id,
+                course_id,
+                title,
+                description,
+                display_order,
+                is_active,
+                created_at,
+                updated_at
+            FROM course_modules
+            WHERE course_id = :course_id
+            ORDER BY display_order ASC, id ASC');
+        $moduleStmt->execute([':course_id' => $courseId]);
+        $modules = $moduleStmt->fetchAll();
+
+        if ($modules === []) {
+            return [];
+        }
+
+        $lessonStmt = $this->db->prepare('SELECT
+                id,
+                course_id,
+                module_id,
+                title,
+                description,
+                lesson_type,
+                video_url,
+                duration_seconds,
+                min_progress_percent,
+                is_required,
+                is_active,
+                display_order,
+                created_at,
+                updated_at
+            FROM course_lessons
+            WHERE course_id = :course_id
+            ORDER BY module_id ASC, display_order ASC, id ASC');
+        $lessonStmt->execute([':course_id' => $courseId]);
+        $lessons = $lessonStmt->fetchAll();
+
+        $byModule = [];
+        foreach ($lessons as $lesson) {
+            $moduleId = (int) ($lesson['module_id'] ?? 0);
+            if (!isset($byModule[$moduleId])) {
+                $byModule[$moduleId] = [];
+            }
+            $byModule[$moduleId][] = $lesson;
+        }
+
+        foreach ($modules as &$module) {
+            $moduleId = (int) ($module['id'] ?? 0);
+            $module['lessons'] = $byModule[$moduleId] ?? [];
+        }
+        unset($module);
+
+        return $modules;
+    }
+
+    public function createCourseModule(int $courseId, array $data, int $createdBy): int
+    {
+        if ($courseId <= 0 || !$this->lmsFeatureAvailable() || !$this->findCourse($courseId)) {
+            return 0;
+        }
+
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            return 0;
+        }
+
+        $description = trim((string) ($data['description'] ?? ''));
+        $displayOrder = (int) ($data['display_order'] ?? 0);
+        if ($displayOrder <= 0) {
+            $displayOrder = $this->nextModuleDisplayOrder($courseId);
+        }
+
+        $isActive = !empty($data['is_active']) ? 1 : 0;
+
+        $stmt = $this->db->prepare('INSERT INTO course_modules (
+            course_id,
+            title,
+            description,
+            display_order,
+            is_active,
+            created_by,
+            created_at,
+            updated_at
+        ) VALUES (
+            :course_id,
+            :title,
+            :description,
+            :display_order,
+            :is_active,
+            :created_by,
+            :created_at,
+            :updated_at
+        )');
+        $stmt->execute([
+            ':course_id' => $courseId,
+            ':title' => $title,
+            ':description' => $description !== '' ? $description : null,
+            ':display_order' => $displayOrder,
+            ':is_active' => $isActive,
+            ':created_by' => $createdBy,
+            ':created_at' => now(),
+            ':updated_at' => now(),
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function updateCourseModule(int $moduleId, array $data): bool
+    {
+        if ($moduleId <= 0 || !$this->lmsFeatureAvailable()) {
+            return false;
+        }
+
+        $module = $this->findCourseModule($moduleId);
+        if (!$module) {
+            return false;
+        }
+
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            return false;
+        }
+
+        $description = trim((string) ($data['description'] ?? ''));
+        $displayOrder = (int) ($data['display_order'] ?? 1);
+        if ($displayOrder <= 0) {
+            $displayOrder = 1;
+        }
+
+        $isActive = !empty($data['is_active']) ? 1 : 0;
+
+        $stmt = $this->db->prepare('UPDATE course_modules SET
+            title = :title,
+            description = :description,
+            display_order = :display_order,
+            is_active = :is_active,
+            updated_at = :updated_at
+            WHERE id = :id
+              AND course_id = :course_id');
+        $stmt->execute([
+            ':title' => $title,
+            ':description' => $description !== '' ? $description : null,
+            ':display_order' => $displayOrder,
+            ':is_active' => $isActive,
+            ':updated_at' => now(),
+            ':id' => $moduleId,
+            ':course_id' => (int) $module['course_id'],
+        ]);
+
+        return true;
+    }
+
+    public function deleteCourseModule(int $moduleId): bool
+    {
+        if ($moduleId <= 0 || !$this->lmsFeatureAvailable()) {
+            return false;
+        }
+
+        $module = $this->findCourseModule($moduleId);
+        if (!$module) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('DELETE FROM course_modules WHERE id = :id AND course_id = :course_id');
+        $stmt->execute([
+            ':id' => $moduleId,
+            ':course_id' => (int) $module['course_id'],
+        ]);
+
+        return true;
+    }
+
+    public function createCourseLesson(int $courseId, int $moduleId, array $data, int $createdBy): int
+    {
+        if ($courseId <= 0 || $moduleId <= 0 || !$this->lmsFeatureAvailable() || !$this->findCourse($courseId)) {
+            return 0;
+        }
+
+        $module = $this->findCourseModule($moduleId);
+        if (!$module || (int) ($module['course_id'] ?? 0) !== $courseId) {
+            return 0;
+        }
+
+        $title = trim((string) ($data['title'] ?? ''));
+        $videoUrl = trim((string) ($data['video_url'] ?? ''));
+
+        if ($title === '' || $videoUrl === '') {
+            return 0;
+        }
+
+        $description = trim((string) ($data['description'] ?? ''));
+        $durationSeconds = (int) ($data['duration_seconds'] ?? 0);
+        if ($durationSeconds <= 0) {
+            $durationSeconds = null;
+        }
+
+        $minProgressPercent = (int) ($data['min_progress_percent'] ?? 70);
+        if ($minProgressPercent <= 0 || $minProgressPercent > 100) {
+            $minProgressPercent = 70;
+        }
+
+        $displayOrder = (int) ($data['display_order'] ?? 0);
+        if ($displayOrder <= 0) {
+            $displayOrder = $this->nextLessonDisplayOrder($moduleId);
+        }
+
+        $isRequired = !empty($data['is_required']) ? 1 : 0;
+        $isActive = !empty($data['is_active']) ? 1 : 0;
+
+        $stmt = $this->db->prepare('INSERT INTO course_lessons (
+            course_id,
+            module_id,
+            title,
+            description,
+            lesson_type,
+            video_url,
+            duration_seconds,
+            min_progress_percent,
+            is_required,
+            is_active,
+            display_order,
+            created_by,
+            created_at,
+            updated_at
+        ) VALUES (
+            :course_id,
+            :module_id,
+            :title,
+            :description,
+            :lesson_type,
+            :video_url,
+            :duration_seconds,
+            :min_progress_percent,
+            :is_required,
+            :is_active,
+            :display_order,
+            :created_by,
+            :created_at,
+            :updated_at
+        )');
+
+        $stmt->execute([
+            ':course_id' => $courseId,
+            ':module_id' => $moduleId,
+            ':title' => $title,
+            ':description' => $description !== '' ? $description : null,
+            ':lesson_type' => 'video',
+            ':video_url' => $videoUrl,
+            ':duration_seconds' => $durationSeconds,
+            ':min_progress_percent' => $minProgressPercent,
+            ':is_required' => $isRequired,
+            ':is_active' => $isActive,
+            ':display_order' => $displayOrder,
+            ':created_by' => $createdBy,
+            ':created_at' => now(),
+            ':updated_at' => now(),
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function updateCourseLesson(int $lessonId, array $data): bool
+    {
+        if ($lessonId <= 0 || !$this->lmsFeatureAvailable()) {
+            return false;
+        }
+
+        $lesson = $this->findCourseLesson($lessonId);
+        if (!$lesson) {
+            return false;
+        }
+
+        $title = trim((string) ($data['title'] ?? ''));
+        $videoUrl = trim((string) ($data['video_url'] ?? ''));
+
+        if ($title === '' || $videoUrl === '') {
+            return false;
+        }
+
+        $description = trim((string) ($data['description'] ?? ''));
+        $durationSeconds = (int) ($data['duration_seconds'] ?? 0);
+        if ($durationSeconds <= 0) {
+            $durationSeconds = null;
+        }
+
+        $minProgressPercent = (int) ($data['min_progress_percent'] ?? 70);
+        if ($minProgressPercent <= 0 || $minProgressPercent > 100) {
+            $minProgressPercent = 70;
+        }
+
+        $displayOrder = (int) ($data['display_order'] ?? 1);
+        if ($displayOrder <= 0) {
+            $displayOrder = 1;
+        }
+
+        $isRequired = !empty($data['is_required']) ? 1 : 0;
+        $isActive = !empty($data['is_active']) ? 1 : 0;
+
+        $stmt = $this->db->prepare('UPDATE course_lessons SET
+            title = :title,
+            description = :description,
+            video_url = :video_url,
+            duration_seconds = :duration_seconds,
+            min_progress_percent = :min_progress_percent,
+            is_required = :is_required,
+            is_active = :is_active,
+            display_order = :display_order,
+            updated_at = :updated_at
+            WHERE id = :id
+              AND course_id = :course_id');
+        $stmt->execute([
+            ':title' => $title,
+            ':description' => $description !== '' ? $description : null,
+            ':video_url' => $videoUrl,
+            ':duration_seconds' => $durationSeconds,
+            ':min_progress_percent' => $minProgressPercent,
+            ':is_required' => $isRequired,
+            ':is_active' => $isActive,
+            ':display_order' => $displayOrder,
+            ':updated_at' => now(),
+            ':id' => $lessonId,
+            ':course_id' => (int) $lesson['course_id'],
+        ]);
+
+        return true;
+    }
+
+    public function deleteCourseLesson(int $lessonId): bool
+    {
+        if ($lessonId <= 0 || !$this->lmsFeatureAvailable()) {
+            return false;
+        }
+
+        $lesson = $this->findCourseLesson($lessonId);
+        if (!$lesson) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('DELETE FROM course_lessons WHERE id = :id AND course_id = :course_id');
+        $stmt->execute([
+            ':id' => $lessonId,
+            ':course_id' => (int) $lesson['course_id'],
+        ]);
+
+        return true;
     }
 
     public function listEnrollments(array $filters, int $perPage, int $page): array
@@ -994,6 +1360,80 @@ class CourseModel extends BaseModel
         return true;
     }
 
+    private function findCourseModule(int $moduleId): ?array
+    {
+        if ($moduleId <= 0 || !$this->hasCourseModulesTable()) {
+            return null;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('SELECT cm.*
+                FROM course_modules cm
+                INNER JOIN courses c ON c.id = cm.course_id
+                WHERE cm.id = :id
+                  AND c.company_id = :company_id
+                LIMIT 1');
+            $stmt->execute([
+                ':id' => $moduleId,
+                ':company_id' => $this->companyId(),
+            ]);
+        } else {
+            $stmt = $this->db->prepare('SELECT * FROM course_modules WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $moduleId]);
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    private function findCourseLesson(int $lessonId): ?array
+    {
+        if ($lessonId <= 0 || !$this->hasCourseLessonsTable()) {
+            return null;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('SELECT cl.*
+                FROM course_lessons cl
+                INNER JOIN courses c ON c.id = cl.course_id
+                WHERE cl.id = :id
+                  AND c.company_id = :company_id
+                LIMIT 1');
+            $stmt->execute([
+                ':id' => $lessonId,
+                ':company_id' => $this->companyId(),
+            ]);
+        } else {
+            $stmt = $this->db->prepare('SELECT * FROM course_lessons WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $lessonId]);
+        }
+
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    private function nextModuleDisplayOrder(int $courseId): int
+    {
+        $stmt = $this->db->prepare('SELECT COALESCE(MAX(display_order), 0) + 1
+            FROM course_modules
+            WHERE course_id = :course_id');
+        $stmt->execute([':course_id' => $courseId]);
+        $next = (int) $stmt->fetchColumn();
+
+        return $next > 0 ? $next : 1;
+    }
+
+    private function nextLessonDisplayOrder(int $moduleId): int
+    {
+        $stmt = $this->db->prepare('SELECT COALESCE(MAX(display_order), 0) + 1
+            FROM course_lessons
+            WHERE module_id = :module_id');
+        $stmt->execute([':module_id' => $moduleId]);
+        $next = (int) $stmt->fetchColumn();
+
+        return $next > 0 ? $next : 1;
+    }
+
     private function normalizeCategoryId($rawCategoryId): ?int
     {
         $categoryId = (int) ($rawCategoryId ?? 0);
@@ -1207,5 +1647,53 @@ class CourseModel extends BaseModel
         $this->trialAccessTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->trialAccessTableExists;
+    }
+
+    private function hasCourseModulesTable(): bool
+    {
+        if ($this->courseModulesTableExists !== null) {
+            return $this->courseModulesTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_modules'");
+        $stmt->execute();
+        $this->courseModulesTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->courseModulesTableExists;
+    }
+
+    private function hasCourseLessonsTable(): bool
+    {
+        if ($this->courseLessonsTableExists !== null) {
+            return $this->courseLessonsTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_lessons'");
+        $stmt->execute();
+        $this->courseLessonsTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->courseLessonsTableExists;
+    }
+
+    private function hasStudentLessonProgressTable(): bool
+    {
+        if ($this->studentLessonProgressTableExists !== null) {
+            return $this->studentLessonProgressTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'student_lesson_progress'");
+        $stmt->execute();
+        $this->studentLessonProgressTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->studentLessonProgressTableExists;
     }
 }

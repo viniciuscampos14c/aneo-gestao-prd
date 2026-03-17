@@ -34,6 +34,17 @@
                     </div>
                 </div>
 
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <?php if ((int) ($course['modules_total'] ?? 0) > 0): ?>
+                        <a href="<?= route('student/course&course_id=' . (int) $course['course_id']); ?>" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 font-medium text-emerald-700 hover:bg-emerald-100">Continuar curso</a>
+                    <?php else: ?>
+                        <span class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">Sem trilha modular configurada</span>
+                    <?php endif; ?>
+                    <?php if (!empty($course['workload_hours'])): ?>
+                        <span class="text-xs text-slate-500">Carga horaria: <?= (int) $course['workload_hours']; ?>h</span>
+                    <?php endif; ?>
+                </div>
+
                 <?php if (!empty($course['live_link'])): ?>
                     <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
                         <p class="text-slate-500">Aula ao vivo: <?= !empty($course['live_datetime']) ? e(date('d/m/Y H:i', strtotime((string) $course['live_datetime']))) : 'sem horario'; ?></p>

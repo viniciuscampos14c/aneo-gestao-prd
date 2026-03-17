@@ -49,6 +49,43 @@ Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
    - `licensing.grace_days`
    - `licensing.fixed_keys`
 
+### 1.4) Atualizacao complementar em 16/03/2026
+
+1. Nova opcao `Degustacao` dentro de `Cursos EAD`.
+2. Tela para criar acesso rapido de aluno convidado com:
+   - curso especifico
+   - data especifica de acesso
+   - login/senha gerados automaticamente
+3. Migracao criada:
+   - `migrations/20260316_courses_trial_access.sql`
+4. Rotas adicionadas:
+   - `GET courses/trial-access`
+   - `POST courses/trial-access/store`
+   - `POST courses/trial-access/revoke`
+5. Restricoes no portal para degustacao:
+   - acesso permitido somente no dia liberado
+   - navegacao limitada a `Inicio` e `Aulas ao Vivo`
+6. Permissao exigida no admin:
+   - `courses.enrollment`
+
+### 1.5) Atualizacao complementar em 17/03/2026
+
+1. Trilha LMS modular implementada em `Cursos EAD`:
+   - cadastro de `modulos` e `aulas` por curso
+   - ordenacao por modulo e por aula
+2. Portal do aluno com player por aula:
+   - rota `GET student/course`
+   - tracking backend `POST student/course/progress`
+3. Regras aplicadas:
+   - bloqueio do proximo modulo ate concluir o anterior
+   - conclusao de aula por percentual minimo (padrao `70%`)
+4. Migracao criada:
+   - `migrations/20260317_lms_learning_path.sql`
+5. Tabelas novas:
+   - `course_modules`
+   - `course_lessons`
+   - `student_lesson_progress`
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
@@ -98,6 +135,8 @@ Exemplo local:
 5. Se o banco ja existia antes das ultimas versoes, execute tambem:
    - `migrations/20260313_arsenal_digital.sql`
    - `migrations/20260316_company_licenses.sql`
+   - `migrations/20260316_courses_trial_access.sql`
+   - `migrations/20260317_lms_learning_path.sql`
 6. Ajuste credenciais em `config.php` (bloco `db`).
 7. Acesse `http://localhost/aneo/index.php?route=login`.
 
@@ -190,6 +229,8 @@ Use uma unica instalacao do sistema e publique o conteudo desta pasta no `public
 2. Publicar arquivos do projeto no `public_html`.
 3. Editar `config.php` com banco de producao.
 4. Se producao for incremental, executar migracoes pendentes (incluindo `20260313_arsenal_digital.sql` e `20260316_company_licenses.sql`).
+   - incluir `migrations/20260316_courses_trial_access.sql` para liberar degustacao de curso
+   - incluir `migrations/20260317_lms_learning_path.sql` para liberar trilha LMS modular no portal
 5. Ajustar permissoes de escrita para `uploads/*`.
 6. Configurar SSL.
 7. Rodar smoke test nas 3 aplicacoes.
@@ -229,6 +270,8 @@ Arquivos principais:
 6. Fazer login do aluno e validar `route=student/arsenal`.
 7. Confirmar login na central tecnica (`support.php`).
 8. Abrir `route=companies/license` e validar status/licenca da empresa.
+9. Abrir `route=courses/trial-access` e criar um acesso de degustacao.
+10. Validar login no portal do aluno com o usuario de degustacao no dia liberado.
 
 ## 10) Seguranca (obrigatorio antes de producao)
 
@@ -302,3 +345,44 @@ Objetivo: habilitar o uso do sistema por empresa com validade anual de chave.
 Exemplo de chave fixa inicial (ambiente interno):
 
 `ANEO-LICENCA-2026-BASE`
+
+## 13) Degustacao em Cursos EAD
+
+Objetivo: liberar acesso rapido para demonstracao de uma aula ao vivo, sem liberar o portal completo.
+
+1. Tela administrativa:
+   - `Cursos EAD > Degustacao`
+   - rota: `index.php?route=courses/trial-access`
+2. Fluxo de criacao:
+   - informar nome do aluno
+   - selecionar curso publicado
+   - informar data de liberacao
+   - sistema gera login e senha automaticamente
+3. Persistencia:
+   - tabela `course_trial_accesses` (migration `20260316_courses_trial_access.sql`)
+4. Regra de acesso no portal:
+   - login permitido apenas na data cadastrada
+   - se expirar/revogar, bloqueia novo acesso
+   - menu restrito a `Inicio` e `Aulas ao Vivo`
+5. Operacao:
+   - credencial e senha sao exibidas no alerta apos criacao
+   - senha nao pode ser lida depois (fica em hash), apenas recriar/revogar acesso
+
+## 14) LMS modular (Portal do Aluno)
+
+Objetivo: permitir cursos sob demanda com controle de progressao.
+
+1. Cadastro no admin:
+   - `Cursos EAD > Editar curso > Trilha LMS (Modulos e Aulas)`
+   - cadastrar modulos em ordem
+   - cadastrar aulas por modulo, com URL de video e percentual minimo (padrao `70`)
+2. Regras de progressao:
+   - modulo 1 inicia desbloqueado
+   - modulo seguinte so libera quando o modulo anterior estiver concluido
+   - aula concluida quando `progress_percent >= min_progress_percent`
+3. Tracking backend:
+   - rota `POST index.php?route=student/course/progress`
+   - atualiza `student_lesson_progress`
+   - sincroniza `enrollments.progress_percent` automaticamente
+4. Observacao tecnica:
+   - o tracking automatico depende de video com URL direta (ex.: MP4/WebM)

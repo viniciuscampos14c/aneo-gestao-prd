@@ -52,6 +52,8 @@ class CourseController extends BaseController
             'course' => null,
             'materialFiles' => [],
             'categories' => $this->courses->categories(),
+            'lmsFeatureAvailable' => $this->courses->lmsFeatureAvailable(),
+            'courseModules' => [],
             'action' => route('courses/store'),
         ]);
     }
@@ -91,6 +93,8 @@ class CourseController extends BaseController
             'course' => $course,
             'materialFiles' => $this->courses->listCourseMaterials($id),
             'categories' => $this->courses->categories(),
+            'lmsFeatureAvailable' => $this->courses->lmsFeatureAvailable(),
+            'courseModules' => $this->courses->listCourseModulesWithLessons($id),
             'action' => route('courses/update&id=' . $id),
         ]);
     }
@@ -183,6 +187,183 @@ class CourseController extends BaseController
         $this->courses->deleteCourseMaterial($uploadId);
 
         $this->success('Arquivo removido.');
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function storeModule(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        if ($courseId <= 0) {
+            $this->error('Curso invalido para cadastro de modulo.');
+            $this->redirect('courses');
+        }
+
+        if (!$this->courses->lmsFeatureAvailable()) {
+            $this->error('LMS modular nao habilitado no banco. Execute a migracao de trilha de aulas.');
+            $this->redirect('courses/edit&id=' . $courseId);
+        }
+
+        $moduleId = $this->courses->createCourseModule($courseId, [
+            'title' => trim((string) post('title')),
+            'description' => trim((string) post('description')),
+            'display_order' => (int) post('display_order', 0),
+            'is_active' => post('is_active') ? 1 : 0,
+        ], (int) current_user()['id']);
+
+        if ($moduleId > 0) {
+            $this->success('Modulo criado com sucesso.');
+        } else {
+            $this->error('Nao foi possivel criar o modulo. Verifique os dados obrigatorios.');
+        }
+
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function updateModule(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $moduleId = (int) post('module_id');
+        if ($courseId <= 0 || $moduleId <= 0) {
+            $this->error('Modulo invalido.');
+            $this->redirect('courses');
+        }
+
+        $ok = $this->courses->updateCourseModule($moduleId, [
+            'title' => trim((string) post('title')),
+            'description' => trim((string) post('description')),
+            'display_order' => (int) post('display_order', 1),
+            'is_active' => post('is_active') ? 1 : 0,
+        ]);
+
+        if ($ok) {
+            $this->success('Modulo atualizado.');
+        } else {
+            $this->error('Nao foi possivel atualizar o modulo.');
+        }
+
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function deleteModule(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $moduleId = (int) post('module_id');
+        if ($courseId <= 0 || $moduleId <= 0) {
+            $this->error('Modulo invalido.');
+            $this->redirect('courses');
+        }
+
+        if ($this->courses->deleteCourseModule($moduleId)) {
+            $this->success('Modulo removido.');
+        } else {
+            $this->error('Nao foi possivel remover o modulo.');
+        }
+
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function storeLesson(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $moduleId = (int) post('module_id');
+        if ($courseId <= 0 || $moduleId <= 0) {
+            $this->error('Aula invalida.');
+            $this->redirect('courses');
+        }
+
+        if (!$this->courses->lmsFeatureAvailable()) {
+            $this->error('LMS modular nao habilitado no banco. Execute a migracao de trilha de aulas.');
+            $this->redirect('courses/edit&id=' . $courseId);
+        }
+
+        $lessonId = $this->courses->createCourseLesson($courseId, $moduleId, [
+            'title' => trim((string) post('title')),
+            'description' => trim((string) post('description')),
+            'video_url' => trim((string) post('video_url')),
+            'duration_seconds' => (int) post('duration_seconds', 0),
+            'min_progress_percent' => (int) post('min_progress_percent', 70),
+            'display_order' => (int) post('display_order', 0),
+            'is_required' => post('is_required') ? 1 : 0,
+            'is_active' => post('is_active') ? 1 : 0,
+        ], (int) current_user()['id']);
+
+        if ($lessonId > 0) {
+            $this->success('Aula criada com sucesso.');
+        } else {
+            $this->error('Nao foi possivel criar a aula. Verifique titulo e URL do video.');
+        }
+
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function updateLesson(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $lessonId = (int) post('lesson_id');
+        if ($courseId <= 0 || $lessonId <= 0) {
+            $this->error('Aula invalida.');
+            $this->redirect('courses');
+        }
+
+        $ok = $this->courses->updateCourseLesson($lessonId, [
+            'title' => trim((string) post('title')),
+            'description' => trim((string) post('description')),
+            'video_url' => trim((string) post('video_url')),
+            'duration_seconds' => (int) post('duration_seconds', 0),
+            'min_progress_percent' => (int) post('min_progress_percent', 70),
+            'display_order' => (int) post('display_order', 1),
+            'is_required' => post('is_required') ? 1 : 0,
+            'is_active' => post('is_active') ? 1 : 0,
+        ]);
+
+        if ($ok) {
+            $this->success('Aula atualizada.');
+        } else {
+            $this->error('Nao foi possivel atualizar a aula.');
+        }
+
+        $this->redirect('courses/edit&id=' . $courseId);
+    }
+
+    public function deleteLesson(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $courseId = (int) post('course_id');
+        $lessonId = (int) post('lesson_id');
+        if ($courseId <= 0 || $lessonId <= 0) {
+            $this->error('Aula invalida.');
+            $this->redirect('courses');
+        }
+
+        if ($this->courses->deleteCourseLesson($lessonId)) {
+            $this->success('Aula removida.');
+        } else {
+            $this->error('Nao foi possivel remover a aula.');
+        }
+
         $this->redirect('courses/edit&id=' . $courseId);
     }
 

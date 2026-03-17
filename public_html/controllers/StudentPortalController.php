@@ -52,6 +52,63 @@ class StudentPortalController extends BaseController
         ], 'layouts/student');
     }
 
+    public function course(): void
+    {
+        require_student_auth();
+
+        if (!$this->portal->lmsFeatureAvailable()) {
+            $this->error('Trilha de aulas ainda nao habilitada no banco. Execute a migracao LMS.');
+            $this->redirect('student/courses');
+        }
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $courseId = (int) request('course_id', request('id', 0));
+        $lessonId = (int) request('lesson_id', 0);
+
+        if ($courseId <= 0) {
+            $this->error('Curso invalido para abrir o player.');
+            $this->redirect('student/courses');
+        }
+
+        $path = $this->portal->courseLearningPath($studentId, $courseId, $lessonId > 0 ? $lessonId : null);
+        if (!$path) {
+            $this->error('Curso nao encontrado na sua matricula.');
+            $this->redirect('student/courses');
+        }
+
+        $this->render('student_portal/course_player', [
+            'title' => 'Aulas do Curso',
+            'student' => $student,
+            'course' => $path['course'],
+            'modules' => $path['modules'],
+            'selectedLesson' => $path['selected_lesson'],
+            'summary' => $path['summary'],
+        ], 'layouts/student');
+    }
+
+    public function lessonProgress(): void
+    {
+        require_student_auth();
+        csrf_validate();
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+
+        $result = $this->portal->recordLessonProgress(
+            $studentId,
+            (int) post('course_id'),
+            (int) post('lesson_id'),
+            (int) post('watched_seconds', 0),
+            (int) post('duration_seconds', 0),
+            (int) post('position_seconds', 0)
+        );
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     public function live(): void
     {
         require_student_auth();

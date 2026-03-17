@@ -54,6 +54,22 @@ Atualizacoes aplicadas e validadas nesta data:
    - `licensing.grace_days`
    - `licensing.fixed_keys`
 
+## 1.3) Atualizacao complementar (16/03/2026) - Degustacao de Cursos EAD
+
+Atualizacoes aplicadas e validadas nesta data:
+
+1. Nova opcao `Degustacao` dentro do modulo `Cursos EAD`.
+2. Fluxo de criacao de acesso rapido com login/senha gerados automaticamente.
+3. Restricao de degustacao no portal:
+   - acesso somente no dia liberado
+   - menu restrito a `Inicio` e `Aulas ao Vivo`
+4. Migracao criada e aplicada:
+   - `migrations/20260316_courses_trial_access.sql`
+5. Rotas administrativas adicionadas:
+   - `courses/trial-access`
+   - `courses/trial-access/store`
+   - `courses/trial-access/revoke`
+
 ---
 
 ## 2) O que foi entregue
@@ -79,6 +95,7 @@ Foram entregues os seguintes artefatos principais:
    - Atendimento (Chatwoot)
    - Assinaturas Eletronicas (D4Sign)
    - Cursos EAD (cursos/categorias/matriculas/comentarios/exames/agenda academica)
+   - Degustacao de curso EAD (acesso rapido por data e curso)
    - Portal do Aluno separado (login proprio + cursos + agenda + aulas + materiais + progresso + avaliacoes)
    - Licenciamento anual por empresa (Cadastro > Licenca)
    - Solicitacoes, Automacoes e Chat IA Jully (CRUD basico)
@@ -107,7 +124,8 @@ Raiz do projeto:
 13. `migrations/20260306_phase1_multiempresa.sql`
 14. `migrations/20260313_arsenal_digital.sql`
 15. `migrations/20260316_company_licenses.sql`
-16. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
+16. `migrations/20260316_courses_trial_access.sql`
+17. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
 
 Dentro da raiz da aplicacao:
 
@@ -206,6 +224,7 @@ Arquivo principal: `database.sql`.
 42. `arsenal_access_logs`
 43. `company_licenses`
 44. `company_license_history`
+45. `course_trial_accesses`
 
 ### 5.2 Seeds iniciais
 
@@ -416,6 +435,11 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
    - upload de anexos no cadastro/edicao do curso
    - listagem e remocao de anexos por curso
    - arquivos aparecem na aba Materiais do portal do aluno
+8. Degustacao de aula ao vivo:
+   - tela `Cursos EAD > Degustacao`
+   - cria acesso rapido de aluno convidado com curso e data
+   - gera login/senha automaticamente para teste
+   - permite revogar acesso criado
 
 ## 6.9 Portal do Aluno (area separada)
 
@@ -450,6 +474,10 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
    - interface com paleta sutil Tailwind para melhor contraste e foco no estudo
 11. Foto do aluno:
    - avatar exibido no topo do portal quando houver foto cadastrada no administrativo
+12. Acesso de degustacao:
+   - login permitido somente no dia cadastrado
+   - menu restrito a `Inicio` e `Aulas ao Vivo`
+   - bloqueio automatico quando acesso estiver expirado/revogado
 
 ## 6.10 Modulos estruturais
 
@@ -502,7 +530,7 @@ Referencia rapida:
 11. Atendimento: `chatwoot`, `chatwoot/open-student`, `chatwoot/open-lead`, `chatwoot/open-phone`, `chatwoot/webhook`
 12. Assinaturas: `signatures`, `signatures/store`, `signatures/send`, `signatures/sync`, `signatures/delete`, `signatures/webhook`
 13. Arsenal Digital: `arsenal`, `arsenal/item/*`, `arsenal/category/*`, `arsenal/bind/*`, `arsenal/unbind/*`, `arsenal/download`
-14. Cursos: `courses/*` (inclui `courses/materials/upload`, `courses/materials/delete`, `courses/calendar`, `courses/activities/store`, `courses/activities/delete`)
+14. Cursos: `courses/*` (inclui `courses/materials/upload`, `courses/materials/delete`, `courses/calendar`, `courses/activities/store`, `courses/activities/delete`, `courses/trial-access`, `courses/trial-access/store`, `courses/trial-access/revoke`)
 15. Modulos basicos ativos: `requests/*`, `automations/*`, `help/*` (projects/tasks desativados)
 16. Busca global: `search`
 
@@ -1040,10 +1068,12 @@ Conferir:
 10. Migracao incremental modulo de assinatura D4Sign: `migrations/20260306_d4sign_signatures.sql`
 11. Migracao incremental fase 1 multiempresa: `migrations/20260306_phase1_multiempresa.sql`
 12. Migracao incremental modulo Arsenal Digital: `migrations/20260313_arsenal_digital.sql`
-13. Config local automatica: `setup_local_xampp.ps1`
-14. Rotas: `index.php`
-15. Permissoes e config geral: `config.php`
-16. Relatorio de validacao da entrega: `VALIDACAO_SISTEMA_2026-03-11.md`
+13. Migracao incremental licenciamento: `migrations/20260316_company_licenses.sql`
+14. Migracao incremental degustacao de cursos: `migrations/20260316_courses_trial_access.sql`
+15. Config local automatica: `setup_local_xampp.ps1`
+16. Rotas: `index.php`
+17. Permissoes e config geral: `config.php`
+18. Relatorio de validacao da entrega: `VALIDACAO_SISTEMA_2026-03-11.md`
 
 ---
 
@@ -1376,3 +1406,177 @@ No estado atual, o modulo pode operar sem bloqueio global enquanto a equipe cada
 1. manter `licensing.enabled=true`
 2. manter `licensing.enforce=false`
 3. apos validacao operacional, habilitar enforcement em producao
+
+
+---
+
+## 20) Atualizacao complementar (16/03/2026) - Degustacao de Cursos EAD
+
+### 20.1) Resumo da entrega
+
+Foi implementado o fluxo de degustacao para liberar aula ao vivo em data especifica:
+
+1. Tela administrativa para criar acesso rapido de aluno convidado.
+2. Geracao automatica de login e senha do portal.
+3. Vinculo da degustacao a um curso especifico e a uma data especifica.
+4. Revogacao administrativa do acesso criado.
+5. Restricao do portal para degustacao (somente `Inicio` e `Aulas ao Vivo`).
+
+### 20.2) Arquivos criados/alterados
+
+Novo arquivo principal:
+
+1. `migrations/20260316_courses_trial_access.sql`
+2. `views/courses/trial_access.php`
+
+Arquivos alterados para integrar o fluxo:
+
+1. `controllers/CourseController.php`
+2. `controllers/StudentAuthController.php`
+3. `core/helpers.php`
+4. `index.php`
+5. `models/CourseModel.php`
+6. `models/StudentPortalModel.php`
+7. `views/courses/index.php`
+8. `views/layouts/student.php`
+9. `views/student_portal/live.php`
+
+### 20.3) Estrutura de banco adicionada
+
+Tabela criada pela migracao `20260316_courses_trial_access.sql`:
+
+1. `course_trial_accesses`: controle de acessos de degustacao por empresa/aluno/curso/data.
+
+Campos relevantes:
+
+1. `access_date`: dia permitido para login.
+2. `access_scope`: escopo atual (`live_only`).
+3. `status`: `active`, `expired`, `revoked`.
+4. `last_login_at`: ultima tentativa/login do acesso de degustacao.
+
+### 20.4) Rotas adicionadas
+
+Rotas administrativas:
+
+1. `GET courses/trial-access`
+2. `POST courses/trial-access/store`
+3. `POST courses/trial-access/revoke`
+
+### 20.5) Fluxo operacional (admin)
+
+1. Acessar `Cursos EAD > Degustacao`.
+2. Informar nome do aluno, curso publicado e data liberada.
+3. Clicar em `Criar acesso rapido`.
+4. Copiar login e senha exibidos no alerta de sucesso.
+5. Entregar credenciais ao aluno convidado.
+6. Revogar o acesso quando necessario.
+
+Observacao:
+
+1. A senha e armazenada com hash e nao pode ser lida depois.
+2. Se perder a senha, o fluxo recomendado e revogar e criar novo acesso.
+
+### 20.6) Regras de acesso no portal
+
+1. Login de degustacao so e aceito no dia `access_date`.
+2. Se a data passar, o acesso e marcado como `expired`.
+3. Se o admin revogar, o status vira `revoked` e o login e bloqueado.
+4. Durante degustacao, o menu do portal e reduzido para:
+   - `Inicio`
+   - `Aulas ao Vivo`
+5. Rotas fora desse escopo redirecionam para `student/live`.
+
+### 20.7) Permissao administrativa
+
+Para operar degustacao no admin:
+
+1. permissao `courses.enrollment` (mesma familia de permissao de matriculas)
+
+### 20.8) Ativacao em qualquer ambiente
+
+Ordem recomendada:
+
+1. Publicar os arquivos de codigo da funcionalidade.
+2. Executar `migrations/20260316_courses_trial_access.sql`.
+3. Validar menu `Cursos EAD > Degustacao`.
+4. Criar um acesso de teste para data atual.
+5. Validar login no portal com o usuario criado.
+
+## 21) LMS modular (modulos + aulas + regra de 70%)
+
+### 21.1) Objetivo
+
+Disponibilizar cursos sob demanda no portal do aluno com:
+
+1. estrutura por modulo e aula;
+2. bloqueio de progressao por ordem de modulo;
+3. regra minima de conclusao por aula em video (padrao `70%`).
+
+### 21.2) Arquivos criados/alterados
+
+Novo arquivo principal:
+
+1. `migrations/20260317_lms_learning_path.sql`
+2. `views/student_portal/course_player.php`
+
+Arquivos alterados:
+
+1. `controllers/CourseController.php`
+2. `controllers/StudentPortalController.php`
+3. `index.php`
+4. `models/CourseModel.php`
+5. `models/StudentPortalModel.php`
+6. `views/courses/form.php`
+7. `views/student_portal/courses.php`
+8. `database.sql`
+
+### 21.3) Estrutura de banco adicionada
+
+Tabelas novas (migration `20260317_lms_learning_path.sql`):
+
+1. `course_modules`: modulos por curso e ordem de exibicao.
+2. `course_lessons`: aulas por modulo (video, percentual minimo, obrigatoriedade).
+3. `student_lesson_progress`: progresso por aluno/aula (segundos assistidos, percentual, conclusao).
+
+### 21.4) Rotas adicionadas
+
+Portal do aluno:
+
+1. `GET student/course`
+2. `POST student/course/progress`
+
+Admin (Cursos EAD):
+
+1. `POST courses/modules/store`
+2. `POST courses/modules/update`
+3. `POST courses/modules/delete`
+4. `POST courses/lessons/store`
+5. `POST courses/lessons/update`
+6. `POST courses/lessons/delete`
+
+### 21.5) Fluxo operacional
+
+Admin:
+
+1. Acessar `Cursos EAD > Editar curso`.
+2. Ir para bloco `Trilha LMS (Modulos e Aulas)`.
+3. Criar modulos com ordem.
+4. Criar aulas com URL de video e `% minimo` (padrao 70).
+
+Aluno:
+
+1. Acessar `Meus Cursos`.
+2. Clicar em `Continuar curso`.
+3. Assistir a aula no player.
+4. O sistema salva progresso automaticamente e libera o proximo modulo quando aplicavel.
+
+### 21.6) Regras de progressao
+
+1. O primeiro modulo inicia desbloqueado.
+2. O modulo seguinte so fica desbloqueado quando o modulo anterior for concluido.
+3. Aula concluida quando `progress_percent >= min_progress_percent`.
+4. O progresso da matricula (`enrollments.progress_percent`) e sincronizado automaticamente conforme avancos das aulas.
+
+### 21.7) Observacao tecnica
+
+1. O tracking automatico de progresso depende de URL direta de video (exemplo: MP4/WebM).
