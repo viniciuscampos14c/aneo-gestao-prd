@@ -12,6 +12,11 @@ $priorityLabels = [
     'high' => 'Alta',
     'urgent' => 'Urgente',
 ];
+$sourceLabels = [
+    'internal' => 'Interno',
+    'webhook' => 'Webhook',
+    'student_portal' => 'Portal Aluno',
+];
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -64,7 +69,7 @@ $priorityLabels = [
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            Estrutura de chamados indisponivel no banco. Execute a migracao `migrations/20260309_support_tickets.sql`.
+            Estrutura de chamados indisponivel no banco. Execute as migracoes `migrations/20260309_support_tickets.sql` e `migrations/20260317_support_ticket_codes_aneo.sql`.
         </div>
     <?php endif; ?>
 
@@ -128,10 +133,15 @@ $priorityLabels = [
         <?php foreach ($rows as $row): ?>
             <?php
             $ticketId = (int) $row['id'];
+            $ticketCode = trim((string) ($row['ticket_code'] ?? ''));
+            if (!preg_match('/^ANEO\d+$/', $ticketCode)) {
+                $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+            }
             $attachments = $attachmentsByTicket[$ticketId] ?? [];
             $comments = $commentsByTicket[$ticketId] ?? [];
             $status = (string) ($row['status'] ?? 'open');
             $priority = (string) ($row['priority'] ?? 'medium');
+            $source = (string) ($row['source'] ?? 'internal');
             $statusBadge = match ($status) {
                 'resolved' => 'bg-emerald-100 text-emerald-700',
                 'in_progress' => 'bg-amber-100 text-amber-700',
@@ -144,13 +154,16 @@ $priorityLabels = [
                 'low' => 'bg-slate-100 text-slate-700',
                 default => 'bg-sky-100 text-sky-700',
             };
+            $sourceBadge = $source === 'student_portal'
+                ? 'bg-violet-100 text-violet-700'
+                : 'bg-slate-100 text-slate-700';
             ?>
             <article class="rounded-xl border border-slate-200 bg-white p-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h3 class="text-base font-semibold text-slate-900"><?= e((string) ($row['subject'] ?? 'Chamado')); ?></h3>
                         <p class="text-xs text-slate-500">
-                            <?= e((string) ($row['ticket_code'] ?? ('#' . $ticketId))); ?>
+                            Codigo: <span class="font-semibold text-slate-700"><?= e($ticketCode); ?></span>
                             | <?= e((string) ($row['created_by_name'] ?? 'Sistema')); ?>
                             | <?= e((string) ($row['created_at'] ?? '')); ?>
                         </p>
@@ -158,6 +171,7 @@ $priorityLabels = [
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $statusBadge; ?>"><?= e($statusLabels[$status] ?? $status); ?></span>
                         <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $priorityBadge; ?>"><?= e($priorityLabels[$priority] ?? $priority); ?></span>
+                        <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $sourceBadge; ?>"><?= e($sourceLabels[$source] ?? $source); ?></span>
                     </div>
                 </div>
 

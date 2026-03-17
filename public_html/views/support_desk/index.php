@@ -14,13 +14,14 @@ $priorityLabels = [
 $sourceLabels = [
     'internal' => 'Interno',
     'webhook' => 'Webhook',
+    'student_portal' => 'Portal Aluno',
 ];
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold text-slate-900">Chamados - Atendimento Tecnico</h2>
-            <p class="text-sm text-slate-500">Gestao dos chamados recebidos do administrativo.</p>
+            <p class="text-sm text-slate-500">Gestao dos chamados recebidos do administrativo e do portal do aluno.</p>
         </div>
     </div>
 
@@ -49,7 +50,7 @@ $sourceLabels = [
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-2xl border border-amber-200/90 bg-amber-50/80 p-4 text-sm text-amber-800 backdrop-blur-md">
-            Estrutura de chamados indisponivel no banco. Execute a migracao `migrations/20260309_support_tickets.sql`.
+            Estrutura de chamados indisponivel no banco. Execute as migracoes `migrations/20260309_support_tickets.sql` e `migrations/20260317_support_ticket_codes_aneo.sql`.
         </div>
     <?php endif; ?>
 
@@ -109,6 +110,10 @@ $sourceLabels = [
         <?php foreach ($rows as $row): ?>
             <?php
             $ticketId = (int) ($row['id'] ?? 0);
+            $ticketCode = trim((string) ($row['ticket_code'] ?? ''));
+            if (!preg_match('/^ANEO\d+$/', $ticketCode)) {
+                $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+            }
             $attachments = $attachmentsByTicket[$ticketId] ?? [];
             $comments = $commentsByTicket[$ticketId] ?? [];
             $status = (string) ($row['status'] ?? 'open');
@@ -128,9 +133,11 @@ $sourceLabels = [
                 'low' => 'bg-slate-100 text-slate-700 border border-slate-200',
                 default => 'bg-sky-100 text-sky-700 border border-sky-200',
             };
-            $sourceBadge = $source === 'webhook'
-                ? 'bg-violet-100 text-violet-700 border border-violet-200'
-                : 'bg-slate-100 text-slate-700 border border-slate-200';
+            $sourceBadge = match ($source) {
+                'webhook' => 'bg-violet-100 text-violet-700 border border-violet-200',
+                'student_portal' => 'bg-indigo-100 text-indigo-700 border border-indigo-200',
+                default => 'bg-slate-100 text-slate-700 border border-slate-200',
+            };
             $companyName = trim((string) ($row['company_trade_name'] ?? '')) !== '' ? (string) $row['company_trade_name'] : (string) ($row['company_legal_name'] ?? 'Empresa');
             ?>
             <article class="rounded-2xl border border-white/70 bg-white/65 p-4 shadow-sm backdrop-blur-md">
@@ -138,7 +145,7 @@ $sourceLabels = [
                     <div>
                         <h3 class="text-base font-semibold text-slate-900"><?= e((string) ($row['subject'] ?? 'Chamado')); ?></h3>
                         <p class="text-xs text-slate-500">
-                            <?= e((string) ($row['ticket_code'] ?? ('#' . $ticketId))); ?>
+                            <?= e($ticketCode); ?>
                             | Empresa: <?= e($companyName); ?>
                             | <?= e((string) ($row['created_at'] ?? '')); ?>
                         </p>

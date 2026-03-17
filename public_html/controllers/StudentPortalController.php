@@ -4,11 +4,13 @@ class StudentPortalController extends BaseController
 {
     private StudentPortalModel $portal;
     private AcademicCalendarModel $calendar;
+    private SupportTicketModel $tickets;
 
     public function __construct()
     {
         $this->portal = new StudentPortalModel();
         $this->calendar = new AcademicCalendarModel();
+        $this->tickets = new SupportTicketModel();
     }
 
     public function home(): void
@@ -259,6 +261,115 @@ class StudentPortalController extends BaseController
         ], 'layouts/student');
     }
 
+    public function requests(): void
+    {
+        require_student_auth();
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $companyId = (int) ($student['company_id'] ?? 0);
+        $studentEmail = trim((string) ($student['email'] ?? ''));
+        if ($studentId <= 0 || $companyId <= 0) {
+            $this->error('Aluno ou empresa nao identificado para chamados.');
+            $this->redirect('student/dashboard');
+        }
+
+        $featureAvailable = $this->tickets->featureAvailable();
+        $filters = [
+            'q' => trim((string) request('q', '')),
+            'status' => $this->normalizeTicketStatus((string) request('status', '')),
+        ];
+
+        $perPage = (int) request('per_page', 20);
+        if (!in_array($perPage, [10, 20, 50], true)) {
+            $perPage = 20;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        if ($featureAvailable) {
+            $result = $this->tickets->listStudentTickets($companyId, $studentId, $studentEmail, $filters, $perPage, $page);
+            $stats = $this->tickets->studentStats($companyId, $studentId, $studentEmail);
+        } else {
+            $result = [
+                'rows' => [],
+                'meta' => pagination_meta(0, $perPage, $page),
+            ];
+            $stats = [
+                'total' => 0,
+                'open' => 0,
+                'in_progress' => 0,
+                'resolved' => 0,
+                'closed' => 0,
+            ];
+        }
+
+        $ticketIds = array_map(fn ($row) => (int) ($row['id'] ?? 0), $result['rows']);
+
+        $this->render('student_portal/requests', [
+            'title' => 'Meus Chamados',
+            'student' => $student,
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'filters' => $filters,
+            'stats' => $stats,
+            'featureAvailable' => $featureAvailable,
+            'attachmentsByTicket' => $this->tickets->attachmentsByTicketIdsAny($ticketIds),
+            'commentsByTicket' => $this->tickets->commentsByTicketIdsAny($ticketIds),
+            'paginationOptions' => [10, 20, 50],
+        ], 'layouts/student');
+    }
+
+    public function storeRequest(): void
+    {
+        require_student_auth();
+        csrf_validate();
+
+        if (!$this->tickets->featureAvailable()) {
+            $this->error('Estrutura de chamados indisponivel no banco.');
+            $this->redirect('student/requests');
+        }
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $companyId = (int) ($student['company_id'] ?? 0);
+        if ($studentId <= 0 || $companyId <= 0) {
+            $this->error('Aluno ou empresa nao identificado para abrir chamado.');
+            $this->redirect('student/requests');
+        }
+
+        $subject = trim((string) post('subject'));
+        $description = trim((string) post('description'));
+        $priority = $this->normalizeTicketPriority((string) post('priority', 'medium'));
+
+        if ($subject === '' || $description === '') {
+            $this->error('Assunto e descricao sao obrigatorios para abrir o chamado.');
+            $this->redirect('student/requests');
+        }
+
+        $ticketId = $this->tickets->createTicketForCompany($companyId, [
+            'subject' => $subject,
+            'description' => $description,
+            'priority' => $priority,
+            'requester_name' => (string) ($student['name'] ?? ''),
+            'requester_email' => (string) ($student['email'] ?? ''),
+            'external_reference' => 'student:' . $studentId,
+        ], null, 'student_portal');
+
+        if ($ticketId <= 0) {
+            $this->error('Nao foi possivel abrir o chamado no momento.');
+            $this->redirect('student/requests');
+        }
+
+        $ticket = $this->tickets->findTicketForCompany($companyId, $ticketId);
+        $ticketCode = trim((string) ($ticket['ticket_code'] ?? ''));
+        if ($ticketCode === '') {
+            $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+        }
+
+        $this->success('Chamado ' . $ticketCode . ' aberto com sucesso.');
+        $this->redirect('student/requests');
+    }
+
     public function exams(): void
     {
         require_student_auth();
@@ -474,6 +585,18 @@ class StudentPortalController extends BaseController
         $value = preg_replace('/\s+/', ' ', $value) ?: $value;
 
         return strtolower($value);
+    }
+
+    private function normalizeTicketPriority(string $priority): string
+    {
+        $priority = strtolower(trim($priority));
+        return in_array($priority, ['low', 'medium', 'high', 'urgent'], true) ? $priority : 'medium';
+    }
+
+    private function normalizeTicketStatus(string $status): string
+    {
+        $status = strtolower(trim($status));
+        return in_array($status, ['open', 'in_progress', 'resolved', 'closed'], true) ? $status : '';
     }
 
     private function normalizeDate(string $value, string $fallback): string

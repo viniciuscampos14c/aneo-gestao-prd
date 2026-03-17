@@ -86,6 +86,19 @@ Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
    - `course_lessons`
    - `student_lesson_progress`
 
+### 1.6) Atualizacao complementar em 17/03/2026
+
+1. Chamados passaram a usar identificador unico sequencial:
+   - formato: `ANEO001`, `ANEO002`, ...
+2. Exibicao do codigo reforcada nas telas:
+   - `Solicitacoes` (admin)
+   - `Central Tecnica` (suporte)
+3. Portal do aluno com abertura de chamados:
+   - nova aba `Chamados`
+   - rotas `GET student/requests` e `POST student/requests/store`
+4. Migracao de padronizacao criada:
+   - `migrations/20260317_support_ticket_codes_aneo.sql`
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
@@ -137,6 +150,7 @@ Exemplo local:
    - `migrations/20260316_company_licenses.sql`
    - `migrations/20260316_courses_trial_access.sql`
    - `migrations/20260317_lms_learning_path.sql`
+   - `migrations/20260317_support_ticket_codes_aneo.sql`
 6. Ajuste credenciais em `config.php` (bloco `db`).
 7. Acesse `http://localhost/aneo/index.php?route=login`.
 
@@ -231,6 +245,7 @@ Use uma unica instalacao do sistema e publique o conteudo desta pasta no `public
 4. Se producao for incremental, executar migracoes pendentes (incluindo `20260313_arsenal_digital.sql` e `20260316_company_licenses.sql`).
    - incluir `migrations/20260316_courses_trial_access.sql` para liberar degustacao de curso
    - incluir `migrations/20260317_lms_learning_path.sql` para liberar trilha LMS modular no portal
+   - incluir `migrations/20260317_support_ticket_codes_aneo.sql` para normalizar codigos de chamados no formato ANEO
 5. Ajustar permissoes de escrita para `uploads/*`.
 6. Configurar SSL.
 7. Rodar smoke test nas 3 aplicacoes.
@@ -268,10 +283,12 @@ Arquivos principais:
 4. Abrir `route=arsenal` e validar abas (Itens/Categorias/Vinculos/Acessos).
 5. Criar item e testar abertura no admin.
 6. Fazer login do aluno e validar `route=student/arsenal`.
-7. Confirmar login na central tecnica (`support.php`).
-8. Abrir `route=companies/license` e validar status/licenca da empresa.
-9. Abrir `route=courses/trial-access` e criar um acesso de degustacao.
-10. Validar login no portal do aluno com o usuario de degustacao no dia liberado.
+7. Validar abertura de chamado no portal em `route=student/requests`.
+8. Confirmar login na central tecnica (`support.php`).
+9. Confirmar visualizacao do codigo `ANEO...` em `route=requests` e `support.php?route=support`.
+10. Abrir `route=companies/license` e validar status/licenca da empresa.
+11. Abrir `route=courses/trial-access` e criar um acesso de degustacao.
+12. Validar login no portal do aluno com o usuario de degustacao no dia liberado.
 
 ## 10) Seguranca (obrigatorio antes de producao)
 
@@ -395,3 +412,20 @@ Objetivo: permitir cursos sob demanda com controle de progressao.
    - link de pagina do YouTube (`https://youtube.com/watch?...`)
 7. Regra pratica de validacao:
    - se a URL abre o video direto no navegador, no curso tambem funciona
+
+## 15) Chamados com codigo ANEO + portal do aluno
+
+Objetivo: padronizar identificacao dos chamados para conversas de suporte e permitir abertura pelo aluno.
+
+1. Codigo do chamado:
+   - novo formato sequencial `ANEO` + numero do chamado (minimo 3 digitos)
+   - exemplos: `ANEO001`, `ANEO145`, `ANEO1204`
+2. Tela admin/suporte:
+   - exibem o codigo em destaque
+   - origem do chamado inclui `Portal Aluno`
+3. Portal do aluno:
+   - nova aba `Chamados`
+   - aluno abre chamado com assunto, prioridade e descricao
+   - historico mostra codigo, status, prioridade e comentarios
+4. Migracao de ajuste:
+   - `migrations/20260317_support_ticket_codes_aneo.sql`

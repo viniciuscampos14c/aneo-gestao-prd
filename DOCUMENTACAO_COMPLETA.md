@@ -70,6 +70,21 @@ Atualizacoes aplicadas e validadas nesta data:
    - `courses/trial-access/store`
    - `courses/trial-access/revoke`
 
+## 1.4) Atualizacao complementar (17/03/2026) - Chamados com codigo ANEO + portal do aluno
+
+Atualizacoes aplicadas e validadas nesta data:
+
+1. Identificador de chamado padronizado para `ANEO` sequencial:
+   - exemplos: `ANEO001`, `ANEO002`, ...
+2. Exibicao reforcada do codigo nas telas:
+   - `Solicitacoes` (administrativo)
+   - `Central Tecnica` (suporte)
+3. Portal do aluno com abertura de chamados:
+   - nova aba `Chamados`
+   - rotas `student/requests` e `student/requests/store`
+4. Migracao criada para normalizar chamados antigos:
+   - `migrations/20260317_support_ticket_codes_aneo.sql`
+
 ---
 
 ## 2) O que foi entregue
@@ -97,6 +112,7 @@ Foram entregues os seguintes artefatos principais:
    - Cursos EAD (cursos/categorias/matriculas/comentarios/exames/agenda academica)
    - Degustacao de curso EAD (acesso rapido por data e curso)
    - Portal do Aluno separado (login proprio + cursos + agenda + aulas + materiais + progresso + avaliacoes)
+   - Portal do Aluno com abertura de chamados tecnicos
    - Licenciamento anual por empresa (Cadastro > Licenca)
    - Solicitacoes, Automacoes e Chat IA Jully (CRUD basico)
    - Projetos e Tarefas desativados por regra de negocio atual
@@ -125,7 +141,8 @@ Raiz do projeto:
 14. `migrations/20260313_arsenal_digital.sql`
 15. `migrations/20260316_company_licenses.sql`
 16. `migrations/20260316_courses_trial_access.sql`
-17. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
+17. `migrations/20260317_support_ticket_codes_aneo.sql`
+18. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
 
 Dentro da raiz da aplicacao:
 
@@ -478,6 +495,11 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
    - login permitido somente no dia cadastrado
    - menu restrito a `Inicio` e `Aulas ao Vivo`
    - bloqueio automatico quando acesso estiver expirado/revogado
+13. Chamados tecnicos:
+   - aba `Chamados` no menu do aluno
+   - criacao de chamado pelo proprio aluno
+   - exibicao de codigo unico do chamado (`ANEO...`)
+   - acompanhamento de status e comentarios
 
 ## 6.10 Modulos estruturais
 
@@ -518,7 +540,7 @@ As rotas estao centralizadas em `index.php` (administrativo/aluno) e `support.ph
 Referencia rapida:
 
 1. Auth admin: `login`, `logout`, `select-company`, `set-company`
-2. Portal aluno: `student/login`, `student/logout`, `student/dashboard`, `student/courses`, `student/calendar`, `student/live`, `student/materials`, `student/arsenal`, `student/arsenal/open`, `student/progress`, `student/exams`, `student/exams/take`, `student/exams/submit`
+2. Portal aluno: `student/login`, `student/logout`, `student/dashboard`, `student/courses`, `student/calendar`, `student/live`, `student/materials`, `student/arsenal`, `student/arsenal/open`, `student/requests`, `student/requests/store`, `student/progress`, `student/exams`, `student/exams/take`, `student/exams/submit`
 3. Usuarios: `users/*`
 4. Empresas: `companies`, `companies/store`, `companies/update`, `companies/toggle`
 5. Licenca: `companies/license`, `companies/license/activate`

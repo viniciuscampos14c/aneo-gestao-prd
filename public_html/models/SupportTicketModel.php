@@ -146,6 +146,81 @@ class SupportTicketModel extends BaseModel
         ];
     }
 
+    public function listStudentTickets(int $companyId, int $studentId, string $studentEmail, array $filters, int $perPage, int $page): array
+    {
+        if (!$this->featureAvailable() || $companyId <= 0 || $studentId <= 0) {
+            return [
+                'rows' => [],
+                'meta' => pagination_meta(0, $perPage, $page),
+            ];
+        }
+
+        [$where, $params] = $this->studentScopeFilters($companyId, $studentId, $studentEmail, 'st');
+
+        if (!empty($filters['q'])) {
+            $where[] = '(st.ticket_code LIKE :q OR st.subject LIKE :q OR st.description LIKE :q)';
+            $params[':q'] = '%' . trim((string) $filters['q']) . '%';
+        }
+
+        if (!empty($filters['status'])) {
+            $where[] = 'st.status = :status';
+            $params[':status'] = trim((string) $filters['status']);
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $countSql = "SELECT COUNT(*)
+            FROM support_tickets st
+            WHERE {$whereSql}";
+
+        $dataSql = "SELECT
+                st.*,
+                u.name AS created_by_name,
+                (SELECT COUNT(*) FROM support_ticket_attachments ta WHERE ta.ticket_id = st.id) AS attachments_count,
+                (SELECT COUNT(*) FROM support_ticket_comments tc WHERE tc.ticket_id = st.id) AS comments_count
+            FROM support_tickets st
+            LEFT JOIN users u ON u.id = st.created_by
+            WHERE {$whereSql}
+            ORDER BY st.updated_at DESC, st.id DESC";
+
+        return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+    }
+
+    public function studentStats(int $companyId, int $studentId, string $studentEmail): array
+    {
+        if (!$this->featureAvailable() || $companyId <= 0 || $studentId <= 0) {
+            return [
+                'total' => 0,
+                'open' => 0,
+                'in_progress' => 0,
+                'resolved' => 0,
+                'closed' => 0,
+            ];
+        }
+
+        [$where, $params] = $this->studentScopeFilters($companyId, $studentId, $studentEmail, 'st');
+        $whereSql = implode(' AND ', $where);
+
+        $stmt = $this->db->prepare("SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN st.status = 'open' THEN 1 ELSE 0 END) AS open_count,
+                SUM(CASE WHEN st.status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count,
+                SUM(CASE WHEN st.status = 'resolved' THEN 1 ELSE 0 END) AS resolved_count,
+                SUM(CASE WHEN st.status = 'closed' THEN 1 ELSE 0 END) AS closed_count
+            FROM support_tickets st
+            WHERE {$whereSql}");
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'total' => (int) ($row['total'] ?? 0),
+            'open' => (int) ($row['open_count'] ?? 0),
+            'in_progress' => (int) ($row['in_progress_count'] ?? 0),
+            'resolved' => (int) ($row['resolved_count'] ?? 0),
+            'closed' => (int) ($row['closed_count'] ?? 0),
+        ];
+    }
+
     public function listAllTickets(array $filters, int $perPage, int $page): array
     {
         if (!$this->featureAvailable()) {
@@ -486,7 +561,7 @@ class SupportTicketModel extends BaseModel
             return 0;
         }
 
-        $ticketCode = $this->generateTicketCode($companyId);
+        $ticketCode = $this->temporaryTicketCode($companyId);
         $priority = $this->normalizePriority((string) ($data['priority'] ?? 'medium'));
         $subject = trim((string) ($data['subject'] ?? ''));
         $description = trim((string) ($data['description'] ?? ''));
@@ -523,8 +598,20 @@ class SupportTicketModel extends BaseModel
             ':created_at' => $now,
             ':updated_at' => $now,
         ]);
+        $ticketId = (int) $this->db->lastInsertId();
+        if ($ticketId <= 0) {
+            return 0;
+        }
 
-        return (int) $this->db->lastInsertId();
+        $this->db->prepare('UPDATE support_tickets
+            SET ticket_code = :ticket_code
+            WHERE id = :id')
+            ->execute([
+                ':ticket_code' => $this->formatTicketCode($ticketId),
+                ':id' => $ticketId,
+            ]);
+
+        return $ticketId;
     }
 
     public function updateStatus(int $ticketId, string $status): void
@@ -782,9 +869,38 @@ class SupportTicketModel extends BaseModel
         ]);
     }
 
-    private function generateTicketCode(int $companyId): string
+    private function studentScopeFilters(int $companyId, int $studentId, string $studentEmail, string $alias = 'st'): array
     {
-        return 'CH-' . $companyId . '-' . date('YmdHis') . '-' . random_int(100, 999);
+        $alias = trim($alias) !== '' ? trim($alias) : 'st';
+        $where = [
+            "{$alias}.company_id = :company_id",
+            "{$alias}.source = :source",
+        ];
+        $params = [
+            ':company_id' => $companyId,
+            ':source' => 'student_portal',
+            ':student_ref' => 'student:' . $studentId,
+        ];
+
+        $studentEmail = trim($studentEmail);
+        if ($studentEmail !== '') {
+            $where[] = "({$alias}.external_reference = :student_ref OR ({$alias}.external_reference IS NULL AND {$alias}.requester_email = :student_email))";
+            $params[':student_email'] = $studentEmail;
+        } else {
+            $where[] = "{$alias}.external_reference = :student_ref";
+        }
+
+        return [$where, $params];
+    }
+
+    private function temporaryTicketCode(int $companyId): string
+    {
+        return 'TMP-' . $companyId . '-' . date('YmdHis') . '-' . random_int(1000, 9999);
+    }
+
+    private function formatTicketCode(int $ticketId): string
+    {
+        return 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
     }
 
     private function normalizePriority(string $priority): string
