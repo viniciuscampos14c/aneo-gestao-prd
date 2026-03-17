@@ -85,6 +85,21 @@ Atualizacoes aplicadas e validadas nesta data:
 4. Migracao criada para normalizar chamados antigos:
    - `migrations/20260317_support_ticket_codes_aneo.sql`
 
+## 1.5) Atualizacao complementar (17/03/2026) - Historico Academico no Portal do Aluno
+
+Atualizacoes aplicadas e validadas nesta data:
+
+1. Historico Academico removido da tela de `Avaliacoes` e criado em aba dedicada.
+2. Nova rota no portal:
+   - `student/academic-history`
+3. Nova tela com modelo formal de historico escolar:
+   - cabecalho institucional
+   - dados do aluno (nome, RA, RG e contato)
+   - periodos semestrais com disciplinas, notas e situacao final
+   - bloco de descricao institucional e area de carimbo/assinatura ANEO
+4. Impressao A4 disponivel diretamente na tela do historico.
+5. Sem necessidade de migracao de banco (uso de dados ja existentes).
+
 ---
 
 ## 2) O que foi entregue
@@ -113,6 +128,7 @@ Foram entregues os seguintes artefatos principais:
    - Degustacao de curso EAD (acesso rapido por data e curso)
    - Portal do Aluno separado (login proprio + cursos + agenda + aulas + materiais + progresso + avaliacoes)
    - Portal do Aluno com abertura de chamados tecnicos
+   - Portal do Aluno com Historico Academico em aba separada e impressao A4
    - Licenciamento anual por empresa (Cadastro > Licenca)
    - Solicitacoes, Automacoes e Chat IA Jully (CRUD basico)
    - Projetos e Tarefas desativados por regra de negocio atual
@@ -500,6 +516,11 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
    - criacao de chamado pelo proprio aluno
    - exibicao de codigo unico do chamado (`ANEO...`)
    - acompanhamento de status e comentarios
+14. Historico Academico:
+   - aba dedicada `Historico Academico`
+   - rota `student/academic-history`
+   - layout formal inspirado em historico escolar
+   - impressao em A4 com bloco para assinatura e carimbo ANEO
 
 ## 6.10 Modulos estruturais
 
@@ -540,7 +561,7 @@ As rotas estao centralizadas em `index.php` (administrativo/aluno) e `support.ph
 Referencia rapida:
 
 1. Auth admin: `login`, `logout`, `select-company`, `set-company`
-2. Portal aluno: `student/login`, `student/logout`, `student/dashboard`, `student/courses`, `student/calendar`, `student/live`, `student/materials`, `student/arsenal`, `student/arsenal/open`, `student/requests`, `student/requests/store`, `student/progress`, `student/exams`, `student/exams/take`, `student/exams/submit`
+2. Portal aluno: `student/login`, `student/logout`, `student/dashboard`, `student/courses`, `student/calendar`, `student/live`, `student/materials`, `student/arsenal`, `student/arsenal/open`, `student/requests`, `student/requests/store`, `student/progress`, `student/exams`, `student/academic-history`, `student/exams/take`, `student/exams/submit`
 3. Usuarios: `users/*`
 4. Empresas: `companies`, `companies/store`, `companies/update`, `companies/toggle`
 5. Licenca: `companies/license`, `companies/license/activate`
@@ -1617,3 +1638,67 @@ Aluno:
    - `https://youtube.com/watch?...`
 6. Validacao rapida:
    - se a URL tocar o video diretamente em uma aba do navegador, ela e valida para o LMS.
+
+## 22) Atualizacao complementar (17/03/2026) - Historico Academico em aba separada
+
+### 22.1) Objetivo
+
+Separar o documento de historico escolar da tela de provas, mantendo `Avaliacoes` focada em execucao/resultado de exames e criando uma tela formal para emissao e impressao.
+
+### 22.2) Arquivos criados/alterados
+
+Arquivo novo:
+
+1. `views/student_portal/academic_history.php`
+
+Arquivos alterados:
+
+1. `controllers/StudentPortalController.php`
+2. `models/StudentPortalModel.php`
+3. `views/student_portal/exams.php`
+4. `views/layouts/student.php`
+5. `index.php`
+
+### 22.3) Rotas
+
+Portal do aluno:
+
+1. `GET student/academic-history`
+
+### 22.4) Estrutura da tela
+
+1. Cabecalho institucional (modelo de historico escolar).
+2. Dados cadastrais do aluno:
+   - nome
+   - RA
+   - RG
+   - data de nascimento
+   - e-mail e telefone
+3. Disciplinas agrupadas por periodo semestral, com:
+   - C/H
+   - media final
+   - faltas
+   - situacao final
+4. Rodape com:
+   - descricao institucional
+   - area de assinatura do responsavel ANEO
+   - area para carimbo oficial ANEO
+
+### 22.5) Impressao A4
+
+1. Botao `Imprimir A4` na propria tela.
+2. Estilo `@page` e `@media print` para formatacao em folha A4.
+3. Impressao restrita ao bloco do historico (sem menu/header do portal).
+
+### 22.6) Fonte dos dados
+
+1. Perfil do aluno: tabela `students`.
+2. Resultados: `exam_results`, `exams` e `courses`.
+3. Carga horaria consolidada: dados de `courses` vinculados ao aluno.
+
+### 22.7) Ativacao
+
+1. Publicar arquivos.
+2. Limpar cache do navegador (`Ctrl+F5`).
+3. Acessar `index.php?route=student/academic-history`.
+4. Validar impressao A4 e bloco de carimbo/assinatura.

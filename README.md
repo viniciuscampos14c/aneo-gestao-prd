@@ -99,6 +99,19 @@ Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
 4. Migracao de padronizacao criada:
    - `migrations/20260317_support_ticket_codes_aneo.sql`
 
+### 1.7) Atualizacao complementar em 17/03/2026
+
+1. Historico Academico movido para aba propria no Portal do Aluno.
+2. Nova rota:
+   - `GET student/academic-history`
+3. Tela `Avaliacoes` permanece focada em provas e resultados.
+4. Nova tela `Historico Academico` com:
+   - layout formal inspirado em historico escolar
+   - periodos semestrais com disciplinas e pontuacoes
+   - bloco de descricao e area para carimbo/assinatura ANEO
+   - impressao otimizada em A4
+5. Nao exige migracao de banco (reaproveita dados de aluno e `exam_results`).
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
@@ -289,6 +302,8 @@ Arquivos principais:
 10. Abrir `route=companies/license` e validar status/licenca da empresa.
 11. Abrir `route=courses/trial-access` e criar um acesso de degustacao.
 12. Validar login no portal do aluno com o usuario de degustacao no dia liberado.
+13. Validar aba `Historico Academico` em `route=student/academic-history`.
+14. Acionar `Imprimir A4` e conferir bloco de carimbo/assinatura.
 
 ## 10) Seguranca (obrigatorio antes de producao)
 
@@ -429,3 +444,24 @@ Objetivo: padronizar identificacao dos chamados para conversas de suporte e perm
    - historico mostra codigo, status, prioridade e comentarios
 4. Migracao de ajuste:
    - `migrations/20260317_support_ticket_codes_aneo.sql`
+
+## 16) Historico Academico no Portal do Aluno
+
+Objetivo: disponibilizar documento formal de desempenho academico em aba separada, pronto para impressao A4.
+
+1. Navegacao:
+   - nova aba `Historico Academico` no menu do aluno
+   - rota `index.php?route=student/academic-history`
+2. Estrutura do documento:
+   - cabecalho institucional
+   - dados do aluno (nome, RA, RG, contato)
+   - periodos semestrais com disciplinas, C/H, media final, faltas e situacao final
+   - resumo consolidado (media geral, total de avaliacoes, carga horaria total)
+   - descricao institucional
+   - campos para assinatura e carimbo da ANEO
+3. Impressao:
+   - botao `Imprimir A4` na propria tela
+   - CSS `@media print` para gerar formato de papel A4
+4. Fonte dos dados:
+   - `students` para dados cadastrais
+   - `exam_results` + `exams` + `courses` para notas e disciplinas
