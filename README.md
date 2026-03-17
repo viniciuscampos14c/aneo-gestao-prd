@@ -386,3 +386,12 @@ Objetivo: permitir cursos sob demanda com controle de progressao.
    - sincroniza `enrollments.progress_percent` automaticamente
 4. Observacao tecnica:
    - o tracking automatico depende de video com URL direta (ex.: MP4/WebM)
+5. Como informar a URL do video:
+   - o campo da aula aceita URL HTTP/HTTPS direta do arquivo
+   - exemplo local no XAMPP: `http://localhost/aneo/uploads/videos/aula-01.mp4`
+   - exemplo em producao: `https://seu-dominio.com/uploads/videos/aula-01.mp4`
+6. O que nao funciona no player atual:
+   - caminho local de disco (`C:\...` ou `file:///...`)
+   - link de pagina do YouTube (`https://youtube.com/watch?...`)
+7. Regra pratica de validacao:
+   - se a URL abre o video direto no navegador, no curso tambem funciona

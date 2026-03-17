@@ -1580,3 +1580,18 @@ Aluno:
 ### 21.7) Observacao tecnica
 
 1. O tracking automatico de progresso depende de URL direta de video (exemplo: MP4/WebM).
+
+### 21.8) Formato da URL de video (importante)
+
+1. A URL da aula deve ser HTTP/HTTPS e apontar para o arquivo de video diretamente.
+2. Exemplo local (XAMPP):
+   - `http://localhost/aneo/uploads/videos/aula-01.mp4`
+3. Exemplo em producao:
+   - `https://seu-dominio.com/uploads/videos/aula-01.mp4`
+4. Caminho local de disco nao e suportado no campo da aula:
+   - `C:\...`
+   - `file:///...`
+5. Link de pagina do YouTube nao e suportado no player atual:
+   - `https://youtube.com/watch?...`
+6. Validacao rapida:
+   - se a URL tocar o video diretamente em uma aba do navegador, ela e valida para o LMS.
