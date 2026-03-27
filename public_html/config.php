@@ -53,7 +53,7 @@ return [
         'api_key' => '',
         'model' => 'openrouter/free',
         'temperature' => 0.2,
-        'max_tokens' => 450,
+        'max_tokens' => 1000,
         'timeout_seconds' => 60,
         'history_messages' => 6,
         'http_referer' => 'http://localhost/aneo',

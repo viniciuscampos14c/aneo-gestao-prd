@@ -8,6 +8,7 @@ class AdminAiKnowledgeModel extends BaseModel
     {
         $question = trim($question);
         $searchTerms = $this->searchTerms($question);
+        $intent = $this->detectIntent($question);
         $company = current_company() ?? [];
         $companyName = trim((string) ($company['trade_name'] ?? '')) !== ''
             ? (string) $company['trade_name']
@@ -24,11 +25,48 @@ class AdminAiKnowledgeModel extends BaseModel
             'payments' => $this->searchPayments($searchTerms, 6),
         ];
 
+        // Buscas especializadas por intenção detectada na pergunta
+        if ($intent['inadimplentes']) {
+            $matches['alunos_inadimplentes'] = $this->searchDefaulters(10);
+        }
+        if ($intent['alunos_ativos']) {
+            $matches['lista_alunos_ativos'] = $this->searchStudentsByStatus(true, 15);
+        }
+        if ($intent['alunos_inativos']) {
+            $matches['lista_alunos_inativos'] = $this->searchStudentsByStatus(false, 15);
+        }
+        if ($intent['faturas_vencidas']) {
+            $matches['faturas_vencidas_detalhe'] = $this->searchOverdueInvoicesDetailed(10);
+        }
+        if ($intent['recebimentos_mes']) {
+            $matches['recebimentos_mes_atual'] = $this->searchRecentPayments(10);
+        }
+        if ($intent['leads_sem_contato']) {
+            $matches['leads_sem_contato_recente'] = $this->searchLeadsWithoutRecentContact(10);
+        }
+
         if ($this->hasTable('support_tickets')) {
             $matches['support_tickets'] = $this->searchSupportTickets($searchTerms, 6);
         } else {
             $matches['support_tickets'] = [];
         }
+
+        // Remove seções com zero resultados — evita poluir o contexto com arrays vazios
+        $matchesClean = array_filter($matches, fn ($rows) => is_array($rows) && count($rows) > 0);
+
+        // Intenções ativas — ajudam o modelo a entender o foco da pergunta
+        $intencoesAtivas = array_keys(array_filter($intent));
+
+        // lead_status e invoice_status só entram no JSON quando são relevantes para a intenção detectada.
+        // Em perguntas sem intenção específica ($intencoesAtivas vazio), ambos sempre entram.
+        $incluirLeadStatus = $intencoesAtivas === []
+            || in_array('leads_sem_contato', $intencoesAtivas, true)
+            || in_array('inadimplentes', $intencoesAtivas, true);
+
+        $incluirInvoiceStatus = $intencoesAtivas === []
+            || in_array('inadimplentes', $intencoesAtivas, true)
+            || in_array('faturas_vencidas', $intencoesAtivas, true)
+            || in_array('recebimentos_mes', $intencoesAtivas, true);
 
         $payload = [
             'empresa' => [
@@ -38,9 +76,10 @@ class AdminAiKnowledgeModel extends BaseModel
             ],
             'gerado_em' => now(),
             'resumo' => $summary,
-            'lead_status' => $this->leadStatusBreakdown(),
-            'invoice_status' => $this->invoiceStatusBreakdown(),
-            'matches' => $matches,
+            'intencoes_detectadas' => $intencoesAtivas,
+            'lead_status' => $incluirLeadStatus ? $this->leadStatusBreakdown() : [],
+            'invoice_status' => $incluirInvoiceStatus ? $this->invoiceStatusBreakdown() : [],
+            'matches' => $matchesClean,
             'search_terms' => $searchTerms,
             'pergunta_usuario' => $question,
         ];
@@ -52,8 +91,8 @@ class AdminAiKnowledgeModel extends BaseModel
 
         return [
             'summary' => $summary,
-            'matches' => $matches,
-            'sources' => $this->sourceLabels($matches),
+            'matches' => $matches,          // completo para uso interno do controller
+            'sources' => $this->sourceLabels($matchesClean),
             'payload' => $payload,
             'context_json' => $contextJson,
         ];
@@ -538,6 +577,231 @@ class AdminAiKnowledgeModel extends BaseModel
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    // -------------------------------------------------------------------------
+    // Detecção de intenção e buscas especializadas
+    // -------------------------------------------------------------------------
+
+    /**
+     * Detecta intenções semânticas na pergunta do usuário para acionar
+     * queries especializadas além da busca LIKE por termos.
+     */
+    private function detectIntent(string $question): array
+    {
+        $n = $this->normalizeText($question);
+
+        $ehAluno = str_contains($n, 'alun');
+        $ehFatura = str_contains($n, 'fatura') || str_contains($n, 'conta') || str_contains($n, 'boleto') || str_contains($n, 'titulo');
+        $ehPagamento = str_contains($n, 'pagamento') || str_contains($n, 'recebimento') || str_contains($n, 'recebid') || str_contains($n, 'entrada');
+        $ehAtraso = str_contains($n, 'atraso') || str_contains($n, 'atrasad') || str_contains($n, 'vencid') || str_contains($n, 'overdue');
+        $ehMes = str_contains($n, 'mes') || str_contains($n, 'hoje') || str_contains($n, 'semana') || str_contains($n, 'period') || str_contains($n, 'atual');
+        $ehLead = str_contains($n, 'lead');
+        $ehContato = str_contains($n, 'contat') || str_contains($n, 'aguardando') || str_contains($n, 'sem retorno');
+
+        return [
+            // Ex: "quais alunos estão inadimplentes?", "alunos devendo", "em atraso nos pagamentos"
+            'inadimplentes' => str_contains($n, 'inadimplent')
+                || str_contains($n, 'devend')
+                || ($ehAluno && $ehAtraso)
+                || ($ehFatura && $ehAtraso && $ehAluno),
+
+            // Ex: "listar alunos ativos", "quantos alunos ativos temos"
+            'alunos_ativos' => $ehAluno
+                && str_contains($n, 'ativ')
+                && !str_contains($n, 'inativ'),
+
+            // Ex: "quais alunos estão inativos", "lista de alunos inativos"
+            'alunos_inativos' => $ehAluno && str_contains($n, 'inativ'),
+
+            // Ex: "faturas vencidas", "contas em atraso", "boletos vencidos"
+            'faturas_vencidas' => $ehFatura && $ehAtraso && !$ehAluno,
+
+            // Ex: "recebimentos deste mês", "pagamentos de hoje", "entradas no mês"
+            'recebimentos_mes' => ($ehPagamento || str_contains($n, 'receb')) && $ehMes,
+
+            // Ex: "leads sem contato", "leads aguardando retorno", "quem ainda não contactamos"
+            'leads_sem_contato' => $ehLead && ($ehContato || str_contains($n, 'sem retorno') || str_contains($n, 'nao contact') || str_contains($n, 'precis')),
+        ];
+    }
+
+    /**
+     * Alunos ativos com faturas vencidas (inadimplentes), ordenados pelo maior saldo devedor.
+     */
+    private function searchDefaulters(int $limit): array
+    {
+        $stmt = $this->db->prepare("SELECT
+                s.id,
+                s.full_name,
+                s.email_primary,
+                s.phone,
+                COUNT(i.id)                                                    AS faturas_vencidas,
+                COALESCE(SUM(i.amount - COALESCE(i.paid_amount, 0)), 0)        AS saldo_devedor,
+                MIN(i.due_date)                                                AS vencimento_mais_antigo
+            FROM students s
+            INNER JOIN invoices i ON i.student_id = s.id AND i.company_id = :company_id2
+            WHERE s.company_id = :company_id
+              AND i.status = 'overdue'
+              AND s.is_active = 1
+            GROUP BY s.id, s.full_name, s.email_primary, s.phone
+            ORDER BY saldo_devedor DESC, s.full_name ASC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':company_id2', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll() ?: [];
+        foreach ($rows as &$row) {
+            $row['saldo_devedor'] = $this->decimal($row['saldo_devedor'] ?? 0);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Lista de alunos filtrados por status ativo/inativo.
+     */
+    private function searchStudentsByStatus(bool $active, int $limit): array
+    {
+        $stmt = $this->db->prepare('SELECT
+                id,
+                full_name,
+                email_primary,
+                phone,
+                ra,
+                monthly_fee,
+                is_active,
+                updated_at
+            FROM students
+            WHERE company_id = :company_id
+              AND is_active = :is_active
+            ORDER BY full_name ASC
+            LIMIT :limit');
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':is_active', $active ? 1 : 0, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(50, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
+     * Faturas vencidas detalhadas com nome e contato do aluno, ordenadas da mais antiga.
+     */
+    private function searchOverdueInvoicesDetailed(int $limit): array
+    {
+        $stmt = $this->db->prepare("SELECT
+                i.id,
+                i.invoice_number,
+                i.due_date,
+                i.amount,
+                COALESCE(i.paid_amount, 0)                                    AS paid_amount,
+                (i.amount - COALESCE(i.paid_amount, 0))                       AS saldo_devedor,
+                i.status,
+                s.full_name   AS student_name,
+                s.phone       AS student_phone,
+                s.email_primary AS student_email
+            FROM invoices i
+            INNER JOIN students s ON s.id = i.student_id
+            WHERE i.company_id = :company_id
+              AND i.status = 'overdue'
+            ORDER BY i.due_date ASC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll() ?: [];
+        foreach ($rows as &$row) {
+            $row['amount']       = $this->decimal($row['amount'] ?? 0);
+            $row['paid_amount']  = $this->decimal($row['paid_amount'] ?? 0);
+            $row['saldo_devedor'] = $this->decimal($row['saldo_devedor'] ?? 0);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Pagamentos recebidos no mês atual.
+     */
+    private function searchRecentPayments(int $limit): array
+    {
+        $stmt = $this->db->prepare("SELECT
+                id,
+                payment_ref,
+                method,
+                amount,
+                paid_at,
+                notes,
+                updated_at
+            FROM payments
+            WHERE company_id = :company_id
+              AND paid_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+            ORDER BY paid_at DESC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll() ?: [];
+        foreach ($rows as &$row) {
+            $row['amount'] = $this->decimal($row['amount'] ?? 0);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Leads não convertidos sem contato há mais de 7 dias, ordenados pelo mais antigo.
+     */
+    private function searchLeadsWithoutRecentContact(int $limit): array
+    {
+        $stmt = $this->db->prepare('SELECT
+                l.id,
+                l.full_name,
+                l.email,
+                l.phone,
+                l.source,
+                l.unit_name,
+                l.last_contact_at,
+                ls.name AS status_name
+            FROM leads l
+            LEFT JOIN lead_status ls ON ls.id = l.lead_status_id
+            WHERE l.company_id = :company_id
+              AND l.converted_student_id IS NULL
+              AND (l.last_contact_at IS NULL
+                   OR l.last_contact_at < DATE_SUB(NOW(), INTERVAL 7 DAY))
+            ORDER BY l.last_contact_at ASC, l.created_at ASC
+            LIMIT :limit');
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
+     * Normaliza texto para comparação de intenções: minúsculas + remove acentos e pontuação.
+     */
+    private function normalizeText(string $value): string
+    {
+        if (function_exists('mb_strtolower')) {
+            $value = mb_strtolower($value, 'UTF-8');
+        } else {
+            $value = strtolower($value);
+        }
+
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+            if (is_string($converted) && trim($converted) !== '') {
+                $value = $converted;
+            }
+        }
+
+        $value = preg_replace('/[^a-z0-9\s]/', ' ', $value) ?? $value;
+
+        return trim((string) (preg_replace('/\s+/', ' ', $value) ?? $value));
     }
 
     private function buildLikeWhere(array $columns, array $terms, string $prefix): array
