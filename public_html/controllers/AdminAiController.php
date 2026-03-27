@@ -204,65 +204,82 @@ class AdminAiController extends BaseController
     {
         $summary = (array) ($context['summary'] ?? []);
         $matches = (array) ($context['matches'] ?? []);
-        $payload = (array) ($context['payload'] ?? []);
-        $searchTerms = is_array($payload['search_terms'] ?? null) ? $payload['search_terms'] : [];
 
-        $lines = [];
-        $lines[] = 'Resposta baseada no banco interno da escola (modo administrativo).';
-        if (trim($reason) !== '' && str_contains(strtolower($reason), 'http')) {
-            $lines[] = 'Observacao tecnica: ' . trim($reason);
-        }
-        $lines[] = 'Panorama atual:';
-        $lines[] = '- Alunos totais: ' . (int) ($summary['total_students'] ?? 0);
-        $lines[] = '- Alunos ativos: ' . (int) ($summary['active_students'] ?? 0);
-        $lines[] = '- Alunos inativos: ' . (int) ($summary['inactive_students'] ?? max(0, (int) ($summary['total_students'] ?? 0) - (int) ($summary['active_students'] ?? 0)));
-        $lines[] = '- Leads totais: ' . (int) ($summary['total_leads'] ?? 0);
-        $lines[] = '- Faturas abertas: ' . (int) ($summary['open_invoices'] ?? 0);
-        $lines[] = '- Faturas vencidas: ' . (int) ($summary['overdue_invoices'] ?? 0);
-        $lines[] = '- Saldo em aberto: R$ ' . number_format((float) ($summary['open_balance'] ?? 0), 2, ',', '.');
-        $lines[] = '- Recebido no mes: R$ ' . number_format((float) ($summary['received_this_month'] ?? 0), 2, ',', '.');
-        if (array_key_exists('support_open_tickets', $summary) || array_key_exists('support_in_progress_tickets', $summary)) {
-            $lines[] = '- Chamados abertos: ' . (int) ($summary['support_open_tickets'] ?? 0);
-            $lines[] = '- Chamados em andamento: ' . (int) ($summary['support_in_progress_tickets'] ?? 0);
-            $lines[] = '- Chamados resolvidos: ' . (int) ($summary['support_resolved_tickets'] ?? 0);
-        }
-
-        if ($searchTerms !== []) {
-            $lines[] = 'Termos analisados: ' . implode(', ', array_map('strval', $searchTerms)) . '.';
-        }
-
-        $matchedSections = [];
-        foreach ($matches as $section => $rows) {
+        // Verifica se há registros específicos encontrados
+        $hasMatches = false;
+        foreach ($matches as $rows) {
             if (is_array($rows) && count($rows) > 0) {
-                $matchedSections[] = $section . ' (' . count($rows) . ')';
+                $hasMatches = true;
+                break;
             }
         }
 
-        if ($matchedSections !== []) {
-            $lines[] = 'Registros localizados para a pergunta "' . $question . '": ' . implode(', ', $matchedSections) . '.';
+        $lines = [];
+
+        if ($hasMatches) {
+            // Resposta focada nos dados encontrados
+            $lines[] = 'Aqui está o que encontrei no banco de dados:';
+            $lines[] = '';
 
             foreach ($matches as $section => $rows) {
                 if (!is_array($rows) || $rows === []) {
                     continue;
                 }
 
-                $label = match ($section) {
-                    'students' => 'Alunos',
-                    'leads' => 'Leads',
-                    'invoices' => 'Faturas',
-                    'courses' => 'Cursos',
-                    'payments' => 'Pagamentos',
-                    'support_tickets' => 'Chamados',
-                    default => ucfirst((string) $section),
+                $label = match ((string) $section) {
+                    'students'                  => 'Alunos',
+                    'lista_alunos_ativos'        => 'Alunos ativos',
+                    'lista_alunos_inativos'      => 'Alunos inativos',
+                    'alunos_inadimplentes'       => 'Alunos inadimplentes',
+                    'leads'                      => 'Leads',
+                    'leads_sem_contato_recente'  => 'Leads sem contato recente',
+                    'invoices'                   => 'Faturas',
+                    'faturas_vencidas_detalhe'   => 'Faturas vencidas',
+                    'courses'                    => 'Cursos',
+                    'course_enrollments'         => 'Matrículas',
+                    'payments'                   => 'Pagamentos',
+                    'recebimentos_mes_atual'     => 'Recebimentos do mês',
+                    'support_tickets'            => 'Chamados',
+                    default                      => ucfirst((string) $section),
                 };
 
-                $lines[] = $label . ' encontrados:';
-                foreach (array_slice($rows, 0, 3) as $row) {
-                    $lines[] = '  - ' . $this->formatMatchLine((string) $section, (array) $row);
+                $total = count($rows);
+                $lines[] = $label . ' (' . $total . ' encontrado(s)):';
+                foreach (array_slice($rows, 0, 5) as $row) {
+                    $lines[] = '• ' . $this->formatMatchLine((string) $section, (array) $row);
                 }
+                if ($total > 5) {
+                    $lines[] = '  ... e mais ' . ($total - 5) . ' registro(s).';
+                }
+                $lines[] = '';
             }
+
+            // Rodapé com resumo compacto
+            $lines[] = 'Resumo geral: '
+                . (int) ($summary['active_students'] ?? 0) . ' aluno(s) ativo(s) | '
+                . (int) ($summary['total_leads'] ?? 0) . ' lead(s) | '
+                . (int) ($summary['open_invoices'] ?? 0) . ' fatura(s) em aberto | '
+                . 'Saldo: R$ ' . number_format((float) ($summary['open_balance'] ?? 0), 2, ',', '.');
         } else {
-            $lines[] = 'Nao encontrei registros diretamente relacionados ao termo pesquisado.';
+            // Sem dados específicos — panorama geral limpo
+            $lines[] = 'Não encontrei registros específicos para essa pergunta.';
+            $lines[] = '';
+            $lines[] = 'Panorama atual da escola:';
+            $lines[] = '• Alunos ativos: ' . (int) ($summary['active_students'] ?? 0);
+            $lines[] = '• Alunos inativos: ' . (int) ($summary['inactive_students'] ?? 0);
+            $lines[] = '• Leads cadastrados: ' . (int) ($summary['total_leads'] ?? 0);
+            $lines[] = '• Cursos publicados: ' . (int) ($summary['published_courses'] ?? 0);
+            $lines[] = '• Matrículas ativas: ' . (int) ($summary['active_enrollments'] ?? 0);
+            $lines[] = '• Faturas em aberto: ' . (int) ($summary['open_invoices'] ?? 0);
+            $lines[] = '• Faturas vencidas: ' . (int) ($summary['overdue_invoices'] ?? 0);
+            $lines[] = '• Saldo a receber: R$ ' . number_format((float) ($summary['open_balance'] ?? 0), 2, ',', '.');
+            $lines[] = '• Recebido no mês: R$ ' . number_format((float) ($summary['received_this_month'] ?? 0), 2, ',', '.');
+
+            if (isset($summary['support_open_tickets'])) {
+                $lines[] = '• Chamados abertos: ' . (int) ($summary['support_open_tickets'] ?? 0);
+                $lines[] = '• Chamados em andamento: ' . (int) ($summary['support_in_progress_tickets'] ?? 0);
+                $lines[] = '• Chamados resolvidos: ' . (int) ($summary['support_resolved_tickets'] ?? 0);
+            }
         }
 
         return implode("\n", $lines);
@@ -357,6 +374,59 @@ class AdminAiController extends BaseController
 
         $summary = is_array($context['summary'] ?? null) ? $context['summary'] : [];
         $matches = is_array($context['matches'] ?? null) ? $context['matches'] : [];
+
+        // Resumo geral / panorama
+        $asksOverview = str_contains($normalized, 'resumo')
+            || str_contains($normalized, 'panorama')
+            || str_contains($normalized, 'visao geral')
+            || str_contains($normalized, 'situacao geral')
+            || str_contains($normalized, 'como esta');
+        if ($asksOverview) {
+            $active   = (int) ($summary['active_students'] ?? 0);
+            $leads    = (int) ($summary['total_leads'] ?? 0);
+            $invoices = (int) ($summary['open_invoices'] ?? 0);
+            $overdue  = (int) ($summary['overdue_invoices'] ?? 0);
+            $balance  = number_format((float) ($summary['open_balance'] ?? 0), 2, ',', '.');
+            $received = number_format((float) ($summary['received_this_month'] ?? 0), 2, ',', '.');
+            return "Panorama atual da escola:\n"
+                . '• Alunos ativos: ' . $active . "\n"
+                . '• Leads cadastrados: ' . $leads . "\n"
+                . '• Faturas em aberto: ' . $invoices . ' (vencidas: ' . $overdue . ')' . "\n"
+                . '• Saldo a receber: R$ ' . $balance . "\n"
+                . '• Recebido no mês: R$ ' . $received;
+        }
+
+        // Total de leads cadastrados
+        $asksLeadTotal = str_contains($normalized, 'lead')
+            && (str_contains($normalized, 'quant') || str_contains($normalized, 'total')
+                || str_contains($normalized, 'disponiv') || str_contains($normalized, 'cadastr')
+                || str_contains($normalized, 'tem') || str_contains($normalized, 'ha'))
+            && !str_contains($normalized, 'contat')
+            && !str_contains($normalized, 'precis')
+            && !str_contains($normalized, 'aguard');
+        if ($asksLeadTotal) {
+            $total     = (int) ($summary['total_leads'] ?? 0);
+            $converted = (int) ($summary['converted_leads'] ?? 0);
+            $pending   = max(0, $total - $converted);
+            return 'Temos ' . $total . ' lead(s) cadastrado(s) no total: '
+                . $converted . ' já convertido(s) em aluno(s) e '
+                . $pending . ' ainda em negociação.';
+        }
+
+        // Total de alunos cadastrados (sem filtro de ativo/inativo)
+        $asksStudentTotal = str_contains($normalized, 'alun')
+            && (str_contains($normalized, 'quant') || str_contains($normalized, 'total') || str_contains($normalized, 'cadastr'))
+            && !str_contains($normalized, 'ativ')
+            && !str_contains($normalized, 'inativ')
+            && !str_contains($normalized, 'inadimplent')
+            && !str_contains($normalized, 'matricul');
+        if ($asksStudentTotal) {
+            $total    = (int) ($summary['total_students'] ?? 0);
+            $active   = (int) ($summary['active_students'] ?? 0);
+            $inactive = (int) ($summary['inactive_students'] ?? 0);
+            return 'Temos ' . $total . ' aluno(s) cadastrado(s) no total: '
+                . $active . ' ativo(s) e ' . $inactive . ' inativo(s).';
+        }
 
         $asksReceivable = (str_contains($normalized, 'receb') || str_contains($normalized, 'conta a receber'))
             && (str_contains($normalized, 'conta') || str_contains($normalized, 'fatura') || str_contains($normalized, 'titulo'));
@@ -636,13 +706,47 @@ class AdminAiController extends BaseController
     private function formatMatchLine(string $section, array $row): string
     {
         return match ($section) {
-            'students' => trim((string) ($row['full_name'] ?? 'Aluno')) . ' | email: ' . trim((string) ($row['email_primary'] ?? '-')),
-            'leads' => trim((string) ($row['full_name'] ?? 'Lead')) . ' | status: ' . trim((string) ($row['status_name'] ?? '-')),
-            'invoices' => trim((string) ($row['invoice_number'] ?? 'Fatura')) . ' | aluno: ' . trim((string) ($row['student_name'] ?? '-')) . ' | status: ' . trim((string) ($row['status'] ?? '-')),
-            'courses' => trim((string) ($row['name'] ?? 'Curso')) . ' | status: ' . trim((string) ($row['status'] ?? '-')),
-            'payments' => trim((string) ($row['payment_ref'] ?? 'Pagamento')) . ' | valor: R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.'),
-            'support_tickets' => trim((string) ($row['ticket_code'] ?? 'Chamado')) . ' | assunto: ' . trim((string) ($row['subject'] ?? '-')),
-            default => trim((string) ($row['id'] ?? '-')),
+            'students',
+            'lista_alunos_ativos',
+            'lista_alunos_inativos'
+                => trim((string) ($row['full_name'] ?? 'Aluno'))
+                   . ' | ' . (((int) ($row['is_active'] ?? 1)) === 1 ? 'ativo' : 'inativo')
+                   . ' | ' . trim((string) ($row['email_primary'] ?? '-')),
+
+            'alunos_inadimplentes'
+                => trim((string) ($row['full_name'] ?? 'Aluno'))
+                   . ' | ' . (int) ($row['faturas_vencidas'] ?? 0) . ' fatura(s) vencida(s)'
+                   . ' | Saldo: R$ ' . number_format((float) ($row['saldo_devedor'] ?? 0), 2, ',', '.'),
+
+            'leads',
+            'leads_sem_contato_recente'
+                => trim((string) ($row['full_name'] ?? 'Lead'))
+                   . ' | status: ' . trim((string) ($row['status_name'] ?? '-'))
+                   . ' | último contato: ' . (trim((string) ($row['last_contact_at'] ?? '')) ?: 'nunca'),
+
+            'invoices',
+            'faturas_vencidas_detalhe'
+                => trim((string) ($row['invoice_number'] ?? 'Fatura'))
+                   . ' | aluno: ' . trim((string) ($row['student_name'] ?? '-'))
+                   . ' | venc: ' . trim((string) ($row['due_date'] ?? '-'))
+                   . ' | R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.'),
+
+            'courses'
+                => trim((string) ($row['name'] ?? 'Curso'))
+                   . ' | status: ' . trim((string) ($row['status'] ?? '-')),
+
+            'payments',
+            'recebimentos_mes_atual'
+                => trim((string) ($row['payment_ref'] ?? 'Pagamento'))
+                   . ' | R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.')
+                   . ' | ' . trim((string) ($row['paid_at'] ?? '-')),
+
+            'support_tickets'
+                => trim((string) ($row['ticket_code'] ?? 'Chamado'))
+                   . ' | ' . trim((string) ($row['subject'] ?? '-'))
+                   . ' | status: ' . trim((string) ($row['status'] ?? '-')),
+
+            default => trim((string) ($row['full_name'] ?? $row['name'] ?? $row['id'] ?? '-')),
         };
     }
 }
