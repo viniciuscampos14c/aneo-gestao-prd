@@ -2,6 +2,112 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* =====================================================================
+   DARK MODE — overrides aplicados quando <html> tem a classe "dark"
+   ===================================================================== */
+
+html.dark body {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+}
+
+/* Gradientes de fundo dos layouts */
+html.dark .bg-gradient-to-br {
+    background: #0f172a !important;
+}
+
+/* Superfícies brancas e cinzas claras */
+html.dark .bg-white       { background-color: #1e293b !important; }
+html.dark .bg-white\/70   { background-color: rgba(15,23,42,0.85) !important; }
+html.dark .bg-white\/90   { background-color: rgba(30,41,59,0.92) !important; }
+html.dark .bg-slate-50    { background-color: #0f172a !important; }
+html.dark .bg-slate-100   { background-color: #1e293b !important; }
+html.dark .bg-slate-200   { background-color: #334155 !important; }
+html.dark .bg-slate-800   { background-color: #0f172a !important; }
+html.dark .bg-slate-900   { background-color: #020617 !important; }
+
+/* Textos */
+html.dark .text-slate-900 { color: #f1f5f9 !important; }
+html.dark .text-slate-800 { color: #e2e8f0 !important; }
+html.dark .text-slate-700 { color: #cbd5e1 !important; }
+html.dark .text-slate-600 { color: #94a3b8 !important; }
+html.dark .text-slate-500 { color: #64748b !important; }
+
+/* Bordas */
+html.dark .border-slate-200  { border-color: #334155 !important; }
+html.dark .border-slate-100  { border-color: #1e293b !important; }
+html.dark .border-white\/60  { border-color: rgba(51,65,85,0.6) !important; }
+
+/* Header sticky */
+html.dark header {
+    background-color: rgba(15,23,42,0.95) !important;
+    border-color: #1e293b !important;
+}
+
+/* Cores sky (portal do aluno) */
+html.dark .bg-sky-50        { background-color: #0c2a3f !important; }
+html.dark .bg-sky-100       { background-color: #0c4a6e !important; }
+html.dark .text-sky-600     { color: #38bdf8 !important; }
+html.dark .text-sky-700     { color: #7dd3fc !important; }
+html.dark .border-sky-100   { border-color: #0c4a6e !important; }
+html.dark .border-sky-200   { border-color: #075985 !important; }
+html.dark .hover\:bg-sky-50:hover { background-color: #0c2a3f !important; }
+
+/* Nav item ativo */
+html.dark .bg-sky-600 { background-color: #0369a1 !important; }
+
+/* Feedback — success / error */
+html.dark .bg-emerald-50  { background-color: #052e16 !important; }
+html.dark .bg-rose-50     { background-color: #2d0a0a !important; }
+html.dark .bg-amber-50    { background-color: #2d1a00 !important; }
+html.dark .bg-cyan-50     { background-color: #022030 !important; }
+
+/* Bordas coloridas (mantém cor, só escurece levemente) */
+html.dark .border-emerald-200 { border-color: #166534 !important; }
+html.dark .border-rose-200    { border-color: #991b1b !important; }
+html.dark .border-amber-200   { border-color: #92400e !important; }
+html.dark .border-cyan-200    { border-color: #155e75 !important; }
+
+/* Inputs, selects, textareas */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark textarea,
+html.dark select {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #475569 !important;
+}
+
+/* Blobs decorativos do support_desk */
+html.dark .bg-cyan-300\/35   { background-color: rgba(8,145,178,0.15) !important; }
+html.dark .bg-blue-300\/25   { background-color: rgba(37,99,235,0.10) !important; }
+html.dark .bg-sky-200\/25    { background-color: rgba(14,165,233,0.08) !important; }
+
+/* Botão de dark mode */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.theme-toggle:hover { background: #f1f5f9; }
+html.dark .theme-toggle { border-color: #334155; }
+html.dark .theme-toggle:hover { background: #1e293b; }
+.theme-toggle .icon-sun  { display: none; }
+.theme-toggle .icon-moon { display: block; }
+html.dark .theme-toggle .icon-sun  { display: block; }
+html.dark .theme-toggle .icon-moon { display: none; }
+
 .kanban-column {
     min-height: 240px;
 }
