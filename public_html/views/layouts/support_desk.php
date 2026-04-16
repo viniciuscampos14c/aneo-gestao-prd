@@ -8,7 +8,7 @@
         (function(){var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}})();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/app.css?v=4">
+    <link rel="stylesheet" href="assets/css/app.css?v=5">
 </head>
 <body class="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-sky-50 via-slate-100 to-blue-100 text-slate-800">
 <div class="pointer-events-none fixed inset-0 -z-10">

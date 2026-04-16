@@ -205,6 +205,16 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    - `config.local.php` reside apenas no servidor (nunca versionado, listado no `.gitignore`).
    - Deploys futuros via `pscp` podem sincronizar `config.php` livremente sem risco de sobrescrever as credenciais de producao.
 
+### 1.12) Atualizacao complementar em 16/04/2026
+
+1. **Modo escuro (dark mode) no Portal do Aluno e Central Tecnica:**
+   - Botao de alternancia (sol/lua) no cabecalho das duas aplicacoes.
+   - Preferencia salva em `localStorage` — persiste entre sessoes.
+   - Script anti-flash no `<head>` aplica o tema antes de qualquer renderizacao, evitando pisca branco.
+   - Todas as superficies (fundo, cards, inputs, navegacao, bordas, textos) respondem corretamente ao modo escuro via `html.dark` + CSS em `assets/css/app.css`.
+   - **Excecao documentada:** a tela de `Historico Academico` mantém fundo branco em modo escuro para preservar a aparencia de documento impresso formal (`#academic-history-paper`).
+   - Versao do CSS incrementada para `?v=5` para invalidar cache nos browsers.
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
