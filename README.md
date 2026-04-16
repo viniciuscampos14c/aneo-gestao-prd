@@ -130,6 +130,67 @@ Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
 5. Migracao criada:
    - `migrations/20260317_professor_external_exam_links.sql`
 
+### 1.9) Atualizacao complementar em 16/04/2026
+
+1. **Sistema de API REST** com tokens e permissoes granulares por recurso.
+2. Novo entry point `api.php` — autenticacao Bearer Token, CORS habilitado.
+3. Recursos disponibilizados via API:
+
+   | Recurso    | GET list | GET :id | POST | PUT :id | DELETE :id |
+   |-----------|:--------:|:-------:|:----:|:-------:|:----------:|
+   | students  | sim      | sim     | sim  | sim     | sim        |
+   | leads     | sim      | sim     | sim  | sim     | sim        |
+   | invoices  | sim      | sim     | sim  | —       | sim        |
+   | courses   | sim      | sim     | —    | —       | —          |
+   | users     | sim      | sim     | —    | —       | —          |
+   | tickets   | sim      | sim     | sim  | —       | —          |
+
+4. Permissoes granulares por token (`get`, `search`, `create`, `update`, `delete`).
+5. Gerenciamento de tokens no admin:
+   - menu `API > Gerenciamento de API` (apenas admin)
+   - menu `API > Manual da API`
+6. Token exibido apenas uma vez na criacao (hash SHA-256 armazenado).
+7. Suporte a expiracao de token e rastreamento de `last_used_at`.
+8. BCC automatico no Financeiro:
+   - emails de cobranca enviados ao aluno geram copia para `financeiro@aneobrasil.com.br`
+   - configuravel em `config.php` → `automation.finance_bcc_email`
+9. `EmailService` atualizado com suporte a BCC via mail() e SMTP manual.
+10. Migracao criada:
+    - `migrations/20260416_api_tokens.sql`
+
+### 1.10) Como usar a API REST
+
+**Base URL:** `https://erp-hml.aneobrasil.com.br/api.php`
+
+**Autenticacao:**
+```
+Authorization: Bearer SEU_TOKEN
+```
+
+**Exemplos:**
+```bash
+# Listar alunos
+curl -H "Authorization: Bearer TOKEN" "https://erp-hml.aneobrasil.com.br/api.php?r=students"
+
+# Criar lead
+curl -X POST \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"full_name":"Joao Silva","email":"joao@email.com","phone":"11999999999"}' \
+  "https://erp-hml.aneobrasil.com.br/api.php?r=leads"
+```
+
+**Formato de resposta:**
+```json
+{
+  "ok": true,
+  "data": [...],
+  "meta": { "total": 50, "page": 1, "per_page": 50, "pages": 1 }
+}
+```
+
+Documentacao completa: `index.php?route=api-management/manual` (admin logado).
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
@@ -176,13 +237,16 @@ Exemplo local:
 2. Inicie Apache e MySQL no XAMPP.
 3. Crie o banco MySQL.
 4. Importe `database.sql`.
-5. Se o banco ja existia antes das ultimas versoes, execute tambem:
+5. Se o banco ja existia antes das ultimas versoes, execute tambem (em ordem):
    - `migrations/20260313_arsenal_digital.sql`
+   - `migrations/20260315_finance_notification_logs.sql`
+   - `migrations/20260315_system_audit_logs.sql`
    - `migrations/20260316_company_licenses.sql`
    - `migrations/20260316_courses_trial_access.sql`
    - `migrations/20260317_lms_learning_path.sql`
    - `migrations/20260317_support_ticket_codes_aneo.sql`
    - `migrations/20260317_professor_external_exam_links.sql`
+   - `migrations/20260416_api_tokens.sql`
 6. Ajuste credenciais em `config.php` (bloco `db`).
 7. Acesse `http://localhost/aneo/index.php?route=login`.
 
