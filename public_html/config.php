@@ -95,6 +95,7 @@ return [
         'finance_webhook_token' => 'b47c51f972f5ef1303c52cd6586f0dd5c865ec76b122d307b76bb980f452a314',
         'finance_reminder_days_before' => 3,
         'finance_admin_email' => 'vinicius14c@hotmail.com',
+        'finance_bcc_email' => 'financeiro@aneobrasil.com.br',
         'payment_approved_statuses' => ['confirmed', 'received', 'paid'],
         'contract_signed_statuses' => ['signed', 'completed', 'concluded', 'done'],
     ],

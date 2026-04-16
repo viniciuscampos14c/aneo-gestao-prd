@@ -31,6 +31,7 @@ $adminAi = new AdminAiController();
 $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
 $arsenal = new ArsenalController();
+$apiMgmt = new ApiManagementController();
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -233,6 +234,15 @@ $router->get('help', fn () => $generic->index('help', 'help', 'Chat IA Jully'));
 $router->post('help/store', fn () => $generic->store('help', 'help', 'Chat IA Jully'));
 $router->post('help/update', fn () => $generic->update('help', 'help'));
 $router->post('help/delete', fn () => $generic->delete('help', 'help'));
+
+// API Management (apenas admin)
+$router->get('api-management',         fn () => $apiMgmt->index());
+$router->get('api-management/create',  fn () => $apiMgmt->create());
+$router->post('api-management/store',  fn () => $apiMgmt->store());
+$router->get('api-management/edit',    fn () => $apiMgmt->edit((int) request('id')));
+$router->post('api-management/update', fn () => $apiMgmt->update((int) request('id')));
+$router->post('api-management/destroy',fn () => $apiMgmt->destroy((int) request('id')));
+$router->get('api-management/manual',  fn () => $apiMgmt->manual());
 
 $route = parse_route();
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $route);

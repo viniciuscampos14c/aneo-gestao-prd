@@ -85,6 +85,21 @@ $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('Ymd
                         </button>
                     </li>
                 <?php endif; ?>
+
+                <?php if (($user['role'] ?? '') === 'admin'): ?>
+                    <?php $apiActive = str_starts_with($currentRoute, 'api-management'); ?>
+                    <li class="pt-1">
+                        <button type="button" data-api-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $apiActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
+                            <span class="flex items-center gap-3">
+                                <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                                API
+                            </span>
+                            <svg data-api-chevron class="h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/>
+                            </svg>
+                        </button>
+                    </li>
+                <?php endif; ?>
             </ul>
         </nav>
 
@@ -95,6 +110,24 @@ $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('Ymd
                     <a href="<?= route($cadItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $cadActive; ?>">
                         <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
                         <?= e($cadItem['label']); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (($user['role'] ?? '') === 'admin'): ?>
+            <div data-api-panel class="hidden fixed z-[80] min-w-[220px] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+                <?php
+                    $apiMenuItems = [
+                        ['route' => 'api-management',        'label' => 'Gerenciamento de API'],
+                        ['route' => 'api-management/manual', 'label' => 'Manual da API'],
+                    ];
+                    foreach ($apiMenuItems as $apiItem):
+                        $aActive = str_starts_with($currentRoute, $apiItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white';
+                ?>
+                    <a href="<?= route($apiItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $aActive; ?>">
+                        <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                        <?= e($apiItem['label']); ?>
                     </a>
                 <?php endforeach; ?>
             </div>

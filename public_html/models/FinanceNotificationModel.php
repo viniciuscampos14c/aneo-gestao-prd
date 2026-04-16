@@ -254,6 +254,15 @@ class FinanceNotificationModel extends BaseModel
             $body[] = 'Mensagem enviada automaticamente para acompanhamento financeiro.';
         }
 
+        // Quando o email vai para o aluno, envia BCC para o financeiro
+        $bcc = [];
+        if ($recipientType === 'student') {
+            $financeEmail = strtolower(trim((string) config('automation.finance_bcc_email', '')));
+            if ($financeEmail !== '' && filter_var($financeEmail, FILTER_VALIDATE_EMAIL)) {
+                $bcc[] = $financeEmail;
+            }
+        }
+
         $mailer = new EmailService();
         $result = $mailer->send(
             $recipientEmail,
@@ -264,6 +273,7 @@ class FinanceNotificationModel extends BaseModel
                 'from_email' => $from,
                 'from_name' => $companyName,
                 'reply_to' => $from,
+                'bcc' => $bcc,
             ]
         );
 

@@ -39,6 +39,8 @@ class EmailService
 
         $isHtml = !empty($options['is_html']);
 
+        $bcc = $this->normalizeBcc($options['bcc'] ?? null);
+
         $smtpEnabled = !empty($smtp['enabled']) && trim((string) ($smtp['host'] ?? '')) !== '';
         if ($smtpEnabled) {
             return $this->sendViaSmtp(
@@ -50,6 +52,7 @@ class EmailService
                     'from_name' => $fromName,
                     'reply_to' => $replyTo,
                     'is_html' => $isHtml,
+                    'bcc' => $bcc,
                 ],
                 $smtp
             );
@@ -64,8 +67,30 @@ class EmailService
                 'from_name' => $fromName,
                 'reply_to' => $replyTo,
                 'is_html' => $isHtml,
+                'bcc' => $bcc,
             ]
         );
+    }
+
+    /**
+     * Normaliza o valor de BCC: aceita string ou array, retorna array de emails validos.
+     */
+    private function normalizeBcc(mixed $bcc): array
+    {
+        if ($bcc === null || $bcc === '' || $bcc === []) {
+            return [];
+        }
+
+        $list = is_array($bcc) ? $bcc : [$bcc];
+        $valid = [];
+        foreach ($list as $email) {
+            $email = strtolower(trim((string) $email));
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $valid[] = $email;
+            }
+        }
+
+        return array_values(array_unique($valid));
     }
 
     private function resolveSmtpSettings(int $companyId): array
@@ -131,6 +156,11 @@ class EmailService
         $replyTo = trim((string) ($options['reply_to'] ?? ''));
         if ($replyTo !== '') {
             $headers[] = 'Reply-To: ' . $replyTo;
+        }
+
+        $bcc = $options['bcc'] ?? [];
+        if (!empty($bcc)) {
+            $headers[] = 'Bcc: ' . implode(', ', $bcc);
         }
 
         $sent = @mail(
@@ -246,6 +276,14 @@ class EmailService
         if (!$this->runSmtpCommand($socket, 'RCPT TO:<' . $to . '>', [250, 251], $error)) {
             fclose($socket);
             return ['ok' => false, 'message' => $error];
+        }
+
+        $bcc = $options['bcc'] ?? [];
+        foreach ($bcc as $bccAddress) {
+            if (!$this->runSmtpCommand($socket, 'RCPT TO:<' . $bccAddress . '>', [250, 251], $error)) {
+                fclose($socket);
+                return ['ok' => false, 'message' => $error];
+            }
         }
 
         if (!$this->runSmtpCommand($socket, 'DATA', [354], $error)) {

@@ -138,6 +138,53 @@
         }, true);
     }
 
+    // Dropdown API — mesmo padrão do Cadastro
+    const apiTrigger = document.querySelector('[data-api-trigger]');
+    const apiPanel   = document.querySelector('[data-api-panel]');
+    const apiChevron = document.querySelector('[data-api-chevron]');
+
+    if (apiTrigger && apiPanel) {
+        let apiCloseTimer = null;
+
+        const apiClearTimer = () => { if (apiCloseTimer !== null) { window.clearTimeout(apiCloseTimer); apiCloseTimer = null; } };
+        const apiSetExpanded = (v) => {
+            apiTrigger.setAttribute('aria-expanded', v ? 'true' : 'false');
+            if (apiChevron) { v ? apiChevron.classList.add('rotate-90') : apiChevron.classList.remove('rotate-90'); }
+        };
+        const apiIsOpen = () => !apiPanel.classList.contains('hidden');
+        const apiPosition = () => {
+            const tr = apiTrigger.getBoundingClientRect();
+            const pr = apiPanel.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth;
+            const vh = window.innerHeight || document.documentElement.clientHeight;
+            let left = Math.round(tr.right + 12);
+            if (left + pr.width > vw - 12) { left = Math.max(12, Math.round(tr.left - pr.width - 12)); }
+            let top = Math.round(tr.top);
+            if (top + pr.height > vh - 12) { top = Math.max(12, vh - pr.height - 12); }
+            apiPanel.style.left = `${left}px`;
+            apiPanel.style.top  = `${top}px`;
+        };
+        const apiOpen  = () => { apiClearTimer(); apiPanel.classList.remove('hidden'); apiPosition(); apiSetExpanded(true); };
+        const apiClose = () => { apiClearTimer(); apiPanel.classList.add('hidden'); apiSetExpanded(false); };
+        const apiScheduleClose = () => { apiClearTimer(); apiCloseTimer = window.setTimeout(apiClose, 220); };
+
+        apiTrigger.addEventListener('mouseenter', apiOpen);
+        apiTrigger.addEventListener('mouseleave', apiScheduleClose);
+        apiTrigger.addEventListener('focus', apiOpen);
+        apiTrigger.addEventListener('blur', apiScheduleClose);
+        apiPanel.addEventListener('mouseenter', apiClearTimer);
+        apiPanel.addEventListener('mouseleave', apiScheduleClose);
+        apiTrigger.addEventListener('click', (e) => { e.preventDefault(); apiIsOpen() ? apiClose() : apiOpen(); });
+        document.addEventListener('click', (e) => {
+            if (!apiIsOpen()) { return; }
+            if (apiTrigger.contains(e.target) || apiPanel.contains(e.target)) { return; }
+            apiClose();
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && apiIsOpen()) { apiClose(); } });
+        window.addEventListener('resize', () => { if (apiIsOpen()) { apiPosition(); } });
+        window.addEventListener('scroll', () => { if (apiIsOpen()) { apiPosition(); } }, true);
+    }
+
     const cards = document.querySelectorAll('[data-student-card]');
     const zones = document.querySelectorAll('[data-dropzone]');
 
