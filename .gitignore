@@ -1,0 +1,25 @@
+# Configurações locais / produção — nunca versionar
+public_html/config.local.php
+
+# Uploads e arquivos gerados
+public_html/uploads/
+
+# Arquivos temporários e de diagnóstico
+check_*.php
+patch_*.php
+set_*.php
+validar_*.php
+parse_*.php
+map_*.py
+patch_*.py
+patch_*.sh
+ssh_*.ps1
+*.sql
+null
+dist/
+docs/
+modules/
+wa_js_live/
+wa_js_urls.txt
+wa_static_urls.txt
+wa_pricing*.html

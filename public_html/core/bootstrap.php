@@ -2,6 +2,13 @@
 
 $config = require __DIR__ . '/../config.php';
 
+// Sobrescreve com credenciais/ajustes locais se existir (nunca versionado nem sincronizado via deploy).
+$_localCfg = __DIR__ . '/../config.local.php';
+if (file_exists($_localCfg)) {
+    $config = array_replace_recursive($config, require $_localCfg);
+}
+unset($_localCfg);
+
 date_default_timezone_set($config['app']['timezone']);
 
 if (session_status() !== PHP_SESSION_ACTIVE) {

@@ -102,20 +102,42 @@ $courseCompleted = !empty($summary['course_completed']);
                         <?php endif; ?>
                     </div>
 
-                    <video
-                        id="lesson-video"
-                        controls
-                        preload="metadata"
-                        class="w-full rounded-xl bg-black"
-                        src="<?= e((string) ($selectedLesson['video_url'] ?? '')); ?>"
-                        data-course-id="<?= (int) ($course['course_id'] ?? 0); ?>"
-                        data-lesson-id="<?= (int) ($selectedLesson['id'] ?? 0); ?>"
-                        data-required-percent="<?= (int) ($selectedLesson['min_progress_percent'] ?? 70); ?>"
-                        data-initial-watched="<?= (int) ($selectedLesson['watched_seconds'] ?? 0); ?>"
-                        data-initial-position="<?= (int) ($selectedLesson['last_position_seconds'] ?? 0); ?>"
-                        data-initial-progress="<?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>"
-                        data-initial-completed="<?= !empty($selectedLesson['is_completed']) ? '1' : '0'; ?>"
-                    ></video>
+                    <?php
+                    $videoUrl   = (string) ($selectedLesson['video_url'] ?? '');
+                    $youtubeId  = null;
+                    if (preg_match('/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $_ytm)) {
+                        $youtubeId = $_ytm[1];
+                    }
+                    $lessonDataAttrs = implode(' ', [
+                        'data-course-id="'         . (int) ($course['course_id'] ?? 0) . '"',
+                        'data-lesson-id="'         . (int) ($selectedLesson['id'] ?? 0) . '"',
+                        'data-required-percent="'  . (int) ($selectedLesson['min_progress_percent'] ?? 70) . '"',
+                        'data-initial-watched="'   . (int) ($selectedLesson['watched_seconds'] ?? 0) . '"',
+                        'data-initial-position="'  . (int) ($selectedLesson['last_position_seconds'] ?? 0) . '"',
+                        'data-initial-progress="'  . (int) ($selectedLesson['progress_percent'] ?? 0) . '"',
+                        'data-initial-completed="' . (!empty($selectedLesson['is_completed']) ? '1' : '0') . '"',
+                    ]);
+                    ?>
+                    <?php if ($youtubeId): ?>
+                        <div
+                            id="yt-player-wrap"
+                            class="relative w-full overflow-hidden rounded-xl bg-black"
+                            style="padding-top:56.25%"
+                            data-youtube-id="<?= e($youtubeId); ?>"
+                            <?= $lessonDataAttrs; ?>
+                        >
+                            <div id="yt-player" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+                        </div>
+                    <?php else: ?>
+                        <video
+                            id="lesson-video"
+                            controls
+                            preload="metadata"
+                            class="w-full rounded-xl bg-black"
+                            src="<?= e($videoUrl); ?>"
+                            <?= $lessonDataAttrs; ?>
+                        ></video>
+                    <?php endif; ?>
 
                     <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -130,7 +152,7 @@ $courseCompleted = !empty($summary['course_completed']);
                     </div>
 
                     <p class="text-xs text-slate-500">
-                        URL de video recomendada: arquivo direto (MP4/WebM) para tracking automatico de progresso.
+                        Suporte a links do YouTube (youtube.com/watch ou youtu.be) e arquivos diretos (MP4/WebM).
                     </p>
                 </div>
             <?php else: ?>
@@ -316,6 +338,152 @@ $courseCompleted = !empty($summary['course_completed']);
     window.addEventListener('beforeunload', () => {
         syncProgress(true);
     });
+})();
+</script>
+<?php endif; ?>
+
+<?php if ($selectedLesson && $youtubeId): ?>
+<script>
+(function () {
+    const wrap = document.getElementById('yt-player-wrap');
+    if (!wrap) { return; }
+
+    const endpoint      = '<?= route('student/course/progress'); ?>';
+    const csrfToken     = '<?= csrf_token(); ?>';
+    const courseId      = Number(wrap.dataset.courseId || '0');
+    const lessonId      = Number(wrap.dataset.lessonId || '0');
+    const requiredPct   = Number(wrap.dataset.requiredPercent || '70');
+    const youtubeId     = wrap.dataset.youtubeId || '';
+
+    const lessonProgressLabel = document.getElementById('lesson-progress-label');
+    const lessonStatusLabel   = document.getElementById('lesson-status-label');
+    const lessonProgressBar   = document.getElementById('lesson-progress-bar');
+    const courseProgressLabel = document.getElementById('course-progress-label');
+    const courseProgressBar   = document.getElementById('course-progress-bar');
+
+    if (!courseId || !lessonId || !youtubeId) { return; }
+
+    const state = {
+        watchedSeconds: Number(wrap.dataset.initialWatched || '0'),
+        lastTime: 0,
+        lastSyncedAt: 0,
+        syncInFlight: false,
+        completed: wrap.dataset.initialCompleted === '1',
+        ticker: null,
+    };
+
+    const refreshLessonUi = (progress, completed) => {
+        const p = Math.max(0, Math.min(100, Math.round(progress)));
+        if (lessonProgressLabel) { lessonProgressLabel.textContent = p + '%'; }
+        if (lessonProgressBar) {
+            lessonProgressBar.style.width = p + '%';
+            lessonProgressBar.classList.toggle('bg-emerald-600', completed);
+            lessonProgressBar.classList.toggle('bg-cyan-600', !completed);
+        }
+        if (lessonStatusLabel) {
+            lessonStatusLabel.textContent = completed
+                ? 'Aula concluida.'
+                : 'Assista no minimo ' + requiredPct + '% para concluir.';
+            lessonStatusLabel.classList.toggle('text-emerald-700', completed);
+            lessonStatusLabel.classList.toggle('text-slate-500', !completed);
+        }
+    };
+
+    const refreshCourseUi = (progress) => {
+        const p = Math.max(0, Math.min(100, Math.round(progress)));
+        if (courseProgressLabel) { courseProgressLabel.textContent = p + '%'; }
+        if (courseProgressBar)   { courseProgressBar.style.width = p + '%'; }
+    };
+
+    const syncProgress = async (force = false) => {
+        if (state.syncInFlight) { return; }
+        const now = Date.now();
+        if (!force && now - state.lastSyncedAt < 9000) { return; }
+
+        let duration = 1;
+        let position = 0;
+        try {
+            duration = Math.max(1, Math.round(window._ytPlayerInstance.getDuration() || 1));
+            position = Math.round(window._ytPlayerInstance.getCurrentTime() || 0);
+        } catch (_) {}
+
+        const watched = Math.max(position, Math.round(state.watchedSeconds));
+
+        const payload = new URLSearchParams();
+        payload.append('_csrf', csrfToken);
+        payload.append('course_id', String(courseId));
+        payload.append('lesson_id', String(lessonId));
+        payload.append('watched_seconds', String(watched));
+        payload.append('duration_seconds', String(duration));
+        payload.append('position_seconds', String(position));
+
+        state.syncInFlight = true;
+        try {
+            const res  = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+                body: payload.toString(),
+                keepalive: force,
+            });
+            const data = await res.json();
+            if (!res.ok || !data || !data.ok) { return; }
+
+            refreshLessonUi(Number(data.progress_percent || 0), !!data.lesson_completed);
+            refreshCourseUi(Number(data.course_progress_percent || 0));
+
+            if (!state.completed && data.lesson_just_completed) {
+                state.completed = true;
+                window.setTimeout(() => window.location.reload(), 900);
+            }
+        } catch (_) {
+        } finally {
+            state.syncInFlight  = false;
+            state.lastSyncedAt  = Date.now();
+        }
+    };
+
+    // Carrega a YouTube IFrame API de forma assíncrona.
+    window.onYouTubeIframeAPIReady = function () {
+        window._ytPlayerInstance = new YT.Player('yt-player', {
+            videoId: youtubeId,
+            playerVars: { rel: 0, modestbranding: 1 },
+            events: {
+                onReady: function (e) {
+                    const initialPos = Number(wrap.dataset.initialPosition || '0');
+                    if (initialPos > 0) {
+                        try { e.target.seekTo(initialPos, true); } catch (_) {}
+                    }
+                },
+                onStateChange: function (e) {
+                    if (e.data === YT.PlayerState.PLAYING) {
+                        state.lastTime = window._ytPlayerInstance.getCurrentTime();
+                        state.ticker = setInterval(() => {
+                            try {
+                                const current = window._ytPlayerInstance.getCurrentTime();
+                                const delta   = current - state.lastTime;
+                                if (delta > 0 && delta <= 3) { state.watchedSeconds += delta; }
+                                state.lastTime = current;
+                            } catch (_) {}
+                            syncProgress(false);
+                        }, 2000);
+                    } else {
+                        clearInterval(state.ticker);
+                        state.ticker = null;
+                        if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+                            syncProgress(true);
+                        }
+                    }
+                },
+            },
+        });
+    };
+
+    window.addEventListener('beforeunload', () => syncProgress(true));
+
+    const tag = document.createElement('script');
+    tag.src   = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
 })();
 </script>
 <?php endif; ?>

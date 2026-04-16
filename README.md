@@ -191,6 +191,20 @@ curl -X POST \
 
 Documentacao completa: `index.php?route=api-management/manual` (admin logado).
 
+### 1.11) Atualizacao complementar em 16/04/2026
+
+1. **Player LMS com suporte a YouTube:**
+   - `course_player.php` detecta automaticamente URLs do YouTube (`youtube.com/watch`, `youtu.be`, `youtube.com/shorts`).
+   - Links do YouTube renderizam via YouTube IFrame API com player embed responsivo (aspect ratio 16:9).
+   - Tracking de progresso funciona em ambos os formatos: YouTube (polling a cada 2 s via IFrame API) e MP4/WebM (evento `timeupdate`).
+   - Posicao de retomada e bloqueio de modulo por percentual minimo (70%) funcionam igual para YouTube e MP4.
+   - Campo "URL do video" no admin agora aceita qualquer formato.
+
+2. **Deploy sem sobrescrever credenciais de producao:**
+   - `bootstrap.php` carrega `config.local.php` (se existir) e aplica `array_replace_recursive` sobre `config.php`.
+   - `config.local.php` reside apenas no servidor (nunca versionado, listado no `.gitignore`).
+   - Deploys futuros via `pscp` podem sincronizar `config.php` livremente sem risco de sobrescrever as credenciais de producao.
+
 ## 2) Estrutura Real do Projeto
 
 ```txt

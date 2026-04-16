@@ -187,7 +187,7 @@ $courseModules = $courseModules ?? [];
                                     <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
                                     <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
                                     <input type="text" name="title" required value="<?= e((string) $lesson['title']); ?>" placeholder="Titulo da aula" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-3">
-                                    <input type="text" name="video_url" required value="<?= e((string) ($lesson['video_url'] ?? '')); ?>" placeholder="URL direta do video" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5">
+                                    <input type="text" name="video_url" required value="<?= e((string) ($lesson['video_url'] ?? '')); ?>" placeholder="URL do video (YouTube ou MP4/WebM)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5">
                                     <input type="number" name="duration_seconds" min="0" value="<?= (int) ($lesson['duration_seconds'] ?? 0); ?>" placeholder="Duracao(s)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
                                     <input type="number" name="min_progress_percent" min="1" max="100" value="<?= (int) ($lesson['min_progress_percent'] ?? 70); ?>" placeholder="% minimo" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
                                     <input type="number" name="display_order" min="1" value="<?= (int) ($lesson['display_order'] ?? 1); ?>" placeholder="Ordem" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
@@ -219,7 +219,7 @@ $courseModules = $courseModules ?? [];
                                 <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
                                 <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
                                 <input type="text" name="title" required placeholder="Nova aula (titulo)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-3">
-                                <input type="text" name="video_url" required placeholder="URL direta do video (MP4/WebM)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5">
+                                <input type="text" name="video_url" required placeholder="URL do video (YouTube ou MP4/WebM)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5">
                                 <input type="number" name="duration_seconds" min="0" placeholder="Duracao(s)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
                                 <input type="number" name="min_progress_percent" min="1" max="100" value="70" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
                                 <input type="number" name="display_order" min="1" placeholder="Ordem" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
