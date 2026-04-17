@@ -492,14 +492,19 @@ class RequestsController extends BaseController
     private function parseMobileNegotiationPayload(array $ticket): array
     {
         $subject = strtolower(trim((string) ($ticket['subject'] ?? '')));
-        $description = str_replace("\r\n", "\n", (string) ($ticket['description'] ?? ''));
+        $descriptionRaw = (string) ($ticket['description'] ?? '');
+        $descriptionRaw = str_replace("\r\n", "\n", $descriptionRaw);
+        $description = preg_replace('/[\x{00A0}\x{202F}]/u', ' ', $descriptionRaw);
+        if (!is_string($description)) {
+            $description = $descriptionRaw;
+        }
 
         if ($description === '') {
             return ['ok' => false, 'message' => 'Descricao do chamado vazia para leitura da negociacao.'];
         }
 
         $studentId = 0;
-        if (preg_match('/Aluno:\s.*\(ID\s*(\d+)\)/i', $description, $matchStudent)) {
+        if (preg_match('/Aluno:\s.*\(ID\s*(\d+)\)/iu', $description, $matchStudent)) {
             $studentId = (int) ($matchStudent[1] ?? 0);
         }
         if ($studentId <= 0) {
@@ -508,25 +513,50 @@ class RequestsController extends BaseController
 
         $installments = 0;
         $installmentValue = 0.0;
-        if (preg_match('/Parcelamento:\s*(\d+)x\s+de\s+(R\$\s*[0-9\.\,]+)/i', $description, $matchInstallments)) {
+        if (preg_match('/Parcelamento:\s*(\d+)\s*(?:x|X|×)?(?:\s*de)?\s*(R\$\s*[0-9\.\,]+)/iu', $description, $matchInstallments)) {
             $installments = (int) ($matchInstallments[1] ?? 0);
             $installmentValue = parse_decimal((string) ($matchInstallments[2] ?? '0'));
+        }
+        if ($installments <= 0) {
+            foreach (explode("\n", $description) as $line) {
+                $line = trim((string) $line);
+                if (stripos($line, 'Parcelamento:') !== 0 && stripos($line, 'Parcelas:') !== 0) {
+                    continue;
+                }
+
+                if (preg_match('/(\d+)/', $line, $matchQty)) {
+                    $installments = (int) ($matchQty[1] ?? 0);
+                }
+                if (preg_match('/R\$\s*[0-9\.\,]+/u', $line, $matchValue)) {
+                    $installmentValue = parse_decimal((string) ($matchValue[0] ?? '0'));
+                }
+                break;
+            }
         }
         if ($installments <= 0) {
             return ['ok' => false, 'message' => 'Nao foi possivel identificar o parcelamento da negociacao.'];
         }
 
         $firstDueDate = '';
-        if (preg_match('/Primeiro vencimento:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/i', $description, $matchDueDate)) {
+        if (preg_match('/Primeiro vencimento:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/iu', $description, $matchDueDate)) {
             $firstDueDate = trim((string) ($matchDueDate[1] ?? ''));
+        }
+        if ($firstDueDate === '' && preg_match('/Primeiro vencimento:\s*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/iu', $description, $matchDueDateBr)) {
+            $parts = explode('/', trim((string) ($matchDueDateBr[1] ?? '')));
+            if (count($parts) === 3) {
+                $firstDueDate = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+            }
         }
         if ($firstDueDate === '') {
             return ['ok' => false, 'message' => 'Nao foi possivel identificar o primeiro vencimento da negociacao.'];
         }
 
         $negotiatedTotal = 0.0;
-        if (preg_match('/Novo valor total:\s*(R\$\s*[0-9\.\,]+)/i', $description, $matchTotal)) {
+        if (preg_match('/Novo valor total:\s*(R\$\s*[0-9\.\,]+)/iu', $description, $matchTotal)) {
             $negotiatedTotal = parse_decimal((string) ($matchTotal[1] ?? '0'));
+        }
+        if ($negotiatedTotal <= 0 && preg_match('/Total com desconto:\s*(R\$\s*[0-9\.\,]+)/iu', $description, $matchDiscountTotal)) {
+            $negotiatedTotal = parse_decimal((string) ($matchDiscountTotal[1] ?? '0'));
         }
         if ($negotiatedTotal <= 0 && $installmentValue > 0) {
             $negotiatedTotal = round($installmentValue * $installments, 2);
