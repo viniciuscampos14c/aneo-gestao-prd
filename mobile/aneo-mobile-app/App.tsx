@@ -1,16 +1,42 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { NegotiationScreen } from './src/screens/NegotiationScreen';
 import { ConnectionScreen } from './src/screens/ConnectionScreen';
 import type { ApiConfig } from './src/types';
+import {
+  clearStoredApiConfig,
+  loadStoredApiConfig,
+  saveStoredApiConfig,
+} from './src/services/apiConfigStorage';
 
 type AppTab = 'dashboard' | 'negotiation' | 'connection';
 
 export default function App() {
   const [tab, setTab] = useState<AppTab>('dashboard');
   const [apiConfig, setApiConfig] = useState<ApiConfig | null>(null);
+  const [configReady, setConfigReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    void (async () => {
+      const storedConfig = await loadStoredApiConfig();
+      if (!active) {
+        return;
+      }
+
+      if (storedConfig) {
+        setApiConfig(storedConfig);
+      }
+      setConfigReady(true);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const pageTitle = useMemo(() => {
     if (tab === 'dashboard') return 'Dashboard Executivo';
@@ -27,7 +53,11 @@ export default function App() {
           <Text style={styles.brand}>ANEO DIRETORIA</Text>
           <Text style={styles.title}>{pageTitle}</Text>
           <Text style={styles.connectionStatus}>
-            {apiConfig ? 'API conectada' : 'API desconectada'}
+            {apiConfig
+              ? 'API conectada'
+              : configReady
+                ? 'API desconectada'
+                : 'Carregando conexao...'}
           </Text>
         </View>
 
@@ -66,8 +96,14 @@ export default function App() {
       {tab === 'connection' ? (
         <ConnectionScreen
           apiConfig={apiConfig}
-          onConnect={(config) => setApiConfig(config)}
-          onDisconnect={() => setApiConfig(null)}
+          onConnect={(config) => {
+            setApiConfig(config);
+            void saveStoredApiConfig(config);
+          }}
+          onDisconnect={() => {
+            setApiConfig(null);
+            void clearStoredApiConfig();
+          }}
         />
       ) : null}
     </SafeAreaView>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { DEFAULT_API_BASE_URL } from '../config/constants';
 import { normalizeApiConfig, testApiConnection } from '../services/apiClient';
@@ -18,6 +18,17 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
   const [error, setError] = useState('');
 
   const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
+
+  useEffect(() => {
+    if (apiConfig) {
+      setBaseUrl(apiConfig.baseUrl);
+      setToken(apiConfig.token);
+      return;
+    }
+
+    setBaseUrl(DEFAULT_API_BASE_URL);
+    setToken('');
+  }, [apiConfig?.baseUrl, apiConfig?.token]);
 
   async function handleConnect() {
     setLoading(true);
