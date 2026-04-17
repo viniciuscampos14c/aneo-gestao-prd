@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { debtProfiles } from '../data/mock';
+import { AUTO_REFRESH_MS } from '../config/constants';
 import { loadDebtProfilesFromApi } from '../services/negotiationService';
+import { sendNegotiationToCrm } from '../services/crmWriteService';
 import type { ApiConfig, StudentDebtProfile } from '../types';
 import { formatCurrency, formatDateIso } from '../utils/format';
 
@@ -11,7 +12,7 @@ type NegotiationScreenProps = {
 
 export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
   const [query, setQuery] = useState('');
-  const [profiles, setProfiles] = useState<StudentDebtProfile[]>(debtProfiles);
+  const [profiles, setProfiles] = useState<StudentDebtProfile[]>([]);
   const [selected, setSelected] = useState<StudentDebtProfile | null>(null);
   const [discountPercent, setDiscountPercent] = useState('8');
   const [installments, setInstallments] = useState('3');
@@ -19,40 +20,68 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
   const [lastAction, setLastAction] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sending, setSending] = useState<'none' | 'aditivo' | 'negociacao'>('none');
+  const loadingRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
+  const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
 
-    async function loadLiveProfiles(config: ApiConfig) {
+  const refreshProfiles = useCallback(
+    async (mode: 'manual' | 'auto' | 'initial') => {
+      if (!apiConfig) {
+        return;
+      }
+      if (loadingRef.current) {
+        return;
+      }
+
+      loadingRef.current = true;
       setLoading(true);
       setError('');
-      try {
-        const rows = await loadDebtProfilesFromApi(config);
-        if (!active) return;
-        setProfiles(rows.length > 0 ? rows : debtProfiles);
-      } catch (err) {
-        if (!active) return;
-        setProfiles(debtProfiles);
-        setError(err instanceof Error ? err.message : 'Falha ao carregar negociacao em tempo real.');
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
 
+      try {
+        const rows = await loadDebtProfilesFromApi(apiConfig);
+        setProfiles(rows);
+
+        if (selected) {
+          const updatedSelection = rows.find((row) => row.id === selected.id) ?? null;
+          setSelected(updatedSelection);
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Falha ao carregar negociacoes em tempo real.';
+        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
+      }
+    },
+    [apiConfig, selected]
+  );
+
+  useEffect(() => {
     if (!apiConfig) {
-      setProfiles(debtProfiles);
+      setProfiles([]);
+      setSelected(null);
       setLoading(false);
       setError('');
-      return () => {
-        active = false;
-      };
+      setLastAction('');
+      return;
     }
 
-    loadLiveProfiles(apiConfig);
-    return () => {
-      active = false;
-    };
-  }, [apiConfig]);
+    refreshProfiles('initial');
+  }, [apiConfig, refreshProfiles]);
+
+  useEffect(() => {
+    if (!apiConfig) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      refreshProfiles('auto');
+    }, AUTO_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [apiConfig, refreshProfiles]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -84,47 +113,106 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
     };
   }, [selected, discountPercent, installments, totalDebt]);
 
+  async function handleSend(mode: 'aditivo' | 'negociacao') {
+    if (!apiConfig || !selected) {
+      setError('Conecte a API e selecione um aluno para enviar.');
+      return;
+    }
+
+    setSending(mode);
+    setError('');
+    setLastAction('');
+
+    try {
+      const response = await sendNegotiationToCrm(apiConfig, {
+        mode,
+        profile: selected,
+        discountPercent: Number(discountPercent) || 0,
+        installments: Math.max(1, Number(installments) || 1),
+        firstDueDate,
+        totalDebt,
+        discountedTotal: simulatedDeal.withDiscount,
+        installmentValue: simulatedDeal.installmentValue,
+      });
+
+      const ticketId = (response.data as { id?: number })?.id;
+      setLastAction(
+        `${mode === 'aditivo' ? 'Aditivo' : 'Negociacao'} registrada no CRM com sucesso${
+          ticketId ? ` (ID ${ticketId})` : ''
+        }.`
+      );
+      await refreshProfiles('manual');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Falha ao enviar negociacao para o CRM.';
+      setError(message);
+    } finally {
+      setSending('none');
+    }
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.statusCard}>
         <Text style={styles.statusLabel}>Fonte de dados</Text>
-        <Text style={styles.statusValue}>{apiConfig ? 'API em tempo real' : 'Mock local'}</Text>
+        <Text style={styles.statusValue}>{connected ? 'API em tempo real' : 'Desconectado'}</Text>
+        <Text style={styles.statusHint}>Atualizacao automatica a cada 5 minutos.</Text>
         {loading ? <Text style={styles.statusHint}>Atualizando alunos e dividas...</Text> : null}
-        {error ? <Text style={styles.errorText}>Falha API: {error}</Text> : null}
+        {error ? <Text style={styles.errorText}>Falha: {error}</Text> : null}
+
+        <Pressable
+          style={[styles.refreshButton, loading && styles.refreshButtonDisabled]}
+          onPress={() => refreshProfiles('manual')}
+          disabled={!connected || loading}
+        >
+          <Text style={styles.refreshButtonText}>{loading ? 'Atualizando...' : 'Atualizar agora'}</Text>
+        </Pressable>
       </View>
 
-      <Text style={styles.label}>Buscar aluno para negociar</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Nome ou documento"
-        placeholderTextColor="#6f8fb5"
-        value={query}
-        onChangeText={setQuery}
-      />
+      {!connected ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>
+            Conecte a API na aba Conexao para carregar alunos e enviar negociacoes.
+          </Text>
+        </View>
+      ) : null}
 
-      <View style={styles.results}>
-        {filtered.map((student) => {
-          const isSelected = selected?.id === student.id;
-          return (
-            <Pressable
-              key={student.id}
-              style={[styles.studentCard, isSelected && styles.studentCardSelected]}
-              onPress={() => setSelected(student)}
-            >
-              <Text style={styles.studentName}>{student.name}</Text>
-              <Text style={styles.studentMeta}>
-                {student.course} - {student.document}
-              </Text>
-              <Text style={styles.studentMeta}>
-                Aberto: {formatCurrency(student.openAmount)} | Vencido:{' '}
-                {formatCurrency(student.overdueAmount)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {connected ? <Text style={styles.label}>Buscar aluno para negociar</Text> : null}
+      {connected ? (
+        <TextInput
+          style={styles.input}
+          placeholder="Nome ou documento"
+          placeholderTextColor="#6f8fb5"
+          value={query}
+          onChangeText={setQuery}
+        />
+      ) : null}
 
-      {selected ? (
+      {connected ? (
+        <View style={styles.results}>
+          {filtered.map((student) => {
+            const isSelected = selected?.id === student.id;
+            return (
+              <Pressable
+                key={student.id}
+                style={[styles.studentCard, isSelected && styles.studentCardSelected]}
+                onPress={() => setSelected(student)}
+              >
+                <Text style={styles.studentName}>{student.name}</Text>
+                <Text style={styles.studentMeta}>
+                  {student.course} - {student.document}
+                </Text>
+                <Text style={styles.studentMeta}>
+                  Aberto: {formatCurrency(student.openAmount)} | Vencido:{' '}
+                  {formatCurrency(student.overdueAmount)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {connected && selected ? (
         <View style={styles.negotiationBlock}>
           <Text style={styles.blockTitle}>Simulador de negociacao</Text>
           <Text style={styles.blockSubTitle}>
@@ -171,34 +259,28 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
           </View>
 
           <Pressable
-            style={styles.primaryButton}
-            onPress={() => {
-              setLastAction(
-                `Aditivo gerado para ${selected.name}, ${installments}x com 1o vencimento em ${firstDueDate}.`
-              );
-            }}
+            style={[styles.primaryButton, sending !== 'none' && styles.refreshButtonDisabled]}
+            onPress={() => handleSend('aditivo')}
+            disabled={sending !== 'none'}
           >
-            <Text style={styles.primaryButtonText}>Gerar aditivo (proxima etapa: API real)</Text>
+            <Text style={styles.primaryButtonText}>
+              {sending === 'aditivo' ? 'Enviando aditivo...' : 'Gerar aditivo'}
+            </Text>
           </Pressable>
 
           <Pressable
-            style={styles.secondaryButton}
-            onPress={() => {
-              setLastAction(
-                `Negociacao preparada para sincronizacao no sistema central (proxima etapa).`
-              );
-            }}
+            style={[styles.secondaryButton, sending !== 'none' && styles.refreshButtonDisabled]}
+            onPress={() => handleSend('negociacao')}
+            disabled={sending !== 'none'}
           >
-            <Text style={styles.secondaryButtonText}>Enviar para sistema central (mock)</Text>
+            <Text style={styles.secondaryButtonText}>
+              {sending === 'negociacao' ? 'Enviando negociacao...' : 'Enviar negociacao'}
+            </Text>
           </Pressable>
 
           {lastAction ? <Text style={styles.feedback}>{lastAction}</Text> : null}
         </View>
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Selecione um aluno para abrir a tela de negociacao.</Text>
-        </View>
-      )}
+      ) : null}
     </ScrollView>
   );
 }
@@ -238,6 +320,23 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#ff9da2',
     fontSize: 12,
+  },
+  refreshButton: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#2c5f94',
+    borderRadius: 10,
+    backgroundColor: '#123258',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  refreshButtonDisabled: {
+    opacity: 0.6,
+  },
+  refreshButtonText: {
+    color: '#d9ebff',
+    fontSize: 13,
+    fontWeight: '700',
   },
   label: {
     color: '#dcebff',

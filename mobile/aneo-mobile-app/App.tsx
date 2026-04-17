@@ -27,7 +27,7 @@ export default function App() {
           <Text style={styles.brand}>ANEO DIRETORIA</Text>
           <Text style={styles.title}>{pageTitle}</Text>
           <Text style={styles.connectionStatus}>
-            {apiConfig ? 'API conectada' : 'Modo mock'}
+            {apiConfig ? 'API conectada' : 'API desconectada'}
           </Text>
         </View>
 

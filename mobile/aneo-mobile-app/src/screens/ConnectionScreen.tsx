@@ -52,7 +52,7 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
       <View style={styles.statusCard}>
         <Text style={styles.statusLabel}>Status atual</Text>
         <Text style={[styles.statusValue, connected ? styles.statusOnline : styles.statusOffline]}>
-          {connected ? 'Conectado' : 'Modo mock'}
+          {connected ? 'Conectado' : 'Desconectado'}
         </Text>
       </View>
 
@@ -91,11 +91,11 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
         style={styles.secondaryButton}
         onPress={() => {
           onDisconnect();
-          setMessage('Conexao removida. App voltou para modo mock.');
+          setMessage('Conexao removida. O app aguarda nova autenticacao.');
           setError('');
         }}
       >
-        <Text style={styles.secondaryButtonText}>Usar modo mock</Text>
+        <Text style={styles.secondaryButtonText}>Limpar conexao</Text>
       </Pressable>
 
       {message ? <Text style={styles.successText}>{message}</Text> : null}
@@ -105,6 +105,7 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
         <Text style={styles.hintTitle}>Permissoes recomendadas para o token</Text>
         <Text style={styles.hintText}>- `students.search`</Text>
         <Text style={styles.hintText}>- `invoices.search`</Text>
+        <Text style={styles.hintText}>- `tickets.create`</Text>
         <Text style={styles.hintText}>{'Token criado em: ERP > API > Gerenciamento de API.'}</Text>
       </View>
     </ScrollView>

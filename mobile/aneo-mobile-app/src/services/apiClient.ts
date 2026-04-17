@@ -38,22 +38,7 @@ export function normalizeApiConfig(config: ApiConfig): ApiConfig {
   };
 }
 
-export async function apiGet<TData>(
-  config: ApiConfig,
-  resource: string,
-  query: Record<string, QueryValue> = {}
-): Promise<ApiEnvelope<TData>> {
-  const finalConfig = normalizeApiConfig(config);
-  const url = buildUrl(finalConfig.baseUrl, resource, query);
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${finalConfig.token}`,
-      Accept: 'application/json',
-    },
-  });
-
+async function parseApiResponse<TData>(response: Response): Promise<ApiEnvelope<TData>> {
   const raw = await response.text();
   let payload: ApiEnvelope<TData> | null = null;
 
@@ -73,6 +58,46 @@ export async function apiGet<TData>(
   }
 
   return payload;
+}
+
+export async function apiGet<TData>(
+  config: ApiConfig,
+  resource: string,
+  query: Record<string, QueryValue> = {}
+): Promise<ApiEnvelope<TData>> {
+  const finalConfig = normalizeApiConfig(config);
+  const url = buildUrl(finalConfig.baseUrl, resource, query);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${finalConfig.token}`,
+      Accept: 'application/json',
+    },
+  });
+
+  return parseApiResponse<TData>(response);
+}
+
+export async function apiPost<TData, TBody extends Record<string, unknown>>(
+  config: ApiConfig,
+  resource: string,
+  body: TBody
+): Promise<ApiEnvelope<TData>> {
+  const finalConfig = normalizeApiConfig(config);
+  const url = buildUrl(finalConfig.baseUrl, resource, {});
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${finalConfig.token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  return parseApiResponse<TData>(response);
 }
 
 export async function fetchAllPages<TItem>(

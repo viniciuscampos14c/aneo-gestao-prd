@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { executiveMetrics } from '../data/mock';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MetricCard } from '../components/MetricCard';
+import { AUTO_REFRESH_MS } from '../config/constants';
 import { loadExecutiveMetricsFromApi } from '../services/dashboardService';
 import { formatDateTime } from '../utils/format';
 import type { ApiConfig, ExecutiveMetric } from '../types';
@@ -11,93 +11,132 @@ type DashboardScreenProps = {
 };
 
 export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
-  const [metrics, setMetrics] = useState<ExecutiveMetric[]>(executiveMetrics);
+  const [metrics, setMetrics] = useState<ExecutiveMetric[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const source = useMemo<'mock' | 'live'>(() => (apiConfig ? 'live' : 'mock'), [apiConfig]);
+  const loadingRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
+  const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
 
-    async function loadRealMetrics(config: ApiConfig) {
+  const refreshData = useCallback(
+    async (mode: 'manual' | 'auto' | 'initial') => {
+      if (!apiConfig) {
+        return;
+      }
+      if (loadingRef.current) {
+        return;
+      }
+
+      loadingRef.current = true;
       setLoading(true);
       setError('');
+
       try {
-        const rows = await loadExecutiveMetricsFromApi(config);
-        if (!active) return;
+        const rows = await loadExecutiveMetricsFromApi(apiConfig);
         setMetrics(rows);
         setLastSync(new Date());
       } catch (err) {
-        if (!active) return;
-        setMetrics(executiveMetrics);
-        setError(err instanceof Error ? err.message : 'Falha ao carregar dados reais.');
+        const message = err instanceof Error ? err.message : 'Falha ao carregar indicadores.';
+        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        loadingRef.current = false;
+        setLoading(false);
       }
-    }
+    },
+    [apiConfig]
+  );
 
+  useEffect(() => {
     if (!apiConfig) {
-      setMetrics(executiveMetrics);
+      setMetrics([]);
       setLoading(false);
       setError('');
-      return () => {
-        active = false;
-      };
+      setLastSync(null);
+      return;
     }
 
-    loadRealMetrics(apiConfig);
-    return () => {
-      active = false;
-    };
-  }, [apiConfig]);
+    refreshData('initial');
+  }, [apiConfig, refreshData]);
+
+  useEffect(() => {
+    if (!apiConfig) {
+      return;
+    }
+
+    refreshData('auto');
+    const intervalId = setInterval(() => {
+      refreshData('auto');
+    }, AUTO_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [apiConfig, refreshData]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.statusCard}>
         <Text style={styles.statusLabel}>Fonte de dados</Text>
-        <Text style={styles.statusValue}>
-          {source === 'live' ? 'API em tempo real' : 'Mock local'}
-        </Text>
-        {loading ? <Text style={styles.statusHint}>Atualizando indicadores...</Text> : null}
-        {!loading && source === 'live' && lastSync ? (
+        <Text style={styles.statusValue}>{connected ? 'API em tempo real' : 'Desconectado'}</Text>
+        <Text style={styles.statusHint}>Atualizacao automatica a cada 5 minutos.</Text>
+        {!loading && connected && lastSync ? (
           <Text style={styles.statusHint}>Ultima sincronizacao: {formatDateTime(lastSync)}</Text>
         ) : null}
-        {error ? <Text style={styles.errorText}>Falha API: {error}</Text> : null}
+        {error ? <Text style={styles.errorText}>Falha: {error}</Text> : null}
+
+        <Pressable
+          style={[styles.refreshButton, loading && styles.refreshButtonDisabled]}
+          onPress={() => refreshData('manual')}
+          disabled={!connected || loading}
+        >
+          <Text style={styles.refreshButtonText}>{loading ? 'Atualizando...' : 'Atualizar agora'}</Text>
+        </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>Visao Financeira</Text>
+      {!connected ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>Conecte a API para ver indicadores reais</Text>
+          <Text style={styles.emptyText}>
+            Abra a aba Conexao, informe URL e token, e volte para atualizar o dashboard.
+          </Text>
+        </View>
+      ) : null}
 
-      <View style={styles.metricsGrid}>
-        {metrics.map((metric) => (
-          <MetricCard key={metric.id} metric={metric} />
-        ))}
-      </View>
+      {connected ? <Text style={styles.sectionTitle}>Visao Financeira</Text> : null}
 
-      <Text style={styles.sectionTitle}>Acoes Prioritarias</Text>
+      {connected ? (
+        <View style={styles.metricsGrid}>
+          {metrics.map((metric) => (
+            <MetricCard key={metric.id} metric={metric} />
+          ))}
+        </View>
+      ) : null}
 
-      <View style={styles.actionCard}>
-        <Text style={styles.actionTitle}>1) Carteira 60+ dias</Text>
-        <Text style={styles.actionText}>
-          Focar nos 20 maiores contratos vencidos para reverter caixa em ate 7 dias.
-        </Text>
-      </View>
+      {connected ? <Text style={styles.sectionTitle}>Acoes Prioritarias</Text> : null}
 
-      <View style={styles.actionCard}>
-        <Text style={styles.actionTitle}>2) Alunos com risco de evasao</Text>
-        <Text style={styles.actionText}>
-          Cruzar inadimplencia + chamados + ausencia para antecipar retencao comercial.
-        </Text>
-      </View>
+      {connected ? (
+        <>
+          <View style={styles.actionCard}>
+            <Text style={styles.actionTitle}>1) Carteira 60+ dias</Text>
+            <Text style={styles.actionText}>
+              Focar nos 20 maiores contratos vencidos para reverter caixa em ate 7 dias.
+            </Text>
+          </View>
 
-      <View style={styles.actionCard}>
-        <Text style={styles.actionTitle}>3) Meta semanal de negociacoes</Text>
-        <Text style={styles.actionText}>
-          Executar 40 acordos com ticket medio de R$ 1.200 para aumentar recuperacao.
-        </Text>
-      </View>
+          <View style={styles.actionCard}>
+            <Text style={styles.actionTitle}>2) Alunos com risco de evasao</Text>
+            <Text style={styles.actionText}>
+              Cruzar inadimplencia + chamados + ausencia para antecipar retencao comercial.
+            </Text>
+          </View>
+
+          <View style={styles.actionCard}>
+            <Text style={styles.actionTitle}>3) Meta semanal de negociacoes</Text>
+            <Text style={styles.actionText}>
+              Executar 40 acordos com ticket medio de R$ 1.200 para aumentar recuperacao.
+            </Text>
+          </View>
+        </>
+      ) : null}
     </ScrollView>
   );
 }
@@ -118,7 +157,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#224567',
     padding: 12,
-    gap: 4,
+    gap: 6,
   },
   statusLabel: {
     color: '#9fc1eb',
@@ -137,6 +176,41 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#ff9da2',
     fontSize: 12,
+  },
+  refreshButton: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#2c5f94',
+    borderRadius: 10,
+    backgroundColor: '#123258',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  refreshButtonDisabled: {
+    opacity: 0.6,
+  },
+  refreshButtonText: {
+    color: '#d9ebff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  emptyCard: {
+    borderWidth: 1,
+    borderColor: '#2f4c6f',
+    borderRadius: 12,
+    backgroundColor: '#10263f',
+    padding: 14,
+    gap: 4,
+  },
+  emptyTitle: {
+    color: '#f2f7ff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyText: {
+    color: '#b0ccec',
+    fontSize: 13,
+    lineHeight: 18,
   },
   sectionTitle: {
     color: '#e9f2ff',
