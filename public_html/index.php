@@ -59,6 +59,7 @@ $router->get('student/progress', fn () => $studentPortal->progress());
 $router->post('student/course/progress', fn () => $studentPortal->lessonProgress());
 $router->get('student/exams', fn () => $studentPortal->exams());
 $router->get('student/academic-history', fn () => $studentPortal->academicHistory());
+$router->get('student/finances', fn () => $studentPortal->finances());
 $router->get('student/exams/external', fn () => $studentPortal->openExternalExam());
 $router->get('student/exams/take', fn () => $studentPortal->takeExam());
 $router->post('student/exams/submit', fn () => $studentPortal->submitExam());

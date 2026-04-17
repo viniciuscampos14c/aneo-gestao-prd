@@ -490,6 +490,38 @@ class StudentPortalController extends BaseController
         ], 'layouts/student');
     }
 
+    public function finances(): void
+    {
+        require_student_auth();
+
+        $student   = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $companyId = (int) ($this->portal->resolveStudentCompanyId($studentId) ?? 0);
+
+        $statusFilter = trim((string) request('status', ''));
+        $page         = max(1, (int) request('page', 1));
+        $perPage      = 20;
+        $offset       = ($page - 1) * $perPage;
+
+        $summary  = $this->portal->myFinancialSummary($studentId, $companyId);
+        $invoices = $this->portal->myInvoices($studentId, $companyId, $statusFilter, $perPage + 1, $offset);
+
+        $hasNextPage = count($invoices) > $perPage;
+        if ($hasNextPage) {
+            array_pop($invoices);
+        }
+
+        $this->render('student_portal/finances', [
+            'title'        => 'Financeiro',
+            'student'      => $student,
+            'summary'      => $summary,
+            'invoices'     => $invoices,
+            'statusFilter' => $statusFilter,
+            'page'         => $page,
+            'hasNextPage'  => $hasNextPage,
+        ], 'layouts/student');
+    }
+
     public function calendar(): void
     {
         require_student_auth();

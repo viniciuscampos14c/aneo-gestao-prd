@@ -39,6 +39,7 @@ $menu = $isTrialAccess
         ['label' => 'Materiais', 'route' => 'student/materials'],
         ['label' => 'Arsenal', 'route' => 'student/arsenal'],
         ['label' => 'Chamados', 'route' => 'student/requests'],
+        ['label' => 'Financeiro', 'route' => 'student/finances'],
         ['label' => 'Progresso', 'route' => 'student/progress'],
         ['label' => 'Avaliacoes', 'route' => 'student/exams'],
         ['label' => 'Historico Academico', 'route' => 'student/academic-history'],

@@ -2073,4 +2073,107 @@ class StudentPortalModel extends BaseModel
 
         return $this->studentLessonProgressTableExists;
     }
+
+    // -----------------------------------------------------------------
+    // Financeiro do aluno
+    // -----------------------------------------------------------------
+
+    /**
+     * Retorna totais financeiros do aluno para os cards de resumo.
+     */
+    public function myFinancialSummary(int $studentId, int $companyId): array
+    {
+        $base = 'FROM invoices WHERE student_id = :sid AND company_id = :cid';
+        $p    = [':sid' => $studentId, ':cid' => $companyId];
+
+        $scalar = function (string $sql) use ($p): mixed {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($p);
+            return $stmt->fetchColumn();
+        };
+
+        $totalOpen    = (float) ($scalar("SELECT COALESCE(SUM(amount - paid_amount),0) $base AND status IN ('open','partial')") ?: 0);
+        $countOpen    = (int)   ($scalar("SELECT COUNT(*) $base AND status IN ('open','partial')") ?: 0);
+        $totalOverdue = (float) ($scalar("SELECT COALESCE(SUM(amount - paid_amount),0) $base AND status = 'overdue'") ?: 0);
+        $countOverdue = (int)   ($scalar("SELECT COUNT(*) $base AND status = 'overdue'") ?: 0);
+        $totalPaid    = (float) ($scalar("SELECT COALESCE(SUM(paid_amount),0) $base AND status = 'paid'") ?: 0);
+        $countPaid    = (int)   ($scalar("SELECT COUNT(*) $base AND status = 'paid'") ?: 0);
+        $nextDue      = $scalar("SELECT MIN(due_date) $base AND status IN ('open','partial') AND due_date >= CURDATE()") ?: null;
+
+        return [
+            'total_open'    => $totalOpen,
+            'count_open'    => $countOpen,
+            'total_overdue' => $totalOverdue,
+            'count_overdue' => $countOverdue,
+            'total_paid'    => $totalPaid,
+            'count_paid'    => $countPaid,
+            'next_due_date' => $nextDue,
+        ];
+    }
+
+    /**
+     * Retorna lista paginada de faturas do aluno.
+     *
+     * @param string $statusFilter '' = todas | 'open' | 'overdue' | 'paid' | 'pending' (open+partial+overdue)
+     */
+    public function myInvoices(int $studentId, int $companyId, string $statusFilter, int $limit, int $offset): array
+    {
+        $where  = 'i.student_id = :sid AND i.company_id = :cid';
+        $params = [':sid' => $studentId, ':cid' => $companyId];
+
+        switch ($statusFilter) {
+            case 'open':
+                $where .= " AND i.status IN ('open','partial')";
+                break;
+            case 'overdue':
+                $where .= " AND i.status = 'overdue'";
+                break;
+            case 'paid':
+                $where .= " AND i.status = 'paid'";
+                break;
+            case 'pending':
+                $where .= " AND i.status IN ('open','partial','overdue')";
+                break;
+        }
+
+        // Boleto: traz URL apenas se existir e não estiver cancelado
+        $sql = "SELECT
+                    i.id,
+                    i.invoice_number,
+                    i.due_date,
+                    i.amount,
+                    i.paid_amount,
+                    i.status,
+                    i.tags,
+                    i.project_name,
+                    i.paid_at,
+                    bs.boleto_url,
+                    bs.digitable_line,
+                    bs.status AS boleto_status
+                FROM invoices i
+                LEFT JOIN bank_slips bs
+                    ON bs.invoice_id = i.id
+                   AND bs.status NOT IN ('cancelled','failed')
+                WHERE {$where}
+                ORDER BY
+                    CASE i.status
+                        WHEN 'overdue'  THEN 1
+                        WHEN 'open'     THEN 2
+                        WHEN 'partial'  THEN 3
+                        WHEN 'paid'     THEN 4
+                        ELSE 5
+                    END,
+                    i.due_date ASC
+                LIMIT :lim OFFSET :off";
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
 }
