@@ -48,6 +48,10 @@ foreach ($cadastroMenu as $cadItem) {
 $showCadastro = $cadastroItemsVisible !== [];
 $appJsPath = __DIR__ . '/../../assets/js/app.js';
 $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('YmdHis');
+$mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNegotiationAlerts) ? $mobileNegotiationAlerts : [];
+$mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
+$mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array_column($mobileNegotiationAlerts, 'id')), fn ($id) => $id > 0));
+$mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 ?>
 <div class="flex min-h-screen">
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
@@ -166,8 +170,11 @@ $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('Ymd
                 <a href="<?= route('logout'); ?>" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100" title="Sair do sistema">
                     Sair
                 </a>
-                <button class="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Notificacoes">
+                <button class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Notificacoes de negociacao mobile">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                    <?php if ($mobileNegotiationAlertCount > 0): ?>
+                        <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $mobileNegotiationAlertCount); ?></span>
+                    <?php endif; ?>
                 </button>
                 <button class="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Atalhos">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6v12M6 12h12"/></svg>
@@ -204,6 +211,93 @@ $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('Ymd
     </div>
 </div>
 
+<?php if ($mobileNegotiationAlerts !== []): ?>
+    <div id="mobile-negotiation-modal" data-ticket-ids="<?= e(json_encode($mobileNegotiationAlertIds)); ?>" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
+        <div class="w-full max-w-2xl rounded-xl border border-indigo-200 bg-white shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-indigo-700">Novas negociacoes do app</h3>
+                    <p class="text-xs text-slate-500">A equipe da diretoria enviou solicitacoes financeiras para tratamento.</p>
+                </div>
+                <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50">Fechar</button>
+            </div>
+            <div class="max-h-[60vh] space-y-2 overflow-y-auto p-4">
+                <?php foreach ($mobileNegotiationAlerts as $alert): ?>
+                    <?php
+                    $ticketId = (int) ($alert['id'] ?? 0);
+                    $ticketCode = trim((string) ($alert['ticket_code'] ?? ''));
+                    if (!preg_match('/^ANEO\d+$/', $ticketCode) && $ticketId > 0) {
+                        $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+                    }
+                    ?>
+                    <article class="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2 text-sm">
+                        <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Negociacao financeira')); ?></p>
+                        <p class="mt-1 text-xs text-slate-600">
+                            Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
+                            | Status: <?= e((string) ($alert['status'] ?? 'open')); ?>
+                            | Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?>
+                        </p>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
+                <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Dispensar</button>
+                <a href="<?= e($mobileQueueRoute); ?>" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Abrir fila de negociacoes</a>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
 <script src="assets/js/app.js?v=<?= e($appJsVersion); ?>"></script>
+<?php if ($mobileNegotiationAlerts !== []): ?>
+    <script>
+        (function () {
+            const modal = document.getElementById('mobile-negotiation-modal');
+            if (!modal) return;
+
+            let ids = [];
+            try {
+                ids = JSON.parse(modal.dataset.ticketIds || '[]');
+            } catch (error) {
+                ids = [];
+            }
+            ids = ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
+            if (ids.length === 0) return;
+
+            const unseen = ids.filter((id) => {
+                try {
+                    return !localStorage.getItem('aneo_mobile_negotiation_seen_' + id);
+                } catch (error) {
+                    return true;
+                }
+            });
+            if (unseen.length === 0) return;
+
+            const close = function () {
+                unseen.forEach((id) => {
+                    try {
+                        localStorage.setItem('aneo_mobile_negotiation_seen_' + id, '1');
+                    } catch (error) {
+                    }
+                });
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            modal.querySelectorAll('[data-mobile-neg-close]').forEach((button) => {
+                button.addEventListener('click', close);
+            });
+
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    close();
+                }
+            });
+        })();
+    </script>
+<?php endif; ?>
 </body>
 </html>

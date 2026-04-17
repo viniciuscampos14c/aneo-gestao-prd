@@ -32,8 +32,13 @@ class SupportTicketModel extends BaseModel
         }
 
         if (!empty($filters['status'])) {
-            $where[] = 'st.status = :status';
-            $params[':status'] = trim((string) $filters['status']);
+            $statusFilter = trim((string) $filters['status']);
+            if ($statusFilter === 'pending') {
+                $where[] = "st.status IN ('open', 'in_progress')";
+            } else {
+                $where[] = 'st.status = :status';
+                $params[':status'] = $statusFilter;
+            }
         }
 
         if (!empty($filters['priority'])) {
@@ -44,6 +49,11 @@ class SupportTicketModel extends BaseModel
         if (!empty($filters['source'])) {
             $where[] = 'st.source = :source';
             $params[':source'] = trim((string) $filters['source']);
+        }
+
+        if (!empty($filters['mobile_flow'])) {
+            $where[] = "st.source = 'api'";
+            $where[] = $this->mobileNegotiationCondition('st');
         }
 
         if (isset($filters['email_sent']) && (string) $filters['email_sent'] !== '') {
@@ -163,8 +173,13 @@ class SupportTicketModel extends BaseModel
         }
 
         if (!empty($filters['status'])) {
-            $where[] = 'st.status = :status';
-            $params[':status'] = trim((string) $filters['status']);
+            $statusFilter = trim((string) $filters['status']);
+            if ($statusFilter === 'pending') {
+                $where[] = "st.status IN ('open', 'in_progress')";
+            } else {
+                $where[] = 'st.status = :status';
+                $params[':status'] = $statusFilter;
+            }
         }
 
         $whereSql = implode(' AND ', $where);
@@ -251,6 +266,11 @@ class SupportTicketModel extends BaseModel
         if (!empty($filters['source'])) {
             $where[] = 'st.source = :source';
             $params[':source'] = trim((string) $filters['source']);
+        }
+
+        if (!empty($filters['mobile_flow'])) {
+            $where[] = "st.source = 'api'";
+            $where[] = $this->mobileNegotiationCondition('st');
         }
 
         $companyIds = $this->sanitizeCompanyIds($filters['company_ids'] ?? []);
@@ -387,6 +407,111 @@ class SupportTicketModel extends BaseModel
             'webhook_pending' => (int) ($row['webhook_pending'] ?? 0),
             'from_webhook' => (int) ($row['from_webhook'] ?? 0),
         ];
+    }
+
+    public function mobileNegotiationStats(): array
+    {
+        $companyId = $this->companyId();
+        if (!$this->hasTicketsTable() || $companyId <= 0) {
+            return [
+                'pending_total' => 0,
+                'pending_aditivos' => 0,
+                'pending_negociacoes' => 0,
+            ];
+        }
+
+        $condition = $this->mobileNegotiationCondition('st');
+        $stmt = $this->db->prepare("SELECT
+                SUM(
+                    CASE
+                        WHEN st.status IN ('open', 'in_progress') THEN 1
+                        ELSE 0
+                    END
+                ) AS pending_total,
+                SUM(
+                    CASE
+                        WHEN st.status IN ('open', 'in_progress')
+                             AND st.subject LIKE 'Aditivo financeiro - %' THEN 1
+                        ELSE 0
+                    END
+                ) AS pending_aditivos,
+                SUM(
+                    CASE
+                        WHEN st.status IN ('open', 'in_progress')
+                             AND st.subject LIKE 'Negociacao financeira - %' THEN 1
+                        ELSE 0
+                    END
+                ) AS pending_negociacoes
+            FROM support_tickets st
+            WHERE st.company_id = :company_id
+              AND st.source = 'api'
+              AND {$condition}");
+        $stmt->execute([':company_id' => $companyId]);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'pending_total' => (int) ($row['pending_total'] ?? 0),
+            'pending_aditivos' => (int) ($row['pending_aditivos'] ?? 0),
+            'pending_negociacoes' => (int) ($row['pending_negociacoes'] ?? 0),
+        ];
+    }
+
+    public function latestMobileNegotiationAlerts(int $limit = 5): array
+    {
+        $companyId = $this->companyId();
+        if (!$this->hasTicketsTable() || $companyId <= 0) {
+            return [];
+        }
+
+        $limit = min(20, max(1, $limit));
+        $condition = $this->mobileNegotiationCondition('st');
+        $stmt = $this->db->prepare("SELECT
+                st.*
+            FROM support_tickets st
+            WHERE st.company_id = :company_id
+              AND st.source = 'api'
+              AND st.status IN ('open', 'in_progress')
+              AND {$condition}
+            ORDER BY st.created_at DESC, st.id DESC
+            LIMIT {$limit}");
+        $stmt->execute([':company_id' => $companyId]);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function countOpenMobileNegotiations(): int
+    {
+        $companyId = $this->companyId();
+        if (!$this->hasTicketsTable() || $companyId <= 0) {
+            return 0;
+        }
+
+        $condition = $this->mobileNegotiationCondition('st');
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM support_tickets st
+            WHERE st.company_id = :company_id
+              AND st.source = 'api'
+              AND st.status IN ('open', 'in_progress')
+              AND {$condition}");
+        $stmt->execute([':company_id' => $companyId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function isMobileNegotiationTicket(array $ticket): bool
+    {
+        $source = strtolower(trim((string) ($ticket['source'] ?? '')));
+        if ($source !== 'api') {
+            return false;
+        }
+
+        $subject = strtolower(trim((string) ($ticket['subject'] ?? '')));
+        if (str_starts_with($subject, 'aditivo financeiro -') || str_starts_with($subject, 'negociacao financeira -')) {
+            return true;
+        }
+
+        $description = strtolower((string) ($ticket['description'] ?? ''));
+        return str_contains($description, 'origem: app mobile diretoria');
     }
 
     public function findTicketAny(int $id): ?array
@@ -922,6 +1047,17 @@ class SupportTicketModel extends BaseModel
         }
 
         return array_values(array_unique(array_filter(array_map('intval', $companyIds), fn ($id) => $id > 0)));
+    }
+
+    private function mobileNegotiationCondition(string $alias = 'st'): string
+    {
+        $alias = trim($alias) !== '' ? trim($alias) : 'st';
+
+        return "(
+            {$alias}.subject LIKE 'Aditivo financeiro - %'
+            OR {$alias}.subject LIKE 'Negociacao financeira - %'
+            OR {$alias}.description LIKE '%Origem: App Mobile Diretoria%'
+        )";
     }
 
     private function hasTicketsTable(): bool

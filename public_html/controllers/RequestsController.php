@@ -20,6 +20,8 @@ class RequestsController extends BaseController
             'q' => trim((string) request('q', '')),
             'status' => trim((string) request('status', '')),
             'priority' => trim((string) request('priority', '')),
+            'source' => trim((string) request('source', '')),
+            'mobile_flow' => (int) request('mobile_flow', 0) > 0 ? 1 : 0,
         ];
 
         $perPage = (int) request('per_page', config('app.default_pagination', 50));
@@ -41,6 +43,7 @@ class RequestsController extends BaseController
             'commentsByTicket' => $this->tickets->commentsByTicketIds($ticketIds),
             'featureAvailable' => $this->tickets->featureAvailable(),
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+            'mobileQueue' => $this->tickets->mobileNegotiationStats(),
             'integration' => [
                 'notification_email' => (string) config('support.notification_email', 'vinicius14c@hotmail.com'),
                 'webhook_enabled' => (bool) config('support.external_webhook_enabled', false),
@@ -178,6 +181,67 @@ class RequestsController extends BaseController
         }
 
         $this->success('Status do chamado atualizado.');
+        $this->redirect($returnRoute);
+    }
+
+    public function mobileDecision(): void
+    {
+        require_auth();
+        require_permission('requests.manage');
+        csrf_validate();
+        $returnRoute = $this->resolveReturnRoute('requests');
+
+        $ticketId = (int) post('ticket_id');
+        $decision = strtolower(trim((string) post('decision')));
+        $note = trim((string) post('decision_note'));
+
+        if ($ticketId <= 0) {
+            $this->error('Chamado invalido para decisao.');
+            $this->redirect($returnRoute);
+        }
+
+        $ticket = $this->tickets->findTicket($ticketId);
+        if (!$ticket) {
+            $this->error('Chamado nao encontrado.');
+            $this->redirect($returnRoute);
+        }
+
+        if (!$this->tickets->isMobileNegotiationTicket($ticket)) {
+            $this->error('Este chamado nao pertence ao fluxo de negociacao do app.');
+            $this->redirect($returnRoute);
+        }
+
+        $statusMap = [
+            'approve' => 'resolved',
+            'adjust' => 'in_progress',
+            'reject' => 'closed',
+        ];
+
+        $commentMap = [
+            'approve' => '[Fluxo Mobile] Negociacao aprovada pela equipe administrativa.',
+            'adjust' => '[Fluxo Mobile] Solicitado ajuste na proposta enviada pelo app.',
+            'reject' => '[Fluxo Mobile] Negociacao reprovada pela equipe administrativa.',
+        ];
+
+        if (!isset($statusMap[$decision])) {
+            $this->error('Acao de decisao invalida.');
+            $this->redirect($returnRoute);
+        }
+
+        $this->tickets->updateStatus($ticketId, $statusMap[$decision]);
+        $comment = $commentMap[$decision];
+        if ($note !== '') {
+            $comment .= "\nObservacao: " . $note;
+        }
+        $this->tickets->addComment($ticketId, $comment, (int) (current_user()['id'] ?? 0));
+
+        $labels = [
+            'approve' => 'aprovada',
+            'adjust' => 'encaminhada para ajuste',
+            'reject' => 'reprovada',
+        ];
+
+        $this->success('Negociacao ' . ($labels[$decision] ?? 'atualizada') . ' com sucesso.');
         $this->redirect($returnRoute);
     }
 

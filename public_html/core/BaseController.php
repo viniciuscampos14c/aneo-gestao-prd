@@ -4,6 +4,17 @@ abstract class BaseController
 {
     protected function render(string $view, array $data = [], string $layout = 'layouts/app'): void
     {
+        if ($layout === 'layouts/app' && current_user()) {
+            try {
+                $tickets = new SupportTicketModel();
+                $data['mobileNegotiationAlerts'] = $tickets->latestMobileNegotiationAlerts(5);
+                $data['mobileNegotiationAlertCount'] = $tickets->countOpenMobileNegotiations();
+            } catch (Throwable $e) {
+                $data['mobileNegotiationAlerts'] = [];
+                $data['mobileNegotiationAlertCount'] = 0;
+            }
+        }
+
         view($view, $data, $layout);
     }
 

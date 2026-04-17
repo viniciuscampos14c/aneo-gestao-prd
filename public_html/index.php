@@ -226,6 +226,7 @@ $router->get('requests', fn () => $requests->index());
 $router->post('requests/store', fn () => $requests->store());
 $router->post('requests/comment', fn () => $requests->addComment());
 $router->post('requests/status', fn () => $requests->updateStatus());
+$router->post('requests/mobile-decision', fn () => $requests->mobileDecision());
 $router->post('requests/webhook', fn () => $requests->webhook());
 
 $router->get('automations', fn () => $generic->index('automations', 'automations', 'Automações'));

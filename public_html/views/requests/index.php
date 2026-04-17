@@ -15,7 +15,36 @@ $priorityLabels = [
 $sourceLabels = [
     'internal' => 'Interno',
     'webhook' => 'Webhook',
+    'api' => 'API',
     'student_portal' => 'Portal Aluno',
+];
+$mobileQueue = $mobileQueue ?? [
+    'pending_total' => 0,
+    'pending_aditivos' => 0,
+    'pending_negociacoes' => 0,
+];
+
+$queueLinks = [
+    'all' => 'index.php?' . http_build_query([
+        'route' => 'requests',
+        'source' => 'api',
+        'mobile_flow' => 1,
+        'status' => 'pending',
+    ]),
+    'aditivos' => 'index.php?' . http_build_query([
+        'route' => 'requests',
+        'source' => 'api',
+        'mobile_flow' => 1,
+        'status' => 'pending',
+        'q' => 'Aditivo financeiro - ',
+    ]),
+    'negociacoes' => 'index.php?' . http_build_query([
+        'route' => 'requests',
+        'source' => 'api',
+        'mobile_flow' => 1,
+        'status' => 'pending',
+        'q' => 'Negociacao financeira - ',
+    ]),
 ];
 ?>
 <section class="space-y-6">
@@ -55,6 +84,24 @@ $sourceLabels = [
                 Webhook externo: <?= !empty($integration['webhook_enabled']) ? 'ativo' : 'desativado'; ?>
             </p>
         </article>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-3">
+        <a href="<?= e($queueLinks['all']); ?>" class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 transition hover:border-indigo-300 hover:bg-indigo-100/50">
+            <p class="text-xs uppercase tracking-wide text-indigo-700">Fila Mobile</p>
+            <p class="mt-1 text-2xl font-semibold text-indigo-900"><?= (int) ($mobileQueue['pending_total'] ?? 0); ?></p>
+            <p class="mt-1 text-xs text-indigo-700">Negociacoes pendentes vindas do app.</p>
+        </a>
+        <a href="<?= e($queueLinks['aditivos']); ?>" class="rounded-xl border border-cyan-200 bg-cyan-50 p-4 transition hover:border-cyan-300 hover:bg-cyan-100/50">
+            <p class="text-xs uppercase tracking-wide text-cyan-700">Aditivos Pendentes</p>
+            <p class="mt-1 text-2xl font-semibold text-cyan-900"><?= (int) ($mobileQueue['pending_aditivos'] ?? 0); ?></p>
+            <p class="mt-1 text-xs text-cyan-700">Fluxo rapido para aprovacao de aditivos.</p>
+        </a>
+        <a href="<?= e($queueLinks['negociacoes']); ?>" class="rounded-xl border border-amber-200 bg-amber-50 p-4 transition hover:border-amber-300 hover:bg-amber-100/50">
+            <p class="text-xs uppercase tracking-wide text-amber-700">Negociacoes Pendentes</p>
+            <p class="mt-1 text-2xl font-semibold text-amber-900"><?= (int) ($mobileQueue['pending_negociacoes'] ?? 0); ?></p>
+            <p class="mt-1 text-xs text-amber-700">Negociacoes financeiras aguardando decisao.</p>
+        </a>
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-white p-4">
@@ -104,11 +151,12 @@ $sourceLabels = [
         </form>
     <?php endif; ?>
 
-    <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-5">
+    <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-6">
         <input type="hidden" name="route" value="requests">
         <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descricao..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
         <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="">Todos os status</option>
+            <option value="pending" <?= (string) ($filters['status'] ?? '') === 'pending' ? 'selected' : ''; ?>>Pendentes (aberto + em andamento)</option>
             <?php foreach ($statusLabels as $key => $label): ?>
                 <option value="<?= e($key); ?>" <?= (string) ($filters['status'] ?? '') === (string) $key ? 'selected' : ''; ?>><?= e($label); ?></option>
             <?php endforeach; ?>
@@ -119,7 +167,17 @@ $sourceLabels = [
                 <option value="<?= e($key); ?>" <?= (string) ($filters['priority'] ?? '') === (string) $key ? 'selected' : ''; ?>><?= e($label); ?></option>
             <?php endforeach; ?>
         </select>
-        <div class="flex gap-2">
+        <select name="source" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <option value="">Todas as origens</option>
+            <?php foreach ($sourceLabels as $key => $label): ?>
+                <option value="<?= e($key); ?>" <?= (string) ($filters['source'] ?? '') === (string) $key ? 'selected' : ''; ?>><?= e($label); ?></option>
+            <?php endforeach; ?>
+        </select>
+        <div class="flex flex-wrap items-center justify-end gap-2 md:col-span-6">
+            <label class="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+                <input type="checkbox" name="mobile_flow" value="1" <?= !empty($filters['mobile_flow']) ? 'checked' : ''; ?>>
+                Somente negociacoes do app
+            </label>
             <select name="per_page" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
                     <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
@@ -154,9 +212,18 @@ $sourceLabels = [
                 'low' => 'bg-slate-100 text-slate-700',
                 default => 'bg-sky-100 text-sky-700',
             };
-            $sourceBadge = $source === 'student_portal'
-                ? 'bg-violet-100 text-violet-700'
-                : 'bg-slate-100 text-slate-700';
+            $sourceBadge = match ($source) {
+                'student_portal' => 'bg-violet-100 text-violet-700',
+                'api' => 'bg-indigo-100 text-indigo-700',
+                default => 'bg-slate-100 text-slate-700',
+            };
+            $subject = strtolower(trim((string) ($row['subject'] ?? '')));
+            $description = strtolower((string) ($row['description'] ?? ''));
+            $isMobileFlow = $source === 'api' && (
+                str_starts_with($subject, 'aditivo financeiro -')
+                || str_starts_with($subject, 'negociacao financeira -')
+                || str_contains($description, 'origem: app mobile diretoria')
+            );
             ?>
             <article class="rounded-xl border border-slate-200 bg-white p-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -172,6 +239,9 @@ $sourceLabels = [
                         <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $statusBadge; ?>"><?= e($statusLabels[$status] ?? $status); ?></span>
                         <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $priorityBadge; ?>"><?= e($priorityLabels[$priority] ?? $priority); ?></span>
                         <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $sourceBadge; ?>"><?= e($sourceLabels[$source] ?? $source); ?></span>
+                        <?php if ($isMobileFlow): ?>
+                            <span class="rounded-full bg-indigo-600 px-2 py-1 text-xs font-semibold text-white">Diretoria Mobile</span>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -212,6 +282,18 @@ $sourceLabels = [
                 </div>
 
                 <?php if ($canManage): ?>
+                    <?php if ($isMobileFlow): ?>
+                        <form method="post" action="<?= route('requests/mobile-decision'); ?>" class="mt-3 grid gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 lg:grid-cols-[1fr_auto_auto_auto]">
+                            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                            <input type="hidden" name="ticket_id" value="<?= $ticketId; ?>">
+                            <input type="hidden" name="return_to" value="requests">
+                            <input type="text" name="decision_note" placeholder="Observacao opcional da decisao" class="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm">
+                            <button name="decision" value="approve" class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Aprovar</button>
+                            <button name="decision" value="adjust" class="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600">Solicitar ajuste</button>
+                            <button name="decision" value="reject" class="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700">Reprovar</button>
+                        </form>
+                    <?php endif; ?>
+
                     <div class="mt-3 grid gap-3 lg:grid-cols-2">
                         <form method="post" action="<?= route('requests/comment'); ?>" class="flex gap-2">
                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
