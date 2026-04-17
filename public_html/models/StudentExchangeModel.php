@@ -131,9 +131,10 @@ class StudentExchangeModel extends BaseModel
 
         $offset = ($page - 1) * $perPage;
 
-        $stmt = $this->db->prepare("SELECT r.*, s.login AS student_login
+        $stmt = $this->db->prepare("SELECT r.*, spa.login AS student_login
             FROM student_exchange_requests r
             LEFT JOIN students s ON s.id = r.student_id
+            LEFT JOIN student_portal_accounts spa ON spa.student_id = r.student_id
             WHERE $whereStr
             ORDER BY
                 CASE r.status WHEN 'pending' THEN 1 WHEN 'viewed' THEN 2 WHEN 'approved' THEN 3 ELSE 4 END,
@@ -172,9 +173,10 @@ class StudentExchangeModel extends BaseModel
             $params[':company_id'] = $companyId;
         }
 
-        $stmt = $this->db->prepare("SELECT r.*, s.login AS student_login, s.email_primary AS student_email
+        $stmt = $this->db->prepare("SELECT r.*, spa.login AS student_login, s.email_primary AS student_email
             FROM student_exchange_requests r
             LEFT JOIN students s ON s.id = r.student_id
+            LEFT JOIN student_portal_accounts spa ON spa.student_id = r.student_id
             WHERE r.id = :id$andCompany
             LIMIT 1");
         $stmt->execute($params);

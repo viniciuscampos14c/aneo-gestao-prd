@@ -22,8 +22,8 @@ class ExchangeController extends BaseController
         $perPage = 50;
         $page    = max(1, (int) request('page', 1));
 
-        $result  = $this->exchange->listRequests($filters, $perPage, $page);
-        $counts  = $this->exchange->countByStatus((int) current_company_id());
+        $result = $this->exchange->listRequests($filters, $perPage, $page);
+        $counts = $this->exchange->countByStatus((int) current_company_id());
 
         $this->render('exchange/index', [
             'title'             => 'Intercâmbio Aluno',
