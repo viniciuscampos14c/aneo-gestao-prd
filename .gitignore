@@ -14,7 +14,9 @@ map_*.py
 patch_*.py
 patch_*.sh
 ssh_*.ps1
-*.sql
+# SQLs soltos na raiz (diagnóstico / validação) — migrations versionadas ficam em migrations/
+/*.sql
+validar_*.sql
 null
 dist/
 docs/

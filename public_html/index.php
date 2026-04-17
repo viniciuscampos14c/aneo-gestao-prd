@@ -32,6 +32,7 @@ $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
 $arsenal = new ArsenalController();
 $apiMgmt = new ApiManagementController();
+$cron    = new CronController();
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -234,6 +235,12 @@ $router->get('help', fn () => $generic->index('help', 'help', 'Chat IA Jully'));
 $router->post('help/store', fn () => $generic->store('help', 'help', 'Chat IA Jully'));
 $router->post('help/update', fn () => $generic->update('help', 'help'));
 $router->post('help/delete', fn () => $generic->delete('help', 'help'));
+
+// Cron Jobs (admin)
+$router->get('cron',         fn () => $cron->index());
+$router->post('cron/run',    fn () => $cron->runJob());
+$router->get('cron/logs',    fn () => $cron->logs());
+$router->post('cron/toggle', fn () => $cron->toggle());
 
 // API Management (apenas admin)
 $router->get('api-management',         fn () => $apiMgmt->index());

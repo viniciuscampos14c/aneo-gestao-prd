@@ -99,6 +99,10 @@ return [
         'payment_approved_statuses' => ['confirmed', 'received', 'paid'],
         'contract_signed_statuses' => ['signed', 'completed', 'concluded', 'done'],
     ],
+    'cron' => [
+        'enabled' => true,
+        'secret_token' => 'aneo_cron_' . '2026_troque_este_token',   // altere no config.local.php
+    ],
     'support' => [
         'notification_email' => 'vinicius14c@hotmail.com',
         'from_email' => 'nao-responda@aneo.local',

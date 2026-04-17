@@ -215,6 +215,38 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    - **Excecao documentada:** a tela de `Historico Academico` mantém fundo branco em modo escuro para preservar a aparencia de documento impresso formal (`#academic-history-paper`).
    - Versao do CSS incrementada para `?v=5` para invalidar cache nos browsers.
 
+### 1.13) Atualizacao complementar em 17/04/2026
+
+1. **Sistema de Cron Jobs interno** implementado.
+2. Novo entry point `cron.php` — autenticado por token (`cron.secret_token` em `config.local.php`).
+3. Jobs disponíveis:
+
+   | Job                              | Descricao                                                  |
+   |----------------------------------|------------------------------------------------------------|
+   | `finance_billing_notifications`  | Envia e-mails de cobranca para faturas proximas/vencidas   |
+   | `boleto_sync`                    | Sincroniza status de boletos pendentes com o provedor      |
+   | `signatures_sync`                | Atualiza status de contratos pendentes no D4Sign           |
+
+4. Execucao via URL (para Cron Hostinger):
+   ```
+   curl "https://erp-hml.aneobrasil.com.br/cron.php?token=SEU_TOKEN&job=all"
+   ```
+5. Painel admin em `Cadastro → Cron Jobs`:
+   - Visualiza status, ultima execucao, duracao e mensagem de cada job.
+   - Botao "Executar" para acionar manualmente via AJAX.
+   - Botao "Logs" para ver historico das ultimas 30 execucoes.
+   - Ativar/desativar jobs individualmente.
+6. Novas tabelas de banco:
+   - `cron_jobs` — registro e estado de cada job
+   - `cron_job_logs` — historico completo de execucoes
+7. Migracao criada:
+   - `migrations/20260417_cron_jobs.sql`
+8. Configurar na Hostinger (hPanel → Avancado → Cron Jobs):
+   ```
+   0 * * * *   curl -s "https://erp-hml.aneobrasil.com.br/cron.php?token=SEU_TOKEN&job=all" > /dev/null 2>&1
+   ```
+   O token correto esta em `config.local.php` no servidor, chave `cron.secret_token`.
+
 ## 2) Estrutura Real do Projeto
 
 ```txt
