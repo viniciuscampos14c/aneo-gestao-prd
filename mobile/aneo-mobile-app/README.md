@@ -2,12 +2,14 @@
 
 Aplicativo mobile executivo para iOS e Android, desenvolvido em React Native + Expo.
 
-## Primeiro passo entregue
+## Etapas entregues
 
 - Estrutura inicial do app separada do sistema principal.
 - Tela **Dashboard Executivo** com metricas principais do negocio (mock).
 - Tela **Negociacao** com busca de aluno, simulador de acordo e acao de envio (mock).
-- Base pronta para integrar API do sistema central.
+- Tela **Conexao API** para informar URL + Bearer Token e validar acesso.
+- Dashboard e Negociacao com **dados reais** quando conectado (resources `students` e `invoices`).
+- Fallback automatico para mock quando desconectado.
 
 ## Como rodar
 
@@ -20,7 +22,7 @@ npm run android
 
 ## Proximas entregas
 
-1. Integracao real com API (`students`, `invoices`, `tokens`).
-2. Autenticacao segura por perfil (diretoria/financeiro).
-3. Geracao de aditivo PDF + fluxo de assinatura.
-4. Sincronizacao da negociacao com o sistema central.
+1. Persistencia segura do token (storage criptografado).
+2. Endpoint real para registrar negociacao e gerar aditivo no backend.
+3. Fluxo de assinatura do aditivo e retorno de status.
+4. Publicacao nativa Android/iOS nas lojas.

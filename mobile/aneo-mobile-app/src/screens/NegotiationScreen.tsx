@@ -1,46 +1,69 @@
-import { useMemo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { debtProfiles } from '../data/mock';
-import type { StudentDebtProfile } from '../types';
+import { loadDebtProfilesFromApi } from '../services/negotiationService';
+import type { ApiConfig, StudentDebtProfile } from '../types';
+import { formatCurrency, formatDateIso } from '../utils/format';
 
-function formatCurrency(value: number) {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-}
+type NegotiationScreenProps = {
+  apiConfig: ApiConfig | null;
+};
 
-function formatDate(isoDate: string) {
-  const [year, month, day] = isoDate.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-export function NegotiationScreen() {
+export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
   const [query, setQuery] = useState('');
+  const [profiles, setProfiles] = useState<StudentDebtProfile[]>(debtProfiles);
   const [selected, setSelected] = useState<StudentDebtProfile | null>(null);
   const [discountPercent, setDiscountPercent] = useState('8');
   const [installments, setInstallments] = useState('3');
   const [firstDueDate, setFirstDueDate] = useState('2026-05-10');
   const [lastAction, setLastAction] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLiveProfiles(config: ApiConfig) {
+      setLoading(true);
+      setError('');
+      try {
+        const rows = await loadDebtProfilesFromApi(config);
+        if (!active) return;
+        setProfiles(rows.length > 0 ? rows : debtProfiles);
+      } catch (err) {
+        if (!active) return;
+        setProfiles(debtProfiles);
+        setError(err instanceof Error ? err.message : 'Falha ao carregar negociacao em tempo real.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    if (!apiConfig) {
+      setProfiles(debtProfiles);
+      setLoading(false);
+      setError('');
+      return () => {
+        active = false;
+      };
+    }
+
+    loadLiveProfiles(apiConfig);
+    return () => {
+      active = false;
+    };
+  }, [apiConfig]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return debtProfiles;
+    if (!term) return profiles;
 
-    return debtProfiles.filter((student) => {
+    return profiles.filter((student) => {
       return (
-        student.name.toLowerCase().includes(term) ||
-        student.document.toLowerCase().includes(term)
+        student.name.toLowerCase().includes(term) || student.document.toLowerCase().includes(term)
       );
     });
-  }, [query]);
+  }, [query, profiles]);
 
   const totalDebt = selected ? selected.openAmount + selected.overdueAmount : 0;
 
@@ -63,10 +86,17 @@ export function NegotiationScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.statusCard}>
+        <Text style={styles.statusLabel}>Fonte de dados</Text>
+        <Text style={styles.statusValue}>{apiConfig ? 'API em tempo real' : 'Mock local'}</Text>
+        {loading ? <Text style={styles.statusHint}>Atualizando alunos e dividas...</Text> : null}
+        {error ? <Text style={styles.errorText}>Falha API: {error}</Text> : null}
+      </View>
+
       <Text style={styles.label}>Buscar aluno para negociar</Text>
       <TextInput
         style={styles.input}
-        placeholder="Nome ou CPF"
+        placeholder="Nome ou documento"
         placeholderTextColor="#6f8fb5"
         value={query}
         onChangeText={setQuery}
@@ -98,7 +128,7 @@ export function NegotiationScreen() {
         <View style={styles.negotiationBlock}>
           <Text style={styles.blockTitle}>Simulador de negociacao</Text>
           <Text style={styles.blockSubTitle}>
-            Aluno: {selected.name} | Ultimo pagamento: {formatDate(selected.lastPaymentDate)}
+            Aluno: {selected.name} | Ultimo pagamento: {formatDateIso(selected.lastPaymentDate)}
           </Text>
           <Text style={styles.blockSubTitle}>
             Divida total: {formatCurrency(totalDebt)} ({selected.invoicesOpen} titulos)
@@ -127,11 +157,7 @@ export function NegotiationScreen() {
 
             <View style={styles.formField}>
               <Text style={styles.fieldLabel}>1o vencimento</Text>
-              <TextInput
-                style={styles.input}
-                value={firstDueDate}
-                onChangeText={setFirstDueDate}
-              />
+              <TextInput style={styles.input} value={firstDueDate} onChangeText={setFirstDueDate} />
             </View>
           </View>
 
@@ -152,13 +178,15 @@ export function NegotiationScreen() {
               );
             }}
           >
-            <Text style={styles.primaryButtonText}>Gerar aditivo (mock)</Text>
+            <Text style={styles.primaryButtonText}>Gerar aditivo (proxima etapa: API real)</Text>
           </Pressable>
 
           <Pressable
             style={styles.secondaryButton}
             onPress={() => {
-              setLastAction(`Negociacao enviada para sincronizacao no sistema central (mock).`);
+              setLastAction(
+                `Negociacao preparada para sincronizacao no sistema central (proxima etapa).`
+              );
             }}
           >
             <Text style={styles.secondaryButtonText}>Enviar para sistema central (mock)</Text>
@@ -168,9 +196,7 @@ export function NegotiationScreen() {
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>
-            Selecione um aluno para abrir a tela de negociacao.
-          </Text>
+          <Text style={styles.emptyText}>Selecione um aluno para abrir a tela de negociacao.</Text>
         </View>
       )}
     </ScrollView>
@@ -186,6 +212,32 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 28,
     gap: 12,
+  },
+  statusCard: {
+    borderWidth: 1,
+    borderColor: '#224567',
+    borderRadius: 10,
+    backgroundColor: '#0f2239',
+    padding: 12,
+    gap: 4,
+  },
+  statusLabel: {
+    color: '#9fc1eb',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statusValue: {
+    color: '#e9f2ff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statusHint: {
+    color: '#9fc1eb',
+    fontSize: 12,
+  },
+  errorText: {
+    color: '#ff9da2',
+    fontSize: 12,
   },
   label: {
     color: '#dcebff',
@@ -276,7 +328,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
   secondaryButton: {
     borderWidth: 1,

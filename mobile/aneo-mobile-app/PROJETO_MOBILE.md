@@ -17,6 +17,15 @@ Primeira versao inicial entregue (MVP de base):
 - Tela `Negociacao` com busca de aluno, simulacao e acao mock de envio.
 - Publicacao web inicial realizada em `https://mobile.aneobrasil.com.br`.
 
+Etapa 2 entregue:
+
+- Tela `Conexao API` para configurar URL + Bearer Token.
+- Integracao real com API `api.php` para leitura de:
+  - `students` (alunos)
+  - `invoices` (faturas)
+- Dashboard passa a calcular indicadores reais da empresa do token.
+- Negociacao passa a listar alunos e dividas reais (com fallback mock em falha).
+
 ## Estrutura principal
 
 ```txt
@@ -54,8 +63,8 @@ Publicar o conteudo de `dist/` em `public_html/mobile/` no servidor.
 
 ## Proximas etapas
 
-1. Autenticacao real com token da API ANEO.
-2. Integracao dos indicadores com dados reais do ERP.
-3. Fluxo real de negociacao com persistencia no backend.
-4. Geracao de aditivo PDF e envio para assinatura.
+1. Persistir token com seguranca no app.
+2. Criar endpoint de negociacao/aditivo no backend.
+3. Fluxo real de geracao de aditivo PDF + assinatura.
+4. Envio e sincronizacao definitiva para o sistema central.
 5. Publicacao nativa Android (Play Store) e iOS (App Store).

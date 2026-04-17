@@ -3,14 +3,19 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { NegotiationScreen } from './src/screens/NegotiationScreen';
+import { ConnectionScreen } from './src/screens/ConnectionScreen';
+import type { ApiConfig } from './src/types';
 
-type AppTab = 'dashboard' | 'negotiation';
+type AppTab = 'dashboard' | 'negotiation' | 'connection';
 
 export default function App() {
   const [tab, setTab] = useState<AppTab>('dashboard');
+  const [apiConfig, setApiConfig] = useState<ApiConfig | null>(null);
 
   const pageTitle = useMemo(() => {
-    return tab === 'dashboard' ? 'Dashboard Executivo' : 'Negociacao de Alunos';
+    if (tab === 'dashboard') return 'Dashboard Executivo';
+    if (tab === 'negotiation') return 'Negociacao de Alunos';
+    return 'Conexao API';
   }, [tab]);
 
   return (
@@ -21,6 +26,9 @@ export default function App() {
         <View>
           <Text style={styles.brand}>ANEO DIRETORIA</Text>
           <Text style={styles.title}>{pageTitle}</Text>
+          <Text style={styles.connectionStatus}>
+            {apiConfig ? 'API conectada' : 'Modo mock'}
+          </Text>
         </View>
 
         <View style={styles.tabRow}>
@@ -41,10 +49,27 @@ export default function App() {
               Negociacao
             </Text>
           </Pressable>
+
+          <Pressable
+            style={[styles.tab, tab === 'connection' && styles.tabActive]}
+            onPress={() => setTab('connection')}
+          >
+            <Text style={[styles.tabText, tab === 'connection' && styles.tabTextActive]}>
+              Conexao
+            </Text>
+          </Pressable>
         </View>
       </View>
 
-      {tab === 'dashboard' ? <DashboardScreen /> : <NegotiationScreen />}
+      {tab === 'dashboard' ? <DashboardScreen apiConfig={apiConfig} /> : null}
+      {tab === 'negotiation' ? <NegotiationScreen apiConfig={apiConfig} /> : null}
+      {tab === 'connection' ? (
+        <ConnectionScreen
+          apiConfig={apiConfig}
+          onConnect={(config) => setApiConfig(config)}
+          onDisconnect={() => setApiConfig(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -74,9 +99,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 4,
   },
+  connectionStatus: {
+    color: '#9ec0e9',
+    fontSize: 12,
+    marginTop: 2,
+  },
   tabRow: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
   },
   tab: {
     borderWidth: 1,

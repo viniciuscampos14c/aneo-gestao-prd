@@ -1,14 +1,77 @@
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { executiveMetrics } from '../data/mock';
 import { MetricCard } from '../components/MetricCard';
+import { loadExecutiveMetricsFromApi } from '../services/dashboardService';
+import { formatDateTime } from '../utils/format';
+import type { ApiConfig, ExecutiveMetric } from '../types';
 
-export function DashboardScreen() {
+type DashboardScreenProps = {
+  apiConfig: ApiConfig | null;
+};
+
+export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
+  const [metrics, setMetrics] = useState<ExecutiveMetric[]>(executiveMetrics);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const source = useMemo<'mock' | 'live'>(() => (apiConfig ? 'live' : 'mock'), [apiConfig]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadRealMetrics(config: ApiConfig) {
+      setLoading(true);
+      setError('');
+      try {
+        const rows = await loadExecutiveMetricsFromApi(config);
+        if (!active) return;
+        setMetrics(rows);
+        setLastSync(new Date());
+      } catch (err) {
+        if (!active) return;
+        setMetrics(executiveMetrics);
+        setError(err instanceof Error ? err.message : 'Falha ao carregar dados reais.');
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    if (!apiConfig) {
+      setMetrics(executiveMetrics);
+      setLoading(false);
+      setError('');
+      return () => {
+        active = false;
+      };
+    }
+
+    loadRealMetrics(apiConfig);
+    return () => {
+      active = false;
+    };
+  }, [apiConfig]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.statusCard}>
+        <Text style={styles.statusLabel}>Fonte de dados</Text>
+        <Text style={styles.statusValue}>
+          {source === 'live' ? 'API em tempo real' : 'Mock local'}
+        </Text>
+        {loading ? <Text style={styles.statusHint}>Atualizando indicadores...</Text> : null}
+        {!loading && source === 'live' && lastSync ? (
+          <Text style={styles.statusHint}>Ultima sincronizacao: {formatDateTime(lastSync)}</Text>
+        ) : null}
+        {error ? <Text style={styles.errorText}>Falha API: {error}</Text> : null}
+      </View>
+
       <Text style={styles.sectionTitle}>Visao Financeira</Text>
 
       <View style={styles.metricsGrid}>
-        {executiveMetrics.map((metric) => (
+        {metrics.map((metric) => (
           <MetricCard key={metric.id} metric={metric} />
         ))}
       </View>
@@ -48,6 +111,32 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
     paddingBottom: 28,
+  },
+  statusCard: {
+    backgroundColor: '#0f2239',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#224567',
+    padding: 12,
+    gap: 4,
+  },
+  statusLabel: {
+    color: '#9fc1eb',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statusValue: {
+    color: '#e9f2ff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  statusHint: {
+    color: '#9fc1eb',
+    fontSize: 12,
+  },
+  errorText: {
+    color: '#ff9da2',
+    fontSize: 12,
   },
   sectionTitle: {
     color: '#e9f2ff',
