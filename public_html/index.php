@@ -32,7 +32,8 @@ $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
 $arsenal = new ArsenalController();
 $apiMgmt = new ApiManagementController();
-$cron    = new CronController();
+$cron     = new CronController();
+$exchange = new ExchangeController();
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -236,6 +237,15 @@ $router->get('help', fn () => $generic->index('help', 'help', 'Chat IA Jully'));
 $router->post('help/store', fn () => $generic->store('help', 'help', 'Chat IA Jully'));
 $router->post('help/update', fn () => $generic->update('help', 'help'));
 $router->post('help/delete', fn () => $generic->delete('help', 'help'));
+
+// Intercâmbio Aluno
+$router->get('exchange',               fn () => $exchange->index());
+$router->get('exchange/show',          fn () => $exchange->show());
+$router->post('exchange/update-status',fn () => $exchange->updateStatus());
+
+// Portal do aluno — Intercâmbio
+$router->get('student/exchange',       fn () => $studentPortal->exchangeForm());
+$router->post('student/exchange/store',fn () => $studentPortal->exchangeStore());
 
 // Cron Jobs (admin)
 $router->get('cron',         fn () => $cron->index());

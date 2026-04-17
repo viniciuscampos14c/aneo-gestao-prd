@@ -23,6 +23,7 @@ $menu = [
     ['module' => 'signatures', 'label' => 'Assinaturas', 'icon' => 'document-check', 'route' => 'signatures'],
     ['module' => 'arsenal', 'label' => 'Arsenal Digital', 'icon' => 'book-open', 'route' => 'arsenal'],
     ['module' => 'requests', 'label' => 'Solicitações', 'icon' => 'inbox-arrow-down', 'route' => 'requests'],
+    ['module' => 'students', 'label' => 'Intercâmbio Aluno', 'icon' => 'arrow-path', 'route' => 'exchange'],
     ['module' => 'automations', 'label' => 'Automações', 'icon' => 'bolt', 'route' => 'automations'],
     ['module' => 'help', 'label' => 'Chat IA Jully', 'icon' => 'question-mark-circle', 'route' => 'help'],
 ];

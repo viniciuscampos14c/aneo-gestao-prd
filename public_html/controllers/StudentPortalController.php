@@ -5,12 +5,14 @@ class StudentPortalController extends BaseController
     private StudentPortalModel $portal;
     private AcademicCalendarModel $calendar;
     private SupportTicketModel $tickets;
+    private StudentExchangeModel $exchange;
 
     public function __construct()
     {
-        $this->portal = new StudentPortalModel();
+        $this->portal   = new StudentPortalModel();
         $this->calendar = new AcademicCalendarModel();
-        $this->tickets = new SupportTicketModel();
+        $this->tickets  = new SupportTicketModel();
+        $this->exchange = new StudentExchangeModel();
     }
 
     public function home(): void
@@ -496,7 +498,7 @@ class StudentPortalController extends BaseController
 
         $student   = current_student();
         $studentId = (int) ($student['id'] ?? 0);
-        $companyId = (int) ($this->portal->resolveStudentCompanyId($studentId) ?? 0);
+        $companyId = (int) ($student['company_id'] ?? 0);
 
         $statusFilter = trim((string) request('status', ''));
         $page         = max(1, (int) request('page', 1));
@@ -844,5 +846,85 @@ class StudentPortalController extends BaseController
 
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
         return in_array($scheme, ['http', 'https'], true);
+    }
+
+    // -------------------------------------------------------------------------
+    // Intercâmbio Aneo
+    // -------------------------------------------------------------------------
+
+    public function exchangeForm(): void
+    {
+        require_student_auth();
+
+        $student   = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+
+        $companies  = $this->exchange->listCompanies();
+        $myRequests = $this->exchange->myRequests($studentId);
+        $hasPending = $this->exchange->hasPendingRequest($studentId);
+
+        $this->render('student_portal/exchange_form', [
+            'title'      => 'Intercâmbio Aneo',
+            'student'    => $student,
+            'companies'  => $companies,
+            'myRequests' => $myRequests,
+            'hasPending' => $hasPending,
+        ], 'layouts/student');
+    }
+
+    public function exchangeStore(): void
+    {
+        require_student_auth();
+        csrf_validate();
+
+        $student   = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $companyId = (int) ($student['company_id'] ?? 0);
+
+        $studentName    = trim((string) post('student_name', $student['name'] ?? ''));
+        $currentUnit    = trim((string) post('current_unit', ''));
+        $targetUnit     = trim((string) post('target_unit', ''));
+        $desiredMonth   = trim((string) post('desired_month', ''));
+        $monthsEnrolled = max(0, (int) post('months_enrolled', 0));
+
+        // Validação básica
+        $errors = [];
+        if ($studentName === '') { $errors[] = 'Nome completo é obrigatório.'; }
+        if ($currentUnit === '')  { $errors[] = 'Unidade atual é obrigatória.'; }
+        if ($targetUnit === '')   { $errors[] = 'Unidade de destino é obrigatória.'; }
+        if ($desiredMonth === '') { $errors[] = 'Mês desejado é obrigatório.'; }
+
+        // Valida formato YYYY-MM
+        if ($desiredMonth !== '' && !preg_match('/^\d{4}-\d{2}$/', $desiredMonth)) {
+            $errors[] = 'Formato de mês inválido.';
+        }
+
+        if ($errors !== []) {
+            flash('error', implode(' ', $errors));
+            $this->redirect('student/exchange');
+        }
+
+        if ($this->exchange->hasPendingRequest($studentId)) {
+            flash('error', 'Você já possui uma solicitação de intercâmbio em andamento.');
+            $this->redirect('student/exchange');
+        }
+
+        $ok = $this->exchange->submit(
+            $studentId,
+            $companyId,
+            $studentName,
+            $currentUnit,
+            $targetUnit,
+            $desiredMonth,
+            $monthsEnrolled
+        );
+
+        if ($ok) {
+            flash('success', 'Solicitação de intercâmbio enviada com sucesso! Entraremos em contato em breve.');
+        } else {
+            flash('error', 'Não foi possível registrar a solicitação. Tente novamente.');
+        }
+
+        $this->redirect('student/exchange');
     }
 }
