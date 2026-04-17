@@ -211,6 +211,12 @@ class RequestsController extends BaseController
             $this->redirect($returnRoute);
         }
 
+        $currentStatus = strtolower(trim((string) ($ticket['status'] ?? 'open')));
+        if (!in_array($currentStatus, ['open', 'in_progress'], true)) {
+            $this->error('Esta negociacao ja foi finalizada anteriormente e nao pode ser processada novamente.');
+            $this->redirect($returnRoute);
+        }
+
         $statusMap = [
             'approve' => 'resolved',
             'adjust' => 'in_progress',
@@ -225,6 +231,65 @@ class RequestsController extends BaseController
 
         if (!isset($statusMap[$decision])) {
             $this->error('Acao de decisao invalida.');
+            $this->redirect($returnRoute);
+        }
+
+        if ($decision === 'approve') {
+            if (!has_permission('finance.invoice.settle') || !has_permission('finance.invoice.create')) {
+                $this->error('Voce precisa das permissoes de baixa e criacao de faturas para aprovar esta negociacao.');
+                $this->redirect($returnRoute);
+            }
+
+            $payload = $this->parseMobileNegotiationPayload($ticket);
+            if (!$payload['ok']) {
+                $this->error((string) ($payload['message'] ?? 'Nao foi possivel interpretar os dados da negociacao no chamado.'));
+                $this->redirect($returnRoute);
+            }
+
+            $data = $payload['data'] ?? [];
+            $finance = new FinanceModel();
+            $result = $finance->applyMobileNegotiationApproval(
+                (int) ($data['student_id'] ?? 0),
+                (float) ($data['negotiated_total'] ?? 0),
+                (int) ($data['installments'] ?? 1),
+                (string) ($data['first_due_date'] ?? ''),
+                (int) (current_user()['id'] ?? 0),
+                [
+                    'ticket_id' => $ticketId,
+                    'ticket_code' => (string) ($ticket['ticket_code'] ?? ''),
+                    'mode' => (string) ($data['mode'] ?? 'negociacao'),
+                ]
+            );
+
+            if (!$result['ok']) {
+                $this->error((string) ($result['message'] ?? 'Nao foi possivel aplicar a negociacao no financeiro.'));
+                $this->redirect($returnRoute);
+            }
+
+            $this->tickets->updateStatus($ticketId, 'resolved');
+            $numbers = array_values(array_filter(array_map('trim', (array) ($result['new_invoice_numbers'] ?? [])), fn ($v) => $v !== ''));
+            $comment = '[Fluxo Mobile] Negociacao aprovada e aplicada no financeiro.'
+                . "\nPagamento de compensacao: #" . (int) ($result['payment_id'] ?? 0)
+                . "\nTitulos liquidados: " . (int) ($result['closed_invoices_count'] ?? 0)
+                . "\nValor compensado: " . format_currency((float) ($result['closed_total'] ?? 0))
+                . "\nParcelamento gerado: " . (int) ($result['installments'] ?? 1) . 'x'
+                . "\nValor renegociado: " . format_currency((float) ($result['new_total'] ?? 0))
+                . "\nPrimeiro vencimento: " . (string) ($result['first_due_date'] ?? '');
+            if ($numbers !== []) {
+                $comment .= "\nNovas faturas: " . implode(', ', $numbers);
+            }
+            if ($note !== '') {
+                $comment .= "\nObservacao: " . $note;
+            }
+
+            $this->tickets->addComment($ticketId, $comment, (int) (current_user()['id'] ?? 0));
+            $this->success(
+                'Negociacao aprovada com sucesso. '
+                . (int) ($result['closed_invoices_count'] ?? 0)
+                . ' titulo(s) liquidado(s) e '
+                . count((array) ($result['new_invoice_ids'] ?? []))
+                . ' fatura(s) nova(s) criada(s).'
+            );
             $this->redirect($returnRoute);
         }
 
@@ -422,6 +487,66 @@ class RequestsController extends BaseController
         }
 
         return $count;
+    }
+
+    private function parseMobileNegotiationPayload(array $ticket): array
+    {
+        $subject = strtolower(trim((string) ($ticket['subject'] ?? '')));
+        $description = str_replace("\r\n", "\n", (string) ($ticket['description'] ?? ''));
+
+        if ($description === '') {
+            return ['ok' => false, 'message' => 'Descricao do chamado vazia para leitura da negociacao.'];
+        }
+
+        $studentId = 0;
+        if (preg_match('/Aluno:\s.*\(ID\s*(\d+)\)/i', $description, $matchStudent)) {
+            $studentId = (int) ($matchStudent[1] ?? 0);
+        }
+        if ($studentId <= 0) {
+            return ['ok' => false, 'message' => 'Nao foi possivel identificar o ID do aluno na negociacao.'];
+        }
+
+        $installments = 0;
+        $installmentValue = 0.0;
+        if (preg_match('/Parcelamento:\s*(\d+)x\s+de\s+(R\$\s*[0-9\.\,]+)/i', $description, $matchInstallments)) {
+            $installments = (int) ($matchInstallments[1] ?? 0);
+            $installmentValue = parse_decimal((string) ($matchInstallments[2] ?? '0'));
+        }
+        if ($installments <= 0) {
+            return ['ok' => false, 'message' => 'Nao foi possivel identificar o parcelamento da negociacao.'];
+        }
+
+        $firstDueDate = '';
+        if (preg_match('/Primeiro vencimento:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/i', $description, $matchDueDate)) {
+            $firstDueDate = trim((string) ($matchDueDate[1] ?? ''));
+        }
+        if ($firstDueDate === '') {
+            return ['ok' => false, 'message' => 'Nao foi possivel identificar o primeiro vencimento da negociacao.'];
+        }
+
+        $negotiatedTotal = 0.0;
+        if (preg_match('/Novo valor total:\s*(R\$\s*[0-9\.\,]+)/i', $description, $matchTotal)) {
+            $negotiatedTotal = parse_decimal((string) ($matchTotal[1] ?? '0'));
+        }
+        if ($negotiatedTotal <= 0 && $installmentValue > 0) {
+            $negotiatedTotal = round($installmentValue * $installments, 2);
+        }
+        if ($negotiatedTotal <= 0) {
+            return ['ok' => false, 'message' => 'Nao foi possivel identificar o valor total negociado.'];
+        }
+
+        $mode = str_starts_with($subject, 'aditivo financeiro -') ? 'aditivo' : 'negociacao';
+
+        return [
+            'ok' => true,
+            'data' => [
+                'student_id' => $studentId,
+                'installments' => $installments,
+                'first_due_date' => $firstDueDate,
+                'negotiated_total' => round($negotiatedTotal, 2),
+                'mode' => $mode,
+            ],
+        ];
     }
 
     private function normalizePriority(string $priority): string

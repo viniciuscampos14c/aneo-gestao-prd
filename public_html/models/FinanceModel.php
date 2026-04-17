@@ -260,6 +260,154 @@ class FinanceModel extends BaseModel
         ];
     }
 
+    public function applyMobileNegotiationApproval(
+        int $studentId,
+        float $negotiatedTotal,
+        int $installments,
+        string $firstDueDate,
+        int $createdBy,
+        array $context = []
+    ): array {
+        $studentId = (int) $studentId;
+        $negotiatedTotal = round((float) $negotiatedTotal, 2);
+        $installments = max(1, min(60, (int) $installments));
+        $firstDueDate = trim($firstDueDate);
+
+        if ($studentId <= 0) {
+            return ['ok' => false, 'message' => 'Aluno invalido para aplicar a negociacao.'];
+        }
+
+        if ($negotiatedTotal <= 0) {
+            return ['ok' => false, 'message' => 'Valor negociado invalido.'];
+        }
+
+        $dueDate = DateTimeImmutable::createFromFormat('Y-m-d', $firstDueDate);
+        if (!$dueDate || $dueDate->format('Y-m-d') !== $firstDueDate) {
+            return ['ok' => false, 'message' => 'Primeiro vencimento invalido para gerar as parcelas.'];
+        }
+
+        $student = $this->students->find($studentId);
+        if (!$student || (int) ($student['company_id'] ?? 0) !== $this->companyId()) {
+            return ['ok' => false, 'message' => 'Aluno da negociacao nao encontrado nesta empresa.'];
+        }
+
+        $openStmt = $this->db->prepare("SELECT id, invoice_number, due_date, amount, paid_amount
+            FROM invoices
+            WHERE company_id = :company_id
+              AND student_id = :student_id
+              AND status IN ('open', 'partial', 'overdue')
+            ORDER BY due_date ASC, id ASC");
+        $openStmt->execute([
+            ':company_id' => $this->companyId(),
+            ':student_id' => $studentId,
+        ]);
+        $openRows = $openStmt->fetchAll();
+
+        $openInvoiceIds = [];
+        $outstandingTotal = 0.0;
+        foreach ($openRows as $row) {
+            $remaining = max(0, (float) $row['amount'] - (float) $row['paid_amount']);
+            if ($remaining <= 0) {
+                continue;
+            }
+            $openInvoiceIds[] = (int) $row['id'];
+            $outstandingTotal += $remaining;
+        }
+        $outstandingTotal = round($outstandingTotal, 2);
+
+        if ($openInvoiceIds === [] || $outstandingTotal <= 0) {
+            return ['ok' => false, 'message' => 'Nao existem titulos em aberto para aplicar esta negociacao.'];
+        }
+
+        if ($negotiatedTotal > ($outstandingTotal + 0.01)) {
+            return [
+                'ok' => false,
+                'message' => 'Valor negociado maior que o saldo atual em aberto. Atualize os dados antes de aprovar.',
+            ];
+        }
+
+        $ticketCode = trim((string) ($context['ticket_code'] ?? ''));
+        $ticketId = (int) ($context['ticket_id'] ?? 0);
+        $mode = trim((string) ($context['mode'] ?? 'negociacao'));
+        $modeLabel = $mode === 'aditivo' ? 'Aditivo' : 'Negociacao';
+
+        $paymentNotes = trim(implode(' | ', array_filter([
+            'Compensacao automatica de titulos por aprovacao de fluxo mobile',
+            $ticketCode !== '' ? ('Ticket ' . $ticketCode) : ($ticketId > 0 ? ('Ticket #' . $ticketId) : ''),
+            'Aluno: ' . (string) ($student['full_name'] ?? ('ID ' . $studentId)),
+        ])));
+
+        $newInvoiceIds = [];
+        $newInvoiceNumbers = [];
+        $amounts = $this->splitAmount($negotiatedTotal, $installments);
+        $paidAt = date('Y-m-d');
+
+        try {
+            $this->db->beginTransaction();
+
+            $paymentId = $this->recordBatchPayment(
+                $openInvoiceIds,
+                $outstandingTotal,
+                'NEGOCIACAO_APP',
+                $paidAt,
+                $paymentNotes,
+                $createdBy
+            );
+
+            if ($paymentId <= 0) {
+                throw new RuntimeException('Falha ao registrar pagamento de compensacao dos titulos antigos.');
+            }
+
+            foreach ($amounts as $idx => $amount) {
+                $due = $dueDate->modify('+' . $idx . ' month')->format('Y-m-d');
+                $newId = $this->createInvoice([
+                    'student_id' => $studentId,
+                    'due_date' => $due,
+                    'amount' => $amount,
+                    'tax_amount' => 0,
+                    'status' => 'open',
+                    'tags' => 'Acordo mobile',
+                    'project_name' => $modeLabel . ' financeiro (App Diretoria)'
+                        . ($ticketCode !== '' ? (' - ' . $ticketCode) : ($ticketId > 0 ? (' - Ticket #' . $ticketId) : '')),
+                    'boleto_url' => '',
+                    'is_recurring' => 0,
+                    'recurrence_interval' => 'monthly',
+                ], $createdBy);
+
+                if ($newId <= 0) {
+                    throw new RuntimeException('Falha ao criar parcela da negociacao.');
+                }
+
+                $newInvoiceIds[] = $newId;
+                $invoice = $this->findInvoice($newId);
+                $newInvoiceNumbers[] = (string) ($invoice['invoice_number'] ?? ('#' . $newId));
+            }
+
+            $this->syncStudentFinanceKanban($studentId, $createdBy);
+
+            $this->db->commit();
+
+            return [
+                'ok' => true,
+                'payment_id' => $paymentId,
+                'closed_invoices_count' => count($openInvoiceIds),
+                'closed_total' => $outstandingTotal,
+                'new_invoice_ids' => $newInvoiceIds,
+                'new_invoice_numbers' => $newInvoiceNumbers,
+                'new_total' => $negotiatedTotal,
+                'installments' => $installments,
+                'first_due_date' => $firstDueDate,
+            ];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('[MOBILE_NEGOTIATION_APPROVAL_ERROR] ' . $e->getMessage());
+
+            return ['ok' => false, 'message' => 'Nao foi possivel aplicar a negociacao no financeiro.'];
+        }
+    }
+
     public function generateFiscalInvoice(int $invoiceId, int $createdBy): array
     {
         if (!$this->hasFiscalTable()) {
@@ -1264,6 +1412,22 @@ class FinanceModel extends BaseModel
     private function generateInvoiceNumber(int $id): string
     {
         return sprintf('FATURA-%06d-%s', $id, date('y'));
+    }
+
+    private function splitAmount(float $total, int $parts): array
+    {
+        $parts = max(1, $parts);
+        $totalCents = (int) round($total * 100);
+        $base = intdiv($totalCents, $parts);
+        $remainder = $totalCents - ($base * $parts);
+
+        $values = [];
+        for ($i = 0; $i < $parts; $i++) {
+            $cents = $base + ($i < $remainder ? 1 : 0);
+            $values[] = $cents / 100;
+        }
+
+        return $values;
     }
 
     private function attachPaymentItem(int $paymentId, int $invoiceId, float $amount): void
