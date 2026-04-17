@@ -46,7 +46,7 @@ $minMonth = date('Y-m', strtotime('+1 month'));
             <h3 class="font-semibold text-slate-800">Nova Solicitação</h3>
         </div>
         <form method="POST" action="<?= route('student/exchange/store'); ?>" class="px-6 py-6 space-y-5">
-            <?= csrf_field(); ?>
+            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
             <!-- Nome completo -->
             <div>

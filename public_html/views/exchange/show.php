@@ -103,7 +103,7 @@ $dateFmt   = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '—
             <h3 class="font-semibold text-slate-800">Atualizar Status</h3>
         </div>
         <form method="POST" action="<?= route('exchange/update-status'); ?>" class="px-6 py-6 space-y-4">
-            <?= csrf_field(); ?>
+            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <input type="hidden" name="id" value="<?= (int) ($request['id'] ?? 0); ?>">
 
             <div>

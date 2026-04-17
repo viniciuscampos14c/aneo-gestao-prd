@@ -261,7 +261,7 @@ class StudentExchangeModel extends BaseModel
     {
         $stmt = $this->db->prepare("SELECT id, trade_name, legal_name
             FROM companies
-            WHERE active = 1
+            WHERE is_active = 1
             ORDER BY trade_name ASC, legal_name ASC");
         $stmt->execute();
         return $stmt->fetchAll();
