@@ -130,8 +130,6 @@ class StudentExchangeModel extends BaseModel
         $total = (int) $countStmt->fetchColumn();
 
         $offset = ($page - 1) * $perPage;
-        $params[':limit']  = $perPage;
-        $params[':offset'] = $offset;
 
         $stmt = $this->db->prepare("SELECT r.*, s.login AS student_login
             FROM student_exchange_requests r
@@ -141,7 +139,13 @@ class StudentExchangeModel extends BaseModel
                 CASE r.status WHEN 'pending' THEN 1 WHEN 'viewed' THEN 2 WHEN 'approved' THEN 3 ELSE 4 END,
                 r.created_at DESC
             LIMIT :limit OFFSET :offset");
-        $stmt->execute($params);
+
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit',  $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,  PDO::PARAM_INT);
+        $stmt->execute();
         $rows = $stmt->fetchAll();
 
         return [
