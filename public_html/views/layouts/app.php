@@ -242,7 +242,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             </div>
             <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Dispensar</button>
-                <a href="<?= e($mobileQueueRoute); ?>" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Abrir fila de negociacoes</a>
+                <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Abrir fila de negociacoes</a>
             </div>
         </div>
     </div>
@@ -264,22 +264,47 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             ids = ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
             if (ids.length === 0) return;
 
-            const unseen = ids.filter((id) => {
+            const params = new URLSearchParams(window.location.search || '');
+            const isQueueRoute = params.get('route') === 'requests' && params.get('mobile_flow') === '1';
+            if (isQueueRoute) return;
+
+            const seenKey = (id) => 'aneo_mobile_negotiation_seen_' + id;
+            const isSeen = (id) => {
                 try {
-                    return !localStorage.getItem('aneo_mobile_negotiation_seen_' + id);
+                    if (localStorage.getItem(seenKey(id))) {
+                        return true;
+                    }
                 } catch (error) {
-                    return true;
                 }
+                try {
+                    if (sessionStorage.getItem(seenKey(id))) {
+                        return true;
+                    }
+                } catch (error) {
+                }
+                return false;
+            };
+
+            const unseen = ids.filter((id) => {
+                return !isSeen(id);
             });
             if (unseen.length === 0) return;
 
-            const close = function () {
+            const markAsSeen = function () {
                 unseen.forEach((id) => {
                     try {
-                        localStorage.setItem('aneo_mobile_negotiation_seen_' + id, '1');
+                        localStorage.setItem(seenKey(id), '1');
+                    } catch (error) {
+                    }
+                    try {
+                        sessionStorage.setItem(seenKey(id), '1');
                     } catch (error) {
                     }
                 });
+            };
+
+            const close = function () {
+                markAsSeen();
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             };
@@ -290,6 +315,11 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             modal.querySelectorAll('[data-mobile-neg-close]').forEach((button) => {
                 button.addEventListener('click', close);
             });
+
+            const openQueueButton = modal.querySelector('[data-mobile-neg-open-queue]');
+            if (openQueueButton) {
+                openQueueButton.addEventListener('click', close);
+            }
 
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
