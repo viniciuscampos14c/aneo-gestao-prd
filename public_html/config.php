@@ -3,6 +3,7 @@ return [
     'app' => [
         'name' => 'ANEO Gestão',
         'base_url' => '',
+        'public_url' => '',   // URL pública do sistema, ex: https://erp-hml.aneobrasil.com.br — configure em config.local.php
         'timezone' => 'America/Sao_Paulo',
         'default_pagination' => 50,
         'pagination_options' => [50, 100, 200],

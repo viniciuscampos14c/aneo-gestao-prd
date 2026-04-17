@@ -233,26 +233,16 @@ class FinanceNotificationModel extends BaseModel
                 : '[ANEO] Lembrete admin: vencimento proximo - ' . $invoiceNumber;
         }
 
-        $body = [
-            'Empresa: ' . $companyName,
-            'Aluno: ' . $studentName,
-            'Fatura: ' . $invoiceNumber,
-            'Vencimento: ' . $dueDateLabel,
-            'Valor em aberto: ' . format_currency($outstanding),
-            '',
-        ];
-
-        if ($notificationType === 'due_today') {
-            $body[] = 'Este titulo vence hoje.';
-        } else {
-            $body[] = 'Este e um lembrete de vencimento proximo.';
-        }
-
-        if ($recipientType === 'student') {
-            $body[] = 'Caso ja tenha efetuado o pagamento, desconsidere esta mensagem.';
-        } else {
-            $body[] = 'Mensagem enviada automaticamente para acompanhamento financeiro.';
-        }
+        // Renderiza template HTML
+        $body = $this->renderEmailTemplate([
+            'invoiceNumber'    => $invoiceNumber,
+            'studentName'      => $studentName,
+            'companyName'      => $companyName,
+            'dueDateLabel'     => $dueDateLabel,
+            'outstanding'      => format_currency($outstanding),
+            'notificationType' => $notificationType,
+            'recipientType'    => $recipientType,
+        ]);
 
         // Quando o email vai para o aluno, envia BCC para o financeiro
         $bcc = [];
@@ -267,13 +257,14 @@ class FinanceNotificationModel extends BaseModel
         $result = $mailer->send(
             $recipientEmail,
             $subject,
-            implode(PHP_EOL, $body),
+            $body,
             [
                 'company_id' => $companyId,
                 'from_email' => $from,
-                'from_name' => $companyName,
-                'reply_to' => $from,
-                'bcc' => $bcc,
+                'from_name'  => $companyName,
+                'reply_to'   => $from,
+                'is_html'    => true,
+                'bcc'        => $bcc,
             ]
         );
 
@@ -309,5 +300,27 @@ class FinanceNotificationModel extends BaseModel
         }
 
         return $parsed->format('Y-m-d');
+    }
+
+    private function renderEmailTemplate(array $vars): string
+    {
+        // Monta URL absoluta da logo
+        $publicUrl = rtrim((string) config('app.public_url', ''), '/');
+        if ($publicUrl === '') {
+            // Fallback: tenta detectar pelo HTTP_HOST quando disponível (requisição web)
+            $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            if ($host !== '') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $publicUrl = $scheme . '://' . $host;
+            }
+        }
+        $vars['logoUrl']     = $publicUrl !== '' ? $publicUrl . '/assets/img/logo_aneo.png' : '';
+        $vars['accentColor'] = '#0ea5e9';
+
+        // Renderiza via output buffer
+        ob_start();
+        extract($vars, EXTR_SKIP);
+        include __DIR__ . '/../views/email/billing_notification.php';
+        return (string) ob_get_clean();
     }
 }
