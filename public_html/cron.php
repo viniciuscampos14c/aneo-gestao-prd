@@ -28,25 +28,42 @@ if (ob_get_level() === 0) {
 
 require __DIR__ . '/core/bootstrap.php';
 
-header('Content-Type: application/json; charset=utf-8');
+// -----------------------------------------------------------------
+// Suporte a CLI (Hostinger Cron Jobs via PHP)
+// Exemplo: php cron.php token=SEU_TOKEN job=all
+// -----------------------------------------------------------------
+$isCli = PHP_SAPI === 'cli';
+
+if ($isCli) {
+    // Converte argumentos "chave=valor" do CLI para $_GET
+    foreach (array_slice($argv ?? [], 1) as $arg) {
+        if (str_contains($arg, '=')) {
+            [$k, $v] = explode('=', $arg, 2);
+            $_GET[trim($k)] = trim($v);
+        }
+    }
+} else {
+    header('Content-Type: application/json; charset=utf-8');
+}
 
 // -----------------------------------------------------------------
 // Validação do token
 // -----------------------------------------------------------------
 
 if (!(bool) config('cron.enabled', true)) {
-    http_response_code(503);
-    echo json_encode(['ok' => false, 'message' => 'Cron desativado no config.php.'], JSON_UNESCAPED_UNICODE);
+    if (!$isCli) { http_response_code(503); }
+    echo $isCli ? "[ERRO] Cron desativado no config.php.\n"
+                : json_encode(['ok' => false, 'message' => 'Cron desativado no config.php.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$configToken = trim((string) config('cron.secret_token', ''));
-
+$configToken   = trim((string) config('cron.secret_token', ''));
 $providedToken = trim((string) ($_GET['token'] ?? $_SERVER['HTTP_X_CRON_TOKEN'] ?? ''));
 
 if ($configToken === '' || !hash_equals($configToken, $providedToken)) {
-    http_response_code(401);
-    echo json_encode(['ok' => false, 'message' => 'Token invalido.'], JSON_UNESCAPED_UNICODE);
+    if (!$isCli) { http_response_code(401); }
+    echo $isCli ? "[ERRO] Token invalido.\n"
+                : json_encode(['ok' => false, 'message' => 'Token invalido.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -62,19 +79,31 @@ $startedAt = date('Y-m-d H:i:s');
 
 if ($jobKey === 'all') {
     $results = $runner->runAll();
-    echo json_encode([
-        'ok'         => true,
-        'started_at' => $startedAt,
-        'results'    => $results,
-    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    if ($isCli) {
+        foreach ($results as $key => $res) {
+            $status = ($res['ok'] ?? false) ? 'OK' : 'ERRO';
+            echo "[{$startedAt}] {$key}: [{$status}] " . ($res['message'] ?? '') . "\n";
+        }
+    } else {
+        echo json_encode([
+            'ok'         => true,
+            'started_at' => $startedAt,
+            'results'    => $results,
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
     exit;
 }
 
 $result = $runner->run($jobKey);
 
-http_response_code(($result['ok'] ?? false) ? 200 : 500);
-echo json_encode(array_merge(
-    ['started_at' => $startedAt],
-    $result
-), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+if ($isCli) {
+    $status = ($result['ok'] ?? false) ? 'OK' : 'ERRO';
+    echo "[{$startedAt}] {$jobKey}: [{$status}] " . ($result['message'] ?? '') . "\n";
+} else {
+    http_response_code(($result['ok'] ?? false) ? 200 : 500);
+    echo json_encode(array_merge(
+        ['started_at' => $startedAt],
+        $result
+    ), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+}
 exit;
