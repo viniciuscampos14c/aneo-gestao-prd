@@ -204,7 +204,7 @@ function showLogs(jobKey) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 
-    fetch('<?= route('cron/logs'); ?>?job=' + encodeURIComponent(jobKey) + '&limit=30')
+    fetch('<?= route('cron/logs'); ?>&job=' + encodeURIComponent(jobKey) + '&limit=30')
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.ok || !data.data || data.data.length === 0) {
