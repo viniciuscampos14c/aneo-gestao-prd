@@ -13,7 +13,7 @@ type NegotiationScreenProps = {
 export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
   const [query, setQuery] = useState('');
   const [profiles, setProfiles] = useState<StudentDebtProfile[]>([]);
-  const [selected, setSelected] = useState<StudentDebtProfile | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [discountPercent, setDiscountPercent] = useState('8');
   const [installments, setInstallments] = useState('3');
   const [firstDueDate, setFirstDueDate] = useState('2026-05-10');
@@ -24,6 +24,10 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
   const loadingRef = useRef(false);
 
   const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
+  const selected = useMemo(
+    () => profiles.find((profile) => profile.id === selectedId) ?? null,
+    [profiles, selectedId]
+  );
 
   const refreshProfiles = useCallback(
     async (mode: 'manual' | 'auto' | 'initial') => {
@@ -41,11 +45,6 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
       try {
         const rows = await loadDebtProfilesFromApi(apiConfig);
         setProfiles(rows);
-
-        if (selected) {
-          const updatedSelection = rows.find((row) => row.id === selected.id) ?? null;
-          setSelected(updatedSelection);
-        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Falha ao carregar negociacoes em tempo real.';
@@ -55,13 +54,13 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
         setLoading(false);
       }
     },
-    [apiConfig, selected]
+    [apiConfig]
   );
 
   useEffect(() => {
     if (!apiConfig) {
       setProfiles([]);
-      setSelected(null);
+      setSelectedId(null);
       setLoading(false);
       setError('');
       setLastAction('');
@@ -191,12 +190,12 @@ export function NegotiationScreen({ apiConfig }: NegotiationScreenProps) {
       {connected ? (
         <View style={styles.results}>
           {filtered.map((student) => {
-            const isSelected = selected?.id === student.id;
+            const isSelected = selectedId === student.id;
             return (
               <Pressable
                 key={student.id}
                 style={[styles.studentCard, isSelected && styles.studentCardSelected]}
-                onPress={() => setSelected(student)}
+                onPress={() => setSelectedId(student.id)}
               >
                 <Text style={styles.studentName}>{student.name}</Text>
                 <Text style={styles.studentMeta}>
