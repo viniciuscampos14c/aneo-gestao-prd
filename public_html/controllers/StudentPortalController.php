@@ -6,13 +6,29 @@ class StudentPortalController extends BaseController
     private AcademicCalendarModel $calendar;
     private SupportTicketModel $tickets;
     private StudentExchangeModel $exchange;
+    private ReenrollmentModel $reenrollment;
 
     public function __construct()
     {
-        $this->portal   = new StudentPortalModel();
-        $this->calendar = new AcademicCalendarModel();
-        $this->tickets  = new SupportTicketModel();
-        $this->exchange = new StudentExchangeModel();
+        $this->portal       = new StudentPortalModel();
+        $this->calendar     = new AcademicCalendarModel();
+        $this->tickets      = new SupportTicketModel();
+        $this->exchange     = new StudentExchangeModel();
+        $this->reenrollment = new ReenrollmentModel();
+    }
+
+    // Intercepta qualquer rota do portal quando rematrícula está vencida
+    private function checkReenrollmentGate(array $student): void
+    {
+        $skip = [
+            'student/reenrollment',
+            'student/reenrollment/confirm',
+            'student/login',
+            'student/logout',
+        ];
+        if (!in_array(parse_route(), $skip, true) && $this->reenrollment->isDue((int) $student['id'])) {
+            $this->redirect('student/reenrollment');
+        }
     }
 
     public function home(): void
@@ -30,6 +46,7 @@ class StudentPortalController extends BaseController
         }
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $this->calendar->processAutomaticReminders(45, (int) ($student['company_id'] ?? 0));
         $summary = $this->portal->dashboardSummary((int) $student['id']);
         $examScheduleEnabled = $this->portal->examScheduleFeatureAvailable();
@@ -926,5 +943,65 @@ class StudentPortalController extends BaseController
         }
 
         $this->redirect('student/exchange');
+    }
+
+    // -------------------------------------------------------------------------
+    // Rematrícula automática
+    // -------------------------------------------------------------------------
+
+    public function reenrollment(): void
+    {
+        require_student_auth();
+
+        $student   = current_student();
+        $studentId = (int) $student['id'];
+        $companyId = (int) ($student['company_id'] ?? 0);
+
+        // Se não está na janela, redireciona para o portal normalmente
+        if (!$this->reenrollment->isDue($studentId)) {
+            $this->redirect('student/dashboard');
+        }
+
+        $openInvoices = $this->reenrollment->openInvoices($studentId, $companyId);
+        $period       = $this->reenrollment->getPendingPeriod($studentId);
+
+        $this->render('student_portal/reenrollment', [
+            'title'        => 'Rematrícula',
+            'student'      => $student,
+            'openInvoices' => $openInvoices,
+            'period'       => $period,
+            'canConfirm'   => empty($openInvoices),
+        ], 'layouts/student');
+    }
+
+    public function reenrollmentConfirm(): void
+    {
+        require_student_auth();
+        csrf_validate();
+
+        $student   = current_student();
+        $studentId = (int) $student['id'];
+        $companyId = (int) ($student['company_id'] ?? 0);
+
+        if (!$this->reenrollment->isDue($studentId)) {
+            $this->redirect('student/dashboard');
+        }
+
+        $openInvoices = $this->reenrollment->openInvoices($studentId, $companyId);
+        if (!empty($openInvoices)) {
+            flash('error', 'Você possui faturas em aberto. Regularize sua situação antes de confirmar a rematrícula.');
+            $this->redirect('student/reenrollment');
+        }
+
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $ok = $this->reenrollment->confirm($studentId, $companyId, $ip);
+
+        if ($ok) {
+            flash('success', 'Rematrícula confirmada com sucesso! Bem-vindo(a) ao novo período.');
+        } else {
+            flash('error', 'Não foi possível confirmar a rematrícula. Tente novamente ou contate o administrativo.');
+        }
+
+        $this->redirect('student/dashboard');
     }
 }
