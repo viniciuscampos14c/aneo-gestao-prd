@@ -114,6 +114,12 @@ $photoFeatureAvailable = isset($photoFeatureAvailable) ? (bool) $photoFeatureAva
             <input type="number" min="1" max="31" name="billing_day" value="<?= e((string) ($student['billing_day'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
         </label>
 
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Data de entrada</span>
+            <input type="date" name="enrolled_at" value="<?= e($student['enrolled_at'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <span class="mt-1 block text-xs text-slate-400">Usada como base para rematrícula semestral automática.</span>
+        </label>
+
         <label class="block lg:col-span-2">
             <span class="mb-1 block text-sm font-medium">Informacoes Adm (tags/flags)</span>
             <input type="text" name="admin_info" value="<?= e($student['admin_info'] ?? ''); ?>" placeholder="<?= e(implode(', ', $flags)); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">

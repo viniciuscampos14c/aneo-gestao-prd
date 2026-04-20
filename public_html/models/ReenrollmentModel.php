@@ -72,9 +72,9 @@ class ReenrollmentModel extends BaseModel
             return $nextEnd;
         }
 
-        // Nunca rematriculou: usa created_at do aluno como base
+        // Nunca rematriculou: usa enrolled_at (ou created_at como fallback) do aluno como base
         $stmt2 = $this->db->prepare(
-            "SELECT created_at FROM students WHERE id = :sid LIMIT 1"
+            "SELECT enrolled_at, created_at FROM students WHERE id = :sid LIMIT 1"
         );
         $stmt2->execute([':sid' => $studentId]);
         $row = $stmt2->fetch();
@@ -82,8 +82,8 @@ class ReenrollmentModel extends BaseModel
             return null;
         }
 
-        $enrolledAt = date('Y-m-d', strtotime((string) $row['created_at']));
-        $firstEnd   = date('Y-m-d', strtotime($enrolledAt . ' +' . self::INTERVAL_MONTHS . ' months'));
+        $base = !empty($row['enrolled_at']) ? $row['enrolled_at'] : date('Y-m-d', strtotime((string) $row['created_at']));
+        $firstEnd = date('Y-m-d', strtotime($base . ' +' . self::INTERVAL_MONTHS . ' months'));
         return $firstEnd;
     }
 

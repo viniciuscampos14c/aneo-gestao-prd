@@ -95,20 +95,20 @@ class StudentModel extends BaseModel
         $insertSql = $supportsPhoto
             ? 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone, profile_photo, is_active,
-                admin_info, ra, birth_date, rg, cro, notes, monthly_fee, billing_day,
+                admin_info, ra, birth_date, enrolled_at, rg, cro, notes, monthly_fee, billing_day,
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone, :profile_photo, :is_active,
-                :admin_info, :ra, :birth_date, :rg, :cro, :notes, :monthly_fee, :billing_day,
+                :admin_info, :ra, :birth_date, :enrolled_at, :rg, :cro, :notes, :monthly_fee, :billing_day,
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )'
             : 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone, is_active,
-                admin_info, ra, birth_date, rg, cro, notes, monthly_fee, billing_day,
+                admin_info, ra, birth_date, enrolled_at, rg, cro, notes, monthly_fee, billing_day,
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone, :is_active,
-                :admin_info, :ra, :birth_date, :rg, :cro, :notes, :monthly_fee, :billing_day,
+                :admin_info, :ra, :birth_date, :enrolled_at, :rg, :cro, :notes, :monthly_fee, :billing_day,
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )';
         $stmt = $this->db->prepare($insertSql);
@@ -124,6 +124,7 @@ class StudentModel extends BaseModel
             ':admin_info' => $data['admin_info'],
             ':ra' => $data['ra'],
             ':birth_date' => $data['birth_date'] ?: null,
+            ':enrolled_at' => $data['enrolled_at'] ?: null,
             ':rg' => $data['rg'],
             ':cro' => $data['cro'],
             ':notes' => $data['notes'],
@@ -170,6 +171,7 @@ class StudentModel extends BaseModel
                 admin_info = :admin_info,
                 ra = :ra,
                 birth_date = :birth_date,
+                enrolled_at = :enrolled_at,
                 rg = :rg,
                 cro = :cro,
                 notes = :notes,
@@ -187,6 +189,7 @@ class StudentModel extends BaseModel
                 admin_info = :admin_info,
                 ra = :ra,
                 birth_date = :birth_date,
+                enrolled_at = :enrolled_at,
                 rg = :rg,
                 cro = :cro,
                 notes = :notes,
@@ -206,6 +209,7 @@ class StudentModel extends BaseModel
             ':admin_info' => $data['admin_info'],
             ':ra' => $data['ra'],
             ':birth_date' => $data['birth_date'] ?: null,
+            ':enrolled_at' => $data['enrolled_at'] ?: null,
             ':rg' => $data['rg'],
             ':cro' => $data['cro'],
             ':notes' => $data['notes'],
