@@ -17,7 +17,9 @@ class StudentPortalController extends BaseController
         $this->reenrollment = new ReenrollmentModel();
     }
 
-    // Intercepta qualquer rota do portal quando rematrícula está vencida
+    // Gate de rematrícula com dois comportamentos:
+    // 1. Aviso (30 dias antes): redireciona apenas o dashboard → rematrícula
+    // 2. Bloqueio total (após vencimento): qualquer rota → rematrícula
     private function checkReenrollmentGate(array $student): void
     {
         $skip = [
@@ -26,7 +28,22 @@ class StudentPortalController extends BaseController
             'student/login',
             'student/logout',
         ];
-        if (!in_array(parse_route(), $skip, true) && $this->reenrollment->isDue((int) $student['id'])) {
+
+        $route     = parse_route();
+        $studentId = (int) $student['id'];
+
+        if (in_array($route, $skip, true)) {
+            return;
+        }
+
+        // Bloqueio total: prazo vencido — bloqueia TODAS as rotas
+        if ($this->reenrollment->isExpired($studentId)) {
+            $this->redirect('student/reenrollment');
+            return;
+        }
+
+        // Aviso: dentro dos 30 dias anteriores ao vencimento — redireciona só o dashboard
+        if ($this->reenrollment->isDue($studentId) && $route === 'student/dashboard') {
             $this->redirect('student/reenrollment');
         }
     }
@@ -64,6 +81,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $rows = $this->portal->myCourses((int) $student['id']);
 
         $this->render('student_portal/courses', [
@@ -77,12 +95,13 @@ class StudentPortalController extends BaseController
     {
         require_student_auth();
 
+        $student = current_student();
+        $this->checkReenrollmentGate($student);
+
         if (!$this->portal->lmsFeatureAvailable()) {
             $this->error('Trilha de aulas ainda nao habilitada no banco. Execute a migracao LMS.');
             $this->redirect('student/courses');
         }
-
-        $student = current_student();
         $studentId = (int) ($student['id'] ?? 0);
         $courseId = (int) request('course_id', request('id', 0));
         $lessonId = (int) request('lesson_id', 0);
@@ -135,6 +154,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $rows = $this->portal->upcomingLiveClasses((int) $student['id']);
 
         $this->render('student_portal/live', [
@@ -149,6 +169,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $data = $this->portal->materials((int) $student['id']);
 
         $this->render('student_portal/materials', [
@@ -164,6 +185,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
 
         if (!$this->portal->arsenalFeatureAvailable()) {
@@ -270,6 +292,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $data = $this->portal->progress((int) $student['id']);
 
         $this->render('student_portal/progress', [
@@ -285,6 +308,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
         $companyId = (int) ($student['company_id'] ?? 0);
         $studentEmail = trim((string) ($student['email'] ?? ''));
@@ -394,6 +418,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $availableExams = $this->portal->listAvailableExams((int) $student['id']);
         $history = $this->portal->examHistory((int) $student['id']);
         $pending = $this->portal->pendingExamSubmissions((int) $student['id']);
@@ -416,6 +441,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
         if ($studentId <= 0) {
             $this->error('Aluno invalido para emitir historico academico.');
@@ -514,6 +540,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student   = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
         $companyId = (int) ($student['company_id'] ?? 0);
 
@@ -546,6 +573,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) $student['id'];
         $fromDate = $this->normalizeDate((string) request('from'), date('Y-m-d'));
         $toDate = $this->normalizeDate((string) request('to'), date('Y-m-d', strtotime('+45 days')));
@@ -573,6 +601,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) $student['id'];
         $examId = (int) request('id');
 
@@ -621,6 +650,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
         $examId = (int) request('id');
 
@@ -874,6 +904,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         $student   = current_student();
+        $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
 
         $companies  = $this->exchange->listCompanies();

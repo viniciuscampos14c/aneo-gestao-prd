@@ -3,8 +3,8 @@
 class ReenrollmentModel extends BaseModel
 {
     private const INTERVAL_MONTHS = 6;
-    // Quantos dias antes do vencimento a tela começa a aparecer
-    private const SHOW_BEFORE_DAYS = 15;
+    // Quantos dias antes do vencimento a tela começa a aparecer (aviso)
+    private const WARN_BEFORE_DAYS = 30;
 
     // -------------------------------------------------------------------------
     // Verificação de feature
@@ -23,8 +23,8 @@ class ReenrollmentModel extends BaseModel
     // -------------------------------------------------------------------------
 
     /**
-     * Retorna true se o aluno está na janela de rematrícula
-     * (período vencido ou vencendo nos próximos SHOW_BEFORE_DAYS dias).
+     * Aviso: retorna true quando faltam 30 dias ou menos para o vencimento,
+     * ou quando já venceu. Usado para mostrar a tela no dashboard.
      */
     public function isDue(int $studentId): bool
     {
@@ -37,8 +37,26 @@ class ReenrollmentModel extends BaseModel
             return false;
         }
 
-        $threshold = date('Y-m-d', strtotime('+' . self::SHOW_BEFORE_DAYS . ' days'));
+        $threshold = date('Y-m-d', strtotime('+' . self::WARN_BEFORE_DAYS . ' days'));
         return $periodEnd <= $threshold;
+    }
+
+    /**
+     * Bloqueio total: retorna true somente quando o prazo já expirou.
+     * Usado para bloquear TODAS as rotas do portal.
+     */
+    public function isExpired(int $studentId): bool
+    {
+        if (!$this->tableExists()) {
+            return false;
+        }
+
+        $periodEnd = $this->currentPeriodEnd($studentId);
+        if ($periodEnd === null) {
+            return false;
+        }
+
+        return $periodEnd < date('Y-m-d');
     }
 
     /**
