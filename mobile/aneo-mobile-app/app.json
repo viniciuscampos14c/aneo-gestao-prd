@@ -16,11 +16,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "br.com.aneobrasil.diretoria",
-      "buildNumber": "1.0.0"
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "br.com.aneobrasil.diretoria",
-      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0b024f"
