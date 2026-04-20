@@ -30,6 +30,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c58480e3-82d2-4ce6-9967-2c7e88af1d01"
+      }
+    },
+    "owner": "viniciuscampos14c"
   }
 }
