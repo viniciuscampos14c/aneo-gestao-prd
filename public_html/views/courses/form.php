@@ -1,7 +1,10 @@
 <?php
-$materialFiles = $materialFiles ?? [];
+$materialFiles       = $materialFiles       ?? [];
 $lmsFeatureAvailable = $lmsFeatureAvailable ?? false;
-$courseModules = $courseModules ?? [];
+$courseModules       = $courseModules       ?? [];
+$zoomConfigured      = $zoomConfigured      ?? false;
+$courseZoomSessions  = $courseZoomSessions  ?? [];
+$backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'courses';
 ?>
 <section class="space-y-6">
     <div class="flex items-center justify-between">
@@ -248,4 +251,136 @@ $courseModules = $courseModules ?? [];
             </div>
         <?php endif; ?>
     </div>
+
+    <?php if ($course): ?>
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Seção: Aulas Online (Zoom)                                          -->
+    <!-- ------------------------------------------------------------------ -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-800">Aulas Online (Zoom)</h3>
+                <p class="mt-0.5 text-xs text-slate-500">Crie reuniões Zoom para este curso. Os alunos matriculados verão no portal.</p>
+            </div>
+            <?php if (!$zoomConfigured): ?>
+                <a href="<?= route('courses/live-sessions/zoom-settings'); ?>"
+                   class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition">
+                    ⚙ Configurar credenciais Zoom
+                </a>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!$zoomConfigured): ?>
+            <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Configure as credenciais Zoom antes de criar aulas online.
+            </div>
+        <?php else: ?>
+
+        <!-- Formulário de nova aula online -->
+        <details class="mb-4 rounded-xl border border-dashed border-sky-300 bg-sky-50/40">
+            <summary class="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-50 rounded-xl">
+                + Nova Aula Online (Zoom)
+            </summary>
+            <div class="border-t border-sky-200 p-4">
+                <form method="POST" action="index.php?route=courses/live-sessions/store" class="space-y-3">
+                    <input type="hidden" name="route" value="courses/live-sessions/store">
+                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                    <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                    <input type="hidden" name="redirect_to" value="<?= e($backToCourse); ?>">
+
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="block sm:col-span-2">
+                            <span class="mb-1 block text-xs font-medium text-slate-700">Título da aula <span class="text-rose-500">*</span></span>
+                            <input type="text" name="title" required maxlength="180"
+                                   placeholder="Ex: Aula 01 — Introdução ao módulo"
+                                   class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                        </label>
+
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-medium text-slate-700">Data e horário <span class="text-rose-500">*</span></span>
+                            <input type="datetime-local" name="scheduled_at" required
+                                   class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                            <span class="mt-0.5 block text-xs text-slate-400">Horário de Brasília (GMT-3)</span>
+                        </label>
+
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-medium text-slate-700">Duração (minutos)</span>
+                            <input type="number" name="duration_minutes" min="15" max="480" value="60"
+                                   class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                        </label>
+
+                        <label class="block sm:col-span-2">
+                            <span class="mb-1 block text-xs font-medium text-slate-700">Observações (opcional)</span>
+                            <textarea name="notes" rows="2"
+                                      class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"></textarea>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button type="submit"
+                                class="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700 transition">
+                            Criar Reunião Zoom
+                        </button>
+                        <span class="text-xs text-slate-400">A reunião será criada automaticamente no Zoom.</span>
+                    </div>
+                </form>
+            </div>
+        </details>
+
+        <?php endif; // zoomConfigured ?>
+
+        <!-- Lista de sessões deste curso -->
+        <?php if ($courseZoomSessions !== []): ?>
+            <div class="space-y-2">
+                <?php
+                $sbadge = ['scheduled' => 'bg-emerald-100 text-emerald-700', 'cancelled' => 'bg-rose-100 text-rose-700'];
+                $slabel = ['scheduled' => 'Agendada', 'cancelled' => 'Cancelada'];
+                foreach ($courseZoomSessions as $zs):
+                    $st      = (string) ($zs['status'] ?? 'scheduled');
+                    $sched   = (string) ($zs['scheduled_at'] ?? '');
+                    $schedFmt = $sched !== '' ? date('d/m/Y H:i', strtotime($sched)) : '—';
+                ?>
+                <div class="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-slate-800 truncate"><?= e($zs['title'] ?? '—'); ?></p>
+                        <p class="text-xs text-slate-500">
+                            <?= e($schedFmt); ?> · <?= (int) ($zs['duration_minutes'] ?? 60); ?>min
+                            <?php if (!empty($zs['zoom_meeting_id'])): ?>
+                                · ID: <span class="font-mono"><?= e($zs['zoom_meeting_id']); ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($zs['zoom_password'])): ?>
+                                · Senha: <span class="font-mono"><?= e($zs['zoom_password']); ?></span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $sbadge[$st] ?? 'bg-slate-100 text-slate-600'; ?>">
+                        <?= $slabel[$st] ?? $st; ?>
+                    </span>
+                    <?php if (!empty($zs['join_url'])): ?>
+                        <a href="<?= e($zs['join_url']); ?>" target="_blank" rel="noopener"
+                           class="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition">
+                            Entrar
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($st === 'scheduled'): ?>
+                        <form method="POST" action="index.php?route=courses/live-sessions/cancel"
+                              onsubmit="return confirm('Cancelar esta aula? A reunião também será removida do Zoom.')">
+                            <input type="hidden" name="route" value="courses/live-sessions/cancel">
+                            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                            <input type="hidden" name="id" value="<?= (int) $zs['id']; ?>">
+                            <input type="hidden" name="redirect_to" value="<?= e($backToCourse); ?>">
+                            <button type="submit"
+                                    class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition">
+                                Cancelar
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php elseif ($zoomConfigured): ?>
+            <p class="text-xs text-slate-400">Nenhuma aula online agendada para este curso ainda.</p>
+        <?php endif; ?>
+    </div>
+    <?php endif; // $course ?>
 </section>

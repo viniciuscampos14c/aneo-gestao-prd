@@ -6,13 +6,15 @@ class CourseController extends BaseController
     private StudentModel $students;
     private AcademicCalendarModel $calendar;
     private AuditLogService $audit;
+    private CourseLiveSessionModel $liveSessions;
 
     public function __construct()
     {
-        $this->courses = new CourseModel();
-        $this->students = new StudentModel();
-        $this->calendar = new AcademicCalendarModel();
-        $this->audit = new AuditLogService();
+        $this->courses      = new CourseModel();
+        $this->students     = new StudentModel();
+        $this->calendar     = new AcademicCalendarModel();
+        $this->audit        = new AuditLogService();
+        $this->liveSessions = new CourseLiveSessionModel();
     }
 
     public function index(): void
@@ -88,14 +90,22 @@ class CourseController extends BaseController
             $this->redirect('courses');
         }
 
+        $companyId      = (int) current_company_id();
+        $zoomConfigured = $this->liveSessions->getZoomCredentials($companyId) !== null;
+        $courseZoomSessions = $this->liveSessions->tableExists()
+            ? $this->liveSessions->listByCourse($id, $companyId)
+            : [];
+
         $this->render('courses/form', [
-            'title' => 'Editar Curso',
-            'course' => $course,
-            'materialFiles' => $this->courses->listCourseMaterials($id),
-            'categories' => $this->courses->categories(),
-            'lmsFeatureAvailable' => $this->courses->lmsFeatureAvailable(),
-            'courseModules' => $this->courses->listCourseModulesWithLessons($id),
-            'action' => route('courses/update&id=' . $id),
+            'title'              => 'Editar Curso',
+            'course'             => $course,
+            'materialFiles'      => $this->courses->listCourseMaterials($id),
+            'categories'         => $this->courses->categories(),
+            'lmsFeatureAvailable'=> $this->courses->lmsFeatureAvailable(),
+            'courseModules'      => $this->courses->listCourseModulesWithLessons($id),
+            'action'             => route('courses/update&id=' . $id),
+            'zoomConfigured'     => $zoomConfigured,
+            'courseZoomSessions' => $courseZoomSessions,
         ]);
     }
 

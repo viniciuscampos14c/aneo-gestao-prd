@@ -20,7 +20,6 @@ $menu = [
     ['module' => 'finance', 'label' => 'Financeiro', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
     ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot'],
     ['module' => 'courses', 'label' => 'Cursos EAD', 'icon' => 'academic-cap', 'route' => 'courses'],
-    ['module' => 'courses', 'label' => 'Aulas Online', 'icon' => 'video-camera', 'route' => 'courses/live-sessions'],
     ['module' => 'signatures', 'label' => 'Assinaturas', 'icon' => 'document-check', 'route' => 'signatures'],
     ['module' => 'arsenal', 'label' => 'Arsenal Digital', 'icon' => 'book-open', 'route' => 'arsenal'],
     ['module' => 'requests', 'label' => 'Solicitações', 'icon' => 'inbox-arrow-down', 'route' => 'requests'],

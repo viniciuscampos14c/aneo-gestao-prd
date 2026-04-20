@@ -34,6 +34,21 @@ class CourseLiveSessionModel extends BaseModel
         return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
     }
 
+    /**
+     * Todas as sessões de um curso específico (para exibir no edit do curso).
+     */
+    public function listByCourse(int $courseId, int $companyId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT cls.*
+             FROM course_live_sessions cls
+             WHERE cls.course_id = :course_id AND cls.company_id = :company_id
+             ORDER BY cls.scheduled_at DESC"
+        );
+        $stmt->execute([':course_id' => $courseId, ':company_id' => $companyId]);
+        return $stmt->fetchAll();
+    }
+
     // -------------------------------------------------------------------------
     // Busca individual
     // -------------------------------------------------------------------------

@@ -69,18 +69,21 @@ class CourseLiveSessionController extends BaseController
         require_permission('courses');
         csrf_validate();
 
-        $companyId = (int) current_company_id();
-        $user      = current_user();
-        $userId    = (int) ($user['id'] ?? 0);
+        $companyId  = (int) current_company_id();
+        $user       = current_user();
+        $userId     = (int) ($user['id'] ?? 0);
+        $redirectTo = trim((string) post('redirect_to')); // destino após criar (ex: courses/edit?id=5)
 
-        $title          = trim((string) post('title'));
-        $courseId       = (int) post('course_id');
-        $scheduledAt    = trim((string) post('scheduled_at'));    // 'Y-m-d\TH:i' (datetime-local)
-        $durationMin    = max(15, min(480, (int) post('duration_minutes')));
-        $notes          = trim((string) post('notes'));
+        $title       = trim((string) post('title'));
+        $courseId    = (int) post('course_id');
+        $scheduledAt = trim((string) post('scheduled_at'));
+        $durationMin = max(15, min(480, (int) post('duration_minutes')));
+        $notes       = trim((string) post('notes'));
 
         // Normaliza datetime-local (substitui T por espaço)
         $scheduledAt = str_replace('T', ' ', $scheduledAt);
+
+        $fallback = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions';
 
         // Validação básica
         $errors = [];
@@ -90,7 +93,7 @@ class CourseLiveSessionController extends BaseController
 
         if ($errors) {
             flash('error', implode(' ', $errors));
-            $this->redirect('courses/live-sessions/create');
+            $this->redirect($fallback);
             return;
         }
 
@@ -98,7 +101,7 @@ class CourseLiveSessionController extends BaseController
         $creds = $this->model->getZoomCredentials($companyId);
         if ($creds === null) {
             flash('error', 'Configure as credenciais Zoom nas configurações da empresa antes de criar uma aula.');
-            $this->redirect('courses/live-sessions/create');
+            $this->redirect($fallback);
             return;
         }
 
@@ -130,13 +133,13 @@ class CourseLiveSessionController extends BaseController
 
         if ($id === false) {
             flash('error', 'Reunião criada no Zoom mas não foi possível salvar no banco. Contate o suporte.');
-            $this->redirect('courses/live-sessions');
+            $this->redirect($fallback);
             return;
         }
 
-        flash('success', 'Reunião criada com sucesso!');
-        // Redireciona para o índice com o ID da sessão recém-criada para exibir o painel
-        $this->redirect('courses/live-sessions?new_id=' . $id);
+        flash('success', 'Reunião criada com sucesso! Meeting ID: ' . $meeting['meeting_id']);
+        $dest = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions?new_id=' . $id;
+        $this->redirect($dest);
     }
 
     // -------------------------------------------------------------------------
@@ -222,8 +225,9 @@ class CourseLiveSessionController extends BaseController
         require_permission('courses');
         csrf_validate();
 
-        $companyId = (int) current_company_id();
-        $id        = (int) post('id');
+        $companyId  = (int) current_company_id();
+        $id         = (int) post('id');
+        $redirectTo = trim((string) post('redirect_to'));
 
         $session = $this->model->findById($id, $companyId);
         if ($session === null) {
@@ -254,7 +258,8 @@ class CourseLiveSessionController extends BaseController
             flash('error', 'Não foi possível cancelar a aula.');
         }
 
-        $this->redirect('courses/live-sessions');
+        $dest = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions';
+        $this->redirect($dest);
     }
 
     // -------------------------------------------------------------------------
