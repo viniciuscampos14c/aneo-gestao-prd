@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { NegotiationScreen } from './src/screens/NegotiationScreen';
 import { ConnectionScreen } from './src/screens/ConnectionScreen';
@@ -49,8 +49,15 @@ export default function App() {
       <StatusBar style="light" />
 
       <View style={styles.header}>
+        <View style={styles.brandRow}>
+          <Image source={require('./assets/logo-aneo-original.png')} style={styles.logo} />
+
+          <View style={styles.brandTextBlock}>
+            <Text style={styles.brand}>ANEO DIRETORIA</Text>
+          </View>
+        </View>
+
         <View>
-          <Text style={styles.brand}>ANEO DIRETORIA</Text>
           <Text style={styles.title}>{pageTitle}</Text>
           <Text style={styles.connectionStatus}>
             {apiConfig
@@ -122,6 +129,19 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     paddingTop: 10,
     gap: 14,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
+  brandTextBlock: {
+    flexDirection: 'column',
   },
   brand: {
     color: '#7db2ff',

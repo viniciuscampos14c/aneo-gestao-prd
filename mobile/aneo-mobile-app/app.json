@@ -1,24 +1,29 @@
 {
   "expo": {
-    "name": "ANEO-MOBILE-APP",
-    "slug": "ANEO-MOBILE-APP",
+    "name": "ANEO Diretoria",
+    "slug": "aneo-diretoria",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "aneodiretoria",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0b024f"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "br.com.aneobrasil.diretoria",
+      "buildNumber": "1.0.0"
     },
     "android": {
+      "package": "br.com.aneobrasil.diretoria",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0b024f"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false

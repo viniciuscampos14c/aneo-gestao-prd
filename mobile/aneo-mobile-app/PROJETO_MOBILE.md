@@ -47,6 +47,16 @@ Etapa 5 entregue:
   - retorna lista de empresas quando necessario (`auth_status=company_required`);
   - finaliza autenticacao ao receber `company_id`.
 
+Etapa 6 entregue:
+
+- Aplicacao da logo oficial ANEO no app:
+  - cabecalho principal;
+  - icones de app (`icon`, `adaptive`, `splash`, `favicon`).
+- Preparacao de publicacao nativa com EAS:
+  - `eas.json` criado;
+  - scripts de build/submit adicionados;
+  - guia `PUBLICACAO_LOJAS.md` criado.
+
 ## Estrutura principal
 
 ```txt
@@ -86,4 +96,4 @@ Publicar o conteudo de `dist/` em `public_html/mobile/` no servidor.
 
 1. Criar endpoint dedicado de negociacao/aditivo no backend.
 2. Fluxo real de geracao de aditivo PDF + assinatura.
-3. Publicacao nativa Android (Play Store) e iOS (App Store).
+3. Finalizar cadastro nas lojas e concluir submissao de producao.
