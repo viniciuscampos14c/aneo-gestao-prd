@@ -33,6 +33,13 @@ Etapa 3 entregue:
 - Envio real para CRM:
   - `Gerar aditivo` e `Enviar negociacao` criam registro via `POST api.php?r=tickets`.
 
+Etapa 4 entregue:
+
+- Novo endpoint backend `POST api.php?r=mobile-auth`.
+- Login no app por usuario/senha da diretoria (sem inserir token manual).
+- Token gerado automaticamente no ERP, com permissoes de `students`, `invoices` e `tickets`.
+- Token salvo localmente no app para manter conexao entre acessos.
+
 ## Estrutura principal
 
 ```txt
@@ -70,7 +77,7 @@ Publicar o conteudo de `dist/` em `public_html/mobile/` no servidor.
 
 ## Proximas etapas
 
-1. Persistir token com seguranca no app.
+1. Permitir selecao de empresa no login quando houver mais de um CNPJ vinculado.
 2. Criar endpoint dedicado de negociacao/aditivo no backend.
 3. Fluxo real de geracao de aditivo PDF + assinatura.
 4. Publicacao nativa Android (Play Store) e iOS (App Store).

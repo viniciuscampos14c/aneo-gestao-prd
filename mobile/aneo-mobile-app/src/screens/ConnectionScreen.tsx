@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { DEFAULT_API_BASE_URL } from '../config/constants';
-import { normalizeApiConfig, testApiConnection } from '../services/apiClient';
+import { connectWithMobileCredentials } from '../services/mobileAuthService';
 import type { ApiConfig } from '../types';
 
 type ConnectionScreenProps = {
@@ -12,7 +12,8 @@ type ConnectionScreenProps = {
 
 export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: ConnectionScreenProps) {
   const [baseUrl, setBaseUrl] = useState(apiConfig?.baseUrl ?? DEFAULT_API_BASE_URL);
-  const [token, setToken] = useState(apiConfig?.token ?? '');
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -20,15 +21,13 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
   const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
 
   useEffect(() => {
-    if (apiConfig) {
+    if (apiConfig?.baseUrl) {
       setBaseUrl(apiConfig.baseUrl);
-      setToken(apiConfig.token);
       return;
     }
 
     setBaseUrl(DEFAULT_API_BASE_URL);
-    setToken('');
-  }, [apiConfig?.baseUrl, apiConfig?.token]);
+  }, [apiConfig?.baseUrl]);
 
   async function handleConnect() {
     setLoading(true);
@@ -36,16 +35,17 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
     setMessage('');
 
     try {
-      const finalConfig = normalizeApiConfig({ baseUrl, token });
-      if (!finalConfig.baseUrl || !finalConfig.token) {
-        throw new Error('Informe URL da API e token.');
-      }
+      const config = await connectWithMobileCredentials({
+        baseUrl,
+        login,
+        password,
+      });
 
-      await testApiConnection(finalConfig);
-      onConnect(finalConfig);
-      setMessage('Conexao validada com sucesso. Dashboard e negociacao agora usam dados reais.');
+      onConnect(config);
+      setPassword('');
+      setMessage('Conexao realizada com sucesso. O token foi gerado automaticamente.');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Falha ao validar conexao.';
+      const msg = err instanceof Error ? err.message : 'Falha ao autenticar no CRM.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -56,8 +56,7 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Conexao com API ANEO</Text>
       <Text style={styles.subtitle}>
-        Configure a URL do `api.php` e um Bearer Token com permissoes de leitura em `students` e
-        `invoices`.
+        Use usuario e senha da diretoria. O aplicativo gera e salva o token automaticamente.
       </Text>
 
       <View style={styles.statusCard}>
@@ -81,28 +80,42 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
       </View>
 
       <View style={styles.formField}>
-        <Text style={styles.fieldLabel}>Token Bearer</Text>
+        <Text style={styles.fieldLabel}>Usuario ou e-mail</Text>
         <TextInput
           style={styles.input}
-          value={token}
-          onChangeText={setToken}
+          value={login}
+          onChangeText={setLogin}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="diretoria@empresa.com"
+          placeholderTextColor="#6f8fb5"
+        />
+      </View>
+
+      <View style={styles.formField}>
+        <Text style={styles.fieldLabel}>Senha</Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
           autoCapitalize="none"
           autoCorrect={false}
           secureTextEntry
-          placeholder="Cole aqui o token"
+          placeholder="Digite sua senha"
           placeholderTextColor="#6f8fb5"
         />
       </View>
 
       <Pressable style={styles.primaryButton} onPress={handleConnect} disabled={loading}>
-        <Text style={styles.primaryButtonText}>{loading ? 'Validando...' : 'Conectar API'}</Text>
+        <Text style={styles.primaryButtonText}>{loading ? 'Conectando...' : 'Entrar e conectar'}</Text>
       </Pressable>
 
       <Pressable
         style={styles.secondaryButton}
         onPress={() => {
           onDisconnect();
-          setMessage('Conexao removida. O app aguarda nova autenticacao.');
+          setPassword('');
+          setMessage('Conexao removida. O app aguarda novo login.');
           setError('');
         }}
       >
@@ -113,11 +126,10 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <View style={styles.hintCard}>
-        <Text style={styles.hintTitle}>Permissoes recomendadas para o token</Text>
-        <Text style={styles.hintText}>- `students.search`</Text>
-        <Text style={styles.hintText}>- `invoices.search`</Text>
-        <Text style={styles.hintText}>- `tickets.create`</Text>
-        <Text style={styles.hintText}>{'Token criado em: ERP > API > Gerenciamento de API.'}</Text>
+        <Text style={styles.hintTitle}>Permissoes aplicadas automaticamente</Text>
+        <Text style={styles.hintText}>- `students.search` e `students.get`</Text>
+        <Text style={styles.hintText}>- `invoices.search` e `invoices.get`</Text>
+        <Text style={styles.hintText}>- `tickets.create` para enviar negociacoes</Text>
       </View>
     </ScrollView>
   );

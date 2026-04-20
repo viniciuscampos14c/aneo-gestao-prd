@@ -3,7 +3,7 @@ import type { ApiConfig, ApiEnvelope, ApiMeta } from '../types';
 
 type QueryValue = string | number | boolean | null | undefined;
 
-function sanitizeBaseUrl(baseUrl: string): string {
+export function normalizeApiBaseUrl(baseUrl: string): string {
   const trimmed = baseUrl.trim().replace(/\s+/g, '');
   const noSlash = trimmed.replace(/\/+$/, '');
 
@@ -18,7 +18,7 @@ function sanitizeBaseUrl(baseUrl: string): string {
 }
 
 function buildUrl(baseUrl: string, resource: string, query: Record<string, QueryValue>): string {
-  const url = new URL(sanitizeBaseUrl(baseUrl));
+  const url = new URL(normalizeApiBaseUrl(baseUrl));
   url.searchParams.set('r', resource);
 
   for (const [key, value] of Object.entries(query)) {
@@ -33,7 +33,7 @@ function buildUrl(baseUrl: string, resource: string, query: Record<string, Query
 
 export function normalizeApiConfig(config: ApiConfig): ApiConfig {
   return {
-    baseUrl: sanitizeBaseUrl(config.baseUrl),
+    baseUrl: normalizeApiBaseUrl(config.baseUrl),
     token: config.token.trim(),
   };
 }
@@ -91,6 +91,25 @@ export async function apiPost<TData, TBody extends Record<string, unknown>>(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${finalConfig.token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  return parseApiResponse<TData>(response);
+}
+
+export async function apiPostPublic<TData, TBody extends Record<string, unknown>>(
+  baseUrl: string,
+  resource: string,
+  body: TBody
+): Promise<ApiEnvelope<TData>> {
+  const url = buildUrl(baseUrl, resource, {});
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },

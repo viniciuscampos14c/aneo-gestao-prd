@@ -1,14 +1,17 @@
 <?php
 
 /**
- * Entry point da API REST do ANEO Gestão.
+ * Entry point da API REST do ANEO Gestao.
  *
- * Autenticação: Bearer Token via header Authorization.
+ * Autenticacao:
+ * - Recursos de negocio: Bearer Token no header Authorization.
+ * - Login do app mobile: POST api.php?r=mobile-auth (usuario + senha).
+ *
  * Exemplo:
  *   curl -H "Authorization: Bearer <token>" "https://erp-hml.aneobrasil.com.br/api.php?r=students"
  *
- * Recursos disponíveis: students, leads, invoices, courses, users, tickets
- * Documentação completa: index.php?route=api-management/manual
+ * Recursos disponiveis: students, leads, invoices, courses, users, tickets
+ * Documentacao completa: index.php?route=api-management/manual
  */
 
 if (ob_get_level() === 0) {
@@ -17,7 +20,7 @@ if (ob_get_level() === 0) {
 
 require __DIR__ . '/core/bootstrap.php';
 
-// Headers CORS — permite chamadas de qualquer origem
+// Headers CORS: permite chamadas de qualquer origem
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
@@ -29,14 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// 1. Resolver token — aborta com 401 se inválido
-$token = ApiAuth::resolve();
-
-// 2. Injetar company_id do token como company ativa para os models
-//    (os models usam current_company_id() via $_SESSION['company'])
-$_SESSION['company'] = ['id' => (int) $token['company_id']];
-
-// 3. Roteamento por recurso + método HTTP
+// 1. Roteamento por recurso + metodo HTTP
 $resource = strtolower(trim((string) ($_GET['r'] ?? '')));
 $id       = isset($_GET['id']) && $_GET['id'] !== '' ? (int) $_GET['id'] : null;
 $method   = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -44,6 +40,28 @@ $method   = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 if ($resource === '') {
     ApiAuth::abort(400, 'Informe o recurso via parametro "r". Ex: api.php?r=students');
 }
+
+// 2. Endpoint sem bearer para login do app mobile
+if ($resource === 'mobile-auth') {
+    $mobileAuth = new MobileAuthApiController();
+
+    try {
+        match (true) {
+            $method === 'POST' => $mobileAuth->login(),
+            default => ApiAuth::abort(405, "Metodo {$method} nao suportado para o recurso {$resource}."),
+        };
+    } catch (Throwable $e) {
+        error_log('[API_MOBILE_AUTH_ERROR] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        ApiAuth::abort(500, 'Erro interno no servidor. Contate o suporte.');
+    }
+}
+
+// 3. Resolver token: aborta com 401 se invalido
+$token = ApiAuth::resolve();
+
+// 4. Injetar company_id do token como company ativa para os models
+//    (os models usam current_company_id() via $_SESSION['company'])
+$_SESSION['company'] = ['id' => (int) $token['company_id']];
 
 $allowed = array_keys(ApiTokenModel::RESOURCES);
 if (!in_array($resource, $allowed, true)) {
