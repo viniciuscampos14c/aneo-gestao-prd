@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS course_live_sessions (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id        INT UNSIGNED NOT NULL,
+    course_id         INT UNSIGNED NOT NULL,
+    title             VARCHAR(180) NOT NULL,
+    zoom_meeting_id   VARCHAR(40)  NULL,
+    zoom_password     VARCHAR(80)  NULL,
+    join_url          VARCHAR(500) NULL,
+    start_url         TEXT         NULL,
+    scheduled_at      DATETIME     NOT NULL,
+    duration_minutes  SMALLINT UNSIGNED NOT NULL DEFAULT 60,
+    notes             TEXT         NULL,
+    status            ENUM('scheduled','cancelled') NOT NULL DEFAULT 'scheduled',
+    zoom_raw_response TEXT         NULL,
+    created_by        INT UNSIGNED NOT NULL,
+    created_at        DATETIME     NOT NULL,
+    updated_at        DATETIME     NOT NULL,
+    INDEX idx_company_scheduled (company_id, scheduled_at),
+    INDEX idx_course (course_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

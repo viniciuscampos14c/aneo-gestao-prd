@@ -367,6 +367,65 @@ class StudentPortalModel extends BaseModel
 
         $companyId = $this->resolveStudentCompanyId($studentId);
 
+        // Verifica se a tabela de aulas Zoom existe (migration aplicada)
+        $hasLiveSessions = $this->courseLiveSessionsTableExists();
+
+        if ($hasLiveSessions) {
+            // Fonte 1: nova tabela course_live_sessions (criadas via API Zoom)
+            $sqlNew = "SELECT
+                    cls.id,
+                    cls.title AS name,
+                    cls.join_url AS live_link,
+                    cls.zoom_password AS live_password,
+                    cls.zoom_meeting_id AS live_meeting_id,
+                    cls.scheduled_at AS live_datetime,
+                    cls.duration_minutes,
+                    'zoom' AS platform
+                FROM course_live_sessions cls
+                INNER JOIN courses c ON c.id = cls.course_id
+                INNER JOIN enrollments e ON e.course_id = cls.course_id
+                WHERE e.student_id = :sid1
+                  AND e.status = 'active'
+                  AND c.status = 'published'
+                  AND cls.status = 'scheduled'
+                  AND cls.scheduled_at >= NOW()";
+
+            // Fonte 2: legado (courses.live_link preenchido manualmente)
+            $sqlLegacy = "SELECT
+                    c.id,
+                    c.name,
+                    c.live_link,
+                    c.live_password,
+                    c.live_meeting_id,
+                    c.live_datetime,
+                    NULL AS duration_minutes,
+                    'zoom' AS platform
+                FROM enrollments e
+                INNER JOIN courses c ON c.id = e.course_id
+                WHERE e.student_id = :sid2
+                  AND e.status = 'active'
+                  AND c.status = 'published'
+                  AND c.live_link IS NOT NULL
+                  AND c.live_link <> ''
+                  AND c.live_datetime IS NOT NULL
+                  AND c.live_datetime >= NOW()";
+
+            $params = [':sid1' => $studentId, ':sid2' => $studentId];
+
+            if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+                $sqlNew    .= ' AND c.company_id = :company_id1';
+                $sqlLegacy .= ' AND c.company_id = :company_id2';
+                $params[':company_id1'] = $companyId;
+                $params[':company_id2'] = $companyId;
+            }
+
+            $sql = "({$sqlNew}) UNION ALL ({$sqlLegacy}) ORDER BY live_datetime ASC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        }
+
+        // Fallback: apenas legado
         $sql = "SELECT
                 c.id,
                 c.name,
@@ -374,8 +433,8 @@ class StudentPortalModel extends BaseModel
                 c.live_password,
                 c.live_meeting_id,
                 c.live_datetime,
-                e.progress_percent,
-                e.status AS enrollment_status
+                NULL AS duration_minutes,
+                'zoom' AS platform
             FROM enrollments e
             INNER JOIN courses c ON c.id = e.course_id
             WHERE e.student_id = :student_id
@@ -394,8 +453,20 @@ class StudentPortalModel extends BaseModel
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-
         return $stmt->fetchAll();
+    }
+
+    private function courseLiveSessionsTableExists(): bool
+    {
+        static $checked = null;
+        if ($checked !== null) return $checked;
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = 'course_live_sessions'"
+        );
+        $stmt->execute();
+        $checked = ((int) $stmt->fetchColumn()) > 0;
+        return $checked;
     }
 
     public function materials(int $studentId): array

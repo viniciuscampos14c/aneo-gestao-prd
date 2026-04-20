@@ -33,7 +33,8 @@ $studentPortal = new StudentPortalController();
 $arsenal = new ArsenalController();
 $apiMgmt = new ApiManagementController();
 $cron     = new CronController();
-$exchange = new ExchangeController();
+$exchange    = new ExchangeController();
+$liveSessions = new CourseLiveSessionController();
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -212,6 +213,16 @@ $router->post('courses/exams/external-link/deactivate', fn () => $courses->deact
 
 $router->get('courses/comments', fn () => $courses->comments());
 $router->post('courses/comments/store', fn () => $courses->storeComment());
+
+// Aulas Online (Zoom)
+$router->get('courses/live-sessions',              fn () => $liveSessions->index());
+$router->get('courses/live-sessions/create',       fn () => $liveSessions->create());
+$router->post('courses/live-sessions/store',       fn () => $liveSessions->store());
+$router->get('courses/live-sessions/edit',         fn () => $liveSessions->edit());
+$router->post('courses/live-sessions/update',      fn () => $liveSessions->update());
+$router->post('courses/live-sessions/cancel',      fn () => $liveSessions->cancel());
+$router->get('courses/live-sessions/zoom-settings',fn () => $liveSessions->zoomSettings());
+$router->post('courses/live-sessions/zoom-credentials', fn () => $liveSessions->saveZoomCredentials());
 
 // Modulos desativados por regra de negocio atual (nao aparecem no menu e nao devem abrir por URL direta).
 // $router->get('projects', fn () => $generic->index('projects', 'projects', 'Projetos'));
