@@ -8,6 +8,7 @@ Aplicativo mobile executivo para iOS e Android, desenvolvido em React Native + E
 - Tela **Dashboard Executivo** com metricas principais do negocio.
 - Tela **Negociacao** com busca de aluno e simulador de acordo.
 - Tela **Conexao API** com login por usuario/senha da diretoria (token gerado automaticamente).
+- Selecao de empresa no login quando o usuario possui mais de um CNPJ vinculado.
 - Dashboard e Negociacao com **dados reais** quando conectado (resources `students` e `invoices`).
 - Atualizacao automatica a cada 5 minutos + botao **Atualizar agora**.
 - Envio real de negociacao/aditivo para o CRM via `POST api.php?r=tickets`.
@@ -23,7 +24,6 @@ npm run android
 
 ## Proximas entregas
 
-1. Suportar selecao de empresa quando o usuario tiver mais de uma vinculada.
-2. Fluxo de assinatura do aditivo e retorno de status.
-3. Endpoint dedicado para negociacao financeira no backend (sem usar tickets).
-4. Publicacao nativa Android/iOS nas lojas.
+1. Fluxo de assinatura do aditivo e retorno de status.
+2. Endpoint dedicado para negociacao financeira no backend (sem usar tickets).
+3. Publicacao nativa Android/iOS nas lojas.

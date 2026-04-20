@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { DEFAULT_API_BASE_URL } from '../config/constants';
-import { connectWithMobileCredentials } from '../services/mobileAuthService';
+import {
+  connectWithMobileCredentials,
+  type MobileCompanyOption,
+} from '../services/mobileAuthService';
 import type { ApiConfig } from '../types';
 
 type ConnectionScreenProps = {
@@ -17,8 +20,11 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [companyOptions, setCompanyOptions] = useState<MobileCompanyOption[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
 
   const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
+  const requiresCompany = companyOptions.length > 0;
 
   useEffect(() => {
     if (apiConfig?.baseUrl) {
@@ -29,24 +35,41 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
     setBaseUrl(DEFAULT_API_BASE_URL);
   }, [apiConfig?.baseUrl]);
 
-  async function handleConnect() {
+  function resetCompanySelection() {
+    setCompanyOptions([]);
+    setSelectedCompanyId(null);
+  }
+
+  async function handleConnect(companyId?: number) {
     setLoading(true);
     setError('');
     setMessage('');
 
     try {
-      const config = await connectWithMobileCredentials({
+      const result = await connectWithMobileCredentials({
         baseUrl,
         login,
         password,
+        companyId,
       });
 
-      onConnect(config);
+      if (result.status === 'company_required') {
+        setCompanyOptions(result.companies);
+        const defaultCompany =
+          result.companies.find((company) => company.isDefault) ?? result.companies[0];
+        setSelectedCompanyId(defaultCompany?.id ?? null);
+        setMessage(result.message);
+        return;
+      }
+
+      onConnect(result.config);
       setPassword('');
+      resetCompanySelection();
       setMessage('Conexao realizada com sucesso. O token foi gerado automaticamente.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao autenticar no CRM.';
       setError(msg);
+      resetCompanySelection();
     } finally {
       setLoading(false);
     }
@@ -71,7 +94,10 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
         <TextInput
           style={styles.input}
           value={baseUrl}
-          onChangeText={setBaseUrl}
+          onChangeText={(value) => {
+            setBaseUrl(value);
+            resetCompanySelection();
+          }}
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="https://erp-hml.aneobrasil.com.br/api.php"
@@ -84,7 +110,10 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
         <TextInput
           style={styles.input}
           value={login}
-          onChangeText={setLogin}
+          onChangeText={(value) => {
+            setLogin(value);
+            resetCompanySelection();
+          }}
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="diretoria@empresa.com"
@@ -97,7 +126,10 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
         <TextInput
           style={styles.input}
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(value) => {
+            setPassword(value);
+            resetCompanySelection();
+          }}
           autoCapitalize="none"
           autoCorrect={false}
           secureTextEntry
@@ -106,9 +138,55 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
         />
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={handleConnect} disabled={loading}>
-        <Text style={styles.primaryButtonText}>{loading ? 'Conectando...' : 'Entrar e conectar'}</Text>
+      <Pressable style={styles.primaryButton} onPress={() => handleConnect()} disabled={loading}>
+        <Text style={styles.primaryButtonText}>
+          {loading ? 'Conectando...' : requiresCompany ? 'Validar novamente' : 'Entrar e conectar'}
+        </Text>
       </Pressable>
+
+      {requiresCompany ? (
+        <View style={styles.companyCard}>
+          <Text style={styles.companyTitle}>Selecione a empresa</Text>
+          <Text style={styles.companyHint}>
+            Esse usuario possui mais de um CNPJ. Escolha a empresa para continuar.
+          </Text>
+
+          <View style={styles.companyList}>
+            {companyOptions.map((company) => {
+              const selected = selectedCompanyId === company.id;
+              return (
+                <Pressable
+                  key={company.id}
+                  style={[styles.companyOption, selected && styles.companyOptionSelected]}
+                  onPress={() => setSelectedCompanyId(company.id)}
+                >
+                  <Text style={[styles.companyName, selected && styles.companyNameSelected]}>
+                    {company.name}
+                  </Text>
+                  {company.isDefault ? <Text style={styles.companyBadge}>Padrao</Text> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              (loading || !selectedCompanyId) && styles.secondaryButtonDisabled,
+            ]}
+            onPress={() => {
+              if (selectedCompanyId) {
+                void handleConnect(selectedCompanyId);
+              }
+            }}
+            disabled={loading || !selectedCompanyId}
+          >
+            <Text style={styles.secondaryButtonText}>
+              {loading ? 'Conectando...' : 'Conectar com empresa selecionada'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <Pressable
         style={styles.secondaryButton}
@@ -117,6 +195,7 @@ export function ConnectionScreen({ apiConfig, onConnect, onDisconnect }: Connect
           setPassword('');
           setMessage('Conexao removida. O app aguarda novo login.');
           setError('');
+          resetCompanySelection();
         }}
       >
         <Text style={styles.secondaryButtonText}>Limpar conexao</Text>
@@ -207,6 +286,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
+  companyCard: {
+    borderWidth: 1,
+    borderColor: '#2a4d72',
+    borderRadius: 10,
+    backgroundColor: '#0e2238',
+    padding: 12,
+    gap: 8,
+  },
+  companyTitle: {
+    color: '#dcebff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  companyHint: {
+    color: '#9ec0e9',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  companyList: {
+    gap: 8,
+  },
+  companyOption: {
+    borderWidth: 1,
+    borderColor: '#2a4769',
+    borderRadius: 10,
+    backgroundColor: '#0f223a',
+    padding: 10,
+    gap: 4,
+  },
+  companyOptionSelected: {
+    borderColor: '#1f7aff',
+    backgroundColor: '#123258',
+  },
+  companyName: {
+    color: '#dcebff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  companyNameSelected: {
+    color: '#ffffff',
+  },
+  companyBadge: {
+    alignSelf: 'flex-start',
+    color: '#9ec0e9',
+    fontSize: 11,
+    fontWeight: '600',
+  },
   secondaryButton: {
     borderWidth: 1,
     borderColor: '#2a547e',
@@ -214,6 +340,9 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     alignItems: 'center',
     backgroundColor: '#102944',
+  },
+  secondaryButtonDisabled: {
+    opacity: 0.6,
   },
   secondaryButtonText: {
     color: '#d2e5ff',

@@ -40,6 +40,17 @@ class MobileAuthApiController extends BaseController
             ApiAuth::abort(403, 'Usuario sem empresa vinculada.');
         }
 
+        if ($requestedCompanyId <= 0 && count($companies) > 1) {
+            $this->json([
+                'ok' => true,
+                'data' => [
+                    'auth_status' => 'company_required',
+                    'message' => 'Selecione a empresa para concluir o login no app.',
+                    'companies' => $this->companyOptions($companies),
+                ],
+            ]);
+        }
+
         $company = $this->resolveCompany($companies, $requestedCompanyId);
         if ($company === null) {
             ApiAuth::abort(403, 'Empresa invalida para este usuario.');
@@ -65,6 +76,7 @@ class MobileAuthApiController extends BaseController
         $this->json([
             'ok' => true,
             'data' => [
+                'auth_status' => 'connected',
                 'token' => $result['raw_token'],
                 'base_url' => $this->resolveApiUrl(),
                 'user' => [
@@ -129,6 +141,21 @@ class MobileAuthApiController extends BaseController
         }
 
         return $companies[0] ?? null;
+    }
+
+    private function companyOptions(array $companies): array
+    {
+        $rows = [];
+
+        foreach ($companies as $company) {
+            $rows[] = [
+                'id' => (int) ($company['id'] ?? 0),
+                'name' => $this->companyName($company),
+                'is_default' => (int) ($company['is_default'] ?? 0) === 1,
+            ];
+        }
+
+        return array_values(array_filter($rows, static fn (array $row) => $row['id'] > 0));
     }
 
     private function companyName(array $company): string

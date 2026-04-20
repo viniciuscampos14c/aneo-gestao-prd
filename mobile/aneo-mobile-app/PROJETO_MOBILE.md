@@ -40,6 +40,13 @@ Etapa 4 entregue:
 - Token gerado automaticamente no ERP, com permissoes de `students`, `invoices` e `tickets`.
 - Token salvo localmente no app para manter conexao entre acessos.
 
+Etapa 5 entregue:
+
+- Selecao de empresa no login mobile para usuarios com multiplos CNPJs.
+- Fluxo em duas etapas no endpoint `mobile-auth`:
+  - retorna lista de empresas quando necessario (`auth_status=company_required`);
+  - finaliza autenticacao ao receber `company_id`.
+
 ## Estrutura principal
 
 ```txt
@@ -77,7 +84,6 @@ Publicar o conteudo de `dist/` em `public_html/mobile/` no servidor.
 
 ## Proximas etapas
 
-1. Permitir selecao de empresa no login quando houver mais de um CNPJ vinculado.
-2. Criar endpoint dedicado de negociacao/aditivo no backend.
-3. Fluxo real de geracao de aditivo PDF + assinatura.
-4. Publicacao nativa Android (Play Store) e iOS (App Store).
+1. Criar endpoint dedicado de negociacao/aditivo no backend.
+2. Fluxo real de geracao de aditivo PDF + assinatura.
+3. Publicacao nativa Android (Play Store) e iOS (App Store).
