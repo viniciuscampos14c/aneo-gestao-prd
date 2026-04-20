@@ -367,6 +367,7 @@ class StudentController extends BaseController
             'admin_info' => trim((string) post('admin_info')),
             'ra' => trim((string) post('ra')),
             'birth_date' => trim((string) post('birth_date')),
+            'enrolled_at' => trim((string) post('enrolled_at')),
             'rg' => trim((string) post('rg')),
             'cro' => trim((string) post('cro')),
             'notes' => trim((string) post('notes')),
