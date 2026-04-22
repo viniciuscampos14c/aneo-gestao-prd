@@ -45,6 +45,10 @@ $cadastroMenu = [
     ['module' => 'companies', 'label' => 'SMTP Email', 'route' => 'companies/smtp'],
 ];
 
+if (class_exists('BanksController')) {
+    $cadastroMenu[] = ['module' => 'companies', 'label' => 'Bancos', 'route' => 'banks'];
+}
+
 if (($user['role'] ?? '') === 'admin') {
     $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Logs de Sistema', 'route' => 'system/logs'];
     $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Cron Jobs',       'route' => 'cron'];

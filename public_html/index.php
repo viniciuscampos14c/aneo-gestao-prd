@@ -31,6 +31,7 @@ $adminAi = new AdminAiController();
 $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
 $arsenal = new ArsenalController();
+$banks = class_exists('BanksController') ? new BanksController() : null;
 $apiMgmt = new ApiManagementController();
 $cron     = new CronController();
 $exchange    = new ExchangeController();
@@ -90,6 +91,17 @@ $router->post('companies/smtp/save', fn () => $companies->saveSmtp());
 $router->post('companies/smtp/test', fn () => $companies->testSmtp());
 $router->post('companies/license/activate', fn () => $license->activate());
 $router->get('system/logs', fn () => $systemLogs->index());
+
+if ($banks !== null) {
+    $router->get('banks', fn () => $banks->index());
+    $router->get('banks/itau', fn () => $banks->itauSettings());
+    $router->post('banks/itau/save', fn () => $banks->saveItauSettings());
+    $router->post('banks/itau/register-webhook', fn () => $banks->registerWebhook());
+}
+
+if (method_exists($finance, 'itauWebhook')) {
+    $router->post('finance/webhook/itau', fn () => $finance->itauWebhook());
+}
 
 $router->get('ai-chat', fn () => $adminAi->index());
 $router->post('ai-chat/session', fn () => $adminAi->createSession());
