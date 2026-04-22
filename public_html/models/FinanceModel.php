@@ -1189,7 +1189,6 @@ class FinanceModel extends BaseModel
         )'];
         $params = [
             ':filter_company_id' => $this->companyId(),
-            ':join_company_id' => $this->companyId(),
         ];
 
         if (!empty($filters['q'])) {
@@ -1204,7 +1203,7 @@ class FinanceModel extends BaseModel
         $dataSql = "SELECT p.*, COUNT(i.id) AS invoices_qty
             FROM payments p
             LEFT JOIN payment_items pi ON pi.payment_id = p.id
-            LEFT JOIN invoices i ON i.id = pi.invoice_id AND i.company_id = :join_company_id
+            LEFT JOIN invoices i ON i.id = pi.invoice_id AND i.company_id = :filter_company_id
             WHERE {$whereSql}
             GROUP BY p.id
             ORDER BY p.id DESC";
