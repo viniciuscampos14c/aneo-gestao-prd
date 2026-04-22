@@ -2,6 +2,10 @@
     const sidebar = document.getElementById('sidebar');
     const openBtn = document.querySelector('[data-sidebar-open]');
     const closeBtn = document.querySelector('[data-sidebar-close]');
+    const adminThemeToggle = document.querySelector('[data-admin-theme-toggle]');
+    const adminThemeIconDark = document.querySelector('[data-theme-icon-dark]');
+    const adminThemeIconLight = document.querySelector('[data-theme-icon-light]');
+    const adminThemeKey = 'aneo_admin_theme';
 
     if (openBtn && sidebar) {
         openBtn.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
@@ -9,6 +13,95 @@
     if (closeBtn && sidebar) {
         closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
     }
+
+    const applyAdminTheme = (theme) => {
+        const isLight = theme === 'light';
+        document.documentElement.classList.toggle('admin-theme-light', isLight);
+
+        if (adminThemeIconDark) {
+            adminThemeIconDark.classList.toggle('hidden', isLight);
+        }
+
+        if (adminThemeIconLight) {
+            adminThemeIconLight.classList.toggle('hidden', !isLight);
+        }
+
+        if (adminThemeToggle) {
+            const nextLabel = isLight ? 'Alternar para tema escuro' : 'Alternar para tema claro';
+            adminThemeToggle.setAttribute('aria-label', nextLabel);
+            adminThemeToggle.setAttribute('title', nextLabel);
+        }
+    };
+
+    let currentAdminTheme = 'dark';
+    try {
+        if (localStorage.getItem(adminThemeKey) === 'light') {
+            currentAdminTheme = 'light';
+        }
+    } catch (error) {
+        currentAdminTheme = document.documentElement.classList.contains('admin-theme-light') ? 'light' : 'dark';
+    }
+
+    applyAdminTheme(currentAdminTheme);
+
+    if (adminThemeToggle) {
+        adminThemeToggle.addEventListener('click', () => {
+            currentAdminTheme = currentAdminTheme === 'light' ? 'dark' : 'light';
+            applyAdminTheme(currentAdminTheme);
+
+            try {
+                localStorage.setItem(adminThemeKey, currentAdminTheme);
+            } catch (error) {
+                // Ignora localStorage indisponivel.
+            }
+        });
+    }
+
+    const positionFloatingPanel = (triggerEl, panelEl) => {
+        if (!triggerEl || !panelEl) return;
+
+        const triggerRect = triggerEl.getBoundingClientRect();
+        const panelRect = panelEl.getBoundingClientRect();
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const sidebarRect = sidebar ? sidebar.getBoundingClientRect() : null;
+        const desktopSidebarMode = Boolean(sidebarRect) && viewportWidth >= 1024;
+
+        let left = 12;
+        let top = 12;
+
+        if (desktopSidebarMode && sidebarRect) {
+            const sidebarWidth = Math.max(210, Math.round(sidebarRect.width - 24));
+            left = Math.round(sidebarRect.left + 12);
+            top = Math.round(triggerRect.bottom + 6);
+
+            if (top + panelRect.height > viewportHeight - 12) {
+                top = Math.max(12, Math.round(triggerRect.top - panelRect.height - 6));
+            }
+
+            panelEl.style.width = `${sidebarWidth}px`;
+        } else {
+            panelEl.style.width = '';
+            left = sidebarRect ? Math.round(sidebarRect.right + 10) : Math.round(triggerRect.right + 12);
+            if (left + panelRect.width > viewportWidth - 12) {
+                left = Math.max(12, Math.round(triggerRect.left - panelRect.width - 12));
+            }
+
+            top = Math.round(triggerRect.top);
+            if (top + panelRect.height > viewportHeight - 12) {
+                top = Math.max(12, viewportHeight - panelRect.height - 12);
+            }
+        }
+
+        if (top < 12) {
+            top = 12;
+        }
+
+        panelEl.style.position = 'fixed';
+        panelEl.style.zIndex = '240';
+        panelEl.style.left = `${left}px`;
+        panelEl.style.top = `${top}px`;
+    };
 
     const fabToggle = document.getElementById('fab-toggle');
     const fabMenu = document.getElementById('fab-menu');
@@ -53,23 +146,7 @@
         const isOpen = () => !cadastroPanel.classList.contains('hidden');
 
         const positionPanel = () => {
-            const triggerRect = cadastroTrigger.getBoundingClientRect();
-            const panelRect = cadastroPanel.getBoundingClientRect();
-            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-
-            let left = Math.round(triggerRect.right + 12);
-            if (left + panelRect.width > viewportWidth - 12) {
-                left = Math.max(12, Math.round(triggerRect.left - panelRect.width - 12));
-            }
-
-            let top = Math.round(triggerRect.top);
-            if (top + panelRect.height > viewportHeight - 12) {
-                top = Math.max(12, viewportHeight - panelRect.height - 12);
-            }
-
-            cadastroPanel.style.left = `${left}px`;
-            cadastroPanel.style.top = `${top}px`;
+            positionFloatingPanel(cadastroTrigger, cadastroPanel);
         };
 
         const openPanel = () => {
@@ -153,16 +230,7 @@
         };
         const apiIsOpen = () => !apiPanel.classList.contains('hidden');
         const apiPosition = () => {
-            const tr = apiTrigger.getBoundingClientRect();
-            const pr = apiPanel.getBoundingClientRect();
-            const vw = window.innerWidth || document.documentElement.clientWidth;
-            const vh = window.innerHeight || document.documentElement.clientHeight;
-            let left = Math.round(tr.right + 12);
-            if (left + pr.width > vw - 12) { left = Math.max(12, Math.round(tr.left - pr.width - 12)); }
-            let top = Math.round(tr.top);
-            if (top + pr.height > vh - 12) { top = Math.max(12, vh - pr.height - 12); }
-            apiPanel.style.left = `${left}px`;
-            apiPanel.style.top  = `${top}px`;
+            positionFloatingPanel(apiTrigger, apiPanel);
         };
         const apiOpen  = () => { apiClearTimer(); apiPanel.classList.remove('hidden'); apiPosition(); apiSetExpanded(true); };
         const apiClose = () => { apiClearTimer(); apiPanel.classList.add('hidden'); apiSetExpanded(false); };
@@ -269,3 +337,4 @@
         });
     });
 })();
+

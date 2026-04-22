@@ -9,203 +9,223 @@ $monthlySeries = $bi['monthly_series'] ?? [];
 $coursesPerformance = $bi['courses_performance'] ?? [];
 $dueTodayAlerts = $metrics['due_today_alerts'] ?? [];
 $dueTodayCount = (int) ($metrics['due_today_count'] ?? 0);
+$leadPipeline = $metrics['lead_pipeline'] ?? [];
+$kanbanRows = $metrics['kanban'] ?? [];
 
 $maxMonthlyValue = 1.0;
 foreach ($monthlySeries as $row) {
     $maxMonthlyValue = max($maxMonthlyValue, (float) ($row['invoiced'] ?? 0), (float) ($row['received'] ?? 0));
 }
+
+$maxPipelineQty = 1;
+foreach ($leadPipeline as $row) {
+    $maxPipelineQty = max($maxPipelineQty, (int) ($row['qty'] ?? 0));
+}
 ?>
-<section class="space-y-6">
-    <div>
-        <h2 class="text-2xl font-semibold">Visao Geral</h2>
-        <p class="text-sm text-slate-500">Resumo operacional, comercial e financeiro.</p>
-    </div>
 
-    <?php if ($dueTodayCount > 0): ?>
-        <div id="due-today-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/55 p-4">
-            <div class="w-full max-w-2xl rounded-xl border border-rose-200 bg-white shadow-xl">
-                <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                    <div>
-                        <h3 class="text-lg font-semibold text-rose-700">Alertas de vencimento de hoje</h3>
-                        <p class="text-xs text-slate-500"><?= (int) $dueTodayCount; ?> fatura(s) vence(m) hoje.</p>
-                    </div>
-                    <button type="button" data-due-modal-close class="rounded-lg border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50">Fechar</button>
-                </div>
-                <div class="max-h-[60vh] overflow-y-auto p-4">
-                    <div class="space-y-2">
-                        <?php foreach ($dueTodayAlerts as $alert): ?>
-                            <article class="rounded-lg border border-rose-100 bg-rose-50/40 px-3 py-2 text-sm">
-                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['invoice_number'] ?? 'Fatura')); ?> - <?= e((string) ($alert['student_name'] ?? 'Aluno')); ?></p>
-                                <p class="text-xs text-slate-600">Vencimento: <?= e(date('d/m/Y', strtotime((string) ($alert['due_date'] ?? '')))); ?> | Em aberto: <?= e(format_currency((float) ($alert['outstanding_amount'] ?? 0))); ?></p>
-                            </article>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <div class="border-t border-slate-200 px-4 py-3 text-right">
-                    <button type="button" data-due-modal-close class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">Entendi</button>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Total de Alunos</p>
-            <p class="mt-2 text-3xl font-semibold"><?= (int) $metrics['students_total']; ?></p>
-            <p class="mt-1 text-xs text-slate-500">Ativos: <?= (int) $metrics['students_active']; ?> | Inativos: <?= (int) $metrics['students_inactive']; ?></p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Leads</p>
-            <p class="mt-2 text-3xl font-semibold"><?= (int) $metrics['leads_total']; ?></p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Faturas em aberto</p>
-            <p class="mt-2 text-3xl font-semibold"><?= (int) $metrics['invoices_open']; ?></p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Receber</p>
-            <p class="mt-2 text-3xl font-semibold"><?= e(format_currency($metrics['receivable'])); ?></p>
-            <p class="mt-1 text-xs text-slate-500">Faturas pagas: <?= (int) $metrics['invoices_paid']; ?></p>
-        </article>
-    </div>
-
-    <section class="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-cyan-50 p-4 shadow-sm">
-        <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900">BI Gerencial</h3>
-                <p class="text-sm text-slate-600">Indicadores executivos para decisao rapida no perfil administrativo.</p>
-            </div>
-            <?php if (has_permission('finance')): ?>
-                <a href="<?= route('finance/reports'); ?>" class="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-50">Abrir Relatorios Financeiros</a>
-            <?php endif; ?>
+<section class="dashboard-preview-shell">
+    <div class="dashboard-preview-content space-y-6">
+        <div>
+            <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Painel executivo</p>
+            <h2 class="dashboard-preview-title mt-2 text-4xl font-semibold">Visao Geral</h2>
+            <p class="dashboard-preview-subtitle mt-2 text-sm">Resumo operacional, comercial e financeiro.</p>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-            <article class="rounded-lg border border-white/70 bg-white/80 p-3">
-                <p class="text-xs uppercase text-slate-500">Conversao Leads</p>
-                <p class="mt-1 text-2xl font-semibold text-indigo-700"><?= e(number_format((float) ($biOverview['leads_conversion_rate'] ?? 0), 2, ',', '.')); ?>%</p>
-                <p class="text-xs text-slate-500"><?= (int) ($biOverview['leads_converted'] ?? 0); ?> de <?= (int) ($biOverview['leads_total'] ?? 0); ?> leads</p>
-            </article>
-            <article class="rounded-lg border border-white/70 bg-white/80 p-3">
-                <p class="text-xs uppercase text-slate-500">Recebido 30 dias</p>
-                <p class="mt-1 text-2xl font-semibold text-emerald-700"><?= e(format_currency((float) ($biOverview['revenue_received_30d'] ?? 0))); ?></p>
-            </article>
-            <article class="rounded-lg border border-white/70 bg-white/80 p-3">
-                <p class="text-xs uppercase text-slate-500">Previsto 30 dias</p>
-                <p class="mt-1 text-2xl font-semibold text-cyan-700"><?= e(format_currency((float) ($biOverview['revenue_forecast_30d'] ?? 0))); ?></p>
-            </article>
-            <article class="rounded-lg border border-white/70 bg-white/80 p-3">
-                <p class="text-xs uppercase text-slate-500">Inadimplencia</p>
-                <p class="mt-1 text-2xl font-semibold text-rose-700"><?= e(number_format((float) ($biOverview['delinquency_rate'] ?? 0), 2, ',', '.')); ?>%</p>
-                <p class="text-xs text-slate-500">Vencido: <?= e(format_currency((float) ($biOverview['overdue_amount'] ?? 0))); ?></p>
-            </article>
-            <article class="rounded-lg border border-white/70 bg-white/80 p-3">
-                <p class="text-xs uppercase text-slate-500">Progresso Medio</p>
-                <p class="mt-1 text-2xl font-semibold text-slate-900"><?= e(number_format((float) ($biOverview['enrollments_avg_progress'] ?? 0), 1, ',', '.')); ?>%</p>
-                <p class="text-xs text-slate-500">Matriculas</p>
-            </article>
-            <article class="rounded-lg border border-white/70 bg-white/80 p-3">
-                <p class="text-xs uppercase text-slate-500">Aprovacao Provas</p>
-                <p class="mt-1 text-2xl font-semibold text-amber-700"><?= e(number_format((float) ($biOverview['exam_approval_rate'] ?? 0), 2, ',', '.')); ?>%</p>
-                <p class="text-xs text-slate-500">Resultados: <?= (int) ($biOverview['exam_results_total'] ?? 0); ?></p>
-            </article>
-        </div>
-
-        <div class="mt-5 grid gap-4 xl:grid-cols-2">
-            <section class="rounded-lg border border-slate-200 bg-white p-4">
-                <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">Faturado x Recebido (ultimos 6 meses)</h4>
-                <div class="space-y-3">
-                    <?php foreach ($monthlySeries as $month): ?>
-                        <?php
-                        $invoiced = (float) ($month['invoiced'] ?? 0);
-                        $received = (float) ($month['received'] ?? 0);
-                        $invoicedWidth = min(100, ($invoiced / $maxMonthlyValue) * 100);
-                        $receivedWidth = min(100, ($received / $maxMonthlyValue) * 100);
-                        ?>
+        <?php if ($dueTodayCount > 0): ?>
+            <div id="due-today-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/65 p-4">
+                <div class="w-full max-w-2xl rounded-2xl border border-rose-300/35 bg-slate-900/95 shadow-2xl">
+                    <div class="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                         <div>
-                            <div class="mb-1 flex items-center justify-between text-xs text-slate-600">
-                                <span><?= e((string) ($month['label'] ?? '')); ?></span>
-                                <span>F: <?= e(format_currency($invoiced)); ?> | R: <?= e(format_currency($received)); ?></span>
+                            <h3 class="text-lg font-semibold text-rose-300">Alertas de vencimento de hoje</h3>
+                            <p class="text-xs text-slate-300"><?= (int) $dueTodayCount; ?> fatura(s) vence(m) hoje.</p>
+                        </div>
+                        <button type="button" data-due-modal-close class="rounded-lg border border-slate-600 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800">Fechar</button>
+                    </div>
+                    <div class="max-h-[60vh] overflow-y-auto p-4">
+                        <div class="space-y-2">
+                            <?php foreach ($dueTodayAlerts as $alert): ?>
+                                <article class="rounded-lg border border-rose-400/25 bg-rose-900/15 px-3 py-2 text-sm">
+                                    <p class="font-semibold text-slate-100"><?= e((string) ($alert['invoice_number'] ?? 'Fatura')); ?> - <?= e((string) ($alert['student_name'] ?? 'Aluno')); ?></p>
+                                    <p class="text-xs text-slate-300">Vencimento: <?= e(date('d/m/Y', strtotime((string) ($alert['due_date'] ?? '')))); ?> | Em aberto: <?= e(format_currency((float) ($alert['outstanding_amount'] ?? 0))); ?></p>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-700 px-4 py-3 text-right">
+                        <button type="button" data-due-modal-close class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">Entendi</button>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="dashboard-preview-kpi p-4">
+                <p class="dashboard-preview-kpi-title text-xs uppercase tracking-[0.18em]">Total de Alunos</p>
+                <p class="dashboard-preview-kpi-value mt-2 text-4xl font-semibold"><?= (int) ($metrics['students_total'] ?? 0); ?></p>
+                <p class="dashboard-preview-subtitle mt-1 text-xs">Ativos: <?= (int) ($metrics['students_active'] ?? 0); ?> | Inativos: <?= (int) ($metrics['students_inactive'] ?? 0); ?></p>
+            </article>
+            <article class="dashboard-preview-kpi p-4">
+                <p class="dashboard-preview-kpi-title text-xs uppercase tracking-[0.18em]">Leads</p>
+                <p class="dashboard-preview-kpi-value mt-2 text-4xl font-semibold"><?= (int) ($metrics['leads_total'] ?? 0); ?></p>
+            </article>
+            <article class="dashboard-preview-kpi p-4">
+                <p class="dashboard-preview-kpi-title text-xs uppercase tracking-[0.18em]">Faturas em aberto</p>
+                <p class="dashboard-preview-kpi-value mt-2 text-4xl font-semibold"><?= (int) ($metrics['invoices_open'] ?? 0); ?></p>
+            </article>
+            <article class="dashboard-preview-kpi p-4">
+                <p class="dashboard-preview-kpi-title text-xs uppercase tracking-[0.18em]">Receber</p>
+                <p class="dashboard-preview-kpi-value mt-2 text-4xl font-semibold"><?= e(format_currency((float) ($metrics['receivable'] ?? 0))); ?></p>
+                <p class="dashboard-preview-subtitle mt-1 text-xs">Faturas pagas: <?= (int) ($metrics['invoices_paid'] ?? 0); ?></p>
+            </article>
+        </div>
+
+        <section class="dashboard-preview-bi p-4">
+            <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100">BI Gerencial</h3>
+                    <p class="dashboard-preview-bi-muted text-sm">Indicadores executivos para decisao rapida no perfil administrativo.</p>
+                </div>
+                <?php if (has_permission('finance')): ?>
+                    <a href="<?= route('finance/reports'); ?>" class="dashboard-preview-btn-link rounded-lg px-3 py-2 text-sm transition">Abrir Relatorios Financeiros</a>
+                <?php endif; ?>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                <article class="dashboard-preview-bi-card p-3">
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Conversao Leads</p>
+                    <p class="mt-1 text-2xl font-semibold text-indigo-300"><?= e(number_format((float) ($biOverview['leads_conversion_rate'] ?? 0), 2, ',', '.')); ?>%</p>
+                    <p class="dashboard-preview-bi-muted text-xs"><?= (int) ($biOverview['leads_converted'] ?? 0); ?> de <?= (int) ($biOverview['leads_total'] ?? 0); ?> leads</p>
+                </article>
+                <article class="dashboard-preview-bi-card p-3">
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Recebido 30 dias</p>
+                    <p class="mt-1 text-2xl font-semibold text-emerald-300"><?= e(format_currency((float) ($biOverview['revenue_received_30d'] ?? 0))); ?></p>
+                </article>
+                <article class="dashboard-preview-bi-card p-3">
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Previsto 30 dias</p>
+                    <p class="mt-1 text-2xl font-semibold text-cyan-300"><?= e(format_currency((float) ($biOverview['revenue_forecast_30d'] ?? 0))); ?></p>
+                </article>
+                <article class="dashboard-preview-bi-card p-3">
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Inadimplencia</p>
+                    <p class="mt-1 text-2xl font-semibold text-rose-300"><?= e(number_format((float) ($biOverview['delinquency_rate'] ?? 0), 2, ',', '.')); ?>%</p>
+                    <p class="dashboard-preview-bi-muted text-xs">Vencido: <?= e(format_currency((float) ($biOverview['overdue_amount'] ?? 0))); ?></p>
+                </article>
+                <article class="dashboard-preview-bi-card p-3">
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Progresso Medio</p>
+                    <p class="mt-1 text-2xl font-semibold text-slate-100"><?= e(number_format((float) ($biOverview['enrollments_avg_progress'] ?? 0), 1, ',', '.')); ?>%</p>
+                    <p class="dashboard-preview-bi-muted text-xs">Matriculas</p>
+                </article>
+                <article class="dashboard-preview-bi-card p-3">
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Aprovacao Provas</p>
+                    <p class="mt-1 text-2xl font-semibold text-amber-300"><?= e(number_format((float) ($biOverview['exam_approval_rate'] ?? 0), 2, ',', '.')); ?>%</p>
+                    <p class="dashboard-preview-bi-muted text-xs">Resultados: <?= (int) ($biOverview['exam_results_total'] ?? 0); ?></p>
+                </article>
+            </div>
+
+            <div class="mt-5 grid gap-4 xl:grid-cols-2">
+                <section class="dashboard-preview-section p-4">
+                    <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-200">Faturado x Recebido (ultimos 6 meses)</h4>
+                    <div class="space-y-3">
+                        <?php foreach ($monthlySeries as $month): ?>
+                            <?php
+                            $invoiced = (float) ($month['invoiced'] ?? 0);
+                            $received = (float) ($month['received'] ?? 0);
+                            $invoicedWidth = min(100, ($invoiced / $maxMonthlyValue) * 100);
+                            $receivedWidth = min(100, ($received / $maxMonthlyValue) * 100);
+                            ?>
+                            <div>
+                                <div class="mb-1 flex items-center justify-between text-xs text-slate-300">
+                                    <span><?= e((string) ($month['label'] ?? '')); ?></span>
+                                    <span>F: <?= e(format_currency($invoiced)); ?> | R: <?= e(format_currency($received)); ?></span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="dashboard-preview-track h-2 rounded-full">
+                                        <div class="h-2 rounded-full bg-indigo-400" style="width: <?= $invoicedWidth; ?>%"></div>
+                                    </div>
+                                    <div class="dashboard-preview-track h-2 rounded-full">
+                                        <div class="h-2 rounded-full bg-emerald-400" style="width: <?= $receivedWidth; ?>%"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="space-y-1">
-                                <div class="h-2 rounded-full bg-slate-100">
-                                    <div class="h-2 rounded-full bg-indigo-500" style="width: <?= $invoicedWidth; ?>%"></div>
-                                </div>
-                                <div class="h-2 rounded-full bg-slate-100">
-                                    <div class="h-2 rounded-full bg-emerald-500" style="width: <?= $receivedWidth; ?>%"></div>
-                                </div>
+                        <?php endforeach; ?>
+                        <?php if ($monthlySeries === []): ?>
+                            <p class="dashboard-preview-bi-muted text-sm">Sem dados mensais suficientes para exibir a serie.</p>
+                        <?php endif; ?>
+                    </div>
+                </section>
+
+                <section class="dashboard-preview-section p-4">
+                    <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-200">Desempenho por Curso</h4>
+                    <div class="overflow-x-auto">
+                        <table class="dashboard-preview-table min-w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-xs uppercase tracking-wide">
+                                    <th class="px-2 py-2">Curso</th>
+                                    <th class="px-2 py-2">Matriculas</th>
+                                    <th class="px-2 py-2">Progresso medio</th>
+                                    <th class="px-2 py-2">Aprovacao</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($coursesPerformance as $course): ?>
+                                    <tr class="dashboard-preview-table-row">
+                                        <td class="px-2 py-2 font-medium"><?= e((string) ($course['name'] ?? '')); ?></td>
+                                        <td class="px-2 py-2"><?= (int) ($course['enrollments_total'] ?? 0); ?></td>
+                                        <td class="px-2 py-2"><?= e(number_format((float) ($course['avg_progress'] ?? 0), 1, ',', '.')); ?>%</td>
+                                        <td class="px-2 py-2"><?= e(number_format((float) ($course['exam_approval_rate'] ?? 0), 1, ',', '.')); ?>%</td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <?php if ($coursesPerformance === []): ?>
+                                    <tr class="dashboard-preview-table-row">
+                                        <td colspan="4" class="px-2 py-4 text-center text-slate-400">Sem dados de cursos para BI.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            <section class="dashboard-preview-section p-4">
+                <h3 class="mb-4 text-lg font-semibold text-slate-100">Pipeline de Leads</h3>
+                <div class="space-y-3">
+                    <?php foreach ($leadPipeline as $row): ?>
+                        <?php $width = min(100, ((int) ($row['qty'] ?? 0) / $maxPipelineQty) * 100); ?>
+                        <div>
+                            <div class="mb-1 flex items-center justify-between text-sm text-slate-200">
+                                <span><?= e((string) ($row['name'] ?? '')); ?></span>
+                                <span class="font-semibold"><?= (int) ($row['qty'] ?? 0); ?></span>
+                            </div>
+                            <div class="dashboard-preview-track h-2 rounded-full">
+                                <div class="h-full rounded-full" style="background-color: <?= e((string) (($row['color'] ?? '') ?: '#38bdf8')); ?>; width: <?= $width; ?>%"></div>
                             </div>
                         </div>
                     <?php endforeach; ?>
-                    <?php if ($monthlySeries === []): ?>
-                        <p class="text-sm text-slate-500">Sem dados mensais suficientes para exibir a serie.</p>
+                    <?php if ($leadPipeline === []): ?>
+                        <p class="dashboard-preview-bi-muted text-sm">Sem dados de pipeline.</p>
                     <?php endif; ?>
                 </div>
             </section>
 
-            <section class="rounded-lg border border-slate-200 bg-white p-4">
-                <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">Desempenho por Curso</h4>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                                <th class="px-2 py-2">Curso</th>
-                                <th class="px-2 py-2">Matriculas</th>
-                                <th class="px-2 py-2">Progresso medio</th>
-                                <th class="px-2 py-2">Aprovacao</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($coursesPerformance as $course): ?>
-                                <tr class="border-b border-slate-100 hover:bg-slate-50">
-                                    <td class="px-2 py-2 font-medium"><?= e((string) ($course['name'] ?? '')); ?></td>
-                                    <td class="px-2 py-2"><?= (int) ($course['enrollments_total'] ?? 0); ?></td>
-                                    <td class="px-2 py-2"><?= e(number_format((float) ($course['avg_progress'] ?? 0), 1, ',', '.')); ?>%</td>
-                                    <td class="px-2 py-2"><?= e(number_format((float) ($course['exam_approval_rate'] ?? 0), 1, ',', '.')); ?>%</td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <?php if ($coursesPerformance === []): ?>
-                                <tr><td colspan="4" class="px-2 py-4 text-center text-slate-500">Sem dados de cursos para BI.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+            <section class="dashboard-preview-section p-4">
+                <h3 class="mb-4 text-lg font-semibold text-slate-100">Kanban Financeiro de Alunos</h3>
+                <div class="space-y-3">
+                    <?php foreach ($kanbanRows as $row): ?>
+                        <div class="flex items-center justify-between rounded-lg border border-slate-600/35 bg-slate-900/32 px-3 py-2">
+                            <div class="flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full" style="background-color: <?= e((string) (($row['color'] ?? '') ?: '#14b8a6')); ?>"></span>
+                                <span class="text-sm text-slate-200"><?= e((string) ($row['name'] ?? '')); ?></span>
+                            </div>
+                            <span class="text-sm font-semibold text-slate-100"><?= (int) ($row['qty'] ?? 0); ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php if ($kanbanRows === []): ?>
+                        <p class="dashboard-preview-bi-muted text-sm">Sem dados de kanban.</p>
+                    <?php endif; ?>
                 </div>
             </section>
         </div>
-    </section>
-
-    <div class="grid gap-6 xl:grid-cols-2">
-        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 class="mb-4 text-lg font-semibold">Pipeline de Leads</h3>
-            <div class="space-y-3">
-                <?php foreach ($metrics['lead_pipeline'] as $row): ?>
-                    <div>
-                        <div class="mb-1 flex items-center justify-between text-sm">
-                            <span><?= e($row['name']); ?></span>
-                            <span class="font-semibold"><?= (int) $row['qty']; ?></span>
-                        </div>
-                        <div class="h-2 rounded-full bg-slate-100">
-                            <div class="h-full rounded-full" style="background-color: <?= e($row['color'] ?: '#0ea5e9'); ?>; width: <?= min(100, (int) $row['qty'] * 8); ?>%"></div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </section>
-
-        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 class="mb-4 text-lg font-semibold">Kanban Financeiro de Alunos</h3>
-            <div class="space-y-3">
-                <?php foreach ($metrics['kanban'] as $row): ?>
-                    <div class="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
-                        <div class="flex items-center gap-2">
-                            <span class="h-2.5 w-2.5 rounded-full" style="background-color: <?= e($row['color'] ?: '#14b8a6'); ?>"></span>
-                            <span class="text-sm"><?= e($row['name']); ?></span>
-                        </div>
-                        <span class="text-sm font-semibold"><?= (int) $row['qty']; ?></span>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </section>
     </div>
 </section>
 

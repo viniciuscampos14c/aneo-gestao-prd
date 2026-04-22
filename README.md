@@ -247,6 +247,34 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    ```
    O token correto esta em `config.local.php` no servidor, chave `cron.secret_token`.
 
+### 1.14) Atualizacao complementar em 22/04/2026
+
+1. **Reestilizacao moderna no administrativo (Plano A):**
+   - novo visual escuro como padrao no layout administrativo
+   - modo claro com alternancia por botao no header
+   - persistencia de preferencia em `localStorage` com a chave `aneo_admin_theme`
+   - cache-busting de CSS via `filemtime` em `views/layouts/app.php`
+2. **Ajustes de layout e navegacao:**
+   - correcao de espaco lateral indevido no conteudo principal
+   - correcao de faixa clara no topo/fundo com reset de `html, body`
+   - menus flutuantes de `Cadastro` e `API` reposicionados e sem clipping
+3. **Melhorias de contraste no modo claro (admin):**
+   - ajuste de textos `text-slate-*` para evitar baixa legibilidade
+   - refinamento visual do rodape da sidebar com cards de Empresa e Usuario
+4. **Replicacao dos dois modelos para Portais:**
+   - Portal do Aluno e Central Tecnica passaram a usar o mesmo padrao de alternancia claro/escuro
+   - persistencia compartilhada em `localStorage` com a chave `aneo_portal_theme`
+   - padrao inicial dos portais ajustado para modelo escuro (com opcao de claro)
+   - novos wrappers visuais: `portal-modern-shell`, `portal-modern-ambient`, `portal-modern-content`
+5. **Arquivos principais impactados:**
+   - `public_html/views/layouts/app.php`
+   - `public_html/views/layouts/student.php`
+   - `public_html/views/layouts/support_desk.php`
+   - `public_html/assets/css/app.css`
+   - `public_html/assets/js/app.js`
+   - `public_html/views/dashboard/index.php`
+   - `public_html/views/users/index.php`
+
 ## 2) Estrutura Real do Projeto
 
 ```txt

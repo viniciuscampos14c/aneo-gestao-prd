@@ -4,10 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e(($title ?? 'Sistema') . ' | ' . config('app.name')); ?></title>
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('aneo_admin_theme') === 'light') {
+                    document.documentElement.classList.add('admin-theme-light');
+                }
+            } catch (error) {
+                // Ignora bloqueio de localStorage e segue com tema padrao escuro.
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/app.css">
+    <link rel="stylesheet" href="assets/css/app.css?v=<?= e((string) (is_file(__DIR__ . '/../../assets/css/app.css') ? filemtime(__DIR__ . '/../../assets/css/app.css') : date('YmdHis'))); ?>">
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-800">
+<body class="min-h-screen bg-slate-100 text-slate-800 admin-modern-theme">
 <?php
 $currentRoute = parse_route();
 $user = current_user();
@@ -46,6 +57,14 @@ foreach ($cadastroMenu as $cadItem) {
     }
 }
 $showCadastro = $cadastroItemsVisible !== [];
+$isUsersPreviewRoute = str_starts_with($currentRoute, 'users');
+$isDashboardPreviewRoute = $currentRoute === 'dashboard';
+$previewMainClass = 'admin-modern-main';
+if ($isUsersPreviewRoute) {
+    $previewMainClass .= ' users-preview-main';
+} elseif ($isDashboardPreviewRoute) {
+    $previewMainClass .= ' dashboard-preview-main';
+}
 $appJsPath = __DIR__ . '/../../assets/js/app.js';
 $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('YmdHis');
 $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNegotiationAlerts) ? $mobileNegotiationAlerts : [];
@@ -53,8 +72,9 @@ $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mob
 $mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array_column($mobileNegotiationAlerts, 'id')), fn ($id) => $id > 0));
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 ?>
-<div class="flex min-h-screen">
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
+<div class="admin-modern-shell flex min-h-screen">
+    <div class="admin-modern-ambient" aria-hidden="true"></div>
+    <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 w-72 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
         <div class="flex h-16 items-center justify-between border-b border-slate-800 px-6">
             <div>
                 <p class="text-xs uppercase tracking-[0.2em] text-cyan-400">ANEO</p>
@@ -139,23 +159,26 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             </div>
         <?php endif; ?>
 
-        <div class="border-t border-slate-800 px-6 py-4">
+        <div class="admin-sidebar-footer border-t border-slate-800 px-6 py-4">
             <?php if ($company): ?>
                 <?php $companyName = trim((string) ($company['trade_name'] ?? '')) !== '' ? (string) $company['trade_name'] : (string) ($company['legal_name'] ?? 'Empresa'); ?>
-                <p class="text-xs uppercase tracking-[0.16em] text-cyan-400">Empresa</p>
-                <p class="text-sm font-semibold"><?= e($companyName); ?></p>
-                <p class="text-[11px] text-slate-400"><?= e((string) ($company['cnpj'] ?? '')); ?></p>
-                <a href="<?= route('select-company'); ?>" class="mt-1 inline-flex text-[11px] text-cyan-300 hover:text-cyan-200">Trocar empresa</a>
-                <div class="my-3 h-px bg-slate-800"></div>
+                <section class="admin-sidebar-company-card">
+                    <p class="admin-sidebar-kicker text-xs uppercase tracking-[0.16em] text-cyan-400">Empresa</p>
+                    <p class="admin-sidebar-company-name text-sm font-semibold"><?= e($companyName); ?></p>
+                    <p class="admin-sidebar-company-doc text-[11px] text-slate-400"><?= e((string) ($company['cnpj'] ?? '')); ?></p>
+                    <a href="<?= route('select-company'); ?>" class="admin-sidebar-company-switch mt-1 inline-flex text-[11px] text-cyan-300 hover:text-cyan-200">Trocar empresa</a>
+                </section>
             <?php endif; ?>
-            <p class="text-sm font-semibold"><?= e($user['name'] ?? ''); ?></p>
-            <p class="text-xs text-slate-400"><?= e(role_label($user['role'] ?? '')); ?></p>
-            <a href="<?= route('logout'); ?>" class="mt-2 inline-flex text-xs text-rose-300 hover:text-rose-200">Sair</a>
+            <section class="admin-sidebar-user-card">
+                <p class="admin-sidebar-user-name text-sm font-semibold"><?= e($user['name'] ?? ''); ?></p>
+                <p class="admin-sidebar-user-role text-xs text-slate-400"><?= e(role_label($user['role'] ?? '')); ?></p>
+                <a href="<?= route('logout'); ?>" class="admin-sidebar-logout mt-2 inline-flex text-xs text-rose-300 hover:text-rose-200">Sair</a>
+            </section>
         </div>
     </aside>
 
-    <div class="flex w-full flex-col lg:pl-72">
-        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div class="flex w-full flex-col">
+        <header class="admin-modern-header sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
             <div class="flex h-16 items-center gap-3 px-4 lg:px-8">
                 <button class="rounded-lg border border-slate-200 p-2 lg:hidden" data-sidebar-open>
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -176,13 +199,19 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                         <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $mobileNegotiationAlertCount); ?></span>
                     <?php endif; ?>
                 </button>
-                <button class="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Atalhos">
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6v12M6 12h12"/></svg>
+                <button type="button" data-admin-theme-toggle class="theme-toggle admin-theme-toggle" aria-label="Alternar tema claro e escuro" title="Alternar tema">
+                    <svg data-theme-icon-dark class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 1 0 21 12.79z"/>
+                    </svg>
+                    <svg data-theme-icon-light class="hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="4.5" stroke-width="1.8"></circle>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 2.7v2.2m0 14.2v2.2m9.3-9.3h-2.2M4.9 12H2.7m16.32 6.32-1.56-1.56M6.54 6.54 4.98 4.98m14.04 0-1.56 1.56M6.54 17.46l-1.56 1.56"/>
+                    </svg>
                 </button>
             </div>
         </header>
 
-        <main class="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main class="flex-1 px-4 py-6 lg:px-8 lg:py-8 <?= e($previewMainClass); ?>">
             <?php if ($msg = flash('success')): ?>
                 <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><?= e($msg); ?></div>
             <?php endif; ?>
