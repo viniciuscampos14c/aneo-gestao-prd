@@ -65,7 +65,7 @@ $queueLinks = [
             <p class="text-xs uppercase text-slate-500">Total</p>
             <p class="mt-2 text-2xl font-semibold"><?= (int) ($stats['total'] ?? 0); ?></p>
         </article>
-        <article class="rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+        <article class="requests-card-open rounded-xl border border-cyan-200 bg-cyan-50 p-4">
             <p class="text-xs uppercase text-cyan-700">Abertos</p>
             <p class="mt-2 text-2xl font-semibold text-cyan-700"><?= (int) ($stats['open'] ?? 0); ?></p>
         </article>
@@ -73,7 +73,7 @@ $queueLinks = [
             <p class="text-xs uppercase text-amber-700">Em andamento</p>
             <p class="mt-2 text-2xl font-semibold text-amber-700"><?= (int) ($stats['in_progress'] ?? 0); ?></p>
         </article>
-        <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <article class="requests-card-resolved rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <p class="text-xs uppercase text-emerald-700">Resolvidos</p>
             <p class="mt-2 text-2xl font-semibold text-emerald-700"><?= (int) ($stats['resolved'] ?? 0); ?></p>
         </article>
@@ -87,12 +87,12 @@ $queueLinks = [
     </div>
 
     <div class="grid gap-3 md:grid-cols-3">
-        <a href="<?= e($queueLinks['all']); ?>" class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 transition hover:border-indigo-300 hover:bg-indigo-100/50">
+        <a href="<?= e($queueLinks['all']); ?>" class="requests-card-mobile rounded-xl border border-indigo-200 bg-indigo-50 p-4 transition hover:border-indigo-300 hover:bg-indigo-100/50">
             <p class="text-xs uppercase tracking-wide text-indigo-700">Fila Mobile</p>
             <p class="mt-1 text-2xl font-semibold text-indigo-900"><?= (int) ($mobileQueue['pending_total'] ?? 0); ?></p>
             <p class="mt-1 text-xs text-indigo-700">Negociacoes pendentes vindas do app.</p>
         </a>
-        <a href="<?= e($queueLinks['aditivos']); ?>" class="rounded-xl border border-cyan-200 bg-cyan-50 p-4 transition hover:border-cyan-300 hover:bg-cyan-100/50">
+        <a href="<?= e($queueLinks['aditivos']); ?>" class="requests-card-additives rounded-xl border border-cyan-200 bg-cyan-50 p-4 transition hover:border-cyan-300 hover:bg-cyan-100/50">
             <p class="text-xs uppercase tracking-wide text-cyan-700">Aditivos Pendentes</p>
             <p class="mt-1 text-2xl font-semibold text-cyan-900"><?= (int) ($mobileQueue['pending_aditivos'] ?? 0); ?></p>
             <p class="mt-1 text-xs text-cyan-700">Fluxo rapido para aprovacao de aditivos.</p>

@@ -18,19 +18,19 @@ foreach ($companyOptions as $option) {
     break;
 }
 ?>
-<section class="space-y-6">
+<section class="companies-smtp-shell space-y-6">
     <div>
         <h2 class="text-2xl font-semibold">Cadastro SMTP</h2>
         <p class="text-sm text-slate-500">Configure o provedor de e-mail por empresa para envio de notificacoes do sistema.</p>
     </div>
 
     <?php if (!$integrationAvailable): ?>
-        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div class="companies-smtp-alert rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             A tabela <code>company_integrations</code> nao foi encontrada. Execute a migration <code>migrations/20260306_phase2_company_isolation_integrations.sql</code>.
         </div>
     <?php endif; ?>
 
-    <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[1fr_auto] md:items-end">
+    <form method="get" action="index.php" class="companies-smtp-selector grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[1fr_auto] md:items-end">
         <input type="hidden" name="route" value="companies/smtp">
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Empresa</span>
@@ -46,19 +46,19 @@ foreach ($companyOptions as $option) {
                 <?php endforeach; ?>
             </select>
         </label>
-        <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Carregar</button>
+        <button class="companies-smtp-load-btn rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Carregar</button>
     </form>
 
     <?php if ($companyOptions === []): ?>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
+        <div class="companies-smtp-empty rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
             Nenhuma empresa ativa foi encontrada para configurar SMTP.
         </div>
     <?php else: ?>
-        <form method="post" action="<?= route('companies/smtp/save'); ?>" class="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+        <form method="post" action="<?= route('companies/smtp/save'); ?>" class="companies-smtp-form space-y-4 rounded-xl border border-slate-200 bg-white p-5">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <input type="hidden" name="company_id" value="<?= $selectedCompanyId; ?>">
 
-            <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <div class="companies-smtp-selected rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 Empresa selecionada: <span class="font-semibold text-slate-700"><?= e($selectedCompanyName !== '' ? $selectedCompanyName : 'Nao informada'); ?></span>
             </div>
 
@@ -115,14 +115,14 @@ foreach ($companyOptions as $option) {
                 </label>
             </div>
 
-            <div class="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
+            <div class="companies-smtp-tip rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
                 Dica: para Gmail/Outlook corporativo use porta 587 com TLS. Se o provedor exigir autenticacao, preencha usuario e senha.
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" <?= $integrationAvailable ? '' : 'disabled'; ?>>Salvar configuracao SMTP</button>
-                <button type="submit" formaction="<?= route('companies/smtp/test'); ?>" formmethod="post" class="rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-100">Enviar e-mail de teste</button>
-                <a href="<?= route('companies'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Voltar para Empresas</a>
+                <button class="companies-smtp-save-btn rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" <?= $integrationAvailable ? '' : 'disabled'; ?>>Salvar configuracao SMTP</button>
+                <button type="submit" formaction="<?= route('companies/smtp/test'); ?>" formmethod="post" class="companies-smtp-test-btn rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-100">Enviar e-mail de teste</button>
+                <a href="<?= route('companies'); ?>" class="companies-smtp-back-btn rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Voltar para Empresas</a>
             </div>
         </form>
     <?php endif; ?>

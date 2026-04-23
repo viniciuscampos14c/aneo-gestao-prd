@@ -16,7 +16,7 @@
         })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/app.css?v=<?= e((string) (is_file(__DIR__ . '/../../assets/css/app.css') ? filemtime(__DIR__ . '/../../assets/css/app.css') : date('YmdHis'))); ?>">
+    <link rel="stylesheet" href="assets/css/app.css?v=<?= e((string) (is_file(__DIR__ . '/../../assets/css/app.css') ? filemtime(__DIR__ . '/../../assets/css/app.css') : date('YmdHis'))); ?>&build=20260423-arsenal">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-800 admin-modern-theme">
 <?php
@@ -26,7 +26,6 @@ $company = current_company();
 $menu = [
     ['module' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'dashboard'],
     ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
-    ['module' => 'kanban', 'label' => 'Kanban Cliente', 'icon' => 'view-columns', 'route' => 'kanban'],
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
     ['module' => 'finance', 'label' => 'Financeiro', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
@@ -72,6 +71,7 @@ if ($isUsersPreviewRoute) {
 }
 $appJsPath = __DIR__ . '/../../assets/js/app.js';
 $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('YmdHis');
+$logoBuild = '20260423-logos-r2';
 $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNegotiationAlerts) ? $mobileNegotiationAlerts : [];
 $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
 $mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array_column($mobileNegotiationAlerts, 'id')), fn ($id) => $id > 0));
@@ -188,8 +188,13 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 <button class="rounded-lg border border-slate-200 p-2 lg:hidden" data-sidebar-open>
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <a href="<?= route('dashboard'); ?>" class="hidden items-center rounded-lg border border-slate-800/20 bg-slate-900 px-2 py-1 shadow-sm md:flex">
-                    <img src="assets/img/logo_aneo.png" alt="Logo ANEO" class="h-10 w-auto rounded">
+                <a href="<?= route('dashboard'); ?>" class="hidden items-center md:flex" title="Ir para Home">
+                    <span class="aneo-theme-logo-frame aneo-logo-scope-admin">
+                        <img src="assets/img/aneo_escura_administrativo_desktop_46px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo escuro desktop" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
+                        <img src="assets/img/aneo_escura_administrativo_mobile_38px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo escuro mobile" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
+                        <img src="assets/img/aneo_clara_administrativo_desktop_46px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo claro desktop" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
+                        <img src="assets/img/aneo_clara_administrativo_mobile_38px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo claro mobile" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
+                    </span>
                 </a>
                 <form class="flex-1" action="<?= route('search'); ?>" method="get">
                     <input type="hidden" name="route" value="search">

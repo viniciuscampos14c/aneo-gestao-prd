@@ -28,44 +28,44 @@ $studentEmail   = trim((string) ($student['email_primary'] ?? $student['email'] 
 $studentUnit    = trim((string) ($student['company_name'] ?? ''));
 ?>
 
-<section class="max-w-2xl mx-auto space-y-8">
+<section class="student-reenroll-shell max-w-2xl mx-auto space-y-8">
 
     <!-- Cabeçalho -->
     <div class="text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-4">
+        <div class="student-reenroll-icon-wrap inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-4">
             <svg class="w-8 h-8 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
-        <h2 class="text-2xl font-bold text-slate-800">Chegou a hora da sua rematrícula!</h2>
-        <p class="mt-2 text-slate-500 text-sm">
+        <h2 class="student-reenroll-title text-2xl font-bold text-slate-800">Chegou a hora da sua rematrícula!</h2>
+        <p class="student-reenroll-subtitle mt-2 text-slate-500 text-sm">
             Confirme seus dados abaixo para renovar sua matrícula no período
             <strong><?= e($periodStartFmt); ?></strong> a <strong><?= e($periodEndFmt); ?></strong>.
         </p>
     </div>
 
     <!-- Dados do aluno -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
+    <div class="student-reenroll-card rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
         <div class="px-6 py-4">
             <h3 class="font-semibold text-slate-800">Seus dados</h3>
         </div>
-        <dl class="divide-y divide-slate-100">
-            <div class="grid grid-cols-3 px-6 py-3 text-sm">
+        <dl class="student-reenroll-dl divide-y divide-slate-100">
+            <div class="student-reenroll-row grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Nome completo</dt>
                 <dd class="col-span-2 text-slate-800 font-medium"><?= e($studentName ?: '—'); ?></dd>
             </div>
-            <div class="grid grid-cols-3 px-6 py-3 text-sm">
+            <div class="student-reenroll-row grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">E-mail</dt>
                 <dd class="col-span-2 text-slate-700"><?= e($studentEmail ?: '—'); ?></dd>
             </div>
             <?php if ($studentUnit !== ''): ?>
-            <div class="grid grid-cols-3 px-6 py-3 text-sm">
+            <div class="student-reenroll-row grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Unidade</dt>
                 <dd class="col-span-2 text-slate-700"><?= e($studentUnit); ?></dd>
             </div>
             <?php endif; ?>
-            <div class="grid grid-cols-3 px-6 py-3 text-sm">
+            <div class="student-reenroll-row grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Período</dt>
                 <dd class="col-span-2 text-slate-700">
                     <?= e($periodStartFmt); ?> até <?= e($periodEndFmt); ?>
@@ -76,7 +76,7 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
 
     <!-- Situação financeira -->
     <?php if ($canConfirm): ?>
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3">
+        <div class="student-reenroll-success rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3">
             <svg class="w-6 h-6 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -87,7 +87,7 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
         </div>
     <?php else: ?>
         <!-- Alerta de inadimplência -->
-        <div class="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 space-y-4">
+        <div class="student-reenroll-warning rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 space-y-4">
             <div class="flex items-start gap-3">
                 <svg class="w-6 h-6 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -102,9 +102,9 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
             </div>
 
             <!-- Tabela de faturas em aberto -->
-            <div class="overflow-x-auto rounded-lg border border-rose-200 bg-white">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-rose-50 text-xs uppercase tracking-wide text-rose-600 border-b border-rose-200">
+            <div class="student-reenroll-table-wrap overflow-x-auto rounded-lg border border-rose-200 bg-white">
+                <table class="student-reenroll-table min-w-full text-sm">
+                    <thead class="student-reenroll-table-head bg-rose-50 text-xs uppercase tracking-wide text-rose-600 border-b border-rose-200">
                         <tr>
                             <th class="px-4 py-2 text-left">Fatura</th>
                             <th class="px-4 py-2 text-left">Vencimento</th>
@@ -112,7 +112,7 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
                             <th class="px-4 py-2 text-center">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="student-reenroll-table-body divide-y divide-slate-100">
                         <?php foreach ($openInvoices as $inv): ?>
                             <?php
                             $st     = (string) ($inv['status'] ?? 'open');
@@ -136,7 +136,7 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
                                     <?= e($fmtMoney($remaining > 0 ? $remaining : $amount)); ?>
                                 </td>
                                 <td class="px-4 py-2 text-center">
-                                    <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $badge; ?>">
+                                    <span class="student-reenroll-status inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $badge; ?>">
                                         <?= e($slabel); ?>
                                     </span>
                                 </td>
@@ -147,7 +147,7 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
             </div>
 
             <!-- Mensagem para procurar o administrativo -->
-            <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div class="student-reenroll-help rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 <p class="font-semibold">O que fazer?</p>
                 <p class="mt-1">
                     Procure o administrativo da sua unidade e regularize sua situação financeira.
@@ -162,19 +162,19 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
         <form method="POST" action="<?= route('student/reenrollment/confirm'); ?>">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <button type="submit"
-                    class="w-full rounded-xl bg-emerald-600 px-6 py-3.5 text-base font-bold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
+                    class="student-reenroll-btn-confirm w-full rounded-xl bg-emerald-600 px-6 py-3.5 text-base font-bold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
                 Confirmar Rematrícula
             </button>
-            <p class="mt-2 text-center text-xs text-slate-400">
+            <p class="student-reenroll-note mt-2 text-center text-xs text-slate-400">
                 Ao confirmar, você renova sua matrícula pelo próximo período de 6 meses.
             </p>
         </form>
     <?php else: ?>
         <button type="button" disabled
-                class="w-full rounded-xl bg-slate-200 px-6 py-3.5 text-base font-bold text-slate-400 cursor-not-allowed">
+                class="student-reenroll-btn-disabled w-full rounded-xl bg-slate-200 px-6 py-3.5 text-base font-bold text-slate-400 cursor-not-allowed">
             Confirmar Rematrícula
         </button>
-        <p class="mt-2 text-center text-xs text-slate-400">
+        <p class="student-reenroll-note mt-2 text-center text-xs text-slate-400">
             A confirmação ficará disponível após a regularização das faturas em aberto.
         </p>
     <?php endif; ?>

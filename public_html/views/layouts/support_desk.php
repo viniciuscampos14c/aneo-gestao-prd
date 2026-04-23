@@ -22,6 +22,7 @@
 <?php
 $supportAuth = $_SESSION['support_desk_auth'] ?? [];
 $supportUser = trim((string) ($supportAuth['name'] ?? '')) !== '' ? (string) ($supportAuth['name'] ?? '') : (string) ($supportAuth['username'] ?? '');
+$logoBuild = '20260423-logos-r2';
 ?>
 <div class="portal-modern-shell min-h-screen">
     <div class="portal-modern-ambient" aria-hidden="true"></div>
@@ -29,8 +30,13 @@ $supportUser = trim((string) ($supportAuth['name'] ?? '')) !== '' ? (string) ($s
         <header class="support-modern-header sticky top-0 z-30 border-b border-white/60 bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgba(15,23,42,0.08)]">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
                 <div class="flex items-center gap-3">
-                    <a href="support.php?route=support" class="flex items-center rounded-lg border border-slate-800/20 bg-slate-900 px-2 py-1 shadow-sm">
-                        <img src="assets/img/logo_aneo.png" alt="Logo ANEO" class="h-9 w-auto rounded">
+                    <a href="support.php?route=support" class="flex items-center" title="Ir para Home">
+                        <span class="aneo-theme-logo-frame aneo-logo-scope-support">
+                            <img src="assets/img/aneo_escura_painel_suporte_desktop_48px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte escuro desktop" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
+                            <img src="assets/img/aneo_escura_painel_suporte_mobile_40px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte escuro mobile" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
+                            <img src="assets/img/aneo_clara_painel_suporte_desktop_48px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte claro desktop" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
+                            <img src="assets/img/aneo_clara_painel_suporte_mobile_40px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte claro mobile" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
+                        </span>
                     </a>
                     <div>
                         <p class="text-xs uppercase tracking-[0.18em] text-cyan-600">Central Tecnica</p>

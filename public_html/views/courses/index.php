@@ -22,9 +22,9 @@ $canTrial = has_permission('courses.enrollment');
                 <a href="<?= route('courses/enrollments'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Matriculas</a>
             <?php endif; ?>
             <?php if ($canTrial): ?>
-                <a href="<?= route('courses/trial-access'); ?>" class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-100">Degustacao</a>
+                <a href="<?= route('courses/trial-access'); ?>" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Degustacao</a>
             <?php endif; ?>
-            <a href="<?= route('courses/calendar'); ?>" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-100">Agenda Academica</a>
+            <a href="<?= route('courses/calendar'); ?>" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Agenda Academica</a>
             <?php if ($canExam): ?>
                 <a href="<?= route('courses/exams'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Exames</a>
             <?php endif; ?>

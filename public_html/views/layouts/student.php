@@ -52,6 +52,7 @@ $menu = $isTrialAccess
         ['label' => 'Avaliacoes', 'route' => 'student/exams'],
         ['label' => 'Historico Academico', 'route' => 'student/academic-history'],
     ];
+$logoBuild = '20260423-logos-r2';
 ?>
 <div class="portal-modern-shell min-h-screen">
     <div class="portal-modern-ambient" aria-hidden="true"></div>
@@ -63,9 +64,14 @@ $menu = $isTrialAccess
                         <p class="text-xs uppercase tracking-[0.2em] text-sky-600">ANEO</p>
                         <h1 class="text-lg font-semibold text-slate-900">Portal do Aluno</h1>
                     </div>
-                    <div class="hidden rounded-lg border border-sky-100 bg-white p-1.5 shadow-sm sm:block">
-                        <img src="assets/img/logo_aneo.png" alt="Logo ANEO" class="h-10 w-auto rounded">
-                    </div>
+                    <a href="<?= route('student/dashboard'); ?>" class="hidden sm:block" title="Ir para Inicio">
+                        <span class="aneo-theme-logo-frame aneo-logo-scope-student">
+                            <img src="assets/img/aneo_escura_portal_aluno_desktop_48px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO portal aluno escuro desktop" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
+                            <img src="assets/img/aneo_escura_portal_aluno_mobile_40px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO portal aluno escuro mobile" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
+                            <img src="assets/img/aneo_clara_portal_aluno_desktop_48px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO portal aluno claro desktop" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
+                            <img src="assets/img/aneo_clara_portal_aluno_mobile_40px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO portal aluno claro mobile" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
+                        </span>
+                    </a>
                 </div>
                 <div class="flex items-center gap-3 text-right text-sm">
                     <button type="button" class="theme-toggle portal-theme-toggle" data-portal-theme-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema">

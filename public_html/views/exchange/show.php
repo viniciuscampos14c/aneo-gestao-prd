@@ -1,5 +1,5 @@
 <?php
-/** @var array $request dados completos da solicitação */
+/** @var array $request dados completos da solicitacao */
 
 $statusLabels = [
     'pending'  => 'Aguardando',
@@ -15,80 +15,75 @@ $statusBadge = [
     'rejected' => 'bg-rose-100 text-rose-700',
 ];
 
-$st     = (string) ($request['status'] ?? 'pending');
-$badge  = $statusBadge[$st]  ?? 'bg-slate-100 text-slate-600';
+$st = (string) ($request['status'] ?? 'pending');
+$badge = $statusBadge[$st] ?? 'bg-slate-100 text-slate-600';
 $slabel = $statusLabels[$st] ?? $st;
 
-$dm    = (string) ($request['desired_month'] ?? '');
+$dm = (string) ($request['desired_month'] ?? '');
 $dmFmt = '';
 if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
-    $months = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-               'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    $months = ['', 'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     $dmFmt = ($months[(int) $m[2]] ?? $m[2]) . ' de ' . $m[1];
 }
 
 $createdAt = (string) ($request['created_at'] ?? '');
-$dateFmt   = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '—';
+$dateFmt = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '-';
 ?>
-<div class="space-y-6 max-w-2xl">
-
-    <!-- Cabeçalho -->
+<div class="exchange-show-shell space-y-6 max-w-2xl">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="<?= route('exchange'); ?>" class="text-sm text-sky-600 hover:underline">← Voltar às solicitações</a>
+            <a href="<?= route('exchange'); ?>" class="text-sm text-sky-600 hover:underline">&larr; Voltar as solicitacoes</a>
             <h2 class="mt-1 text-2xl font-semibold text-slate-800">
-                Solicitação #<?= (int) ($request['id'] ?? 0); ?>
+                Solicitacao #<?= (int) ($request['id'] ?? 0); ?>
             </h2>
         </div>
-        <span class="inline-block rounded-full px-4 py-1 text-sm font-semibold <?= $badge; ?>">
+        <span class="exchange-status-pill inline-block rounded-full px-4 py-1 text-sm font-semibold <?= $badge; ?>">
             <?= e($slabel); ?>
         </span>
     </div>
 
-    <!-- Dados do aluno -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
+    <div class="exchange-panel rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
         <div class="px-6 py-4">
             <h3 class="font-semibold text-slate-800">Dados do Aluno</h3>
         </div>
         <dl class="divide-y divide-slate-100">
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Nome completo</dt>
-                <dd class="col-span-2 text-slate-800"><?= e($request['student_name'] ?? '—'); ?></dd>
+                <dd class="col-span-2 text-slate-800"><?= e((string) ($request['student_name'] ?? '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Login</dt>
-                <dd class="col-span-2 text-slate-600"><?= e($request['student_login'] ?? '—'); ?></dd>
+                <dd class="col-span-2 text-slate-600"><?= e((string) ($request['student_login'] ?? '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">E-mail</dt>
-                <dd class="col-span-2 text-slate-600"><?= e($request['student_email'] ?? '—'); ?></dd>
+                <dd class="col-span-2 text-slate-600"><?= e((string) ($request['student_email'] ?? '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Meses cursando</dt>
-                <dd class="col-span-2 text-slate-800 font-semibold">
-                    <?= (int) ($request['months_enrolled'] ?? 0); ?> mese(s)
+                <dd class="col-span-2 font-semibold text-slate-800">
+                    <?= (int) ($request['months_enrolled'] ?? 0); ?> mes(es)
                 </dd>
             </div>
         </dl>
     </div>
 
-    <!-- Dados do intercâmbio -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
+    <div class="exchange-panel rounded-xl border border-slate-200 bg-white shadow-sm divide-y divide-slate-100">
         <div class="px-6 py-4">
-            <h3 class="font-semibold text-slate-800">Intercâmbio Solicitado</h3>
+            <h3 class="font-semibold text-slate-800">Interc&acirc;mbio Solicitado</h3>
         </div>
         <dl class="divide-y divide-slate-100">
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Unidade atual</dt>
-                <dd class="col-span-2 text-slate-800"><?= e($request['current_unit'] ?? '—'); ?></dd>
+                <dd class="col-span-2 text-slate-800"><?= e((string) ($request['current_unit'] ?? '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Unidade destino</dt>
-                <dd class="col-span-2 font-semibold text-sky-700"><?= e($request['target_unit'] ?? '—'); ?></dd>
+                <dd class="col-span-2 font-semibold text-sky-700"><?= e((string) ($request['target_unit'] ?? '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
-                <dt class="font-medium text-slate-500">Mês desejado</dt>
-                <dd class="col-span-2 text-slate-800"><?= e($dmFmt ?: $dm ?: '—'); ?></dd>
+                <dt class="font-medium text-slate-500">Mes desejado</dt>
+                <dd class="col-span-2 text-slate-800"><?= e($dmFmt !== '' ? $dmFmt : ($dm !== '' ? $dm : '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
                 <dt class="font-medium text-slate-500">Enviado em</dt>
@@ -97,19 +92,18 @@ $dateFmt   = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '—
         </dl>
     </div>
 
-    <!-- Painel de ação admin -->
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="exchange-panel rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-6 py-4">
             <h3 class="font-semibold text-slate-800">Atualizar Status</h3>
         </div>
-        <form method="POST" action="<?= route('exchange/update-status'); ?>" class="px-6 py-6 space-y-4">
+        <form method="POST" action="<?= route('exchange/update-status'); ?>" class="space-y-4 px-6 py-6">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <input type="hidden" name="id" value="<?= (int) ($request['id'] ?? 0); ?>">
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1" for="status">Status</label>
+                <label class="mb-1 block text-sm font-medium text-slate-700" for="status">Status</label>
                 <select id="status" name="status"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                        class="exchange-form-select w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
                     <?php foreach ($statusLabels as $val => $lbl): ?>
                         <option value="<?= e($val); ?>" <?= $st === $val ? 'selected' : ''; ?>><?= e($lbl); ?></option>
                     <?php endforeach; ?>
@@ -117,19 +111,18 @@ $dateFmt   = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '—
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1" for="admin_notes">
-                    Observação para o aluno <span class="text-slate-400 font-normal">(opcional)</span>
+                <label class="mb-1 block text-sm font-medium text-slate-700" for="admin_notes">
+                    Observacao para o aluno <span class="font-normal text-slate-400">(opcional)</span>
                 </label>
                 <textarea id="admin_notes" name="admin_notes" rows="3"
                           placeholder="Ex.: Aprovado! Entraremos em contato para agendar..."
-                          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"><?= e((string) ($request['admin_notes'] ?? '')); ?></textarea>
+                          class="exchange-form-textarea w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"><?= e((string) ($request['admin_notes'] ?? '')); ?></textarea>
             </div>
 
             <button type="submit"
-                    class="rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition">
+                    class="exchange-save-btn rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition">
                 Salvar
             </button>
         </form>
     </div>
-
 </div>

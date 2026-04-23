@@ -29,19 +29,19 @@ $canChatOpen = has_permission('chat.open');
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <article class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Em aberto</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['open']; ?></p></article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Pago</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['paid']; ?></p></article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Parcial</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['partial']; ?></p></article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Vencido</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['overdue']; ?></p></article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Rascunho</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['draft']; ?></p></article>
+        <article class="finance-card-open rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Em aberto</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['open']; ?></p></article>
+        <article class="finance-card-paid rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Pago</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['paid']; ?></p></article>
+        <article class="finance-card-partial rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Parcial</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['partial']; ?></p></article>
+        <article class="finance-card-overdue rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Vencido</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['overdue']; ?></p></article>
+        <article class="finance-card-draft rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Rascunho</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['draft']; ?></p></article>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
-        <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p class="text-xs uppercase text-emerald-700">Faturas pagas (R$)</p><p class="mt-2 text-xl font-semibold text-emerald-700"><?= e(format_currency($stats['paid_value'])); ?></p></article>
-        <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><p class="text-xs uppercase text-rose-700">Faturas vencidas (R$)</p><p class="mt-2 text-xl font-semibold text-rose-700"><?= e(format_currency($stats['overdue_value'])); ?></p></article>
-        <article class="rounded-xl border border-amber-200 bg-amber-50 p-4"><p class="text-xs uppercase text-amber-700">Faturas pendentes (R$)</p><p class="mt-2 text-xl font-semibold text-amber-700"><?= e(format_currency($stats['pending_value'])); ?></p></article>
-        <article class="rounded-xl border border-cyan-200 bg-cyan-50 p-4"><p class="text-xs uppercase text-cyan-700">Baixadas hoje</p><p class="mt-2 text-xl font-semibold text-cyan-700"><?= (int) ($stats['settled_today'] ?? 0); ?></p></article>
-        <article class="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p class="text-xs uppercase text-indigo-700">NF-e emitidas / pendentes</p><p class="mt-2 text-xl font-semibold text-indigo-700"><?= (int) ($stats['nfe_issued'] ?? 0); ?> / <?= (int) ($stats['nfe_pending'] ?? 0); ?></p></article>
+        <article class="finance-card-paid-value rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p class="text-xs uppercase text-emerald-700">Faturas pagas (R$)</p><p class="mt-2 text-xl font-semibold text-emerald-700"><?= e(format_currency($stats['paid_value'])); ?></p></article>
+        <article class="finance-card-overdue-value rounded-xl border border-rose-200 bg-rose-50 p-4"><p class="text-xs uppercase text-rose-700">Faturas vencidas (R$)</p><p class="mt-2 text-xl font-semibold text-rose-700"><?= e(format_currency($stats['overdue_value'])); ?></p></article>
+        <article class="finance-card-pending-value rounded-xl border border-amber-200 bg-amber-50 p-4"><p class="text-xs uppercase text-amber-700">Faturas pendentes (R$)</p><p class="mt-2 text-xl font-semibold text-amber-700"><?= e(format_currency($stats['pending_value'])); ?></p></article>
+        <article class="finance-card-settled rounded-xl border border-cyan-200 bg-cyan-50 p-4"><p class="text-xs uppercase text-cyan-700">Baixadas hoje</p><p class="mt-2 text-xl font-semibold text-cyan-700"><?= (int) ($stats['settled_today'] ?? 0); ?></p></article>
+        <article class="finance-card-nfe rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p class="text-xs uppercase text-indigo-700">NF-e emitidas / pendentes</p><p class="mt-2 text-xl font-semibold text-indigo-700"><?= (int) ($stats['nfe_issued'] ?? 0); ?> / <?= (int) ($stats['nfe_pending'] ?? 0); ?></p></article>
     </div>
 
     <div class="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 lg:grid-cols-[1fr_auto]">
@@ -81,8 +81,8 @@ $canChatOpen = has_permission('chat.open');
         <?php endif; ?>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table class="min-w-full text-sm">
+    <div class="finance-table-wrap overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <table class="finance-table min-w-full text-sm">
             <thead>
                 <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                     <th class="px-3 py-3">Numero</th>
@@ -122,8 +122,15 @@ $canChatOpen = has_permission('chat.open');
                         'overdue', 'failed', 'cancelled' => 'bg-rose-100 text-rose-700',
                         default => 'bg-slate-100 text-slate-700',
                     };
+                    $boletoToneClass = match ($boletoStatus) {
+                        'issued', 'registered' => 'finance-boleto-issued',
+                        'processing', 'pending' => 'finance-boleto-pending',
+                        'paid', 'received' => 'finance-boleto-paid',
+                        'overdue', 'failed', 'cancelled' => 'finance-boleto-overdue',
+                        default => 'finance-boleto-default',
+                    };
                     ?>
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 align-top">
+                    <tr class="finance-row border-b border-slate-100 hover:bg-slate-50 align-top">
                         <td class="px-3 py-3 font-medium"><?= e($row['invoice_number']); ?></td>
                         <td class="px-3 py-3"><?= e($row['student_name']); ?></td>
                         <td class="px-3 py-3"><?= e($row['due_date']); ?></td>
@@ -137,14 +144,21 @@ $canChatOpen = has_permission('chat.open');
                                 'draft' => 'bg-slate-100 text-slate-700',
                                 default => 'bg-blue-100 text-blue-700',
                             };
+                            $statusToneClass = match ($row['status']) {
+                                'paid' => 'finance-status-paid',
+                                'partial' => 'finance-status-partial',
+                                'overdue' => 'finance-status-overdue',
+                                'draft' => 'finance-status-draft',
+                                default => 'finance-status-open',
+                            };
                             $statusLabel = invoice_status_label((string) $row['status']);
                             ?>
-                            <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $statusColor; ?>"><?= e($statusLabel); ?></span>
+                            <span class="finance-status-pill rounded-full px-2 py-1 text-xs font-semibold <?= $statusColor; ?> <?= $statusToneClass; ?>"><?= e($statusLabel); ?></span>
                         </td>
 
                         <td class="px-3 py-3">
                             <?php if ($row['status'] === 'paid'): ?>
-                                <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs">
+                                <div class="finance-paid-box rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs">
                                     <p class="font-semibold text-emerald-700">Conta baixada</p>
                                     <p class="text-emerald-700">Pago em: <?= e($row['paid_at'] ?: 'Sem data'); ?></p>
                                 </div>
@@ -156,8 +170,8 @@ $canChatOpen = has_permission('chat.open');
                                         <input type="hidden" name="method" value="PIX">
                                         <input type="hidden" name="paid_at" value="<?= date('Y-m-d'); ?>">
                                         <input type="hidden" name="notes" value="Baixa manual pelo modulo de contas a receber.">
-                                        <button class="rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Efetuar baixa</button>
-                                        <p class="text-[11px] text-slate-500">Baixa total do saldo em aberto.</p>
+                                        <button class="finance-btn finance-btn-settle rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Efetuar baixa</button>
+                                        <p class="finance-helper-text text-[11px] text-slate-500">Baixa total do saldo em aberto.</p>
                                     </form>
                                 <?php else: ?>
                                     <p class="text-xs text-slate-400">Sem permissao para baixa.</p>
@@ -170,11 +184,11 @@ $canChatOpen = has_permission('chat.open');
                                 <p class="text-xs text-slate-400">Estrutura de boleto nao instalada.</p>
                             <?php else: ?>
                                 <div class="space-y-1">
-                                    <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $boletoStatusColor; ?>"><?= e($boletoStatusLabel); ?></span>
+                                    <span class="finance-boleto-pill rounded-full px-2 py-1 text-xs font-semibold <?= $boletoStatusColor; ?> <?= $boletoToneClass; ?>"><?= e($boletoStatusLabel); ?></span>
 
                                     <?php if ($boletoLink): ?>
                                         <div>
-                                            <a target="_blank" rel="noopener" href="<?= e($boletoLink); ?>" class="text-xs text-indigo-700 underline">Abrir boleto</a>
+                                            <a target="_blank" rel="noopener" href="<?= e($boletoLink); ?>" class="finance-link text-xs text-indigo-700 underline">Abrir boleto</a>
                                         </div>
                                     <?php endif; ?>
 
@@ -186,7 +200,7 @@ $canChatOpen = has_permission('chat.open');
                                         <form method="post" action="<?= route('finance/invoices/boleto-generate'); ?>">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="invoice_id" value="<?= (int) $row['id']; ?>">
-                                            <button class="rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100">
+                                            <button class="finance-btn finance-btn-boleto rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100">
                                                 <?= $row['boleto_id'] ? 'Regerar boleto' : 'Gerar boleto API'; ?>
                                             </button>
                                         </form>
@@ -196,7 +210,7 @@ $canChatOpen = has_permission('chat.open');
                                         <form method="post" action="<?= route('finance/invoices/boleto-sync'); ?>">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="invoice_id" value="<?= (int) $row['id']; ?>">
-                                            <button class="rounded border border-slate-200 bg-white px-2 py-1 text-xs hover:bg-slate-50">Sincronizar status</button>
+                                            <button class="finance-btn finance-btn-sync rounded border border-slate-200 bg-white px-2 py-1 text-xs hover:bg-slate-50">Sincronizar status</button>
                                         </form>
                                     <?php endif; ?>
 
@@ -222,7 +236,7 @@ $canChatOpen = has_permission('chat.open');
                                 <p class="text-xs text-slate-400">Disponivel apos pagamento.</p>
                             <?php else: ?>
                                 <?php if ($fiscalStatus === 'issued'): ?>
-                                    <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-2 text-xs text-indigo-700">
+                                    <div class="finance-nfe-issued rounded-lg border border-indigo-200 bg-indigo-50 p-2 text-xs text-indigo-700">
                                         <p class="font-semibold">NF-e emitida</p>
                                         <p>Numero: <?= e($row['fiscal_number'] ?: 'N/D'); ?></p>
                                     </div>
@@ -233,7 +247,7 @@ $canChatOpen = has_permission('chat.open');
                                             <form method="post" action="<?= route('finance/invoices/fiscal-generate'); ?>" onsubmit="return confirm('Gerar nota fiscal de saida para esta fatura?');">
                                                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                                 <input type="hidden" name="invoice_id" value="<?= (int) $row['id']; ?>">
-                                                <button class="rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Gerar Nota Fiscal de Saida</button>
+                                                <button class="finance-btn finance-btn-nfe rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Gerar Nota Fiscal de Saida</button>
                                             </form>
                                         <?php else: ?>
                                             <p class="text-xs text-slate-400">Sem permissao para NF-e.</p>
@@ -262,21 +276,21 @@ $canChatOpen = has_permission('chat.open');
                             $invoiceWhatsappLink = whatsapp_link((string) ($row['student_phone'] ?? ''), $waMessage);
                             ?>
                             <?php if ($canInvoiceWhatsapp && $row['status'] !== 'paid' && $invoiceWhatsappLink): ?>
-                                <a target="_blank" rel="noopener" href="<?= e($invoiceWhatsappLink); ?>" class="mb-2 inline-flex rounded border border-emerald-200 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50">Enviar boleto WhatsApp</a>
+                                <a target="_blank" rel="noopener" href="<?= e($invoiceWhatsappLink); ?>" class="finance-btn finance-btn-whatsapp mb-2 inline-flex rounded border border-emerald-200 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50">Enviar boleto WhatsApp</a>
                             <?php endif; ?>
                             <?php if ($canChatOpen && (int) $row['student_id'] > 0): ?>
                                 <form method="post" action="<?= route('chatwoot/open-student'); ?>" class="mb-2">
                                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                     <input type="hidden" name="student_id" value="<?= (int) $row['student_id']; ?>">
                                     <input type="hidden" name="return_route" value="finance/invoices">
-                                    <button class="rounded border border-cyan-200 px-2 py-1 text-xs text-cyan-700 hover:bg-cyan-50">Atender no Chatwoot</button>
+                                    <button class="finance-btn finance-btn-chatwoot rounded border border-cyan-200 px-2 py-1 text-xs text-cyan-700 hover:bg-cyan-50">Atender no Chatwoot</button>
                                 </form>
                             <?php endif; ?>
                             <?php if ($canInvoiceDelete): ?>
                                 <form method="post" action="<?= route('finance/invoices/delete'); ?>" onsubmit="return confirm('Excluir fatura?');">
                                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                     <input type="hidden" name="id" value="<?= (int) $row['id']; ?>">
-                                    <button class="rounded border border-rose-200 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50">Excluir</button>
+                                    <button class="finance-btn finance-btn-danger rounded border border-rose-200 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50">Excluir</button>
                                 </form>
                             <?php endif; ?>
                             <?php if ($canInvoiceWhatsapp && !$invoiceWhatsappLink): ?>

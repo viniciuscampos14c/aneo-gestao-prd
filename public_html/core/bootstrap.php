@@ -1,5 +1,11 @@
 ﻿<?php
 
+ini_set('default_charset', 'UTF-8');
+if (function_exists('mb_internal_encoding')) {
+    mb_internal_encoding('UTF-8');
+}
+
+
 $config = require __DIR__ . '/../config.php';
 
 // Sobrescreve com credenciais/ajustes locais se existir (nunca versionado nem sincronizado via deploy).
@@ -36,3 +42,4 @@ spl_autoload_register(function (string $class): void {
 
 $GLOBALS['config'] = $config;
 $GLOBALS['db'] = Database::connection($config['db']);
+

@@ -25,7 +25,7 @@ $materialTypeSelected = (string) ($editingItem['material_type'] ?? 'file');
 $publishStartInput = !empty($editingItem['publish_start_at']) ? date('Y-m-d\TH:i', strtotime((string) $editingItem['publish_start_at'])) : '';
 $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', strtotime((string) $editingItem['publish_end_at'])) : '';
 ?>
-<section class="space-y-6">
+<section class="arsenal-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Arsenal Digital</h2>
@@ -37,23 +37,23 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <article class="rounded-xl border border-slate-200 bg-white p-4">
+        <article class="arsenal-kpi arsenal-kpi-total rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-xs uppercase text-slate-500">Total Itens</p>
             <p class="mt-2 text-2xl font-semibold"><?= (int) ($stats['items_total'] ?? 0); ?></p>
         </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4">
+        <article class="arsenal-kpi arsenal-kpi-published rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-xs uppercase text-slate-500">Publicados</p>
             <p class="mt-2 text-2xl font-semibold text-emerald-700"><?= (int) ($stats['items_published'] ?? 0); ?></p>
         </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4">
+        <article class="arsenal-kpi arsenal-kpi-categories rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-xs uppercase text-slate-500">Categorias</p>
             <p class="mt-2 text-2xl font-semibold"><?= (int) ($stats['categories_total'] ?? 0); ?></p>
         </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4">
+        <article class="arsenal-kpi arsenal-kpi-files rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-xs uppercase text-slate-500">Arquivos</p>
             <p class="mt-2 text-2xl font-semibold"><?= (int) ($stats['files_total'] ?? 0); ?></p>
         </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4">
+        <article class="arsenal-kpi arsenal-kpi-links rounded-xl border border-slate-200 bg-white p-4">
             <p class="text-xs uppercase text-slate-500">Links</p>
             <p class="mt-2 text-2xl font-semibold"><?= (int) ($stats['links_total'] ?? 0); ?></p>
         </article>
@@ -61,8 +61,8 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
 
     <div class="flex flex-wrap gap-2">
         <?php foreach ($tabs as $tabKey => $tabLabel): ?>
-            <?php $active = $tab === $tabKey ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'; ?>
-            <a href="<?= route('arsenal&tab=' . $tabKey); ?>" class="rounded-lg px-3 py-2 text-sm font-medium <?= $active; ?>"><?= e($tabLabel); ?></a>
+            <?php $active = $tab === $tabKey ? 'arsenal-tab-active bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'; ?>
+            <a href="<?= route('arsenal&tab=' . $tabKey); ?>" class="arsenal-tab-btn rounded-lg px-3 py-2 text-sm font-medium <?= $active; ?>"><?= e($tabLabel); ?></a>
         <?php endforeach; ?>
     </div>
 
