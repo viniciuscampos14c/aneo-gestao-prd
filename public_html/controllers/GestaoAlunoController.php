@@ -116,7 +116,48 @@ class GestaoAlunoController extends BaseController
             $this->json(['ok' => false, 'message' => 'Card não encontrado.'], 404);
         }
 
-        $this->json(['ok' => true, 'card' => $data]);
+        $student = $data;
+        $notes = $student['notes'] ?? [];
+        $attachments = $student['attachments'] ?? [];
+        $history = $student['history'] ?? [];
+        $labels = $student['labels'] ?? [];
+        $allLabels = $student['all_labels'] ?? [];
+        $members = $student['members'] ?? [];
+        $allUsers = $student['all_users'] ?? [];
+        $checklists = $student['checklists'] ?? [];
+        $customFields = $student['custom_fields'] ?? [];
+        $allTemplates = $student['all_templates'] ?? ($student['templates'] ?? []);
+
+        unset(
+            $student['notes'],
+            $student['attachments'],
+            $student['history'],
+            $student['labels'],
+            $student['all_labels'],
+            $student['members'],
+            $student['all_users'],
+            $student['checklists'],
+            $student['custom_fields'],
+            $student['templates'],
+            $student['all_templates']
+        );
+
+        $this->json([
+            'ok' => true,
+            'card' => [
+                'student' => $student,
+                'notes' => $notes,
+                'attachments' => $attachments,
+                'history' => $history,
+                'labels' => $labels,
+                'all_labels' => $allLabels,
+                'members' => $members,
+                'all_users' => $allUsers,
+                'checklists' => $checklists,
+                'custom_fields' => $customFields,
+                'all_templates' => $allTemplates,
+            ],
+        ]);
     }
 
     public function updateCardMeta(): void

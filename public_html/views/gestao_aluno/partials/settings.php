@@ -1,4 +1,4 @@
-﻿<?php $csrf = '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">'; ?>
+<?php $csrf = '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">'; ?>
 <link rel="stylesheet" href="assets/css/gestao_aluno.css">
 
 <div class="p-4 max-w-5xl mx-auto">

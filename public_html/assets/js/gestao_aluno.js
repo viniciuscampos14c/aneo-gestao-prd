@@ -277,19 +277,62 @@
         modalBody.innerHTML = '<div class="flex items-center justify-center py-12"><span class="gda-spinner"></span></div>';
 
         const r = await get(cfg.getCardUrl, { id: studentId });
-        if (!r.ok || !r.card) {
+        const normalizedCard = normalizeCard(r.card);
+        if (!r.ok || !normalizedCard || !normalizedCard.student) {
             modalBody.innerHTML = '<p class="text-red-500 text-sm">Erro ao carregar o card.</p>';
             return;
         }
 
-        currentCardData = r.card;
-        renderModal(r.card);
+        currentCardData = normalizedCard;
+        renderModal(normalizedCard);
     }
 
     function closeModal() {
         backdrop.classList.remove('open');
         currentStudentId = null;
         currentCardData  = null;
+    }
+
+    // Aceita payload novo (card.student + colecoes) e legado (campos planos no card).
+    function normalizeCard(card) {
+        if (!card || typeof card !== 'object') {
+            return null;
+        }
+
+        if (card.student && typeof card.student === 'object') {
+            return card;
+        }
+
+        const legacy = { ...card };
+        const normalized = {
+            student: { ...legacy },
+            notes: Array.isArray(legacy.notes) ? legacy.notes : [],
+            attachments: Array.isArray(legacy.attachments) ? legacy.attachments : [],
+            history: Array.isArray(legacy.history) ? legacy.history : [],
+            labels: Array.isArray(legacy.labels) ? legacy.labels : [],
+            all_labels: Array.isArray(legacy.all_labels) ? legacy.all_labels : [],
+            members: Array.isArray(legacy.members) ? legacy.members : [],
+            all_users: Array.isArray(legacy.all_users) ? legacy.all_users : [],
+            checklists: Array.isArray(legacy.checklists) ? legacy.checklists : [],
+            custom_fields: Array.isArray(legacy.custom_fields) ? legacy.custom_fields : [],
+            all_templates: Array.isArray(legacy.all_templates)
+                ? legacy.all_templates
+                : (Array.isArray(legacy.templates) ? legacy.templates : []),
+        };
+
+        delete normalized.student.notes;
+        delete normalized.student.attachments;
+        delete normalized.student.history;
+        delete normalized.student.labels;
+        delete normalized.student.all_labels;
+        delete normalized.student.members;
+        delete normalized.student.all_users;
+        delete normalized.student.checklists;
+        delete normalized.student.custom_fields;
+        delete normalized.student.templates;
+        delete normalized.student.all_templates;
+
+        return normalized;
     }
 
     function renderModal(card) {
