@@ -25,6 +25,7 @@ $user = current_user();
 $company = current_company();
 $menu = [
     ['module' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'dashboard'],
+    ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
     ['module' => 'kanban', 'label' => 'Kanban Cliente', 'icon' => 'view-columns', 'route' => 'kanban'],
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],

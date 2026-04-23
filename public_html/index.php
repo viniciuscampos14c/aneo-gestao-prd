@@ -36,6 +36,7 @@ $apiMgmt = new ApiManagementController();
 $cron     = new CronController();
 $exchange    = new ExchangeController();
 $liveSessions = new CourseLiveSessionController();
+$gestaoAluno = class_exists('GestaoAlunoController') ? new GestaoAlunoController() : null;
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -235,6 +236,60 @@ $router->post('courses/live-sessions/update',      fn () => $liveSessions->updat
 $router->post('courses/live-sessions/cancel',      fn () => $liveSessions->cancel());
 $router->get('courses/live-sessions/zoom-settings',fn () => $liveSessions->zoomSettings());
 $router->post('courses/live-sessions/zoom-credentials', fn () => $liveSessions->saveZoomCredentials());
+
+if ($gestaoAluno !== null) {
+    $router->get('gestao-aluno', fn () => $gestaoAluno->index());
+    $router->get('gestao-aluno/calendar', fn () => $gestaoAluno->calendar());
+    $router->get('gestao-aluno/settings', fn () => $gestaoAluno->settings());
+
+    $router->post('gestao-aluno/move', fn () => $gestaoAluno->move());
+    $router->post('gestao-aluno/reorder', fn () => $gestaoAluno->reorderCards());
+
+    $router->get('gestao-aluno/card', fn () => $gestaoAluno->getCard());
+    $router->post('gestao-aluno/card/meta', fn () => $gestaoAluno->updateCardMeta());
+    $router->post('gestao-aluno/card/archive', fn () => $gestaoAluno->archiveCard());
+    $router->get('gestao-aluno/archived', fn () => $gestaoAluno->getArchived());
+
+    $router->post('gestao-aluno/note/save', fn () => $gestaoAluno->saveNote());
+    $router->post('gestao-aluno/note/delete', fn () => $gestaoAluno->deleteNote());
+
+    $router->get('gestao-aluno/labels', fn () => $gestaoAluno->getLabels());
+    $router->post('gestao-aluno/label/save', fn () => $gestaoAluno->saveLabel());
+    $router->post('gestao-aluno/label/delete', fn () => $gestaoAluno->deleteLabel());
+    $router->post('gestao-aluno/card/labels', fn () => $gestaoAluno->setCardLabels());
+    $router->post('gestao-aluno/card/members', fn () => $gestaoAluno->setCardMembers());
+
+    $router->post('gestao-aluno/checklist/save', fn () => $gestaoAluno->saveChecklist());
+    $router->post('gestao-aluno/checklist/delete', fn () => $gestaoAluno->deleteChecklist());
+    $router->post('gestao-aluno/checklist/item/save', fn () => $gestaoAluno->saveChecklistItem());
+    $router->post('gestao-aluno/checklist/item/toggle', fn () => $gestaoAluno->toggleChecklistItem());
+    $router->post('gestao-aluno/checklist/item/delete', fn () => $gestaoAluno->deleteChecklistItem());
+
+    $router->get('gestao-aluno/search', fn () => $gestaoAluno->searchStudentsForColumn());
+    $router->post('gestao-aluno/quick-add', fn () => $gestaoAluno->quickAddCard());
+
+    $router->post('gestao-aluno/attachment/upload', fn () => $gestaoAluno->uploadAttachment());
+    $router->post('gestao-aluno/attachment/delete', fn () => $gestaoAluno->deleteAttachment());
+    $router->get('gestao-aluno/attachment/download', fn () => $gestaoAluno->downloadAttachment());
+
+    $router->get('gestao-aluno/custom-fields', fn () => $gestaoAluno->getCustomFields());
+    $router->post('gestao-aluno/custom-field/save', fn () => $gestaoAluno->saveCustomField());
+    $router->post('gestao-aluno/custom-field/delete', fn () => $gestaoAluno->deleteCustomField());
+    $router->post('gestao-aluno/custom-field/value', fn () => $gestaoAluno->saveCustomFieldValue());
+
+    $router->get('gestao-aluno/automations', fn () => $gestaoAluno->getAutomations());
+    $router->post('gestao-aluno/automation/save', fn () => $gestaoAluno->saveAutomation());
+    $router->post('gestao-aluno/automation/delete', fn () => $gestaoAluno->deleteAutomation());
+
+    $router->get('gestao-aluno/templates', fn () => $gestaoAluno->getTemplates());
+    $router->post('gestao-aluno/template/save', fn () => $gestaoAluno->saveTemplate());
+    $router->post('gestao-aluno/template/delete', fn () => $gestaoAluno->deleteTemplate());
+    $router->post('gestao-aluno/template/apply', fn () => $gestaoAluno->applyTemplate());
+
+    $router->post('gestao-aluno/column/store', fn () => $gestaoAluno->storeColumn());
+    $router->post('gestao-aluno/column/update', fn () => $gestaoAluno->updateColumn());
+    $router->post('gestao-aluno/column/delete', fn () => $gestaoAluno->deleteColumn());
+}
 
 // Modulos desativados por regra de negocio atual (nao aparecem no menu e nao devem abrir por URL direta).
 // $router->get('projects', fn () => $generic->index('projects', 'projects', 'Projetos'));

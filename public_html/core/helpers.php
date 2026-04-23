@@ -197,6 +197,7 @@ function default_admin_route(): string
 
     $priority = [
         'dashboard' => 'dashboard',
+        'gda' => 'gestao-aluno',
         'students' => 'students',
         'courses' => 'courses',
         'leads' => 'leads',

@@ -156,6 +156,7 @@ return [
     'permissions_catalog' => [
         'modules' => [
             'dashboard' => 'Dashboard',
+            'gda' => 'Gestao do Aluno',
             'kanban' => 'Kanban Cliente',
             'students' => 'Alunos',
             'leads' => 'Leads',
@@ -221,6 +222,9 @@ return [
             'support.desk' => 'Central Tecnica: administrar chamados',
             'automations.manage' => 'Automações: criar/editar/excluir',
             'help.manage' => 'Chat IA Jully: criar/editar/excluir',
+            'gda.move' => 'Gestao do Aluno: mover cards',
+            'gda.notes' => 'Gestao do Aluno: notas e checklists',
+            'gda.settings' => 'Gestao do Aluno: configuracoes',
         ],
     ],
     'student_flags' => [
