@@ -1,6 +1,8 @@
 <?php
 $user   = current_user();
 $userId = (int) ($user['id'] ?? 0);
+$gdaJsPath = __DIR__ . '/../../assets/js/gestao_aluno.js';
+$gdaJsVersion = is_file($gdaJsPath) ? (string) filemtime($gdaJsPath) : date('YmdHis');
 ?>
 <link rel="stylesheet" href="assets/css/gestao_aluno.css">
 
@@ -262,4 +264,4 @@ window.gdaConfig = {
     quickAddUrl:       <?= json_encode(route('gestao-aluno/quick-add')) ?>,
 };
 </script>
-<script src="assets/js/gestao_aluno.js?v=1"></script>
+<script src="assets/js/gestao_aluno.js?v=<?= e($gdaJsVersion) ?>"></script>

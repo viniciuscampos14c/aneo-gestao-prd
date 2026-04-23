@@ -32,7 +32,8 @@
 
     async function get(url, params) {
         const qs = new URLSearchParams(params || {}).toString();
-        const res = await fetch(url + (qs ? '?' + qs : ''));
+        const sep = url.includes('?') ? '&' : '?';
+        const res = await fetch(url + (qs ? sep + qs : ''));
         return res.json().catch(() => ({}));
     }
 
