@@ -203,7 +203,11 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 <a href="<?= route('logout'); ?>" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100" title="Sair do sistema">
                     Sair
                 </a>
-                <button class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50" title="Notificacoes de negociacao mobile">
+                <button type="button"
+                        data-mobile-neg-trigger
+                        data-mobile-neg-queue="<?= e($mobileQueueRoute); ?>"
+                        class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+                        title="Notificacoes de negociacao mobile">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
                     <?php if ($mobileNegotiationAlertCount > 0): ?>
                         <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $mobileNegotiationAlertCount); ?></span>
@@ -258,7 +262,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                     <h3 class="text-lg font-semibold text-indigo-700">Novas negociacoes do app</h3>
                     <p class="text-xs text-slate-500">A equipe da diretoria enviou solicitacoes financeiras para tratamento.</p>
                 </div>
-                <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50">Fechar</button>
+                <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Fechar</button>
             </div>
             <div class="max-h-[60vh] space-y-2 overflow-y-auto p-4">
                 <?php foreach ($mobileNegotiationAlerts as $alert): ?>
@@ -280,8 +284,8 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 <?php endforeach; ?>
             </div>
             <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
-                <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Dispensar</button>
-                <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Abrir fila de negociacoes</a>
+                <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Dispensar</button>
+                <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociacoes</a>
             </div>
         </div>
     </div>
@@ -292,6 +296,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
     <script>
         (function () {
             const modal = document.getElementById('mobile-negotiation-modal');
+            const trigger = document.querySelector('[data-mobile-neg-trigger]');
             if (!modal) return;
 
             let ids = [];
@@ -327,7 +332,6 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             const unseen = ids.filter((id) => {
                 return !isSeen(id);
             });
-            if (unseen.length === 0) return;
 
             const markAsSeen = function () {
                 unseen.forEach((id) => {
@@ -348,8 +352,20 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 modal.classList.remove('flex');
             };
 
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            const open = function () {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            };
+
+            if (trigger) {
+                trigger.addEventListener('click', function () {
+                    open();
+                });
+            }
+
+            if (unseen.length > 0) {
+                open();
+            }
 
             modal.querySelectorAll('[data-mobile-neg-close]').forEach((button) => {
                 button.addEventListener('click', close);
@@ -363,6 +379,19 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
                     close();
+                }
+            });
+        })();
+    </script>
+<?php else: ?>
+    <script>
+        (function () {
+            const trigger = document.querySelector('[data-mobile-neg-trigger]');
+            if (!trigger) return;
+            trigger.addEventListener('click', function () {
+                const queueRoute = trigger.getAttribute('data-mobile-neg-queue') || '';
+                if (queueRoute !== '') {
+                    window.location.href = queueRoute;
                 }
             });
         })();

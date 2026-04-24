@@ -15,6 +15,36 @@ abstract class BaseController
             }
         }
 
+        if ($layout === 'layouts/student' && current_student()) {
+            try {
+                $tickets = new SupportTicketModel();
+                $student = current_student();
+                $studentId = (int) ($student['id'] ?? 0);
+                $companyId = (int) ($student['company_id'] ?? 0);
+                $studentEmail = trim((string) ($student['email'] ?? ''));
+
+                if ($tickets->featureAvailable() && $studentId > 0 && $companyId > 0) {
+                    $rows = $tickets->listStudentTickets(
+                        $companyId,
+                        $studentId,
+                        $studentEmail,
+                        ['status' => 'pending'],
+                        5,
+                        1
+                    );
+                    $stats = $tickets->studentStats($companyId, $studentId, $studentEmail);
+                    $data['studentTicketAlerts'] = is_array($rows['rows'] ?? null) ? $rows['rows'] : [];
+                    $data['studentTicketAlertCount'] = (int) ($stats['open'] ?? 0) + (int) ($stats['in_progress'] ?? 0);
+                } else {
+                    $data['studentTicketAlerts'] = [];
+                    $data['studentTicketAlertCount'] = 0;
+                }
+            } catch (Throwable $e) {
+                $data['studentTicketAlerts'] = [];
+                $data['studentTicketAlertCount'] = 0;
+            }
+        }
+
         view($view, $data, $layout);
     }
 

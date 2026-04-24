@@ -53,6 +53,10 @@ $menu = $isTrialAccess
         ['label' => 'Historico Academico', 'route' => 'student/academic-history'],
     ];
 $logoBuild = '20260423-logos-r2';
+$studentTicketAlerts = isset($studentTicketAlerts) && is_array($studentTicketAlerts) ? $studentTicketAlerts : [];
+$studentTicketAlertCount = (int) ($studentTicketAlertCount ?? count($studentTicketAlerts));
+$studentTicketAlertIds = array_values(array_filter(array_map('intval', array_column($studentTicketAlerts, 'id')), fn ($id) => $id > 0));
+$studentTicketRoute = route('student/requests');
 ?>
 <div class="portal-modern-shell min-h-screen">
     <div class="portal-modern-ambient" aria-hidden="true"></div>
@@ -74,14 +78,25 @@ $logoBuild = '20260423-logos-r2';
                     </a>
                 </div>
                 <div class="flex items-center gap-3 text-right text-sm">
-                    <button type="button" class="theme-toggle portal-theme-toggle" data-portal-theme-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema">
-                        <svg data-theme-icon-dark xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                        <svg data-theme-icon-light class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    </button>
                     <div>
                         <p class="font-medium text-slate-900"><?= e($student['name'] ?? 'Aluno'); ?></p>
                         <p class="text-slate-500"><?= e($student['login'] ?? ''); ?></p>
                     </div>
+                    <button type="button"
+                            data-student-alert-trigger
+                            class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+                            title="Notificacoes">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        </svg>
+                        <?php if ($studentTicketAlertCount > 0): ?>
+                            <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $studentTicketAlertCount); ?></span>
+                        <?php endif; ?>
+                    </button>
+                    <button type="button" class="theme-toggle portal-theme-toggle" data-portal-theme-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema">
+                        <svg data-theme-icon-dark xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        <svg data-theme-icon-light class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    </button>
                     <div class="relative" id="student-avatar-wrapper">
                         <button type="button" id="student-avatar-btn"
                                 aria-haspopup="true" aria-expanded="false"
@@ -136,6 +151,46 @@ $logoBuild = '20260423-logos-r2';
         </main>
     </div>
 </div>
+<div id="student-alert-modal" data-ticket-ids="<?= e(json_encode($studentTicketAlertIds)); ?>" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
+    <div class="w-full max-w-2xl rounded-xl border border-sky-200 bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <div>
+                <h3 class="text-lg font-semibold text-sky-700">Notificacoes</h3>
+                <p class="text-xs text-slate-500">Resumo dos seus chamados em aberto.</p>
+            </div>
+            <button type="button" data-student-alert-close class="rounded-lg border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50">Fechar</button>
+        </div>
+        <div class="max-h-[60vh] space-y-2 overflow-y-auto p-4">
+            <?php if ($studentTicketAlerts === []): ?>
+                <article class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                    Nenhuma notificacao pendente no momento.
+                </article>
+            <?php else: ?>
+                <?php foreach ($studentTicketAlerts as $alert): ?>
+                    <?php
+                    $ticketId = (int) ($alert['id'] ?? 0);
+                    $ticketCode = trim((string) ($alert['ticket_code'] ?? ''));
+                    if (!preg_match('/^ANEO\d+$/', $ticketCode) && $ticketId > 0) {
+                        $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+                    }
+                    ?>
+                    <article class="rounded-lg border border-sky-100 bg-sky-50/50 px-3 py-2 text-sm">
+                        <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Chamado')); ?></p>
+                        <p class="mt-1 text-xs text-slate-600">
+                            Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
+                            | Status: <?= e((string) ($alert['status'] ?? 'open')); ?>
+                            | Atualizado em: <?= e((string) ($alert['updated_at'] ?? $alert['created_at'] ?? '')); ?>
+                        </p>
+                    </article>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
+            <button type="button" data-student-alert-close class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Fechar</button>
+            <a href="<?= e($studentTicketRoute); ?>" class="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">Abrir Chamados</a>
+        </div>
+    </div>
+</div>
 <script>
 (function () {
     var btn  = document.querySelector('[data-portal-theme-toggle]');
@@ -180,6 +235,33 @@ $logoBuild = '20260423-logos-r2';
         applyTheme(currentTheme);
         try { localStorage.setItem(key, currentTheme); } catch(e) {}
     });
+})();
+
+(function () {
+    var alertBtn = document.querySelector('[data-student-alert-trigger]');
+    var alertModal = document.getElementById('student-alert-modal');
+    if (alertBtn && alertModal) {
+        var openAlertModal = function () {
+            alertModal.classList.remove('hidden');
+            alertModal.classList.add('flex');
+        };
+        var closeAlertModal = function () {
+            alertModal.classList.add('hidden');
+            alertModal.classList.remove('flex');
+        };
+
+        alertBtn.addEventListener('click', openAlertModal);
+
+        alertModal.querySelectorAll('[data-student-alert-close]').forEach(function (button) {
+            button.addEventListener('click', closeAlertModal);
+        });
+
+        alertModal.addEventListener('click', function (event) {
+            if (event.target === alertModal) {
+                closeAlertModal();
+            }
+        });
+    }
 })();
 
 (function () {
