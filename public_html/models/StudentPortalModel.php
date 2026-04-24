@@ -384,11 +384,12 @@ class StudentPortalModel extends BaseModel
                 FROM course_live_sessions cls
                 INNER JOIN courses c ON c.id = cls.course_id
                 INNER JOIN enrollments e ON e.course_id = cls.course_id
-                WHERE e.student_id = :sid1
+                WHERE e.student_id = :student_id
                   AND e.status = 'active'
                   AND c.status = 'published'
                   AND cls.status = 'scheduled'
                   AND cls.scheduled_at >= NOW()";
+            $paramsNew = [':student_id' => $studentId];
 
             // Fonte 2: legado (courses.live_link preenchido manualmente)
             $sqlLegacy = "SELECT
@@ -402,27 +403,38 @@ class StudentPortalModel extends BaseModel
                     'zoom' AS platform
                 FROM enrollments e
                 INNER JOIN courses c ON c.id = e.course_id
-                WHERE e.student_id = :sid2
+                WHERE e.student_id = :student_id
                   AND e.status = 'active'
                   AND c.status = 'published'
                   AND c.live_link IS NOT NULL
                   AND c.live_link <> ''
                   AND c.live_datetime IS NOT NULL
                   AND c.live_datetime >= NOW()";
-
-            $params = [':sid1' => $studentId, ':sid2' => $studentId];
+            $paramsLegacy = [':student_id' => $studentId];
 
             if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
-                $sqlNew    .= ' AND c.company_id = :company_id1';
-                $sqlLegacy .= ' AND c.company_id = :company_id2';
-                $params[':company_id1'] = $companyId;
-                $params[':company_id2'] = $companyId;
+                $sqlNew .= ' AND c.company_id = :company_id';
+                $sqlLegacy .= ' AND c.company_id = :company_id';
+                $paramsNew[':company_id'] = $companyId;
+                $paramsLegacy[':company_id'] = $companyId;
             }
 
-            $sql = "({$sqlNew}) UNION ALL ({$sqlLegacy}) ORDER BY live_datetime ASC";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchAll();
+            $stmtNew = $this->db->prepare($sqlNew);
+            $stmtNew->execute($paramsNew);
+            $rowsNew = $stmtNew->fetchAll();
+
+            $stmtLegacy = $this->db->prepare($sqlLegacy);
+            $stmtLegacy->execute($paramsLegacy);
+            $rowsLegacy = $stmtLegacy->fetchAll();
+
+            $rows = array_merge($rowsNew, $rowsLegacy);
+            usort($rows, static function (array $a, array $b): int {
+                $aTs = strtotime((string) ($a['live_datetime'] ?? '')) ?: 0;
+                $bTs = strtotime((string) ($b['live_datetime'] ?? '')) ?: 0;
+                return $aTs <=> $bTs;
+            });
+
+            return $rows;
         }
 
         // Fallback: apenas legado

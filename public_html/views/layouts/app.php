@@ -40,18 +40,18 @@ $menu = [
 ];
 
 $cadastroMenu = [
-    ['module' => 'users', 'label' => 'Usuarios', 'route' => 'users'],
-    ['module' => 'companies', 'label' => 'Empresas', 'route' => 'companies'],
-    ['module' => 'companies', 'label' => 'SMTP Email', 'route' => 'companies/smtp'],
+    ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'users', 'route' => 'users'],
+    ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office', 'route' => 'companies'],
+    ['module' => 'companies', 'label' => 'SMTP Email', 'icon' => 'envelope', 'route' => 'companies/smtp'],
 ];
 
 if (class_exists('BanksController')) {
-    $cadastroMenu[] = ['module' => 'companies', 'label' => 'Bancos', 'route' => 'banks'];
+    $cadastroMenu[] = ['module' => 'companies', 'label' => 'Bancos', 'icon' => 'banknotes', 'route' => 'banks'];
 }
 
 if (($user['role'] ?? '') === 'admin') {
-    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Logs de Sistema', 'route' => 'system/logs'];
-    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Cron Jobs',       'route' => 'cron'];
+    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Logs de Sistema', 'icon' => 'clipboard-document-list', 'route' => 'system/logs'];
+    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Cron Jobs', 'icon' => 'clock', 'route' => 'cron'];
 }
 
 $cadastroItemsVisible = [];
@@ -96,7 +96,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                     <?php $active = str_starts_with($currentRoute, $item['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>
                     <li>
                         <a href="<?= route($item['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $active; ?>">
-                            <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                            <?= menu_icon_svg((string) ($item['icon'] ?? 'squares-2x2'), 'h-4 w-4 flex-shrink-0'); ?>
                             <?= e($item['label']); ?>
                         </a>
                     </li>
@@ -107,7 +107,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                     <li class="pt-1">
                         <button type="button" data-cadastro-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $cadastroActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
                             <span class="flex items-center gap-3">
-                                <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                                <?= menu_icon_svg('squares-2x2', 'h-4 w-4 flex-shrink-0'); ?>
                                 Cadastro
                             </span>
                             <svg data-cadastro-chevron class="h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -122,7 +122,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                     <li class="pt-1">
                         <button type="button" data-api-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $apiActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
                             <span class="flex items-center gap-3">
-                                <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                                <?= menu_icon_svg('code-bracket', 'h-4 w-4 flex-shrink-0'); ?>
                                 API
                             </span>
                             <svg data-api-chevron class="h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -139,7 +139,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 <?php foreach ($cadastroItemsVisible as $cadItem): ?>
                     <?php $cadActive = str_starts_with($currentRoute, $cadItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white'; ?>
                     <a href="<?= route($cadItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $cadActive; ?>">
-                        <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                        <?= menu_icon_svg((string) ($cadItem['icon'] ?? 'squares-2x2'), 'h-4 w-4 flex-shrink-0'); ?>
                         <?= e($cadItem['label']); ?>
                     </a>
                 <?php endforeach; ?>
@@ -150,14 +150,14 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             <div data-api-panel class="hidden fixed z-[80] min-w-[220px] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
                 <?php
                     $apiMenuItems = [
-                        ['route' => 'api-management',        'label' => 'Gerenciamento de API'],
-                        ['route' => 'api-management/manual', 'label' => 'Manual da API'],
+                        ['route' => 'api-management',        'label' => 'Gerenciamento de API', 'icon' => 'code-bracket'],
+                        ['route' => 'api-management/manual', 'label' => 'Manual da API', 'icon' => 'document-text'],
                     ];
                     foreach ($apiMenuItems as $apiItem):
                         $aActive = str_starts_with($currentRoute, $apiItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white';
                 ?>
                     <a href="<?= route($apiItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $aActive; ?>">
-                        <span class="h-2 w-2 rounded-full bg-cyan-400/80"></span>
+                        <?= menu_icon_svg((string) ($apiItem['icon'] ?? 'code-bracket'), 'h-4 w-4 flex-shrink-0'); ?>
                         <?= e($apiItem['label']); ?>
                     </a>
                 <?php endforeach; ?>

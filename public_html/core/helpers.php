@@ -592,3 +592,122 @@ function whatsapp_link(?string $phone, string $message = ''): ?string
 
     return $url;
 }
+
+function menu_icon_svg(string $name, string $class = 'h-4 w-4'): string
+{
+    static $icons = [
+        'home' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10.5 12 4l9 6.5v8.5a1 1 0 0 1-1 1h-5.5V14h-5v6H4a1 1 0 0 1-1-1z" />
+        ',
+        'chart-bar' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 20h16M7 16V9m5 7V6m5 10v-4" />
+        ',
+        'user-group' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16.5 18.5v-1a3 3 0 0 0-3-3H8.5a3 3 0 0 0-3 3v1M9 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm8 8.5v-1a2.5 2.5 0 0 0-2.5-2.5H14m.5-5a2.25 2.25 0 1 0 0-4.5" />
+        ',
+        'users' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19v-1.2A2.8 2.8 0 0 0 12.2 15H8.8A2.8 2.8 0 0 0 6 17.8V19m4.5-7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm8.5 7v-1a2.5 2.5 0 0 0-2.5-2.5h-.5m1-4.5a2 2 0 1 0 0-4" />
+        ',
+        'sparkles' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m12 3 1.4 3.6L17 8l-3.6 1.4L12 13l-1.4-3.6L7 8l3.6-1.4zM5.5 13l.8 2.1L8.5 16l-2.2.9L5.5 19l-.8-2.1L2.5 16l2.2-.9zM18.5 13l.8 2.1 2.2.9-2.2.9-.8 2.1-.8-2.1-2.2-.9 2.2-.9z" />
+        ',
+        'currency-dollar' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m3.8-12.5c0-1.1-1.1-2-3.1-2s-3.2.9-3.2 2 1 1.8 3.2 2.4c2.2.5 3.1 1.4 3.1 2.6 0 1.2-1.1 2-3.1 2s-3.2-.9-3.2-2" />
+        ',
+        'chat-bubble-left-right' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 18H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2m2 12 4-3h1a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h3z" />
+        ',
+        'academic-cap' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m3 9 9-4 9 4-9 4z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 11v3.5c0 1.7 2.2 3 5 3s5-1.3 5-3V11" />
+        ',
+        'document-check' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m9 14 2 2 4-4" />
+        ',
+        'book-open' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6.5A2.5 2.5 0 0 1 6.5 4H11a3 3 0 0 1 3 3V20H8a4 4 0 0 0-4 0zM20 6.5A2.5 2.5 0 0 0 17.5 4H13a3 3 0 0 0-3 3V20h6a4 4 0 0 1 4 0z" />
+        ',
+        'inbox-arrow-down' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16l-1.5 10H15l-2 3h-2l-2-3H5.5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m12 9.5 0 5m0 0-2-2m2 2 2-2" />
+        ',
+        'arrow-path' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3.5 12a8.5 8.5 0 0 1 14.7-5.8L20 8M20.5 12a8.5 8.5 0 0 1-14.7 5.8L4 16" />
+        ',
+        'bolt' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 3 5 13h6l-1 8 8-10h-6z" />
+        ',
+        'question-mark-circle' => '
+            <circle cx="12" cy="12" r="9" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9.5 9a2.5 2.5 0 1 1 4.5 1.4c-.7.8-2 1.3-2 2.6m0 3h.01" />
+        ',
+        'building-office' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 20V6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v14M9 20v-3h6v3M8 9h.01M12 9h.01M16 9h.01M8 12h.01M12 12h.01M16 12h.01" />
+        ',
+        'envelope' => '
+            <rect x="3" y="6" width="18" height="12" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m4 8 8 6 8-6" />
+        ',
+        'banknotes' => '
+            <rect x="3" y="7" width="18" height="10" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 12h.01M17 12h.01M12 12a2 2 0 1 0 0 .01" />
+        ',
+        'clipboard-document-list' => '
+            <rect x="6" y="4" width="12" height="16" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 8h6M9 12h6M9 16h4M10 3h4a1 1 0 0 1 1 1v1H9V4a1 1 0 0 1 1-1z" />
+        ',
+        'clock' => '
+            <circle cx="12" cy="12" r="9" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 7v5l3 2" />
+        ',
+        'code-bracket' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m8 7-4 5 4 5M16 7l4 5-4 5M13.5 5l-3 14" />
+        ',
+        'document-text' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 10h6M9 14h6M9 18h4" />
+        ',
+        'calendar-days' => '
+            <rect x="3" y="5" width="18" height="16" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 3v4m8-4v4M3 10h18" />
+        ',
+        'video-camera' => '
+            <rect x="3" y="7" width="12" height="10" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m15 10 6-3v10l-6-3z" />
+        ',
+        'folder-open' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 11h18l-1.2 7a2 2 0 0 1-2 1.7H6.2A2 2 0 0 1 4.2 18z" />
+        ',
+        'archive-box' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16v4H4zM5 11h14v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 14h4" />
+        ',
+        'wallet' => '
+            <rect x="3" y="6" width="18" height="12" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 12h7M16 12h.01" />
+        ',
+        'clipboard-check' => '
+            <rect x="6" y="4" width="12" height="16" rx="2" ry="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 3h4a1 1 0 0 1 1 1v1H9V4a1 1 0 0 1 1-1zm-.5 11 2 2 3.5-4" />
+        ',
+        'arrow-right-on-rectangle' => '
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 16l4-4-4-4M18 12H9" />
+        ',
+        'squares-2x2' => '
+            <rect x="4" y="4" width="7" height="7" rx="1.2" stroke-width="1.8" />
+            <rect x="13" y="4" width="7" height="7" rx="1.2" stroke-width="1.8" />
+            <rect x="4" y="13" width="7" height="7" rx="1.2" stroke-width="1.8" />
+            <rect x="13" y="13" width="7" height="7" rx="1.2" stroke-width="1.8" />
+        ',
+    ];
+
+    $key = trim(strtolower($name));
+    $paths = $icons[$key] ?? '
+        <circle cx="12" cy="12" r="8" stroke-width="1.8" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4m0 4h.01" />
+    ';
+
+    return '<svg class="' . e($class) . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' . $paths . '</svg>';
+}
