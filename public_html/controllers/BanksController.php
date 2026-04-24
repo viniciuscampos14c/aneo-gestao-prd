@@ -88,6 +88,19 @@ class BanksController extends BaseController
 
         $this->integrations->save($companyId, 'itau', $collected['enabled'], $collected['settings'], $changedBy);
 
+        $paymentMethods = new PaymentMethodModel();
+        if ($paymentMethods->tableExists()) {
+            $paymentMethods->syncIntegratedContractMethod(
+                $companyId,
+                'itau',
+                'ITAU - Boleto API',
+                'boleto',
+                (bool) $collected['enabled'],
+                $changedBy,
+                ['integration_key' => 'itau']
+            );
+        }
+
         $this->audit->log([
             'module'       => 'cadastro.bancos',
             'action'       => 'update',

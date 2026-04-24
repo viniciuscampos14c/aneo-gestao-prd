@@ -1,4 +1,8 @@
-<?php $canPaymentCreate = has_permission('finance.payment.create'); ?>
+﻿<?php
+$canPaymentCreate = has_permission('finance.payment.create');
+$paymentMethods = is_array($paymentMethods ?? null) ? $paymentMethods : [];
+$paymentMethodsAvailable = !empty($paymentMethodsAvailable);
+?>
 <section class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
@@ -8,6 +12,7 @@
         <div class="flex gap-2">
             <a href="<?= route('finance/invoices'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Ver Faturas</a>
             <a href="<?= route('finance/reports'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Relatorios</a>
+            <a href="<?= route('finance/payment-methods'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Formas de pagamento</a>
         </div>
     </div>
 
@@ -36,13 +41,29 @@
 
                 <label class="block">
                     <span class="mb-1 block text-sm">Metodo</span>
-                    <select name="method" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                        <option>PIX</option>
-                        <option>Boleto</option>
-                        <option>Cartao</option>
-                        <option>Transferencia</option>
-                        <option>Dinheiro</option>
-                    </select>
+                    <?php if ($paymentMethodsAvailable): ?>
+                        <select name="payment_method_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <option value="">Selecione...</option>
+                            <?php foreach ($paymentMethods as $method): ?>
+                                <?php
+                                $methodId = (int) ($method['id'] ?? 0);
+                                $methodName = trim((string) ($method['name'] ?? ''));
+                                if ($methodId <= 0 || $methodName === '') {
+                                    continue;
+                                }
+                                ?>
+                                <option value="<?= $methodId; ?>"><?= e($methodName); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php else: ?>
+                        <select name="method" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <option>PIX</option>
+                            <option>Boleto</option>
+                            <option>Cartao de credito</option>
+                            <option>Transferencia</option>
+                            <option>Dinheiro</option>
+                        </select>
+                    <?php endif; ?>
                 </label>
 
                 <label class="block">
@@ -74,9 +95,10 @@
             </thead>
             <tbody>
                 <?php foreach ($rows as $row): ?>
+                    <?php $methodLabel = trim((string) ($row['payment_method_name'] ?? '')) ?: trim((string) ($row['method'] ?? '')); ?>
                     <tr class="border-b border-slate-100 hover:bg-slate-50">
                         <td class="px-3 py-3 font-medium"><?= e($row['payment_ref']); ?></td>
-                        <td class="px-3 py-3"><?= e($row['method']); ?></td>
+                        <td class="px-3 py-3"><?= e($methodLabel); ?></td>
                         <td class="px-3 py-3"><?= e(format_currency($row['amount'])); ?></td>
                         <td class="px-3 py-3"><?= e($row['paid_at']); ?></td>
                         <td class="px-3 py-3"><?= (int) $row['invoices_qty']; ?></td>

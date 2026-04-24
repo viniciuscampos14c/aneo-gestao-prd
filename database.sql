@@ -569,11 +569,36 @@ CREATE TABLE exam_submission_answers (
     CONSTRAINT fk_exam_submission_answers_question FOREIGN KEY (question_id) REFERENCES exam_questions(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE payment_methods (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    slug VARCHAR(140) NOT NULL,
+    mode ENUM('manual', 'integrated') NOT NULL DEFAULT 'manual',
+    provider_key VARCHAR(80) NULL,
+    channel VARCHAR(40) NULL,
+    auto_created TINYINT(1) NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    settings_json LONGTEXT NULL,
+    created_by INT UNSIGNED NULL,
+    updated_by INT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY uk_payment_methods_company_slug (company_id, slug),
+    INDEX idx_payment_methods_company_active (company_id, is_active),
+    INDEX idx_payment_methods_provider (provider_key),
+    CONSTRAINT fk_payment_methods_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_payment_methods_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_payment_methods_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE invoices (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     invoice_number VARCHAR(60) NOT NULL UNIQUE,
     company_id INT UNSIGNED NOT NULL,
     student_id INT UNSIGNED NOT NULL,
+    payment_method_id INT UNSIGNED NULL,
     due_date DATE NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
     tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -590,10 +615,12 @@ CREATE TABLE invoices (
     updated_at DATETIME NOT NULL,
     INDEX idx_invoices_company (company_id),
     INDEX idx_invoices_student (student_id),
+    INDEX idx_invoices_payment_method (payment_method_id),
     INDEX idx_invoices_due (due_date),
     INDEX idx_invoices_status (status),
     CONSTRAINT fk_invoices_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_invoices_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_invoices_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_invoices_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -661,6 +688,7 @@ CREATE TABLE payments (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     payment_ref VARCHAR(60) NOT NULL UNIQUE,
     company_id INT UNSIGNED NOT NULL,
+    payment_method_id INT UNSIGNED NULL,
     method VARCHAR(60) NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
     paid_at DATE NOT NULL,
@@ -669,7 +697,9 @@ CREATE TABLE payments (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     INDEX idx_payments_company (company_id),
+    INDEX idx_payments_payment_method (payment_method_id),
     CONSTRAINT fk_payments_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_payments_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_payments_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

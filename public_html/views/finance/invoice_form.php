@@ -1,4 +1,8 @@
-﻿<section class="space-y-6">
+﻿<?php
+$paymentMethods = is_array($paymentMethods ?? null) ? $paymentMethods : [];
+$paymentMethodsAvailable = !empty($paymentMethodsAvailable);
+?>
+<section class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-semibold">Nova Fatura</h2>
@@ -10,12 +14,38 @@
     <form method="post" action="<?= e($action); ?>" class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 lg:grid-cols-2">
         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
+        <?php if (!$paymentMethodsAvailable): ?>
+            <div class="lg:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                O cadastro de formas de pagamento ainda nao esta disponivel neste banco. Execute a migration
+                <code>migrations/20260424_finance_payment_methods.sql</code>.
+            </div>
+        <?php endif; ?>
+
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Aluno *</span>
             <select name="student_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <option value="">Selecione...</option>
                 <?php foreach ($students as $student): ?>
                     <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Forma de pagamento *</span>
+            <select name="payment_method_id" <?= $paymentMethodsAvailable ? 'required' : ''; ?> class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <option value=""><?= $paymentMethodsAvailable ? 'Selecione...' : 'Nao disponivel'; ?></option>
+                <?php foreach ($paymentMethods as $method): ?>
+                    <?php
+                    $methodId = (int) ($method['id'] ?? 0);
+                    $methodName = trim((string) ($method['name'] ?? ''));
+                    if ($methodName === '') {
+                        continue;
+                    }
+                    ?>
+                    <option value="<?= $methodId > 0 ? $methodId : ''; ?>">
+                        <?= e($methodName); ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
         </label>

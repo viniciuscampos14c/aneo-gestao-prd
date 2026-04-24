@@ -384,6 +384,8 @@ class CompanyController extends BaseController
         }
 
         $changedBy = (int) (current_user()['id'] ?? 0);
+        $existingBankSlip = $this->integrations->get($companyId, 'bank_slip');
+        $previousProviderKey = strtolower(trim((string) ($existingBankSlip['settings']['provider'] ?? '')));
 
         $chatwoot = $this->collectChatwootSettings();
         $d4sign = $this->collectD4SignSettings();
@@ -396,6 +398,29 @@ class CompanyController extends BaseController
         $this->integrations->save($companyId, 'fiscal', $fiscal['enabled'], $fiscal['settings'], $changedBy);
         $this->integrations->save($companyId, 'bank_slip', $bankSlip['enabled'], $bankSlip['settings'], $changedBy);
         $this->integrations->save($companyId, 'admin_ai', $adminAi['enabled'], $adminAi['settings'], $changedBy);
+
+        $paymentMethods = new PaymentMethodModel();
+        if ($paymentMethods->tableExists()) {
+            $providerKey = strtolower(trim((string) ($bankSlip['settings']['provider'] ?? '')));
+            if ($previousProviderKey !== '' && $previousProviderKey !== 'manual'
+                && (!$bankSlip['enabled'] || $providerKey === '' || $providerKey !== $previousProviderKey)
+            ) {
+                $paymentMethods->deactivateByContract($companyId, $previousProviderKey, $changedBy);
+            }
+
+            if ($providerKey !== '' && $providerKey !== 'manual') {
+                $contractLabel = strtoupper($providerKey) . ' - Boleto API';
+                $paymentMethods->syncIntegratedContractMethod(
+                    $companyId,
+                    $providerKey,
+                    $contractLabel,
+                    'boleto',
+                    (bool) $bankSlip['enabled'],
+                    $changedBy,
+                    ['integration_key' => 'bank_slip']
+                );
+            }
+        }
 
         if ((int) (current_company_id() ?? 0) === $companyId) {
             $this->refreshSessionCompany($companyId);

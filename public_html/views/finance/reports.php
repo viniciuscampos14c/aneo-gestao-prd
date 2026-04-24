@@ -17,6 +17,7 @@ $tabs = [
     'aging' => 'Inadimplencia',
     'fiscal' => 'NF-e',
 ];
+$paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethodOptions : ['PIX', 'Boleto', 'Cartao de credito', 'Transferencia', 'Dinheiro'];
 ?>
 
 <section class="finance-reports-shell space-y-6">
@@ -70,7 +71,7 @@ $tabs = [
 
         <select name="method" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="">Todos os metodos</option>
-            <?php foreach (['PIX', 'Boleto', 'Cartao', 'Transferencia', 'Dinheiro'] as $method): ?>
+            <?php foreach ($paymentMethodOptions as $method): ?>
                 <option value="<?= e($method); ?>" <?= $filters['method'] === $method ? 'selected' : ''; ?>><?= e($method); ?></option>
             <?php endforeach; ?>
         </select>

@@ -181,7 +181,8 @@ Raiz do projeto:
 16. `migrations/20260316_courses_trial_access.sql`
 17. `migrations/20260317_support_ticket_codes_aneo.sql`
 18. `migrations/20260317_professor_external_exam_links.sql`
-19. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
+19. `migrations/20260424_finance_payment_methods.sql`
+20. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
 
 Dentro da raiz da aplicacao:
 
@@ -449,6 +450,9 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
     - servico `BoletoService`
     - botoes `Gerar boleto API` e `Sincronizar status` por fatura.
 14. Labels de status padronizadas em portugues na interface de Faturas e Relatorios.
+15. Forma de pagamento por fatura (manual ou integrada por contrato) com cadastro dedicado.
+16. Formas integradas sincronizadas automaticamente pelo contrato ativo (ex.: `ITAU - Boleto API`).
+17. Automacao de boleto API restrita a formas integradas (formas manuais ficam sem geracao/sincronizacao automatica).
 
 ### Pagamentos
 
@@ -458,6 +462,7 @@ No primeiro login com `admin/admin123`, o sistema converte automaticamente para 
    - em lote
 2. Distribuicao automatica do valor nas faturas selecionadas.
 3. Recalculo de status da fatura apos pagamento.
+4. Registro com forma de pagamento vinculada (manual/integrada) para rastreabilidade operacional.
 
 ## 6.7 Atendimento (Chatwoot)
 

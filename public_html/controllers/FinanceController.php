@@ -3,11 +3,13 @@
 class FinanceController extends BaseController
 {
     private FinanceModel $finance;
+    private PaymentMethodModel $paymentMethods;
     private AuditLogService $audit;
 
     public function __construct()
     {
         $this->finance = new FinanceModel();
+        $this->paymentMethods = new PaymentMethodModel();
         $this->audit = new AuditLogService();
     }
 
@@ -39,6 +41,7 @@ class FinanceController extends BaseController
             'students' => $this->finance->listStudents(),
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
             'boletosAvailable' => $this->finance->bankSlipAvailable(),
+            'invoicePaymentMethodsAvailable' => $this->finance->invoicePaymentMethodsAvailable(),
         ]);
     }
 
@@ -84,6 +87,7 @@ class FinanceController extends BaseController
             'aging' => $aging,
             'fiscal' => $fiscal,
             'students' => $this->finance->listStudents(),
+            'paymentMethodOptions' => $this->finance->paymentMethodFilterOptions(),
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
             'fiscalAvailable' => $this->finance->fiscalAvailable(),
         ]);
@@ -201,6 +205,17 @@ class FinanceController extends BaseController
         csrf_validate();
 
         $invoiceId = (int) post('invoice_id');
+        if ($this->finance->invoicePaymentMethodsAvailable()) {
+            $invoice = $this->finance->findInvoice($invoiceId);
+            if ($invoice && (int) ($invoice['payment_method_id'] ?? 0) > 0) {
+                $method = $this->finance->findPaymentMethod((int) $invoice['payment_method_id']);
+                if ($method && (string) ($method['mode'] ?? 'manual') !== 'integrated') {
+                    $this->error('Esta fatura usa forma de pagamento manual. A geracao automatica de boleto exige forma integrada (contrato).');
+                    $this->redirect('finance/invoices');
+                }
+            }
+        }
+
         $before = $this->invoiceSnapshotById($invoiceId);
         $result = $this->finance->generateBankSlip($invoiceId, (int) current_user()['id']);
 
@@ -223,6 +238,17 @@ class FinanceController extends BaseController
         csrf_validate();
 
         $invoiceId = (int) post('invoice_id');
+        if ($this->finance->invoicePaymentMethodsAvailable()) {
+            $invoice = $this->finance->findInvoice($invoiceId);
+            if ($invoice && (int) ($invoice['payment_method_id'] ?? 0) > 0) {
+                $method = $this->finance->findPaymentMethod((int) $invoice['payment_method_id']);
+                if ($method && (string) ($method['mode'] ?? 'manual') !== 'integrated') {
+                    $this->error('Esta fatura usa forma de pagamento manual. A sincronizacao automatica exige forma integrada (contrato).');
+                    $this->redirect('finance/invoices');
+                }
+            }
+        }
+
         $before = $this->invoiceSnapshotById($invoiceId);
         $result = $this->finance->syncBankSlipStatus($invoiceId, (int) current_user()['id']);
 
@@ -246,6 +272,8 @@ class FinanceController extends BaseController
         $this->render('finance/invoice_form', [
             'title' => 'Nova Fatura',
             'students' => $this->finance->listStudents(),
+            'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
+            'paymentMethodsAvailable' => $this->finance->invoicePaymentMethodsAvailable(),
             'action' => route('finance/invoices/store'),
         ]);
     }
@@ -258,6 +286,7 @@ class FinanceController extends BaseController
 
         $data = [
             'student_id' => (int) post('student_id'),
+            'payment_method_id' => (int) post('payment_method_id'),
             'due_date' => trim((string) post('due_date')),
             'amount' => parse_decimal((string) post('amount', '0')),
             'tax_amount' => parse_decimal((string) post('tax_amount', '0')),
@@ -272,6 +301,21 @@ class FinanceController extends BaseController
         if ($data['student_id'] <= 0 || $data['due_date'] === '' || $data['amount'] <= 0) {
             $this->error('Preencha aluno, vencimento e quantia.');
             $this->redirect('finance/invoices/create');
+        }
+
+        if ($this->finance->invoicePaymentMethodsAvailable()) {
+            if ($data['payment_method_id'] <= 0) {
+                $this->error('Selecione a forma de pagamento da fatura.');
+                $this->redirect('finance/invoices/create');
+            }
+
+            $method = $this->finance->findPaymentMethod($data['payment_method_id']);
+            if (!$method || (int) ($method['is_active'] ?? 0) !== 1) {
+                $this->error('Forma de pagamento invalida ou inativa.');
+                $this->redirect('finance/invoices/create');
+            }
+        } else {
+            $data['payment_method_id'] = 0;
         }
 
         if ($data['boleto_url'] !== '' && !filter_var($data['boleto_url'], FILTER_VALIDATE_URL)) {
@@ -317,11 +361,23 @@ class FinanceController extends BaseController
 
         $invoiceId = (int) post('invoice_id');
         $method = trim((string) post('method', 'PIX'));
+        $paymentMethodId = (int) post('payment_method_id');
         $paidAt = trim((string) post('paid_at', date('Y-m-d')));
         $notes = trim((string) post('notes'));
         $before = $this->invoiceSnapshotById($invoiceId);
 
-        $result = $this->finance->settleInvoice($invoiceId, $method, $paidAt, $notes, (int) current_user()['id']);
+        if ($this->finance->invoicePaymentMethodsAvailable()) {
+            $method = $this->finance->resolvePaymentMethodName($paymentMethodId, $method);
+        }
+
+        $result = $this->finance->settleInvoice(
+            $invoiceId,
+            $method,
+            $paidAt,
+            $notes,
+            (int) current_user()['id'],
+            $paymentMethodId > 0 ? $paymentMethodId : null
+        );
 
         if (!$result['ok']) {
             $this->error($result['message']);
@@ -332,6 +388,7 @@ class FinanceController extends BaseController
         $this->auditInvoiceEvent('settle', $invoiceId, $before, $after, 'Baixa de fatura registrada.', [
             'payment_id' => (int) ($result['payment_id'] ?? 0),
             'method' => $method,
+            'payment_method_id' => $paymentMethodId > 0 ? $paymentMethodId : null,
             'paid_at' => $paidAt,
         ]);
 
@@ -372,7 +429,7 @@ class FinanceController extends BaseController
         header('Content-Disposition: attachment; filename=faturas_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['ID', 'Numero', 'Aluno', 'Vencimento', 'Quantia', 'Pago', 'Status', 'Data Baixa', 'Boleto Status', 'Boleto ID Externo', 'Link Boleto', 'NF Status', 'Imposto', 'Projeto', 'Tags'], ';');
+        fputcsv($out, ['ID', 'Numero', 'Aluno', 'Vencimento', 'Quantia', 'Pago', 'Status', 'Forma de Pagamento', 'Data Baixa', 'Boleto Status', 'Boleto ID Externo', 'Link Boleto', 'NF Status', 'Imposto', 'Projeto', 'Tags'], ';');
 
         foreach ($result['rows'] as $row) {
             fputcsv($out, [
@@ -383,6 +440,7 @@ class FinanceController extends BaseController
                 $row['amount'],
                 $row['paid_amount'],
                 $row['status'],
+                $row['payment_method_name'] ?? '',
                 $row['paid_at'] ?? '',
                 $row['boleto_status'] ?? '',
                 $row['boleto_external_id'] ?? '',
@@ -462,6 +520,8 @@ class FinanceController extends BaseController
             'rows' => $result['rows'],
             'meta' => $result['meta'],
             'invoicesPool' => $invoicePool,
+            'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
+            'paymentMethodsAvailable' => $this->finance->paymentsPaymentMethodsAvailable(),
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
         ]);
     }
@@ -474,6 +534,7 @@ class FinanceController extends BaseController
 
         $invoiceIds = (array) post('invoice_ids', []);
         $amount = parse_decimal((string) post('amount', '0'));
+        $paymentMethodId = (int) post('payment_method_id');
         $method = trim((string) post('method', 'PIX'));
         $paidAt = trim((string) post('paid_at', date('Y-m-d')));
         $notes = trim((string) post('notes'));
@@ -481,6 +542,23 @@ class FinanceController extends BaseController
         if ($amount <= 0 || $invoiceIds === []) {
             $this->error('Selecione faturas e informe um valor.');
             $this->redirect('finance/payments');
+        }
+
+        if ($this->finance->paymentsPaymentMethodsAvailable()) {
+            if ($paymentMethodId <= 0) {
+                $this->error('Selecione a forma de pagamento.');
+                $this->redirect('finance/payments');
+            }
+
+            $selectedMethod = $this->finance->findPaymentMethod($paymentMethodId);
+            if (!$selectedMethod || (int) ($selectedMethod['is_active'] ?? 0) !== 1) {
+                $this->error('Forma de pagamento invalida ou inativa.');
+                $this->redirect('finance/payments');
+            }
+
+            $method = trim((string) ($selectedMethod['name'] ?? 'PIX'));
+        } else {
+            $paymentMethodId = 0;
         }
 
         $invoiceIds = array_values(array_unique(array_filter(array_map('intval', $invoiceIds), fn ($id) => $id > 0)));
@@ -492,7 +570,15 @@ class FinanceController extends BaseController
             }
         }
 
-        $paymentId = $this->finance->recordBatchPayment($invoiceIds, $amount, $method, $paidAt, $notes, (int) current_user()['id']);
+        $paymentId = $this->finance->recordBatchPayment(
+            $invoiceIds,
+            $amount,
+            $method,
+            $paidAt,
+            $notes,
+            (int) current_user()['id'],
+            $paymentMethodId > 0 ? $paymentMethodId : null
+        );
 
         if ($paymentId <= 0) {
             $this->error('Nao foi possivel registrar pagamento.');
@@ -520,6 +606,7 @@ class FinanceController extends BaseController
                 'invoice_ids' => $invoiceIds,
                 'amount' => $amount,
                 'method' => $method,
+                'payment_method_id' => $paymentMethodId > 0 ? $paymentMethodId : null,
                 'paid_at' => $paidAt,
             ],
             'company_id' => (int) (current_company_id() ?? 0),
@@ -527,6 +614,114 @@ class FinanceController extends BaseController
 
         $this->success('Pagamento registrado #' . $paymentId . '.');
         $this->redirect('finance/payments');
+    }
+
+    public function paymentMethods(): void
+    {
+        require_auth();
+        require_permission('finance');
+
+        $available = $this->finance->paymentMethodsTableAvailable();
+        $rows = $available ? $this->finance->paymentMethodsForManagement() : [];
+
+        $this->render('finance/payment_methods', [
+            'title' => 'Formas de Pagamento',
+            'available' => $available,
+            'rows' => $rows,
+        ]);
+    }
+
+    public function storePaymentMethod(): void
+    {
+        require_auth();
+        require_permission('finance');
+        csrf_validate();
+
+        if (!$this->finance->paymentMethodsTableAvailable()) {
+            $this->error('Estrutura de formas de pagamento indisponivel no banco. Execute a migration.');
+            $this->redirect('finance/payment-methods');
+        }
+
+        $name = trim((string) post('name'));
+        $channel = strtolower(trim((string) post('channel', 'other')));
+        if ($name === '') {
+            $this->error('Informe o nome da forma de pagamento.');
+            $this->redirect('finance/payment-methods');
+        }
+
+        $allowedChannels = ['pix', 'card', 'transfer', 'cash', 'boleto', 'other'];
+        if (!in_array($channel, $allowedChannels, true)) {
+            $channel = 'other';
+        }
+
+        $companyId = (int) (current_company_id() ?? 0);
+        $createdBy = (int) (current_user()['id'] ?? 0);
+        $id = $this->paymentMethods->createManual($companyId, $name, $channel, $createdBy);
+        if ($id <= 0) {
+            $this->error('Nao foi possivel salvar a forma de pagamento.');
+            $this->redirect('finance/payment-methods');
+        }
+
+        $after = $this->paymentMethods->find($companyId, $id);
+        $this->audit->log([
+            'module' => 'finance.formas_pagamento',
+            'action' => 'create',
+            'entity_type' => 'payment_method',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['name'] ?? $name),
+            'description' => 'Forma de pagamento manual criada.',
+            'before' => [],
+            'after' => $after ?: [],
+            'company_id' => $companyId,
+        ]);
+
+        $this->success('Forma de pagamento salva com sucesso.');
+        $this->redirect('finance/payment-methods');
+    }
+
+    public function togglePaymentMethod(): void
+    {
+        require_auth();
+        require_permission('finance');
+        csrf_validate();
+
+        if (!$this->finance->paymentMethodsTableAvailable()) {
+            $this->error('Estrutura de formas de pagamento indisponivel no banco. Execute a migration.');
+            $this->redirect('finance/payment-methods');
+        }
+
+        $id = (int) post('id');
+        $setActive = (int) post('set_active', 1) === 1;
+        $companyId = (int) (current_company_id() ?? 0);
+        $changedBy = (int) (current_user()['id'] ?? 0);
+
+        $before = $this->paymentMethods->find($companyId, $id);
+        if (!$before) {
+            $this->error('Forma de pagamento nao encontrada.');
+            $this->redirect('finance/payment-methods');
+        }
+
+        $ok = $this->paymentMethods->setActive($companyId, $id, $setActive, $changedBy);
+        if (!$ok) {
+            $this->error('Nao foi possivel atualizar o status da forma de pagamento.');
+            $this->redirect('finance/payment-methods');
+        }
+
+        $after = $this->paymentMethods->find($companyId, $id);
+        $this->audit->log([
+            'module' => 'finance.formas_pagamento',
+            'action' => 'toggle',
+            'entity_type' => 'payment_method',
+            'entity_id' => $id,
+            'entity_label' => (string) ($after['name'] ?? $before['name'] ?? ('Forma #' . $id)),
+            'description' => $setActive ? 'Forma de pagamento ativada.' : 'Forma de pagamento inativada.',
+            'before' => $before,
+            'after' => $after ?: [],
+            'company_id' => $companyId,
+        ]);
+
+        $this->success($setActive ? 'Forma de pagamento ativada.' : 'Forma de pagamento inativada.');
+        $this->redirect('finance/payment-methods');
     }
 
     private function invoiceSnapshotById(int $invoiceId): ?array
@@ -544,6 +739,8 @@ class FinanceController extends BaseController
             'id' => (int) ($invoice['id'] ?? 0),
             'invoice_number' => (string) ($invoice['invoice_number'] ?? ''),
             'student_id' => (int) ($invoice['student_id'] ?? 0),
+            'payment_method_id' => (int) ($invoice['payment_method_id'] ?? 0),
+            'payment_method_name' => (string) ($invoice['payment_method_name'] ?? ''),
             'due_date' => (string) ($invoice['due_date'] ?? ''),
             'amount' => (float) ($invoice['amount'] ?? 0),
             'paid_amount' => (float) ($invoice['paid_amount'] ?? 0),

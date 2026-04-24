@@ -331,6 +331,7 @@ Exemplo local:
    - `migrations/20260317_support_ticket_codes_aneo.sql`
    - `migrations/20260317_professor_external_exam_links.sql`
    - `migrations/20260416_api_tokens.sql`
+   - `migrations/20260424_finance_payment_methods.sql`
 6. Ajuste credenciais em `config.php` (bloco `db`).
 7. Acesse `http://localhost/aneo/index.php?route=login`.
 

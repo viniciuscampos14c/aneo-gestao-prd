@@ -9,6 +9,7 @@ $canInvoiceWhatsapp = has_permission('finance.invoice.whatsapp');
 $canBoletoGenerate = has_permission('finance.invoice.boleto.generate');
 $canBoletoSync = has_permission('finance.invoice.boleto.sync');
 $canChatOpen = has_permission('chat.open');
+$invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -22,11 +23,19 @@ $canChatOpen = has_permission('chat.open');
             <?php endif; ?>
             <a href="<?= route('finance/payments'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Pagamentos em lote</a>
             <a href="<?= route('finance/reports'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Relatorios</a>
+            <a href="<?= route('finance/payment-methods'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Formas de pagamento</a>
             <?php if ($canInvoiceExport): ?>
                 <a href="<?= route('finance/invoices/export&q=' . urlencode($filters['q'])); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Exportar</a>
             <?php endif; ?>
         </div>
     </div>
+
+    <?php if (!$invoicePaymentMethodsAvailable): ?>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            Formas de pagamento ainda nao disponiveis no banco. Execute a migration
+            <code>migrations/20260424_finance_payment_methods.sql</code>.
+        </div>
+    <?php endif; ?>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <article class="finance-card-open rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Em aberto</p><p class="mt-2 text-2xl font-semibold"><?= (int) $stats['open']; ?></p></article>
@@ -89,6 +98,7 @@ $canChatOpen = has_permission('chat.open');
                     <th class="px-3 py-3">Aluno</th>
                     <th class="px-3 py-3">Vencimento</th>
                     <th class="px-3 py-3">Quantia</th>
+                    <th class="px-3 py-3">Forma</th>
                     <th class="px-3 py-3">Status</th>
                     <th class="px-3 py-3">Recebimento</th>
                     <th class="px-3 py-3">Boleto API</th>
@@ -129,12 +139,21 @@ $canChatOpen = has_permission('chat.open');
                         'overdue', 'failed', 'cancelled' => 'finance-boleto-overdue',
                         default => 'finance-boleto-default',
                     };
+                    $paymentMethodName = trim((string) ($row['payment_method_name'] ?? ''));
+                    $paymentMethodMode = trim((string) ($row['payment_method_mode'] ?? ''));
+                    $paymentMethodLabel = $paymentMethodName !== '' ? $paymentMethodName : 'Nao definido';
+                    $canBoletoAutomation = !$invoicePaymentMethodsAvailable || $paymentMethodName === '' || $paymentMethodMode === 'integrated';
                     ?>
                     <tr class="finance-row border-b border-slate-100 hover:bg-slate-50 align-top">
                         <td class="px-3 py-3 font-medium"><?= e($row['invoice_number']); ?></td>
                         <td class="px-3 py-3"><?= e($row['student_name']); ?></td>
                         <td class="px-3 py-3"><?= e($row['due_date']); ?></td>
                         <td class="px-3 py-3"><?= e(format_currency($row['amount'])); ?></td>
+                        <td class="px-3 py-3">
+                            <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $paymentMethodMode === 'integrated' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-700'; ?>">
+                                <?= e($paymentMethodLabel); ?>
+                            </span>
+                        </td>
                         <td class="px-3 py-3">
                             <?php
                             $statusColor = match ($row['status']) {
@@ -167,7 +186,8 @@ $canChatOpen = has_permission('chat.open');
                                     <form method="post" action="<?= route('finance/invoices/settle'); ?>" class="space-y-1" onsubmit="return confirm('Confirmar baixa total desta fatura?');">
                                         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                         <input type="hidden" name="invoice_id" value="<?= (int) $row['id']; ?>">
-                                        <input type="hidden" name="method" value="PIX">
+                                        <input type="hidden" name="method" value="<?= e($paymentMethodName !== '' ? $paymentMethodName : 'PIX'); ?>">
+                                        <input type="hidden" name="payment_method_id" value="<?= (int) ($row['payment_method_id'] ?? 0); ?>">
                                         <input type="hidden" name="paid_at" value="<?= date('Y-m-d'); ?>">
                                         <input type="hidden" name="notes" value="Baixa manual pelo modulo de contas a receber.">
                                         <button class="finance-btn finance-btn-settle rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Efetuar baixa</button>
@@ -180,7 +200,9 @@ $canChatOpen = has_permission('chat.open');
                         </td>
 
                         <td class="px-3 py-3">
-                            <?php if (empty($boletosAvailable)): ?>
+                            <?php if (!$canBoletoAutomation): ?>
+                                <p class="text-xs text-slate-400">Forma manual (sem automacao de boleto).</p>
+                            <?php elseif (empty($boletosAvailable)): ?>
                                 <p class="text-xs text-slate-400">Estrutura de boleto nao instalada.</p>
                             <?php else: ?>
                                 <div class="space-y-1">
@@ -301,7 +323,7 @@ $canChatOpen = has_permission('chat.open');
                 <?php endforeach; ?>
                 <?php if ($rows === []): ?>
                     <tr>
-                        <td colspan="13" class="px-3 py-6 text-center text-slate-500">Nenhuma fatura encontrada.</td>
+                        <td colspan="14" class="px-3 py-6 text-center text-slate-500">Nenhuma fatura encontrada.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>

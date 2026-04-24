@@ -5,6 +5,7 @@ class FinanceModel extends BaseModel
     private StudentModel $students;
     private FiscalInvoiceService $fiscalService;
     private BoletoService $boletoService;
+    private PaymentMethodModel $paymentMethods;
 
     public function __construct()
     {
@@ -12,6 +13,7 @@ class FinanceModel extends BaseModel
         $this->students = new StudentModel();
         $this->fiscalService = new FiscalInvoiceService();
         $this->boletoService = new BoletoService();
+        $this->paymentMethods = new PaymentMethodModel();
     }
 
     public function listStudents(): array
@@ -108,11 +110,115 @@ class FinanceModel extends BaseModel
         return $this->hasBankSlipTable();
     }
 
+    public function paymentMethodsTableAvailable(): bool
+    {
+        return $this->paymentMethods->tableExists();
+    }
+
+    public function invoicePaymentMethodsAvailable(): bool
+    {
+        return $this->paymentMethods->tableExists() && $this->paymentMethods->invoiceColumnExists();
+    }
+
+    public function paymentsPaymentMethodsAvailable(): bool
+    {
+        return $this->paymentMethods->tableExists() && $this->paymentMethods->paymentsColumnExists();
+    }
+
+    public function paymentMethodsForInvoiceSelection(): array
+    {
+        $fallback = $this->fallbackPaymentMethods();
+        if (!$this->invoicePaymentMethodsAvailable()) {
+            return $fallback;
+        }
+
+        $companyId = $this->companyId();
+        $this->paymentMethods->seedManualDefaults($companyId, (int) (current_user()['id'] ?? 0));
+        $rows = $this->paymentMethods->activeByCompany($companyId);
+        if ($rows === []) {
+            return $fallback;
+        }
+
+        return $rows;
+    }
+
+    public function paymentMethodsForManagement(): array
+    {
+        if (!$this->paymentMethodsTableAvailable()) {
+            return [];
+        }
+
+        $companyId = $this->companyId();
+        $this->paymentMethods->seedManualDefaults($companyId, (int) (current_user()['id'] ?? 0));
+        return $this->paymentMethods->allByCompany($companyId);
+    }
+
+    public function findPaymentMethod(int $paymentMethodId): ?array
+    {
+        if (!$this->paymentMethodsTableAvailable() || $paymentMethodId <= 0) {
+            return null;
+        }
+
+        return $this->paymentMethods->find($this->companyId(), $paymentMethodId);
+    }
+
+    public function paymentMethodFilterOptions(): array
+    {
+        $fallback = array_map(
+            fn (array $item) => (string) ($item['name'] ?? ''),
+            $this->fallbackPaymentMethods()
+        );
+
+        $options = [];
+        foreach ($fallback as $name) {
+            $name = trim($name);
+            if ($name !== '') {
+                $options[$name] = $name;
+            }
+        }
+
+        if ($this->paymentMethodsTableAvailable()) {
+            foreach ($this->paymentMethods->allByCompany($this->companyId()) as $method) {
+                $name = trim((string) ($method['name'] ?? ''));
+                if ($name !== '') {
+                    $options[$name] = $name;
+                }
+            }
+        }
+
+        foreach ($this->paymentMethods->methodNamesFromPayments($this->companyId()) as $name) {
+            $name = trim((string) $name);
+            if ($name !== '') {
+                $options[$name] = $name;
+            }
+        }
+
+        ksort($options);
+        return array_values($options);
+    }
+
+    public function resolvePaymentMethodName(?int $paymentMethodId, string $fallback = 'PIX'): string
+    {
+        $fallback = trim($fallback) !== '' ? trim($fallback) : 'PIX';
+        if (!$this->paymentMethodsTableAvailable() || $paymentMethodId === null || $paymentMethodId <= 0) {
+            return $fallback;
+        }
+
+        $row = $this->paymentMethods->findActive($this->companyId(), $paymentMethodId);
+        if (!$row) {
+            return $fallback;
+        }
+
+        $name = trim((string) ($row['name'] ?? ''));
+        return $name !== '' ? $name : $fallback;
+    }
+
     public function listInvoices(array $filters, int $perPage, int $page): array
     {
         $this->refreshOverdueInvoices();
         $hasFiscalTable = $this->hasFiscalTable();
         $hasBankSlipTable = $this->hasBankSlipTable();
+        $hasInvoicePaymentMethod = $this->invoicePaymentMethodsAvailable();
 
         $where = ['i.company_id = :company_id'];
         $params = [':company_id' => $this->companyId()];
@@ -136,12 +242,16 @@ class FinanceModel extends BaseModel
 
         $bankJoin = $hasBankSlipTable ? "LEFT JOIN bank_slips bs ON bs.invoice_id = i.id" : "";
         $fiscalJoin = $hasFiscalTable ? "LEFT JOIN fiscal_invoices fi ON fi.invoice_id = i.id" : "";
+        $paymentJoin = $hasInvoicePaymentMethod
+            ? "LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id AND pm.company_id = i.company_id"
+            : "";
 
         $countSql = "SELECT COUNT(*)
             FROM invoices i
             LEFT JOIN students s ON s.id = i.student_id
             {$bankJoin}
             {$fiscalJoin}
+            {$paymentJoin}
             WHERE {$whereSql}";
 
         $bankFields = $hasBankSlipTable
@@ -152,11 +262,16 @@ class FinanceModel extends BaseModel
             ? "fi.id AS fiscal_id, fi.status AS fiscal_status, fi.number AS fiscal_number, fi.provider AS fiscal_provider, fi.error_message AS fiscal_error_message, fi.last_attempt_at AS fiscal_last_attempt_at"
             : "NULL AS fiscal_id, NULL AS fiscal_status, NULL AS fiscal_number, NULL AS fiscal_provider, NULL AS fiscal_error_message, NULL AS fiscal_last_attempt_at";
 
-        $dataSql = "SELECT i.*, s.full_name AS student_name, s.phone AS student_phone, s.primary_contact AS student_contact, s.email_primary AS student_email, {$bankFields}, {$fiscalFields}
+        $paymentFields = $hasInvoicePaymentMethod
+            ? "pm.id AS payment_method_id, pm.name AS payment_method_name, pm.mode AS payment_method_mode, pm.provider_key AS payment_method_provider_key, pm.channel AS payment_method_channel"
+            : "NULL AS payment_method_id, NULL AS payment_method_name, NULL AS payment_method_mode, NULL AS payment_method_provider_key, NULL AS payment_method_channel";
+
+        $dataSql = "SELECT i.*, s.full_name AS student_name, s.phone AS student_phone, s.primary_contact AS student_contact, s.email_primary AS student_email, {$bankFields}, {$fiscalFields}, {$paymentFields}
             FROM invoices i
             LEFT JOIN students s ON s.id = i.student_id
             {$bankJoin}
             {$fiscalJoin}
+            {$paymentJoin}
             WHERE {$whereSql}
             ORDER BY i.id DESC";
 
@@ -176,20 +291,9 @@ class FinanceModel extends BaseModel
 
     public function createInvoice(array $data, int $createdBy): int
     {
-        $stmt = $this->db->prepare('INSERT INTO invoices (
-            invoice_number, company_id, student_id, due_date, amount, tax_amount, paid_amount,
-            paid_at,
-            status, tags, project_name, boleto_url, is_recurring, recurrence_interval,
-            created_by, created_at, updated_at
-        ) VALUES (
-            :invoice_number, :company_id, :student_id, :due_date, :amount, :tax_amount, 0,
-            :paid_at,
-            :status, :tags, :project_name, :boleto_url, :is_recurring, :recurrence_interval,
-            :created_by, :created_at, :updated_at
-        )');
-
         $now = now();
-        $stmt->execute([
+
+        $params = [
             ':invoice_number' => 'DRAFT',
             ':company_id' => $this->companyId(),
             ':student_id' => (int) $data['student_id'],
@@ -206,7 +310,36 @@ class FinanceModel extends BaseModel
             ':created_by' => $createdBy,
             ':created_at' => $now,
             ':updated_at' => $now,
-        ]);
+        ];
+
+        if ($this->invoicePaymentMethodsAvailable()) {
+            $stmt = $this->db->prepare('INSERT INTO invoices (
+                invoice_number, company_id, student_id, payment_method_id, due_date, amount, tax_amount, paid_amount,
+                paid_at,
+                status, tags, project_name, boleto_url, is_recurring, recurrence_interval,
+                created_by, created_at, updated_at
+            ) VALUES (
+                :invoice_number, :company_id, :student_id, :payment_method_id, :due_date, :amount, :tax_amount, 0,
+                :paid_at,
+                :status, :tags, :project_name, :boleto_url, :is_recurring, :recurrence_interval,
+                :created_by, :created_at, :updated_at
+            )');
+            $params[':payment_method_id'] = !empty($data['payment_method_id']) ? (int) $data['payment_method_id'] : null;
+        } else {
+            $stmt = $this->db->prepare('INSERT INTO invoices (
+                invoice_number, company_id, student_id, due_date, amount, tax_amount, paid_amount,
+                paid_at,
+                status, tags, project_name, boleto_url, is_recurring, recurrence_interval,
+                created_by, created_at, updated_at
+            ) VALUES (
+                :invoice_number, :company_id, :student_id, :due_date, :amount, :tax_amount, 0,
+                :paid_at,
+                :status, :tags, :project_name, :boleto_url, :is_recurring, :recurrence_interval,
+                :created_by, :created_at, :updated_at
+            )');
+        }
+
+        $stmt->execute($params);
 
         $id = (int) $this->db->lastInsertId();
         $number = $this->generateInvoiceNumber($id);
@@ -232,7 +365,7 @@ class FinanceModel extends BaseModel
         ]);
     }
 
-    public function settleInvoice(int $invoiceId, string $method, string $paidAt, string $notes, int $createdBy): array
+    public function settleInvoice(int $invoiceId, string $method, string $paidAt, string $notes, int $createdBy, ?int $paymentMethodId = null): array
     {
         $invoice = $this->findInvoice($invoiceId);
         if (!$invoice) {
@@ -244,8 +377,14 @@ class FinanceModel extends BaseModel
             return ['ok' => false, 'message' => 'Esta fatura ja esta quitada.'];
         }
 
+        if (($paymentMethodId === null || $paymentMethodId <= 0) && $this->invoicePaymentMethodsAvailable()) {
+            $paymentMethodId = (int) ($invoice['payment_method_id'] ?? 0);
+        }
+
+        $method = $this->resolvePaymentMethodName($paymentMethodId, $method);
+
         $description = $notes !== '' ? $notes : 'Baixa manual da fatura ' . $invoice['invoice_number'];
-        $paymentId = $this->recordBatchPayment([$invoiceId], $outstanding, $method, $paidAt, $description, $createdBy);
+        $paymentId = $this->recordBatchPayment([$invoiceId], $outstanding, $method, $paidAt, $description, $createdBy, $paymentMethodId);
 
         if ($paymentId <= 0) {
             return ['ok' => false, 'message' => 'Nao foi possivel efetuar a baixa da fatura.'];
@@ -690,13 +829,18 @@ class FinanceModel extends BaseModel
             $paidAmount = min(max(0, $paidAmount), $outstanding);
 
             if ($paidAmount > 0) {
+                $paymentMethodId = $this->invoicePaymentMethodsAvailable()
+                    ? (int) ($invoice['payment_method_id'] ?? 0)
+                    : null;
+                $methodName = $this->resolvePaymentMethodName($paymentMethodId, 'Boleto');
                 $this->recordBatchPayment(
                     [$invoiceId],
                     $paidAmount,
-                    'Boleto',
+                    $methodName,
                     (string) ($serviceResult['paid_at'] ?? date('Y-m-d')),
                     'Baixa automatica por sincronizacao de boleto API.',
-                    $changedBy
+                    $changedBy,
+                    $paymentMethodId
                 );
             }
         }
@@ -1180,6 +1324,7 @@ class FinanceModel extends BaseModel
 
     public function listPayments(array $filters, int $perPage, int $page): array
     {
+        $hasPaymentsPaymentMethod = $this->paymentsPaymentMethodsAvailable();
         $where = ['EXISTS (
             SELECT 1
             FROM payment_items pi_filter
@@ -1197,13 +1342,20 @@ class FinanceModel extends BaseModel
         }
 
         $whereSql = implode(' AND ', $where);
+        $paymentMethodJoin = $hasPaymentsPaymentMethod
+            ? 'LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id AND pm.company_id = p.company_id'
+            : '';
+        $paymentMethodSelect = $hasPaymentsPaymentMethod
+            ? 'MAX(pm.name) AS payment_method_name, MAX(pm.mode) AS payment_method_mode, MAX(pm.provider_key) AS payment_method_provider_key'
+            : 'NULL AS payment_method_name, NULL AS payment_method_mode, NULL AS payment_method_provider_key';
 
         $countSql = "SELECT COUNT(*) FROM payments p WHERE {$whereSql}";
 
-        $dataSql = "SELECT p.*, COUNT(i.id) AS invoices_qty
+        $dataSql = "SELECT p.*, {$paymentMethodSelect}, COUNT(i.id) AS invoices_qty
             FROM payments p
             LEFT JOIN payment_items pi ON pi.payment_id = p.id
             LEFT JOIN invoices i ON i.id = pi.invoice_id AND i.company_id = :filter_company_id
+            {$paymentMethodJoin}
             WHERE {$whereSql}
             GROUP BY p.id
             ORDER BY p.id DESC";
@@ -1211,7 +1363,15 @@ class FinanceModel extends BaseModel
         return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
     }
 
-    public function recordBatchPayment(array $invoiceIds, float $amount, string $method, string $paidAt, string $notes, int $createdBy): int
+    public function recordBatchPayment(
+        array $invoiceIds,
+        float $amount,
+        string $method,
+        string $paidAt,
+        string $notes,
+        int $createdBy,
+        ?int $paymentMethodId = null
+    ): int
     {
         $invoiceIds = array_values(array_filter(array_map('intval', $invoiceIds), fn ($id) => $id > 0));
         if ($invoiceIds === [] || $amount <= 0) {
@@ -1219,15 +1379,24 @@ class FinanceModel extends BaseModel
         }
 
         $companyId = $this->companyId();
+        $method = $this->resolvePaymentMethodName($paymentMethodId, $method);
 
-        $stmt = $this->db->prepare('INSERT INTO payments (
-            payment_ref, company_id, method, amount, paid_at, notes, created_by, created_at, updated_at
-        ) VALUES (
-            :payment_ref, :company_id, :method, :amount, :paid_at, :notes, :created_by, :created_at, :updated_at
-        )');
+        if ($this->paymentsPaymentMethodsAvailable()) {
+            $stmt = $this->db->prepare('INSERT INTO payments (
+                payment_ref, company_id, payment_method_id, method, amount, paid_at, notes, created_by, created_at, updated_at
+            ) VALUES (
+                :payment_ref, :company_id, :payment_method_id, :method, :amount, :paid_at, :notes, :created_by, :created_at, :updated_at
+            )');
+        } else {
+            $stmt = $this->db->prepare('INSERT INTO payments (
+                payment_ref, company_id, method, amount, paid_at, notes, created_by, created_at, updated_at
+            ) VALUES (
+                :payment_ref, :company_id, :method, :amount, :paid_at, :notes, :created_by, :created_at, :updated_at
+            )');
+        }
 
         $now = now();
-        $stmt->execute([
+        $params = [
             ':payment_ref' => 'PG-' . date('YmdHis'),
             ':company_id' => $companyId,
             ':method' => $method,
@@ -1237,7 +1406,11 @@ class FinanceModel extends BaseModel
             ':created_by' => $createdBy,
             ':created_at' => $now,
             ':updated_at' => $now,
-        ]);
+        ];
+        if ($this->paymentsPaymentMethodsAvailable()) {
+            $params[':payment_method_id'] = ($paymentMethodId !== null && $paymentMethodId > 0) ? $paymentMethodId : null;
+        }
+        $stmt->execute($params);
 
         $paymentId = (int) $this->db->lastInsertId();
 
@@ -1552,6 +1725,17 @@ class FinanceModel extends BaseModel
         $cached = ((int) $stmt->fetchColumn()) > 0;
 
         return $cached;
+    }
+
+    private function fallbackPaymentMethods(): array
+    {
+        return [
+            ['id' => null, 'name' => 'PIX', 'mode' => 'manual', 'channel' => 'pix', 'provider_key' => null, 'auto_created' => 0, 'is_active' => 1],
+            ['id' => null, 'name' => 'Cartao de credito', 'mode' => 'manual', 'channel' => 'card', 'provider_key' => null, 'auto_created' => 0, 'is_active' => 1],
+            ['id' => null, 'name' => 'Transferencia', 'mode' => 'manual', 'channel' => 'transfer', 'provider_key' => null, 'auto_created' => 0, 'is_active' => 1],
+            ['id' => null, 'name' => 'Dinheiro', 'mode' => 'manual', 'channel' => 'cash', 'provider_key' => null, 'auto_created' => 0, 'is_active' => 1],
+            ['id' => null, 'name' => 'Boleto', 'mode' => 'manual', 'channel' => 'boleto', 'provider_key' => null, 'auto_created' => 0, 'is_active' => 1],
+        ];
     }
 
     private function statusIdBySlug(string $slug): ?int

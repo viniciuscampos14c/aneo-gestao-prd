@@ -159,6 +159,9 @@ $router->get('finance/reports/export', fn () => $finance->exportReports());
 
 $router->get('finance/payments', fn () => $finance->payments());
 $router->post('finance/payments/store', fn () => $finance->storePayment());
+$router->get('finance/payment-methods', fn () => $finance->paymentMethods());
+$router->post('finance/payment-methods/store', fn () => $finance->storePaymentMethod());
+$router->post('finance/payment-methods/toggle', fn () => $finance->togglePaymentMethod());
 
 $router->get('chatwoot', fn () => $chatwoot->index());
 $router->post('chatwoot/open-student', fn () => $chatwoot->openStudent());
