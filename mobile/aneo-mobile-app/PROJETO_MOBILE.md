@@ -57,6 +57,14 @@ Etapa 6 entregue:
   - scripts de build/submit adicionados;
   - guia `PUBLICACAO_LOJAS.md` criado.
 
+Etapa 7 entregue:
+
+- Login obrigatorio na entrada do app (usuario/senha) antes de abrir as abas internas.
+- Remocao da URL da API da tela inicial de login para simplificar o uso final.
+- Nova logo aplicada no cabecalho do app com destaque maior e composicao ajustada.
+- Texto da marca (`ANEO DIRETORIA`) posicionado abaixo da logo na tela inicial.
+- Novo arquivo de tela de acesso: `src/screens/AppLoginScreen.tsx`.
+
 ## Estrutura principal
 
 ```txt
@@ -72,6 +80,11 @@ mobile/aneo-mobile-app/
 |-- package.json
 `-- README.md
 ```
+
+## Regra de separacao (mobile x ERP)
+
+- Implementacoes mobile devem ser realizadas apenas em `mobile/aneo-mobile-app`.
+- Nao incluir arquivos de `public_html/` em commits de app mobile, salvo quando a tarefa exigir mudanca de API/backend.
 
 ## Como executar localmente
 

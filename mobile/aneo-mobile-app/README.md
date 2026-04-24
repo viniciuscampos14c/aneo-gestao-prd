@@ -14,6 +14,14 @@ Aplicativo mobile executivo para iOS e Android, desenvolvido em React Native + E
 - Atualizacao automatica a cada 5 minutos + botao **Atualizar agora**.
 - Envio real de negociacao/aditivo para o CRM via `POST api.php?r=tickets`.
 - Base de publicacao iOS/Android preparada com `eas.json`.
+- Tela de login obrigatoria na abertura do app (usuario + senha) antes de liberar as abas.
+- Remocao do campo de URL da API na tela inicial de login (uso de URL padrao do app).
+- Atualizacao da identidade visual no topo com nova logo ANEO e destaque maior da marca.
+
+## Isolamento do projeto mobile
+
+- Todo o app esta isolado em `mobile/aneo-mobile-app`.
+- Alteracoes do app mobile devem ficar somente neste caminho para nao impactar o ERP (`public_html/...`).
 
 ## Como rodar
 

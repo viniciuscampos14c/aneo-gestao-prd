@@ -4,18 +4,21 @@ import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-na
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { NegotiationScreen } from './src/screens/NegotiationScreen';
 import { ConnectionScreen } from './src/screens/ConnectionScreen';
+import { AppLoginScreen } from './src/screens/AppLoginScreen';
 import type { ApiConfig } from './src/types';
 import {
   clearStoredApiConfig,
   loadStoredApiConfig,
   saveStoredApiConfig,
 } from './src/services/apiConfigStorage';
+import { DEFAULT_API_BASE_URL } from './src/config/constants';
 
 type AppTab = 'dashboard' | 'negotiation' | 'connection';
 
 export default function App() {
   const [tab, setTab] = useState<AppTab>('dashboard');
   const [apiConfig, setApiConfig] = useState<ApiConfig | null>(null);
+  const [sessionAuthenticated, setSessionAuthenticated] = useState(false);
   const [configReady, setConfigReady] = useState(false);
 
   useEffect(() => {
@@ -44,13 +47,53 @@ export default function App() {
     return 'Conexao API';
   }, [tab]);
 
+  if (!sessionAuthenticated) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="light" />
+
+        <View style={styles.loginHeader}>
+          <View style={styles.loginBrandWrap}>
+            <View style={styles.loginLogoFrame}>
+              <Image
+                source={require('./assets/logo-aneo-original.png')}
+                style={styles.loginLogo}
+                resizeMode="contain"
+              />
+            </View>
+
+            <View style={styles.loginBrandTextBlock}>
+              <Text style={styles.loginBrand}>ANEO DIRETORIA</Text>
+            </View>
+          </View>
+        </View>
+
+        <AppLoginScreen
+          initialBaseUrl={apiConfig?.baseUrl ?? DEFAULT_API_BASE_URL}
+          onAuthenticated={(config) => {
+            setApiConfig(config);
+            setSessionAuthenticated(true);
+            setTab('dashboard');
+            void saveStoredApiConfig(config);
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
 
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <Image source={require('./assets/logo-aneo-original.png')} style={styles.logo} />
+          <View style={styles.logoFrame}>
+            <Image
+              source={require('./assets/logo-aneo-original.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
 
           <View style={styles.brandTextBlock}>
             <Text style={styles.brand}>ANEO DIRETORIA</Text>
@@ -105,10 +148,12 @@ export default function App() {
           apiConfig={apiConfig}
           onConnect={(config) => {
             setApiConfig(config);
+            setSessionAuthenticated(true);
             void saveStoredApiConfig(config);
           }}
           onDisconnect={() => {
             setApiConfig(null);
+            setSessionAuthenticated(false);
             void clearStoredApiConfig();
           }}
         />
@@ -130,15 +175,71 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     gap: 14,
   },
-  brandRow: {
-    flexDirection: 'row',
+  loginHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#1f3a5a',
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 14,
+  },
+  loginBrandWrap: {
     alignItems: 'center',
     gap: 10,
   },
+  loginLogoFrame: {
+    width: '100%',
+    maxWidth: 360,
+    height: 148,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#2f5a83',
+    backgroundColor: '#0f2944',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    shadowColor: '#03101f',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  loginLogo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  loginBrandTextBlock: {
+    alignItems: 'center',
+  },
+  loginBrand: {
+    color: '#7db2ff',
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: 3,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoFrame: {
+    width: 154,
+    height: 78,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#2f5a83',
+    backgroundColor: '#0f2944',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    shadowColor: '#03101f',
+    shadowOpacity: 0.35,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
   },
   brandTextBlock: {
     flexDirection: 'column',
