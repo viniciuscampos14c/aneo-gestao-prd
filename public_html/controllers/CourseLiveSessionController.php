@@ -136,8 +136,25 @@ class CourseLiveSessionController extends BaseController
             $this->redirect($fallback);
             return;
         }
+        $notifySummary = $this->notifyEnrolledStudents(
+            $companyId,
+            $courseId,
+            $title,
+            $scheduledAt,
+            $durationMin,
+            $meeting
+        );
 
-        flash('success', 'Reunião criada com sucesso! Meeting ID: ' . $meeting['meeting_id']);
+        $message = 'Reuniao criada com sucesso! Meeting ID: ' . $meeting['meeting_id'];
+        if (($notifySummary['total'] ?? 0) > 0) {
+            $message .= ' | Alertas enviados: ' . (int) ($notifySummary['sent'] ?? 0) . '/' . (int) ($notifySummary['total'] ?? 0) . '.';
+        }
+        flash('success', $message);
+
+        if (($notifySummary['failed'] ?? 0) > 0) {
+            flash('error', 'Alguns alertas por e-mail falharam (' . (int) $notifySummary['failed'] . '). Verifique SMTP para envio automatico.');
+        }
+
         $dest = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions?new_id=' . $id;
         $this->redirect($dest);
     }
@@ -307,5 +324,83 @@ class CourseLiveSessionController extends BaseController
         $this->render('courses/live_sessions/zoom_settings', [
             'creds' => $creds,
         ]);
+    }
+
+    private function notifyEnrolledStudents(
+        int $companyId,
+        int $courseId,
+        string $sessionTitle,
+        string $scheduledAt,
+        int $durationMin,
+        array $meeting
+    ): array {
+        $summary = [
+            'total' => 0,
+            'sent' => 0,
+            'failed' => 0,
+        ];
+
+        try {
+            $students = $this->model->enrolledStudentsForCourse($courseId, $companyId);
+            if (!is_array($students) || $students === []) {
+                return $summary;
+            }
+
+            $summary['total'] = count($students);
+            $courseName = $this->model->findCourseName($courseId, $companyId) ?? ('Curso #' . $courseId);
+            $meetingId = trim((string) ($meeting['meeting_id'] ?? ''));
+            $meetingPassword = trim((string) ($meeting['password'] ?? ''));
+            $joinUrl = trim((string) ($meeting['join_url'] ?? ''));
+
+            $timezone = (string) config('app.timezone', 'America/Sao_Paulo');
+            $scheduledLabel = $scheduledAt;
+            try {
+                $dt = new DateTimeImmutable($scheduledAt, new DateTimeZone($timezone !== '' ? $timezone : 'America/Sao_Paulo'));
+                $scheduledLabel = $dt->format('d/m/Y H:i');
+            } catch (Throwable $e) {
+                // Mantem o valor original em caso de formato inesperado.
+            }
+
+            $emailService = new EmailService();
+
+            foreach ($students as $student) {
+                $to = strtolower(trim((string) ($student['email_primary'] ?? '')));
+                if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                    $summary['failed']++;
+                    continue;
+                }
+
+                $studentName = trim((string) ($student['full_name'] ?? 'Aluno'));
+                $portalLogin = trim((string) ($student['portal_login'] ?? ''));
+
+                $subject = 'Nova aula ao vivo agendada | ' . $courseName;
+                $body = '<p>Ola, ' . e($studentName) . '.</p>'
+                    . '<p>Uma nova aula ao vivo foi agendada no seu curso.</p>'
+                    . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
+                    . '<strong>Titulo:</strong> ' . e($sessionTitle) . '<br>'
+                    . '<strong>Data/Hora:</strong> ' . e($scheduledLabel) . '<br>'
+                    . '<strong>Duracao:</strong> ' . e((string) $durationMin) . ' min</p>'
+                    . '<p><strong>URL:</strong> <a href="' . e($joinUrl) . '" target="_blank" rel="noopener">' . e($joinUrl) . '</a><br>'
+                    . '<strong>Meeting ID:</strong> ' . e($meetingId !== '' ? $meetingId : '-') . '<br>'
+                    . '<strong>Senha:</strong> ' . e($meetingPassword !== '' ? $meetingPassword : '-') . '<br>'
+                    . '<strong>Login Portal:</strong> ' . e($portalLogin !== '' ? $portalLogin : '-') . '</p>'
+                    . '<p>Voce tambem pode consultar em: <strong>Portal do Aluno > Aulas ao Vivo</strong>.</p>';
+
+                $send = $emailService->send($to, $subject, $body, [
+                    'company_id' => $companyId,
+                    'is_html' => true,
+                ]);
+
+                if (!empty($send['ok'])) {
+                    $summary['sent']++;
+                } else {
+                    $summary['failed']++;
+                }
+            }
+        } catch (Throwable $e) {
+            // Nao interrompe o fluxo de criacao da aula em caso de falha de notificacao.
+        }
+
+        return $summary;
     }
 }

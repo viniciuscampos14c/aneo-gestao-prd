@@ -55,8 +55,12 @@ $menu = $isTrialAccess
 $logoBuild = '20260423-logos-r2';
 $studentTicketAlerts = isset($studentTicketAlerts) && is_array($studentTicketAlerts) ? $studentTicketAlerts : [];
 $studentTicketAlertCount = (int) ($studentTicketAlertCount ?? count($studentTicketAlerts));
+$studentLiveAlerts = isset($studentLiveAlerts) && is_array($studentLiveAlerts) ? $studentLiveAlerts : [];
+$studentLiveAlertCount = (int) ($studentLiveAlertCount ?? count($studentLiveAlerts));
+$studentAlertCount = (int) ($studentAlertCount ?? ($studentTicketAlertCount + $studentLiveAlertCount));
 $studentTicketAlertIds = array_values(array_filter(array_map('intval', array_column($studentTicketAlerts, 'id')), fn ($id) => $id > 0));
 $studentTicketRoute = route('student/requests');
+$studentLiveRoute = route('student/live');
 ?>
 <div class="portal-modern-shell min-h-screen">
     <div class="portal-modern-ambient" aria-hidden="true"></div>
@@ -89,8 +93,8 @@ $studentTicketRoute = route('student/requests');
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
                         </svg>
-                        <?php if ($studentTicketAlertCount > 0): ?>
-                            <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $studentTicketAlertCount); ?></span>
+                        <?php if ($studentAlertCount > 0): ?>
+                            <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $studentAlertCount); ?></span>
                         <?php endif; ?>
                     </button>
                     <button type="button" class="theme-toggle portal-theme-toggle" data-portal-theme-toggle aria-label="Alternar tema claro e escuro" title="Alternar tema">
@@ -156,16 +160,51 @@ $studentTicketRoute = route('student/requests');
         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
                 <h3 class="text-lg font-semibold text-sky-700">Notificacoes</h3>
-                <p class="text-xs text-slate-500">Resumo dos seus chamados em aberto.</p>
+                <p class="text-xs text-slate-500">Resumo de aulas ao vivo e chamados em aberto.</p>
             </div>
             <button type="button" data-student-alert-close class="rounded-lg border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50">Fechar</button>
         </div>
         <div class="max-h-[60vh] space-y-2 overflow-y-auto p-4">
-            <?php if ($studentTicketAlerts === []): ?>
-                <article class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                    Nenhuma notificacao pendente no momento.
-                </article>
-            <?php else: ?>
+            <?php if ($studentLiveAlerts !== []): ?>
+                <div class="mb-3">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-cyan-700">Aulas ao Vivo</p>
+                    <div class="space-y-2">
+                        <?php foreach ($studentLiveAlerts as $alert): ?>
+                            <?php
+                            $liveTitle = trim((string) ($alert['name'] ?? 'Aula ao vivo'));
+                            $liveCourseName = trim((string) ($alert['course_name'] ?? ''));
+                            $liveMeetingId = trim((string) ($alert['live_meeting_id'] ?? ''));
+                            $livePassword = trim((string) ($alert['live_password'] ?? ''));
+                            $liveUrl = trim((string) ($alert['live_link'] ?? ''));
+                            $liveDatetime = trim((string) ($alert['live_datetime'] ?? ''));
+                            ?>
+                            <article class="rounded-lg border border-cyan-100 bg-cyan-50/60 px-3 py-3 text-sm">
+                                <p class="font-semibold text-slate-800"><?= e($liveTitle); ?></p>
+                                <p class="mt-1 text-xs text-slate-600">
+                                    <?= $liveCourseName !== '' ? 'Curso: ' . e($liveCourseName) . ' | ' : ''; ?>
+                                    Data: <?= e($liveDatetime !== '' ? date('d/m/Y H:i', strtotime($liveDatetime)) : '-'); ?>
+                                </p>
+                                <p class="mt-1 text-xs text-slate-600">
+                                    ID: <span class="font-mono font-semibold text-slate-800"><?= e($liveMeetingId !== '' ? $liveMeetingId : '-'); ?></span>
+                                    | Senha: <span class="font-mono font-semibold text-slate-800"><?= e($livePassword !== '' ? $livePassword : '-'); ?></span>
+                                </p>
+                                <?php if ($liveUrl !== ''): ?>
+                                    <div class="mt-2">
+                                        <a href="<?= e($liveUrl); ?>" target="_blank" rel="noopener" class="inline-flex rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700">
+                                            Entrar na aula
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($studentTicketAlerts !== []): ?>
+                <div class="mb-3">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">Chamados</p>
+                    <div class="space-y-2">
                 <?php foreach ($studentTicketAlerts as $alert): ?>
                     <?php
                     $ticketId = (int) ($alert['id'] ?? 0);
@@ -183,10 +222,19 @@ $studentTicketRoute = route('student/requests');
                         </p>
                     </article>
                 <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($studentLiveAlerts === [] && $studentTicketAlerts === []): ?>
+                <article class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                    Nenhuma notificacao pendente no momento.
+                </article>
             <?php endif; ?>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
             <button type="button" data-student-alert-close class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Fechar</button>
+            <a href="<?= e($studentLiveRoute); ?>" class="rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-100">Aulas ao Vivo</a>
             <a href="<?= e($studentTicketRoute); ?>" class="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">Abrir Chamados</a>
         </div>
     </div>

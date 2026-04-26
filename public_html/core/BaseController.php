@@ -18,6 +18,7 @@ abstract class BaseController
         if ($layout === 'layouts/student' && current_student()) {
             try {
                 $tickets = new SupportTicketModel();
+                $portal = new StudentPortalModel();
                 $student = current_student();
                 $studentId = (int) ($student['id'] ?? 0);
                 $companyId = (int) ($student['company_id'] ?? 0);
@@ -39,9 +40,23 @@ abstract class BaseController
                     $data['studentTicketAlerts'] = [];
                     $data['studentTicketAlertCount'] = 0;
                 }
+
+                if ($studentId > 0) {
+                    $liveAlerts = $portal->upcomingLiveClasses($studentId);
+                    $data['studentLiveAlerts'] = array_slice(is_array($liveAlerts) ? $liveAlerts : [], 0, 5);
+                    $data['studentLiveAlertCount'] = count($data['studentLiveAlerts']);
+                } else {
+                    $data['studentLiveAlerts'] = [];
+                    $data['studentLiveAlertCount'] = 0;
+                }
+
+                $data['studentAlertCount'] = (int) ($data['studentTicketAlertCount'] ?? 0) + (int) ($data['studentLiveAlertCount'] ?? 0);
             } catch (Throwable $e) {
                 $data['studentTicketAlerts'] = [];
                 $data['studentTicketAlertCount'] = 0;
+                $data['studentLiveAlerts'] = [];
+                $data['studentLiveAlertCount'] = 0;
+                $data['studentAlertCount'] = 0;
             }
         }
 

@@ -176,6 +176,54 @@ class CourseLiveSessionModel extends BaseModel
         return $stmt->fetchAll();
     }
 
+    public function findCourseName(int $courseId, int $companyId): ?string
+    {
+        $stmt = $this->db->prepare(
+            "SELECT name
+             FROM courses
+             WHERE id = :course_id
+               AND company_id = :company_id
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':course_id' => $courseId,
+            ':company_id' => $companyId,
+        ]);
+
+        $name = $stmt->fetchColumn();
+        if (!is_string($name) || trim($name) === '') {
+            return null;
+        }
+
+        return trim($name);
+    }
+
+    public function enrolledStudentsForCourse(int $courseId, int $companyId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT DISTINCT
+                s.id,
+                s.full_name,
+                s.email_primary,
+                spa.login AS portal_login
+             FROM enrollments e
+             INNER JOIN students s ON s.id = e.student_id
+             LEFT JOIN student_portal_accounts spa ON spa.student_id = s.id
+             WHERE e.course_id = :course_id
+               AND s.company_id = :company_id
+               AND e.status IN ('active', 'completed')
+               AND s.email_primary IS NOT NULL
+               AND s.email_primary <> ''
+             ORDER BY s.full_name ASC"
+        );
+        $stmt->execute([
+            ':course_id' => $courseId,
+            ':company_id' => $companyId,
+        ]);
+
+        return $stmt->fetchAll();
+    }
+
     /**
      * Credenciais Zoom da empresa.
      * Retorna null se qualquer credencial estiver vazia.

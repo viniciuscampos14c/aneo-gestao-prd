@@ -5069,3 +5069,216 @@ html:not(.dark) .student-modern-main .student-reenroll-help {
     border-color: rgba(217, 185, 126, 0.54) !important;
     background: rgba(255, 244, 222, 0.95) !important;
 }
+
+/* =====================================================================
+   STUDENT COURSES / PLAYER (ornamentacao Meus Cursos)
+   ===================================================================== */
+
+.student-courses-card,
+.student-courses-empty,
+.student-course-player-progress,
+.student-module-card,
+.student-course-player-stage,
+.student-module-no-data {
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-module-badge {
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
+}
+
+html.dark .student-modern-main .student-courses-title,
+html.dark .student-modern-main .student-course-player-title,
+html.dark .student-modern-main .student-stage-title,
+html.dark .student-modern-main .student-module-title {
+    color: #eaf5ff !important;
+}
+
+html.dark .student-modern-main .student-courses-subtitle,
+html.dark .student-modern-main .student-course-player-subtitle,
+html.dark .student-modern-main .student-courses-card-meta,
+html.dark .student-modern-main .student-courses-card-description,
+html.dark .student-modern-main .student-courses-workload,
+html.dark .student-modern-main .student-courses-live-label,
+html.dark .student-modern-main .student-course-player-progress-meta,
+html.dark .student-modern-main .student-course-player-progress-note,
+html.dark .student-modern-main .student-module-description,
+html.dark .student-modern-main .student-lesson-meta,
+html.dark .student-modern-main .student-stage-description,
+html.dark .student-modern-main .student-stage-help,
+html.dark .student-modern-main .student-module-empty,
+html.dark .student-modern-main .student-stage-empty {
+    color: #93b2ce !important;
+}
+
+html.dark .student-modern-main .student-courses-card,
+html.dark .student-modern-main .student-courses-empty,
+html.dark .student-modern-main .student-course-player-progress,
+html.dark .student-modern-main .student-module-card-open,
+html.dark .student-modern-main .student-course-player-stage,
+html.dark .student-modern-main .student-module-no-data {
+    border-color: rgba(124, 165, 200, 0.34) !important;
+    background: rgba(12, 37, 59, 0.72) !important;
+    box-shadow: inset 0 1px 0 rgba(210, 235, 255, 0.06);
+}
+
+html.dark .student-modern-main .student-module-card-locked,
+html.dark .student-modern-main .student-stage-progress {
+    border-color: rgba(122, 164, 197, 0.34) !important;
+    background: rgba(11, 34, 54, 0.76) !important;
+}
+
+html.dark .student-modern-main .student-courses-cover-placeholder,
+html.dark .student-modern-main .student-courses-progress-track {
+    border-color: rgba(122, 164, 197, 0.34) !important;
+    background: rgba(10, 31, 50, 0.82) !important;
+    color: #93b2ce !important;
+}
+
+html.dark .student-modern-main .student-courses-progress-fill {
+    background: linear-gradient(120deg, rgba(73, 158, 230, 0.94), rgba(44, 121, 183, 0.94)) !important;
+}
+
+html.dark .student-modern-main .student-courses-cta {
+    border-color: rgba(97, 195, 153, 0.5) !important;
+    background: linear-gradient(120deg, rgba(35, 142, 103, 0.94), rgba(24, 115, 84, 0.9)) !important;
+    color: #e6fff3 !important;
+}
+
+html.dark .student-modern-main .student-courses-live-cta {
+    border-color: rgba(100, 174, 232, 0.52) !important;
+    background: linear-gradient(120deg, rgba(42, 146, 225, 0.9), rgba(31, 111, 171, 0.9)) !important;
+    color: #eff9ff !important;
+}
+
+html.dark .student-modern-main .student-courses-disabled {
+    border-color: rgba(122, 164, 197, 0.34) !important;
+    background: rgba(12, 37, 59, 0.58) !important;
+    color: #86a7c2 !important;
+}
+
+html.dark .student-modern-main .student-course-player-back {
+    border-color: rgba(123, 164, 197, 0.46) !important;
+    background: rgba(11, 34, 54, 0.74) !important;
+    color: #d4e9fb !important;
+}
+
+html.dark .student-modern-main .student-course-player-progress-label,
+html.dark .student-modern-main .student-lesson-title,
+html.dark .student-modern-main .student-courses-card-title {
+    color: #dceeff !important;
+}
+
+html.dark .student-modern-main .student-lesson-card-default,
+html.dark .student-modern-main .student-lesson-card-locked {
+    border-color: rgba(122, 164, 197, 0.3) !important;
+    background: rgba(8, 29, 47, 0.8) !important;
+}
+
+html.dark .student-modern-main .student-lesson-card-selected {
+    border-color: rgba(106, 198, 255, 0.56) !important;
+    background: linear-gradient(135deg, rgba(17, 53, 80, 0.86), rgba(11, 37, 58, 0.82)) !important;
+    box-shadow: inset 0 0 0 1px rgba(126, 210, 255, 0.2);
+}
+
+html.dark .student-modern-main .student-lesson-progress {
+    color: #7ce3a5 !important;
+}
+
+html.dark .student-modern-main .student-module-badge-complete {
+    border-color: rgba(140, 240, 198, 0.64) !important;
+    background: rgba(203, 255, 231, 0.96) !important;
+    color: #0f6a4e !important;
+}
+
+html.dark .student-modern-main .student-module-badge-active {
+    border-color: rgba(131, 232, 255, 0.62) !important;
+    background: rgba(203, 246, 255, 0.96) !important;
+    color: #0f6789 !important;
+}
+
+html.dark .student-modern-main .student-module-badge-locked {
+    border-color: rgba(163, 187, 214, 0.46) !important;
+    background: rgba(57, 81, 112, 0.84) !important;
+    color: #d6e6f8 !important;
+}
+
+html:not(.dark) .student-modern-main .student-courses-card,
+html:not(.dark) .student-modern-main .student-courses-empty,
+html:not(.dark) .student-modern-main .student-course-player-progress,
+html:not(.dark) .student-modern-main .student-module-card-open,
+html:not(.dark) .student-modern-main .student-course-player-stage,
+html:not(.dark) .student-modern-main .student-module-no-data {
+    border-color: rgba(136, 168, 199, 0.56) !important;
+    background: rgba(235, 245, 253, 0.92) !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-card-locked,
+html:not(.dark) .student-modern-main .student-stage-progress {
+    border-color: rgba(136, 168, 199, 0.46) !important;
+    background: rgba(226, 239, 250, 0.88) !important;
+}
+
+html:not(.dark) .student-modern-main .student-courses-cover-placeholder,
+html:not(.dark) .student-modern-main .student-courses-progress-track {
+    border-color: rgba(136, 168, 199, 0.46) !important;
+    background: rgba(216, 231, 244, 0.9) !important;
+}
+
+html:not(.dark) .student-modern-main .student-courses-progress-fill {
+    background: linear-gradient(120deg, rgba(55, 152, 231, 0.94), rgba(39, 112, 174, 0.94)) !important;
+}
+
+html:not(.dark) .student-modern-main .student-courses-cta {
+    border-color: rgba(104, 189, 152, 0.62) !important;
+    background: rgba(216, 246, 232, 0.96) !important;
+    color: #197251 !important;
+}
+
+html:not(.dark) .student-modern-main .student-courses-live-cta {
+    border-color: rgba(126, 192, 231, 0.62) !important;
+    background: rgba(223, 242, 254, 0.96) !important;
+    color: #1f5e8f !important;
+}
+
+html:not(.dark) .student-modern-main .student-courses-disabled {
+    border-color: rgba(136, 168, 199, 0.5) !important;
+    background: rgba(231, 242, 251, 0.95) !important;
+    color: #5c7691 !important;
+}
+
+html:not(.dark) .student-modern-main .student-course-player-back {
+    border-color: rgba(136, 168, 199, 0.56) !important;
+    background: rgba(231, 242, 251, 0.95) !important;
+    color: #2c5375 !important;
+}
+
+html:not(.dark) .student-modern-main .student-lesson-card-default,
+html:not(.dark) .student-modern-main .student-lesson-card-locked {
+    border-color: rgba(136, 168, 199, 0.44) !important;
+    background: rgba(242, 248, 254, 0.95) !important;
+}
+
+html:not(.dark) .student-modern-main .student-lesson-card-selected {
+    border-color: rgba(102, 176, 224, 0.66) !important;
+    background: rgba(223, 242, 254, 0.96) !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-badge-complete {
+    border-color: rgba(112, 201, 161, 0.62) !important;
+    background: rgba(224, 249, 237, 0.98) !important;
+    color: #156648 !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-badge-active {
+    border-color: rgba(119, 189, 226, 0.62) !important;
+    background: rgba(225, 244, 255, 0.98) !important;
+    color: #1c5c85 !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-badge-locked {
+    border-color: rgba(148, 171, 198, 0.62) !important;
+    background: rgba(226, 236, 246, 0.96) !important;
+    color: #425f7d !important;
+}

@@ -9,49 +9,49 @@ $selectedLesson = $selectedLesson ?? null;
 $progressPercent = (int) ($summary['progress_percent'] ?? 0);
 $courseCompleted = !empty($summary['course_completed']);
 ?>
-<section class="space-y-6">
+<section class="student-course-player-shell space-y-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <h2 class="text-2xl font-semibold"><?= e((string) ($course['name'] ?? 'Curso')); ?></h2>
-            <p class="text-sm text-slate-500">Trilha por modulos com bloqueio de ordem e regra minima de 70% por aula em video.</p>
+            <h2 class="student-course-player-title text-2xl font-semibold"><?= e((string) ($course['name'] ?? 'Curso')); ?></h2>
+            <p class="student-course-player-subtitle text-sm text-slate-500">Trilha por modulos com bloqueio de ordem e regra minima de 70% por aula em video.</p>
         </div>
-        <a href="<?= route('student/courses'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar para Meus Cursos</a>
+        <a href="<?= route('student/courses'); ?>" class="student-course-player-back rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar para Meus Cursos</a>
     </div>
 
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <div class="student-course-player-progress rounded-xl border border-slate-200 bg-white p-4">
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p class="font-medium text-slate-700">Progresso do curso: <span id="course-progress-label"><?= $progressPercent; ?>%</span></p>
-            <p class="text-slate-500">Aulas obrigatorias concluidas: <?= (int) ($summary['required_completed_lessons'] ?? 0); ?>/<?= (int) ($summary['required_lessons'] ?? 0); ?></p>
+            <p class="student-course-player-progress-label font-medium text-slate-700">Progresso do curso: <span id="course-progress-label"><?= $progressPercent; ?>%</span></p>
+            <p class="student-course-player-progress-meta text-slate-500">Aulas obrigatorias concluidas: <?= (int) ($summary['required_completed_lessons'] ?? 0); ?>/<?= (int) ($summary['required_lessons'] ?? 0); ?></p>
         </div>
-        <div class="mt-2 h-2 rounded-full bg-slate-200">
+        <div class="student-course-player-progress-track mt-2 h-2 rounded-full bg-slate-200">
             <div id="course-progress-bar" class="h-2 rounded-full <?= $courseCompleted ? 'bg-emerald-600' : 'bg-cyan-600'; ?>" style="width: <?= $progressPercent; ?>%"></div>
         </div>
-        <p class="mt-2 text-xs <?= $courseCompleted ? 'text-emerald-700' : 'text-slate-500'; ?>">
+        <p class="student-course-player-progress-note mt-2 text-xs <?= $courseCompleted ? 'text-emerald-700' : 'text-slate-500'; ?>">
             <?= $courseCompleted ? 'Curso concluido.' : 'Cada aula exige progresso minimo (padrao 70%) para liberar o proximo modulo.'; ?>
         </p>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside class="space-y-3">
+    <div class="student-course-player-layout grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <aside class="student-course-player-modules space-y-3">
             <?php foreach ($modules as $module): ?>
                 <?php
                 $moduleUnlocked = !empty($module['is_unlocked']);
                 $moduleCompleted = !empty($module['is_completed']);
                 ?>
-                <article class="rounded-xl border <?= $moduleUnlocked ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50'; ?> p-3">
+                <article class="student-module-card rounded-xl border <?= $moduleUnlocked ? 'student-module-card-open border-slate-200 bg-white' : 'student-module-card-locked border-slate-200 bg-slate-50'; ?> p-3">
                     <div class="mb-2 flex items-start justify-between gap-2">
                         <div>
-                            <p class="text-sm font-semibold text-slate-900"><?= e((string) $module['title']); ?></p>
+                            <p class="student-module-title text-sm font-semibold text-slate-900"><?= e((string) $module['title']); ?></p>
                             <?php if (trim((string) ($module['description'] ?? '')) !== ''): ?>
-                                <p class="text-xs text-slate-500"><?= e((string) $module['description']); ?></p>
+                                <p class="student-module-description text-xs text-slate-500"><?= e((string) $module['description']); ?></p>
                             <?php endif; ?>
                         </div>
                         <?php if (!$moduleUnlocked): ?>
-                            <span class="rounded-full bg-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">Bloqueado</span>
+                            <span class="student-module-badge student-module-badge-locked rounded-full px-2 py-1 text-[11px] font-semibold">Bloqueado</span>
                         <?php elseif ($moduleCompleted): ?>
-                            <span class="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">Concluido</span>
+                            <span class="student-module-badge student-module-badge-complete rounded-full px-2 py-1 text-[11px] font-semibold">Concluido</span>
                         <?php else: ?>
-                            <span class="rounded-full bg-cyan-100 px-2 py-1 text-[11px] font-semibold text-cyan-700">Em andamento</span>
+                            <span class="student-module-badge student-module-badge-active rounded-full px-2 py-1 text-[11px] font-semibold">Em andamento</span>
                         <?php endif; ?>
                     </div>
 
@@ -62,43 +62,43 @@ $courseCompleted = !empty($summary['course_completed']);
                             $lessonCompleted = !empty($lesson['is_completed']);
                             ?>
                             <?php if ($moduleUnlocked): ?>
-                                <a href="<?= route('student/course&course_id=' . (int) ($course['course_id'] ?? 0) . '&lesson_id=' . (int) $lesson['id']); ?>" class="block rounded-lg border px-3 py-2 text-sm <?= $lessonSelected ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 hover:bg-slate-50'; ?>">
+                                <a href="<?= route('student/course&course_id=' . (int) ($course['course_id'] ?? 0) . '&lesson_id=' . (int) $lesson['id']); ?>" class="student-lesson-card block rounded-lg border px-3 py-2 text-sm <?= $lessonSelected ? 'student-lesson-card-selected border-cyan-300 bg-cyan-50' : 'student-lesson-card-default border-slate-200 hover:bg-slate-50'; ?>">
                                     <div class="flex items-center justify-between gap-2">
-                                        <p class="font-medium text-slate-800"><?= e((string) $lesson['title']); ?></p>
-                                        <span class="text-xs <?= $lessonCompleted ? 'text-emerald-700' : 'text-slate-500'; ?>">
+                                        <p class="student-lesson-title font-medium text-slate-800"><?= e((string) $lesson['title']); ?></p>
+                                        <span class="student-lesson-progress text-xs <?= $lessonCompleted ? 'text-emerald-700' : 'text-slate-500'; ?>">
                                             <?= (int) ($lesson['progress_percent'] ?? 0); ?>%
                                         </span>
                                     </div>
-                                    <p class="mt-1 text-[11px] text-slate-500">Minimo: <?= (int) ($lesson['min_progress_percent'] ?? 70); ?>%<?= !empty($lesson['is_required']) ? ' | obrigatoria' : ' | opcional'; ?></p>
+                                    <p class="student-lesson-meta mt-1 text-[11px] text-slate-500">Minimo: <?= (int) ($lesson['min_progress_percent'] ?? 70); ?>%<?= !empty($lesson['is_required']) ? ' | obrigatoria' : ' | opcional'; ?></p>
                                 </a>
                             <?php else: ?>
-                                <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
-                                    <p class="font-medium"><?= e((string) $lesson['title']); ?></p>
+                                <div class="student-lesson-card-locked rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
+                                    <p class="font-medium student-lesson-title"><?= e((string) $lesson['title']); ?></p>
                                 </div>
                             <?php endif; ?>
                         <?php endforeach; ?>
 
                         <?php if (($module['lessons'] ?? []) === []): ?>
-                            <p class="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500">Sem aulas neste modulo.</p>
+                            <p class="student-module-empty rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500">Sem aulas neste modulo.</p>
                         <?php endif; ?>
                     </div>
                 </article>
             <?php endforeach; ?>
 
             <?php if ($modules === []): ?>
-                <article class="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
+                <article class="student-module-no-data rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
                     Este curso ainda nao possui modulos/aulas cadastrados.
                 </article>
             <?php endif; ?>
         </aside>
 
-        <section class="rounded-xl border border-slate-200 bg-white p-4">
+        <section class="student-course-player-stage rounded-xl border border-slate-200 bg-white p-4">
             <?php if ($selectedLesson): ?>
                 <div class="space-y-3">
                     <div>
-                        <h3 class="text-xl font-semibold text-slate-900"><?= e((string) $selectedLesson['title']); ?></h3>
+                        <h3 class="student-stage-title text-xl font-semibold text-slate-900"><?= e((string) $selectedLesson['title']); ?></h3>
                         <?php if (trim((string) ($selectedLesson['description'] ?? '')) !== ''): ?>
-                            <p class="text-sm text-slate-500"><?= e((string) $selectedLesson['description']); ?></p>
+                            <p class="student-stage-description text-sm text-slate-500"><?= e((string) $selectedLesson['description']); ?></p>
                         <?php endif; ?>
                     </div>
 
@@ -139,7 +139,7 @@ $courseCompleted = !empty($summary['course_completed']);
                         ></video>
                     <?php endif; ?>
 
-                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div class="student-stage-progress rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
                             <p class="font-medium text-slate-700">Progresso da aula: <span id="lesson-progress-label"><?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%</span></p>
                             <p id="lesson-status-label" class="text-xs <?= !empty($selectedLesson['is_completed']) ? 'text-emerald-700' : 'text-slate-500'; ?>">
@@ -151,12 +151,12 @@ $courseCompleted = !empty($summary['course_completed']);
                         </div>
                     </div>
 
-                    <p class="text-xs text-slate-500">
+                    <p class="student-stage-help text-xs text-slate-500">
                         Suporte a links do YouTube (youtube.com/watch ou youtu.be) e arquivos diretos (MP4/WebM).
                     </p>
                 </div>
             <?php else: ?>
-                <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                <div class="student-stage-empty rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                     Nenhuma aula disponivel para abrir agora. Finalize os modulos anteriores para liberar os proximos.
                 </div>
             <?php endif; ?>

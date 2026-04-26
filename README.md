@@ -4,6 +4,7 @@ Sistema MVC em PHP puro para operacao administrativa, portal do aluno e central 
 
 Documento detalhado: `DOCUMENTACAO_COMPLETA.md`.
 Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
+Checkpoint mais recente: `STATUS_IMPLEMENTACOES_2026-04-25.md`.
 
 ## 1) Estado Atual
 
@@ -635,3 +636,4 @@ Objetivo: disponibilizar documento formal de desempenho academico em aba separad
 4. Fonte dos dados:
    - `students` para dados cadastrais
    - `exam_results` + `exams` + `courses` para notas e disciplinas
+

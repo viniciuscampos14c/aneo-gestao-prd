@@ -205,6 +205,7 @@ class StudentPortalModel extends BaseModel
         }
 
         $companyId = $this->resolveStudentCompanyId($studentId);
+        $referenceNow = $this->appNow();
 
         $metricsSql = "SELECT
                 COUNT(*) AS courses_total,
@@ -239,8 +240,11 @@ class StudentPortalModel extends BaseModel
               AND c.live_link IS NOT NULL
               AND c.live_link <> ''
               AND c.live_datetime IS NOT NULL
-              AND c.live_datetime >= NOW()";
-        $upcomingParams = [':student_id' => $studentId];
+              AND DATE_ADD(c.live_datetime, INTERVAL 120 MINUTE) >= :reference_now";
+        $upcomingParams = [
+            ':student_id' => $studentId,
+            ':reference_now' => $referenceNow,
+        ];
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $upcomingSql .= ' AND c.company_id = :company_id';
             $upcomingParams[':company_id'] = $companyId;
@@ -366,6 +370,7 @@ class StudentPortalModel extends BaseModel
         }
 
         $companyId = $this->resolveStudentCompanyId($studentId);
+        $referenceNow = $this->appNow();
 
         // Verifica se a tabela de aulas Zoom existe (migration aplicada)
         $hasLiveSessions = $this->courseLiveSessionsTableExists();
@@ -375,6 +380,7 @@ class StudentPortalModel extends BaseModel
             $sqlNew = "SELECT
                     cls.id,
                     cls.title AS name,
+                    c.name AS course_name,
                     cls.join_url AS live_link,
                     cls.zoom_password AS live_password,
                     cls.zoom_meeting_id AS live_meeting_id,
@@ -388,13 +394,17 @@ class StudentPortalModel extends BaseModel
                   AND e.status = 'active'
                   AND c.status = 'published'
                   AND cls.status = 'scheduled'
-                  AND cls.scheduled_at >= NOW()";
-            $paramsNew = [':student_id' => $studentId];
+                  AND DATE_ADD(cls.scheduled_at, INTERVAL COALESCE(NULLIF(cls.duration_minutes, 0), 120) MINUTE) >= :reference_now";
+            $paramsNew = [
+                ':student_id' => $studentId,
+                ':reference_now' => $referenceNow,
+            ];
 
             // Fonte 2: legado (courses.live_link preenchido manualmente)
             $sqlLegacy = "SELECT
                     c.id,
                     c.name,
+                    c.name AS course_name,
                     c.live_link,
                     c.live_password,
                     c.live_meeting_id,
@@ -409,8 +419,11 @@ class StudentPortalModel extends BaseModel
                   AND c.live_link IS NOT NULL
                   AND c.live_link <> ''
                   AND c.live_datetime IS NOT NULL
-                  AND c.live_datetime >= NOW()";
-            $paramsLegacy = [':student_id' => $studentId];
+                  AND DATE_ADD(c.live_datetime, INTERVAL 120 MINUTE) >= :reference_now";
+            $paramsLegacy = [
+                ':student_id' => $studentId,
+                ':reference_now' => $referenceNow,
+            ];
 
             if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
                 $sqlNew .= ' AND c.company_id = :company_id';
@@ -441,6 +454,7 @@ class StudentPortalModel extends BaseModel
         $sql = "SELECT
                 c.id,
                 c.name,
+                c.name AS course_name,
                 c.live_link,
                 c.live_password,
                 c.live_meeting_id,
@@ -455,8 +469,11 @@ class StudentPortalModel extends BaseModel
               AND c.live_link IS NOT NULL
               AND c.live_link <> ''
               AND c.live_datetime IS NOT NULL
-              AND c.live_datetime >= NOW()";
-        $params = [':student_id' => $studentId];
+              AND DATE_ADD(c.live_datetime, INTERVAL 120 MINUTE) >= :reference_now";
+        $params = [
+            ':student_id' => $studentId,
+            ':reference_now' => $referenceNow,
+        ];
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $sql .= ' AND c.company_id = :company_id';
             $params[':company_id'] = $companyId;
@@ -466,6 +483,18 @@ class StudentPortalModel extends BaseModel
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    private function appNow(): string
+    {
+        $tzName = (string) config('app.timezone', 'America/Sao_Paulo');
+        try {
+            $tz = new DateTimeZone($tzName !== '' ? $tzName : 'America/Sao_Paulo');
+        } catch (Throwable $e) {
+            $tz = new DateTimeZone('America/Sao_Paulo');
+        }
+
+        return (new DateTimeImmutable('now', $tz))->format('Y-m-d H:i:s');
     }
 
     private function courseLiveSessionsTableExists(): bool
