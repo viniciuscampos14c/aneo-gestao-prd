@@ -11,6 +11,8 @@ $statusOptions = [
     'cancelled' => 'Cancelado',
     'error' => 'Com erro',
 ];
+$canManageSettings = has_permission('companies');
+$integrationStorageAvailable = !empty($integration['storage_available']);
 ?>
 <section class="signatures-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -69,6 +71,64 @@ $statusOptions = [
             <p class="mt-2 text-xs text-amber-700">Recomendado: configure `d4sign.webhook_token` para proteger o endpoint.</p>
         <?php endif; ?>
     </div>
+
+    <?php if ($canManageSettings): ?>
+        <div class="signatures-config rounded-xl border border-slate-200 bg-white p-4">
+            <h3 class="text-base font-semibold">Configuracao D4Sign</h3>
+            <p class="mt-1 text-xs text-slate-500">Altere aqui os dados da empresa ativa para assinatura digital.</p>
+
+            <?php if (!$integrationStorageAvailable): ?>
+                <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    A tabela <code>company_integrations</code> nao foi encontrada. Execute a migracao <code>migrations/20260306_phase2_company_isolation_integrations.sql</code>.
+                </div>
+            <?php endif; ?>
+
+            <form method="post" action="<?= route('signatures/settings/save'); ?>" class="signatures-config-form mt-4 grid gap-3 lg:grid-cols-6">
+                <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+
+                <label class="flex items-center gap-2 text-sm lg:col-span-2">
+                    <input type="checkbox" name="d4sign_enabled" value="1" <?= !empty($integration['enabled']) ? 'checked' : ''; ?> class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+                    Integracao ativa
+                </label>
+
+                <label class="block lg:col-span-4">
+                    <span class="mb-1 block text-sm font-medium">Base URL</span>
+                    <input type="text" name="d4sign_base_url" value="<?= e((string) ($integration['base_url'] ?? '')); ?>" placeholder="https://sandbox.d4sign.com.br" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-2">
+                    <span class="mb-1 block text-sm font-medium">Token API</span>
+                    <input type="password" name="d4sign_token_api" value="<?= e((string) ($integration['token_api'] ?? '')); ?>" autocomplete="off" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-2">
+                    <span class="mb-1 block text-sm font-medium">Crypt Key</span>
+                    <input type="password" name="d4sign_crypt_key" value="<?= e((string) ($integration['crypt_key'] ?? '')); ?>" autocomplete="off" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-2">
+                    <span class="mb-1 block text-sm font-medium">Safe UUID</span>
+                    <input type="text" name="d4sign_safe_uuid" value="<?= e((string) ($integration['safe_uuid'] ?? '')); ?>" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-3">
+                    <span class="mb-1 block text-sm font-medium">Webhook Token</span>
+                    <input type="text" name="d4sign_webhook_token" value="<?= e((string) ($integration['webhook_token'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-3">
+                    <span class="mb-1 block text-sm font-medium">Webhook HMAC Secret</span>
+                    <input type="password" name="d4sign_webhook_hmac_secret" value="<?= e((string) ($integration['webhook_hmac_secret'] ?? '')); ?>" autocomplete="off" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+
+                <div class="lg:col-span-6 flex justify-end">
+                    <button class="signatures-config-save rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" <?= $integrationStorageAvailable ? '' : 'disabled'; ?>>
+                        Salvar configuracao D4Sign
+                    </button>
+                </div>
+            </form>
+        </div>
+    <?php endif; ?>
 
     <?php if ($canCreate): ?>
         <form method="post" action="<?= route('signatures/store'); ?>" enctype="multipart/form-data" class="signatures-create-form grid gap-3 rounded-xl border border-slate-200 bg-white p-4 lg:grid-cols-5">

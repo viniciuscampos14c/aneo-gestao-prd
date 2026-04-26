@@ -51,11 +51,74 @@ class SignatureController extends BaseController
                 'enabled' => $this->d4sign->isEnabled(),
                 'configured' => $this->d4sign->isConfigured(),
                 'base_url' => $this->d4sign->baseUrl(),
+                'token_api' => $this->d4sign->tokenApi(),
+                'crypt_key' => $this->d4sign->cryptKey(),
                 'safe_uuid' => $this->d4sign->safeUuid(),
                 'webhook_url' => $this->buildWebhookUrl(),
                 'webhook_token' => $this->d4sign->webhookToken(),
+                'webhook_hmac_secret' => $this->d4sign->webhookHmacSecret(),
+                'storage_available' => $this->integrations->tableExists(),
             ],
         ]);
+    }
+
+    public function saveSettings(): void
+    {
+        require_auth();
+        require_permission('companies');
+        csrf_validate();
+
+        $companyId = (int) (current_company_id() ?? 0);
+        if ($companyId <= 0) {
+            $this->error('Selecione a empresa antes de salvar a configuracao D4Sign.');
+            $this->redirect('signatures');
+        }
+
+        if (!$this->integrations->tableExists()) {
+            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->redirect('signatures');
+        }
+
+        $enabled = post('d4sign_enabled') ? true : false;
+        $settings = [
+            'base_url' => trim((string) post('d4sign_base_url')),
+            'token_api' => trim((string) post('d4sign_token_api')),
+            'crypt_key' => trim((string) post('d4sign_crypt_key')),
+            'safe_uuid' => trim((string) post('d4sign_safe_uuid')),
+            'webhook_token' => trim((string) post('d4sign_webhook_token')),
+            'webhook_hmac_secret' => trim((string) post('d4sign_webhook_hmac_secret')),
+        ];
+
+        if ($settings['base_url'] !== '') {
+            $settings['base_url'] = rtrim($settings['base_url'], '/');
+        }
+
+        foreach ($settings as $key => $value) {
+            if ($value === '') {
+                unset($settings[$key]);
+            }
+        }
+
+        $changedBy = (int) (current_user()['id'] ?? 0);
+        $this->integrations->save($companyId, 'd4sign', $enabled, $settings, $changedBy);
+
+        if (!$enabled) {
+            $this->success('Integracao D4Sign desativada para a empresa ativa.');
+            $this->redirect('signatures');
+        }
+
+        $configured = isset($settings['token_api'], $settings['crypt_key'], $settings['safe_uuid'])
+            && $settings['token_api'] !== ''
+            && $settings['crypt_key'] !== ''
+            && $settings['safe_uuid'] !== '';
+
+        if ($configured) {
+            $this->success('Configuracao D4Sign atualizada com sucesso.');
+        } else {
+            $this->success('Configuracao salva. Faltam token_api, crypt_key ou safe_uuid para envio de contratos.');
+        }
+
+        $this->redirect('signatures');
     }
 
     public function store(): void

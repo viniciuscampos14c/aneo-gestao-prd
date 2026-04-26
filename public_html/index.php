@@ -170,6 +170,7 @@ $router->post('chatwoot/open-phone', fn () => $chatwoot->openPhone());
 $router->post('chatwoot/webhook', fn () => $chatwootWebhook->receive());
 
 $router->get('signatures', fn () => $signatures->index());
+$router->post('signatures/settings/save', fn () => $signatures->saveSettings());
 $router->post('signatures/store', fn () => $signatures->store());
 $router->post('signatures/send', fn () => $signatures->send());
 $router->post('signatures/sync', fn () => $signatures->sync());

@@ -374,17 +374,17 @@ class CourseLiveSessionController extends BaseController
                 $portalLogin = trim((string) ($student['portal_login'] ?? ''));
 
                 $subject = 'Nova aula ao vivo agendada | ' . $courseName;
-                $body = '<p>Ola, ' . e($studentName) . '.</p>'
-                    . '<p>Uma nova aula ao vivo foi agendada no seu curso.</p>'
-                    . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
-                    . '<strong>Titulo:</strong> ' . e($sessionTitle) . '<br>'
-                    . '<strong>Data/Hora:</strong> ' . e($scheduledLabel) . '<br>'
-                    . '<strong>Duracao:</strong> ' . e((string) $durationMin) . ' min</p>'
-                    . '<p><strong>URL:</strong> <a href="' . e($joinUrl) . '" target="_blank" rel="noopener">' . e($joinUrl) . '</a><br>'
-                    . '<strong>Meeting ID:</strong> ' . e($meetingId !== '' ? $meetingId : '-') . '<br>'
-                    . '<strong>Senha:</strong> ' . e($meetingPassword !== '' ? $meetingPassword : '-') . '<br>'
-                    . '<strong>Login Portal:</strong> ' . e($portalLogin !== '' ? $portalLogin : '-') . '</p>'
-                    . '<p>Voce tambem pode consultar em: <strong>Portal do Aluno > Aulas ao Vivo</strong>.</p>';
+                $body = $this->buildLiveClassEmailHtml([
+                    'student_name' => $studentName,
+                    'course_name' => $courseName,
+                    'session_title' => $sessionTitle,
+                    'scheduled_label' => $scheduledLabel,
+                    'duration_label' => $this->formatDurationLabel($durationMin),
+                    'join_url' => $joinUrl,
+                    'meeting_id' => $meetingId,
+                    'meeting_password' => $meetingPassword,
+                    'portal_login' => $portalLogin,
+                ]);
 
                 $send = $emailService->send($to, $subject, $body, [
                     'company_id' => $companyId,
@@ -402,5 +402,118 @@ class CourseLiveSessionController extends BaseController
         }
 
         return $summary;
+    }
+
+    private function buildLiveClassEmailHtml(array $payload): string
+    {
+        $studentName = trim((string) ($payload['student_name'] ?? 'Aluno'));
+        $courseName = trim((string) ($payload['course_name'] ?? '-'));
+        $sessionTitle = trim((string) ($payload['session_title'] ?? '-'));
+        $scheduledLabel = trim((string) ($payload['scheduled_label'] ?? '-'));
+        $durationLabel = trim((string) ($payload['duration_label'] ?? '-'));
+        $joinUrl = trim((string) ($payload['join_url'] ?? ''));
+        $meetingId = trim((string) ($payload['meeting_id'] ?? ''));
+        $meetingPassword = trim((string) ($payload['meeting_password'] ?? ''));
+        $portalLogin = trim((string) ($payload['portal_login'] ?? ''));
+
+        $safeStudentName = e($studentName);
+        $safeCourseName = e($courseName !== '' ? $courseName : '-');
+        $safeSessionTitle = e($sessionTitle !== '' ? $sessionTitle : '-');
+        $safeScheduledLabel = e($scheduledLabel !== '' ? $scheduledLabel : '-');
+        $safeDurationLabel = e($durationLabel !== '' ? $durationLabel : '-');
+        $safeMeetingId = e($meetingId !== '' ? $meetingId : '-');
+        $safeMeetingPassword = e($meetingPassword !== '' ? $meetingPassword : '-');
+        $safePortalLogin = e($portalLogin !== '' ? $portalLogin : '-');
+        $safeJoinUrl = e($joinUrl);
+
+        $ctaButton = '';
+        $ctaFallback = '<p style="margin:14px 0 0 0;font-size:13px;color:#64748b;">Link da aula indisponivel no momento. Consulte o Portal do Aluno em <strong>Aulas ao Vivo</strong>.</p>';
+        if ($joinUrl !== '') {
+            $ctaButton = '<p style="margin:18px 0 0 0;">'
+                . '<a href="' . $safeJoinUrl . '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">Entrar na aula ao vivo</a>'
+                . '</p>';
+            $ctaFallback = '<p style="margin:12px 0 0 0;font-size:12px;color:#64748b;">Se o botao nao abrir, copie e cole no navegador:<br>'
+                . '<a href="' . $safeJoinUrl . '" target="_blank" rel="noopener" style="color:#0284c7;word-break:break-all;">' . $safeJoinUrl . '</a></p>';
+        }
+
+        return implode("\n", [
+            '<!doctype html>',
+            '<html lang="pt-BR">',
+            '<head>',
+            '<meta charset="UTF-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            '<title>Nova aula ao vivo agendada</title>',
+            '</head>',
+            '<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">',
+            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:#f1f5f9;">',
+            '<tr><td align="center" style="padding:24px 12px;">',
+            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;border-collapse:separate;background:#ffffff;border:1px solid #dbe7f3;border-radius:16px;overflow:hidden;">',
+            '<tr><td style="padding:22px 24px;background:linear-gradient(120deg,#0b2443 0%, #0c3d73 55%, #0ea5e9 100%);">',
+            '<p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#bae6fd;text-transform:uppercase;">ANEO | Aulas ao Vivo</p>',
+            '<h1 style="margin:8px 0 0 0;font-size:24px;line-height:1.3;color:#ffffff;">Nova aula ao vivo agendada</h1>',
+            '</td></tr>',
+            '<tr><td style="padding:24px;">',
+            '<p style="margin:0 0 10px 0;font-size:15px;line-height:1.6;color:#1e293b;">Ola, <strong>' . $safeStudentName . '</strong>.</p>',
+            '<p style="margin:0 0 16px 0;font-size:14px;line-height:1.6;color:#334155;">Uma nova aula foi criada no seu curso. Confira os dados abaixo:</p>',
+            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Curso</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeCourseName . '</td>',
+            '</tr>',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Titulo da aula</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeSessionTitle . '</td>',
+            '</tr>',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Data e horario</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeScheduledLabel . ' (Brasilia)</td>',
+            '</tr>',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Duracao</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeDurationLabel . '</td>',
+            '</tr>',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Meeting ID</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;font-family:Consolas,Monaco,monospace;">' . $safeMeetingId . '</td>',
+            '</tr>',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Senha</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;font-family:Consolas,Monaco,monospace;">' . $safeMeetingPassword . '</td>',
+            '</tr>',
+            '<tr>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;">Login no portal</td>',
+            '<td style="padding:10px 14px;font-size:13px;color:#0f172a;font-family:Consolas,Monaco,monospace;">' . $safePortalLogin . '</td>',
+            '</tr>',
+            '</table>',
+            $ctaButton,
+            $ctaFallback,
+            '<p style="margin:16px 0 0 0;font-size:13px;line-height:1.6;color:#475569;">Voce tambem pode consultar em <strong>Portal do Aluno > Aulas ao Vivo</strong>.</p>',
+            '<p style="margin:18px 0 0 0;font-size:11px;color:#94a3b8;">Mensagem automatica do sistema ANEO. Nao responda este e-mail.</p>',
+            '</td></tr>',
+            '</table>',
+            '</td></tr>',
+            '</table>',
+            '</body>',
+            '</html>',
+        ]);
+    }
+
+    private function formatDurationLabel(int $durationMin): string
+    {
+        if ($durationMin <= 0) {
+            return '-';
+        }
+
+        if ($durationMin < 60) {
+            return $durationMin . ' min';
+        }
+
+        $hours = intdiv($durationMin, 60);
+        $minutes = $durationMin % 60;
+        if ($minutes === 0) {
+            return $hours . 'h';
+        }
+
+        return $hours . 'h ' . $minutes . 'min';
     }
 }

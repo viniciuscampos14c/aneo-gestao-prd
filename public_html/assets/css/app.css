@@ -1670,6 +1670,8 @@ html.dark .portal-modern-theme .aneo-theme-logo-frame {
 }
 
 .admin-modern-main .signatures-webhook,
+.admin-modern-main .signatures-config,
+.admin-modern-main .signatures-config-form,
 .admin-modern-main .signatures-create-form,
 .admin-modern-main .signatures-filter-form,
 .admin-modern-main .signatures-events,
@@ -1679,11 +1681,19 @@ html.dark .portal-modern-theme .aneo-theme-logo-frame {
 }
 
 .admin-modern-main .signatures-webhook p[class*="text-slate-500"],
+.admin-modern-main .signatures-config p[class*="text-slate-500"],
 .admin-modern-main .signatures-create-form p[class*="text-slate-500"],
 .admin-modern-main .signatures-create-form p[class*="text-slate-600"],
 .admin-modern-main .signatures-events p[class*="text-slate-500"],
 .admin-modern-main .signatures-events p[class*="text-slate-600"] {
     color: #9fc0db !important;
+}
+
+.admin-modern-main .signatures-config-form input[type="text"],
+.admin-modern-main .signatures-config-form input[type="password"] {
+    border-color: rgba(111, 157, 191, 0.38) !important;
+    background: rgba(9, 33, 53, 0.68) !important;
+    color: #d2e7fa !important;
 }
 
 .admin-modern-main .signatures-webhook-input {
@@ -1718,6 +1728,17 @@ html.dark .portal-modern-theme .aneo-theme-logo-frame {
     border: 1px solid rgba(111, 179, 236, 0.5) !important;
     background: linear-gradient(135deg, rgba(20, 67, 102, 0.84), rgba(14, 53, 86, 0.82)) !important;
     color: #e5f4ff !important;
+}
+
+.admin-modern-main .signatures-config-save {
+    border: 1px solid rgba(103, 197, 228, 0.44) !important;
+    background: rgba(17, 48, 74, 0.72) !important;
+    color: #d9ecfb !important;
+}
+
+.admin-modern-main .signatures-config-save:hover {
+    background: rgba(23, 62, 95, 0.78) !important;
+    color: #f0f9ff !important;
 }
 
 .admin-modern-main .signatures-table thead tr {

@@ -131,9 +131,16 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-white p-4">
-        <div class="mb-4">
-            <h3 class="text-sm font-semibold text-slate-800">Trilha LMS (Modulos e Aulas)</h3>
-            <p class="mt-1 text-xs text-slate-500">Configure a ordem dos modulos e aulas. O portal do aluno bloqueia o proximo modulo ate concluir o anterior.</p>
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-800">Trilha LMS (Modulos e Aulas)</h3>
+                <p class="mt-1 text-xs text-slate-500">Organize o curso em etapas claras: crie modulo, adicione aulas e publique na ordem correta.</p>
+            </div>
+            <?php if ($lmsFeatureAvailable && $course): ?>
+                <span class="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
+                    <?= count($courseModules); ?> modulo(s)
+                </span>
+            <?php endif; ?>
         </div>
 
         <?php if (!$lmsFeatureAvailable): ?>
@@ -143,110 +150,228 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
         <?php elseif (!$course): ?>
             <p class="text-xs text-slate-500">Salve o curso primeiro para cadastrar modulos e aulas.</p>
         <?php else: ?>
-            <form method="post" action="<?= route('courses/modules/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:grid-cols-4">
+            <div class="mb-4 grid gap-2 rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 text-xs text-cyan-800 md:grid-cols-3">
+                <p><span class="font-semibold">Passo 1:</span> Crie o modulo com nome e ordem.</p>
+                <p><span class="font-semibold">Passo 2:</span> Dentro do modulo, cadastre as aulas com URL do video.</p>
+                <p><span class="font-semibold">Passo 3:</span> Marque como obrigatoria/ativa e salve.</p>
+            </div>
+
+            <form method="post" action="<?= route('courses/modules/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-12">
                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                 <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
-                <input type="text" name="title" required placeholder="Novo modulo (titulo)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm lg:col-span-2">
-                <input type="number" name="display_order" min="1" placeholder="Ordem" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-2 text-xs text-slate-600">
+
+                <label class="block lg:col-span-5">
+                    <span class="mb-1 block text-xs font-semibold text-slate-700">Nome do modulo *</span>
+                    <input type="text" name="title" required placeholder="Ex: Modulo 1 - Fundamentos" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                </label>
+
+                <label class="block lg:col-span-2">
+                    <span class="mb-1 block text-xs font-semibold text-slate-700">Ordem</span>
+                    <input type="number" name="display_order" min="1" placeholder="1" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                </label>
+
+                <div class="flex items-end gap-3 lg:col-span-5">
+                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
                         <input type="checkbox" name="is_active" value="1" checked>
-                        Ativo
+                        Modulo ativo
                     </label>
-                    <button class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Adicionar modulo</button>
+                    <button class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800">Criar modulo</button>
                 </div>
-                <textarea name="description" rows="2" placeholder="Descricao do modulo (opcional)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm lg:col-span-4"></textarea>
+
+                <label class="block lg:col-span-12">
+                    <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao do modulo (opcional)</span>
+                    <textarea name="description" rows="2" placeholder="Ex: Objetivos e resumo deste modulo." class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
+                </label>
             </form>
 
             <div class="mt-4 space-y-4">
-                <?php foreach ($courseModules as $module): ?>
-                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <form method="post" action="<?= route('courses/modules/update'); ?>" class="grid gap-2 lg:grid-cols-5">
-                            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                            <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
-                            <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
-                            <input type="text" name="title" required value="<?= e((string) $module['title']); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm lg:col-span-2">
-                            <input type="number" name="display_order" min="1" value="<?= (int) $module['display_order']; ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-                            <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                                <input type="checkbox" name="is_active" value="1" <?= !empty($module['is_active']) ? 'checked' : ''; ?>>
-                                Modulo ativo
-                            </label>
-                            <div class="flex items-center gap-2">
-                                <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-100">Salvar modulo</button>
+                <?php foreach ($courseModules as $moduleIndex => $module): ?>
+                    <?php
+                    $moduleLessons = is_array($module['lessons'] ?? null) ? $module['lessons'] : [];
+                    $moduleLessonCount = count($moduleLessons);
+                    ?>
+                    <details class="rounded-xl border border-slate-200 bg-slate-50 p-3" <?= $moduleIndex === 0 ? 'open' : ''; ?>>
+                        <summary class="cursor-pointer list-none rounded-lg border border-slate-200 bg-white px-3 py-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-800">
+                                        Modulo <?= (int) ($module['display_order'] ?? ($moduleIndex + 1)); ?> - <?= e((string) ($module['title'] ?? 'Sem titulo')); ?>
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        <?= $moduleLessonCount; ?> aula(s) cadastrada(s)
+                                        <?php if (empty($module['is_active'])): ?>
+                                            - modulo inativo
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                    Abrir edicao
+                                </span>
                             </div>
-                            <textarea name="description" rows="2" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm lg:col-span-5"><?= e((string) ($module['description'] ?? '')); ?></textarea>
-                        </form>
-                        <form method="post" action="<?= route('courses/modules/delete'); ?>" onsubmit="return confirm('Remover modulo e todas as aulas?');" class="mt-2 flex justify-end">
-                            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                            <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
-                            <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
-                            <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir modulo</button>
-                        </form>
+                        </summary>
 
-                        <div class="mt-3 space-y-2">
-                            <?php foreach (($module['lessons'] ?? []) as $lesson): ?>
-                                <form method="post" action="<?= route('courses/lessons/update'); ?>" class="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 lg:grid-cols-12">
-                                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                                    <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
-                                    <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
-                                    <input type="text" name="title" required value="<?= e((string) $lesson['title']); ?>" placeholder="Titulo da aula" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-3">
-                                    <input type="text" name="video_url" required value="<?= e((string) ($lesson['video_url'] ?? '')); ?>" placeholder="URL do video (YouTube ou MP4/WebM)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5">
-                                    <input type="number" name="duration_seconds" min="0" value="<?= (int) ($lesson['duration_seconds'] ?? 0); ?>" placeholder="Duracao(s)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
-                                    <input type="number" name="min_progress_percent" min="1" max="100" value="<?= (int) ($lesson['min_progress_percent'] ?? 70); ?>" placeholder="% minimo" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
-                                    <input type="number" name="display_order" min="1" value="<?= (int) ($lesson['display_order'] ?? 1); ?>" placeholder="Ordem" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
-                                    <div class="flex items-center gap-3 lg:col-span-1">
-                                        <label class="flex items-center gap-1 text-[11px] text-slate-600">
-                                            <input type="checkbox" name="is_required" value="1" <?= !empty($lesson['is_required']) ? 'checked' : ''; ?>>
-                                            Obrig.
-                                        </label>
-                                        <label class="flex items-center gap-1 text-[11px] text-slate-600">
-                                            <input type="checkbox" name="is_active" value="1" <?= !empty($lesson['is_active']) ? 'checked' : ''; ?>>
-                                            Ativa
-                                        </label>
-                                    </div>
-                                    <textarea name="description" rows="2" placeholder="Descricao da aula (opcional)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-9"><?= e((string) ($lesson['description'] ?? '')); ?></textarea>
-                                    <div class="flex items-center justify-end gap-2 lg:col-span-3">
-                                        <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-100">Salvar aula</button>
-                                    </div>
-                                </form>
-                                <form method="post" action="<?= route('courses/lessons/delete'); ?>" onsubmit="return confirm('Excluir esta aula?');" class="mt-1 flex justify-end">
-                                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                                    <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
-                                    <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
-                                    <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir aula</button>
-                                </form>
-                            <?php endforeach; ?>
-
-                            <form method="post" action="<?= route('courses/lessons/store'); ?>" class="grid gap-2 rounded-lg border border-dashed border-slate-300 bg-white p-3 lg:grid-cols-12">
+                        <div class="mt-3 space-y-3">
+                            <form method="post" action="<?= route('courses/modules/update'); ?>" class="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 lg:grid-cols-12">
                                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                 <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
                                 <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
-                                <input type="text" name="title" required placeholder="Nova aula (titulo)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-3">
-                                <input type="text" name="video_url" required placeholder="URL do video (YouTube ou MP4/WebM)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5">
-                                <input type="number" name="duration_seconds" min="0" placeholder="Duracao(s)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
-                                <input type="number" name="min_progress_percent" min="1" max="100" value="70" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
-                                <input type="number" name="display_order" min="1" placeholder="Ordem" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-1">
-                                <div class="flex items-center gap-3 lg:col-span-1">
-                                    <label class="flex items-center gap-1 text-[11px] text-slate-600">
-                                        <input type="checkbox" name="is_required" value="1" checked>
-                                        Obrig.
+
+                                <label class="block lg:col-span-5">
+                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Nome do modulo *</span>
+                                    <input type="text" name="title" required value="<?= e((string) $module['title']); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                                </label>
+
+                                <label class="block lg:col-span-2">
+                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Ordem</span>
+                                    <input type="number" name="display_order" min="1" value="<?= (int) $module['display_order']; ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                                </label>
+
+                                <div class="flex items-end gap-3 lg:col-span-5">
+                                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700">
+                                        <input type="checkbox" name="is_active" value="1" <?= !empty($module['is_active']) ? 'checked' : ''; ?>>
+                                        Modulo ativo
                                     </label>
-                                    <label class="flex items-center gap-1 text-[11px] text-slate-600">
-                                        <input type="checkbox" name="is_active" value="1" checked>
-                                        Ativa
-                                    </label>
+                                    <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-100">Salvar modulo</button>
                                 </div>
-                                <textarea name="description" rows="2" placeholder="Descricao da nova aula (opcional)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-9"></textarea>
-                                <div class="flex items-center justify-end lg:col-span-3">
-                                    <button class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Adicionar aula</button>
-                                </div>
+
+                                <label class="block lg:col-span-12">
+                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao (opcional)</span>
+                                    <textarea name="description" rows="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"><?= e((string) ($module['description'] ?? '')); ?></textarea>
+                                </label>
                             </form>
+
+                            <form method="post" action="<?= route('courses/modules/delete'); ?>" onsubmit="return confirm('Remover modulo e todas as aulas?');" class="flex justify-end">
+                                <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                                <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                                <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
+                                <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir modulo</button>
+                            </form>
+
+                            <div class="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Aulas deste modulo</p>
+                                    <span class="text-xs text-slate-500"><?= $moduleLessonCount; ?> item(ns)</span>
+                                </div>
+
+                                <?php foreach ($moduleLessons as $lesson): ?>
+                                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <form method="post" action="<?= route('courses/lessons/update'); ?>" class="grid gap-3 lg:grid-cols-12">
+                                            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                                            <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                                            <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
+
+                                            <label class="block lg:col-span-3">
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Titulo da aula *</span>
+                                                <input type="text" name="title" required value="<?= e((string) $lesson['title']); ?>" placeholder="Ex: Aula 1" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            </label>
+
+                                            <label class="block lg:col-span-5">
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">URL do video *</span>
+                                                <input type="text" name="video_url" required value="<?= e((string) ($lesson['video_url'] ?? '')); ?>" placeholder="YouTube, Vimeo ou MP4/WebM" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            </label>
+
+                                            <label class="block lg:col-span-1">
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Duracao (s)</span>
+                                                <input type="number" name="duration_seconds" min="0" value="<?= (int) ($lesson['duration_seconds'] ?? 0); ?>" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            </label>
+
+                                            <label class="block lg:col-span-1">
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">% minimo</span>
+                                                <input type="number" name="min_progress_percent" min="1" max="100" value="<?= (int) ($lesson['min_progress_percent'] ?? 70); ?>" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            </label>
+
+                                            <label class="block lg:col-span-1">
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Ordem</span>
+                                                <input type="number" name="display_order" min="1" value="<?= (int) ($lesson['display_order'] ?? 1); ?>" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                            </label>
+
+                                            <div class="flex items-end gap-3 lg:col-span-1">
+                                                <label class="inline-flex items-center gap-1 text-[11px] text-slate-700">
+                                                    <input type="checkbox" name="is_required" value="1" <?= !empty($lesson['is_required']) ? 'checked' : ''; ?>>
+                                                    Obrigatoria
+                                                </label>
+                                                <label class="inline-flex items-center gap-1 text-[11px] text-slate-700">
+                                                    <input type="checkbox" name="is_active" value="1" <?= !empty($lesson['is_active']) ? 'checked' : ''; ?>>
+                                                    Ativa
+                                                </label>
+                                            </div>
+
+                                            <label class="block lg:col-span-9">
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao da aula (opcional)</span>
+                                                <textarea name="description" rows="2" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"><?= e((string) ($lesson['description'] ?? '')); ?></textarea>
+                                            </label>
+
+                                            <div class="flex items-end justify-end lg:col-span-3">
+                                                <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-100">Salvar aula</button>
+                                            </div>
+                                        </form>
+
+                                        <form method="post" action="<?= route('courses/lessons/delete'); ?>" onsubmit="return confirm('Excluir esta aula?');" class="mt-2 flex justify-end">
+                                            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                                            <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                                            <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
+                                            <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir aula</button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+
+                                <form method="post" action="<?= route('courses/lessons/store'); ?>" class="grid gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 lg:grid-cols-12">
+                                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                                    <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                                    <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
+
+                                    <label class="block lg:col-span-3">
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Nova aula *</span>
+                                        <input type="text" name="title" required placeholder="Ex: Aula 3 - Revisao" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                    </label>
+
+                                    <label class="block lg:col-span-5">
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">URL do video *</span>
+                                        <input type="text" name="video_url" required placeholder="Cole aqui o link da aula" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                    </label>
+
+                                    <label class="block lg:col-span-1">
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Duracao (s)</span>
+                                        <input type="number" name="duration_seconds" min="0" placeholder="0" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                    </label>
+
+                                    <label class="block lg:col-span-1">
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">% minimo</span>
+                                        <input type="number" name="min_progress_percent" min="1" max="100" value="70" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                    </label>
+
+                                    <label class="block lg:col-span-1">
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Ordem</span>
+                                        <input type="number" name="display_order" min="1" placeholder="<?= (int) $moduleLessonCount + 1; ?>" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                    </label>
+
+                                    <div class="flex items-end gap-3 lg:col-span-1">
+                                        <label class="inline-flex items-center gap-1 text-[11px] text-slate-700">
+                                            <input type="checkbox" name="is_required" value="1" checked>
+                                            Obrigatoria
+                                        </label>
+                                        <label class="inline-flex items-center gap-1 text-[11px] text-slate-700">
+                                            <input type="checkbox" name="is_active" value="1" checked>
+                                            Ativa
+                                        </label>
+                                    </div>
+
+                                    <label class="block lg:col-span-9">
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao da nova aula (opcional)</span>
+                                        <textarea name="description" rows="2" placeholder="Resumo rapido do que sera ensinado." class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
+                                    </label>
+
+                                    <div class="flex items-end justify-end lg:col-span-3">
+                                        <button class="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Adicionar aula</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                    </article>
+                    </details>
                 <?php endforeach; ?>
 
                 <?php if ($courseModules === []): ?>
-                    <p class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500">Nenhum modulo cadastrado ainda.</p>
+                    <p class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500">Nenhum modulo cadastrado ainda. Comece criando o primeiro modulo acima.</p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
