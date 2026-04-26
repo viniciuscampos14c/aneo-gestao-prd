@@ -1855,15 +1855,67 @@ class StudentPortalModel extends BaseModel
         }
 
         $companyId = $this->resolveStudentCompanyId($studentId);
-        $sql = "SELECT
+        $referenceNow = $this->appNow();
+        $rows = [];
+
+        if ($this->courseLiveSessionsTableExists()) {
+            $sqlNew = "SELECT
+                    cls.id,
+                    cls.title AS name,
+                    c.name AS course_name,
+                    cls.join_url AS live_link,
+                    cls.zoom_password AS live_password,
+                    cls.zoom_meeting_id AS live_meeting_id,
+                    cls.scheduled_at AS live_datetime,
+                    cls.duration_minutes,
+                    e.progress_percent,
+                    e.status AS enrollment_status,
+                    'zoom' AS platform
+                FROM course_live_sessions cls
+                INNER JOIN courses c ON c.id = cls.course_id
+                INNER JOIN enrollments e ON e.course_id = c.id
+                WHERE e.student_id = :student_id
+                  AND c.id = :course_id
+                  AND e.status = 'active'
+                  AND c.status = 'published'
+                  AND cls.status = 'scheduled'
+                  AND DATE(cls.scheduled_at) = :access_date
+                  AND DATE_ADD(cls.scheduled_at, INTERVAL COALESCE(NULLIF(cls.duration_minutes, 0), 120) MINUTE) >= :reference_now";
+
+            $paramsNew = [
+                ':student_id' => $studentId,
+                ':course_id' => $courseId,
+                ':access_date' => $accessDate,
+                ':reference_now' => $referenceNow,
+            ];
+
+            if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+                $sqlNew .= ' AND c.company_id = :company_id';
+                $paramsNew[':company_id'] = $companyId;
+            }
+
+            $sqlNew .= ' ORDER BY cls.scheduled_at ASC';
+            $stmtNew = $this->db->prepare($sqlNew);
+            $stmtNew->execute($paramsNew);
+            $rows = $stmtNew->fetchAll();
+        }
+
+        if ($rows !== []) {
+            return $rows;
+        }
+
+        $sqlLegacy = "SELECT
                 c.id,
                 c.name,
+                c.name AS course_name,
                 c.live_link,
                 c.live_password,
                 c.live_meeting_id,
                 c.live_datetime,
+                NULL AS duration_minutes,
                 e.progress_percent,
-                e.status AS enrollment_status
+                e.status AS enrollment_status,
+                'zoom' AS platform
             FROM courses c
             INNER JOIN enrollments e ON e.course_id = c.id
             WHERE e.student_id = :student_id
@@ -1873,24 +1925,27 @@ class StudentPortalModel extends BaseModel
               AND c.live_link IS NOT NULL
               AND c.live_link <> ''
               AND c.live_datetime IS NOT NULL
-              AND DATE(c.live_datetime) = :access_date";
-        $params = [
+              AND DATE(c.live_datetime) = :access_date
+              AND DATE_ADD(c.live_datetime, INTERVAL 120 MINUTE) >= :reference_now";
+
+        $paramsLegacy = [
             ':student_id' => $studentId,
             ':course_id' => $courseId,
             ':access_date' => $accessDate,
+            ':reference_now' => $referenceNow,
         ];
 
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
-            $sql .= ' AND c.company_id = :company_id';
-            $params[':company_id'] = $companyId;
+            $sqlLegacy .= ' AND c.company_id = :company_id';
+            $paramsLegacy[':company_id'] = $companyId;
         }
 
-        $sql .= ' ORDER BY c.live_datetime ASC';
+        $sqlLegacy .= ' ORDER BY c.live_datetime ASC';
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        $stmtLegacy = $this->db->prepare($sqlLegacy);
+        $stmtLegacy->execute($paramsLegacy);
 
-        return $stmt->fetchAll();
+        return $stmtLegacy->fetchAll();
     }
 
     private function examBelongsToStudentCompany(int $examId, int $studentId): bool
