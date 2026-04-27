@@ -1,30 +1,70 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MetricCard } from '../components/MetricCard';
 import { AUTO_REFRESH_MS } from '../config/constants';
 import { loadExecutiveMetricsFromApi } from '../services/dashboardService';
 import { formatDateTime } from '../utils/format';
 import type { ApiConfig, ExecutiveMetric } from '../types';
 
+type DashboardTab =
+  | 'dashboard'
+  | 'negotiation'
+  | 'trial-access'
+  | 'connection'
+  | 'students'
+  | 'tickets';
+
 type DashboardScreenProps = {
   apiConfig: ApiConfig | null;
+  onNavigateTab?: (tab: DashboardTab) => void;
 };
 
-export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
+const quickModules: Array<{ id: string; icon: string; label: string; targetTab: DashboardTab }> = [
+  { id: 'indicadores', icon: 'I', label: 'Indicadores', targetTab: 'dashboard' },
+  { id: 'negociacao', icon: '%', label: 'Negociacao', targetTab: 'negotiation' },
+  { id: 'degustacao', icon: 'D', label: 'Degustacao', targetTab: 'trial-access' },
+  { id: 'conexao', icon: 'C', label: 'Conexao', targetTab: 'connection' },
+  { id: 'alunos', icon: 'A', label: 'Alunos', targetTab: 'students' },
+  { id: 'chamados', icon: 'T', label: 'Chamados', targetTab: 'tickets' },
+];
+
+const highlights: Array<{ id: string; title: string; description: string; targetTab: DashboardTab; icon: string }> = [
+  {
+    id: 'hl-negociacao',
+    title: 'Negociacoes pendentes',
+    description: 'Atalho para enviar acordos e aditivos.',
+    targetTab: 'negotiation',
+    icon: '%',
+  },
+  {
+    id: 'hl-alunos',
+    title: 'Base de Alunos',
+    description: 'Consulta rapida de alunos e contatos.',
+    targetTab: 'students',
+    icon: 'A',
+  },
+  {
+    id: 'hl-chamados',
+    title: 'Fila de Chamados',
+    description: 'Acompanhe solicitacoes abertas da operacao.',
+    targetTab: 'tickets',
+    icon: 'T',
+  },
+];
+
+export function DashboardScreen({ apiConfig, onNavigateTab }: DashboardScreenProps) {
   const [metrics, setMetrics] = useState<ExecutiveMetric[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [query, setQuery] = useState('');
   const loadingRef = useRef(false);
 
   const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
 
   const refreshData = useCallback(
     async (mode: 'manual' | 'auto' | 'initial') => {
-      if (!apiConfig) {
-        return;
-      }
-      if (loadingRef.current) {
+      if (!apiConfig || loadingRef.current) {
         return;
       }
 
@@ -56,7 +96,7 @@ export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
       return;
     }
 
-    refreshData('initial');
+    void refreshData('initial');
   }, [apiConfig, refreshData]);
 
   useEffect(() => {
@@ -64,16 +104,62 @@ export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
       return;
     }
 
-    refreshData('auto');
     const intervalId = setInterval(() => {
-      refreshData('auto');
+      void refreshData('auto');
     }, AUTO_REFRESH_MS);
 
     return () => clearInterval(intervalId);
   }, [apiConfig, refreshData]);
 
+  const filteredModules = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) {
+      return quickModules;
+    }
+
+    return quickModules.filter((module) => module.label.toLowerCase().includes(term));
+  }, [query]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.searchCard}>
+        <Text style={styles.searchIcon}>Q</Text>
+        <TextInput
+          style={styles.searchInput}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Pesquisar modulo..."
+          placeholderTextColor="#7f9ab9"
+        />
+      </View>
+
+      <Text style={styles.sectionTitle}>Modulos rapidos</Text>
+      <View style={styles.moduleGrid}>
+        {filteredModules.map((module) => (
+          <Pressable key={module.id} style={styles.moduleButton} onPress={() => onNavigateTab?.(module.targetTab)}>
+            <View style={styles.moduleIconWrap}>
+              <Text style={styles.moduleIcon}>{module.icon}</Text>
+            </View>
+            <Text style={styles.moduleLabel}>{module.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>Destaques de uso</Text>
+      <View style={styles.featureList}>
+        {highlights.map((item) => (
+          <Pressable key={item.id} style={styles.featureCard} onPress={() => onNavigateTab?.(item.targetTab)}>
+            <View style={styles.featureIconWrap}>
+              <Text style={styles.featureIcon}>{item.icon}</Text>
+            </View>
+            <View style={styles.featureTextWrap}>
+              <Text style={styles.featureTitle}>{item.title}</Text>
+              <Text style={styles.featureDescription}>{item.description}</Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={styles.statusCard}>
         <Text style={styles.statusLabel}>Fonte de dados</Text>
         <Text style={styles.statusValue}>{connected ? 'API em tempo real' : 'Desconectado'}</Text>
@@ -85,23 +171,12 @@ export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
 
         <Pressable
           style={[styles.refreshButton, loading && styles.refreshButtonDisabled]}
-          onPress={() => refreshData('manual')}
+          onPress={() => void refreshData('manual')}
           disabled={!connected || loading}
         >
           <Text style={styles.refreshButtonText}>{loading ? 'Atualizando...' : 'Atualizar agora'}</Text>
         </Pressable>
       </View>
-
-      {!connected ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>Conecte a API para ver indicadores reais</Text>
-          <Text style={styles.emptyText}>
-            Abra a aba Conexao, informe URL e token, e volte para atualizar o dashboard.
-          </Text>
-        </View>
-      ) : null}
-
-      {connected ? <Text style={styles.sectionTitle}>Visao Financeira</Text> : null}
 
       {connected ? (
         <View style={styles.metricsGrid}>
@@ -109,34 +184,12 @@ export function DashboardScreen({ apiConfig }: DashboardScreenProps) {
             <MetricCard key={metric.id} metric={metric} />
           ))}
         </View>
-      ) : null}
-
-      {connected ? <Text style={styles.sectionTitle}>Acoes Prioritarias</Text> : null}
-
-      {connected ? (
-        <>
-          <View style={styles.actionCard}>
-            <Text style={styles.actionTitle}>1) Carteira 60+ dias</Text>
-            <Text style={styles.actionText}>
-              Focar nos 20 maiores contratos vencidos para reverter caixa em ate 7 dias.
-            </Text>
-          </View>
-
-          <View style={styles.actionCard}>
-            <Text style={styles.actionTitle}>2) Alunos com risco de evasao</Text>
-            <Text style={styles.actionText}>
-              Cruzar inadimplencia + chamados + ausencia para antecipar retencao comercial.
-            </Text>
-          </View>
-
-          <View style={styles.actionCard}>
-            <Text style={styles.actionTitle}>3) Meta semanal de negociacoes</Text>
-            <Text style={styles.actionText}>
-              Executar 40 acordos com ticket medio de R$ 1.200 para aumentar recuperacao.
-            </Text>
-          </View>
-        </>
-      ) : null}
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>Conecte a API para ver os indicadores</Text>
+          <Text style={styles.emptyText}>Abra a aba Conexao, valide o acesso e volte para atualizar.</Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -151,11 +204,117 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 28,
   },
+  searchCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#325781',
+    backgroundColor: '#173052',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  searchIcon: {
+    color: '#8fb9ea',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  searchInput: {
+    flex: 1,
+    color: '#e8f2ff',
+    paddingVertical: 12,
+    fontSize: 14,
+  },
+  sectionTitle: {
+    color: '#dcecff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  moduleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  moduleButton: {
+    width: '31%',
+    minWidth: 94,
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#2b4f77',
+    backgroundColor: '#10263f',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  moduleIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#3f79b3',
+    backgroundColor: '#1f3f65',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moduleIcon: {
+    color: '#cbe3ff',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  moduleLabel: {
+    color: '#d5e8ff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  featureList: {
+    gap: 10,
+  },
+  featureCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#294f76',
+    backgroundColor: '#0f243c',
+    padding: 10,
+    gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  featureIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#3b6a9a',
+    backgroundColor: '#1a3453',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureIcon: {
+    color: '#d6e9ff',
+    fontSize: 21,
+    fontWeight: '800',
+  },
+  featureTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  featureTitle: {
+    color: '#f3f8ff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  featureDescription: {
+    color: '#9fc1eb',
+    fontSize: 12,
+    lineHeight: 17,
+  },
   statusCard: {
-    backgroundColor: '#0f2239',
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#224567',
+    borderRadius: 12,
+    backgroundColor: '#0f2239',
     padding: 12,
     gap: 6,
   },
@@ -194,6 +353,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  metricsGrid: {
+    gap: 10,
+  },
   emptyCard: {
     borderWidth: 1,
     borderColor: '#2f4c6f',
@@ -211,32 +373,5 @@ const styles = StyleSheet.create({
     color: '#b0ccec',
     fontSize: 13,
     lineHeight: 18,
-  },
-  sectionTitle: {
-    color: '#e9f2ff',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  metricsGrid: {
-    gap: 10,
-  },
-  actionCard: {
-    backgroundColor: '#10263f',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1f3a5a',
-    padding: 13,
-    gap: 4,
-  },
-  actionTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  actionText: {
-    color: '#9fc1eb',
-    fontSize: 13,
-    lineHeight: 19,
   },
 });

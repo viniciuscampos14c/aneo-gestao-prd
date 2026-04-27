@@ -6,6 +6,8 @@ import { NegotiationScreen } from './src/screens/NegotiationScreen';
 import { ConnectionScreen } from './src/screens/ConnectionScreen';
 import { AppLoginScreen } from './src/screens/AppLoginScreen';
 import { TrialAccessScreen } from './src/screens/TrialAccessScreen';
+import { StudentDirectoryScreen } from './src/screens/StudentDirectoryScreen';
+import { TicketCenterScreen } from './src/screens/TicketCenterScreen';
 import type { ApiConfig } from './src/types';
 import {
   clearStoredApiConfig,
@@ -14,7 +16,13 @@ import {
 } from './src/services/apiConfigStorage';
 import { DEFAULT_API_BASE_URL } from './src/config/constants';
 
-type AppTab = 'dashboard' | 'negotiation' | 'trial-access' | 'connection';
+type AppTab =
+  | 'dashboard'
+  | 'negotiation'
+  | 'trial-access'
+  | 'connection'
+  | 'students'
+  | 'tickets';
 
 export default function App() {
   const [tab, setTab] = useState<AppTab>('dashboard');
@@ -46,6 +54,8 @@ export default function App() {
     if (tab === 'dashboard') return 'Dashboard Executivo';
     if (tab === 'negotiation') return 'Negociacao de Alunos';
     if (tab === 'trial-access') return 'Degustacao Cursos';
+    if (tab === 'students') return 'Alunos';
+    if (tab === 'tickets') return 'Chamados';
     return 'Conexao API';
   }, [tab]);
 
@@ -89,13 +99,13 @@ export default function App() {
 
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <View style={styles.logoFrame}>
+          <Pressable style={styles.logoFrame} onPress={() => setTab('dashboard')}>
             <Image
               source={require('./assets/logo-aneo-original.png')}
               style={styles.logo}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
           <View style={styles.brandTextBlock}>
             <Text style={styles.brand}>ANEO DIRETORIA</Text>
@@ -149,12 +159,35 @@ export default function App() {
               Degustacao
             </Text>
           </Pressable>
+
+          <Pressable
+            style={[styles.tab, tab === 'students' && styles.tabActive]}
+            onPress={() => setTab('students')}
+          >
+            <Text style={[styles.tabText, tab === 'students' && styles.tabTextActive]}>Alunos</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.tab, tab === 'tickets' && styles.tabActive]}
+            onPress={() => setTab('tickets')}
+          >
+            <Text style={[styles.tabText, tab === 'tickets' && styles.tabTextActive]}>Chamados</Text>
+          </Pressable>
         </View>
       </View>
 
-      {tab === 'dashboard' ? <DashboardScreen apiConfig={apiConfig} /> : null}
+      {tab === 'dashboard' ? (
+        <DashboardScreen
+          apiConfig={apiConfig}
+          onNavigateTab={(nextTab) => {
+            setTab(nextTab);
+          }}
+        />
+      ) : null}
       {tab === 'negotiation' ? <NegotiationScreen apiConfig={apiConfig} /> : null}
       {tab === 'trial-access' ? <TrialAccessScreen apiConfig={apiConfig} /> : null}
+      {tab === 'students' ? <StudentDirectoryScreen apiConfig={apiConfig} /> : null}
+      {tab === 'tickets' ? <TicketCenterScreen apiConfig={apiConfig} /> : null}
       {tab === 'connection' ? (
         <ConnectionScreen
           apiConfig={apiConfig}
