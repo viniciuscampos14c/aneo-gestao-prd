@@ -18,6 +18,7 @@ class StudentPortalModel extends BaseModel
     private ?bool $courseLessonsTableExists = null;
     private ?bool $studentLessonProgressTableExists = null;
     private ?bool $examExternalLinksTableExists = null;
+    private ?bool $examInternalLinksTableExists = null;
 
     public function portalFeatureAvailable(): bool
     {
@@ -1136,6 +1137,10 @@ class StudentPortalModel extends BaseModel
         $submissionJoin = '';
         $externalSelect = 'NULL AS external_link_id, NULL AS external_url, NULL AS external_instructions, NULL AS external_due_at';
         $externalJoin = '';
+        $internalSelect = 'NULL AS internal_link_id, 0 AS internal_links_total';
+        $internalJoin = '';
+        $internalCountJoin = '';
+        $internalVisibilityWhere = '';
         $hasScheduleColumn = $this->hasExamScheduleColumn();
         $scheduleSelect = $hasScheduleColumn ? 'ex.scheduled_at AS scheduled_at' : 'NULL AS scheduled_at';
         $orderSql = $hasScheduleColumn
@@ -1171,6 +1176,22 @@ class StudentPortalModel extends BaseModel
             $params[':student_id_external'] = $studentId;
         }
 
+        if ($this->hasExamInternalLinksTable()) {
+            $internalSelect = 'eil.id AS internal_link_id, COALESCE(eilc.internal_links_total, 0) AS internal_links_total';
+            $internalJoin = 'LEFT JOIN exam_internal_links eil
+                ON eil.exam_id = ex.id
+               AND eil.student_id = :student_id_internal
+               AND eil.is_active = 1';
+            $internalCountJoin = "LEFT JOIN (
+                    SELECT exam_id, COUNT(*) AS internal_links_total
+                    FROM exam_internal_links
+                    WHERE is_active = 1
+                    GROUP BY exam_id
+                ) eilc ON eilc.exam_id = ex.id";
+            $internalVisibilityWhere = ' AND (COALESCE(eilc.internal_links_total, 0) = 0 OR eil.id IS NOT NULL)';
+            $params[':student_id_internal'] = $studentId;
+        }
+
         $companyFilter = '';
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $companyFilter = ' AND c.company_id = :company_id';
@@ -1190,6 +1211,7 @@ class StudentPortalModel extends BaseModel
                 r.score AS result_score,
                 r.status AS result_status,
                 {$externalSelect},
+                {$internalSelect},
                 {$submissionSelect}
             FROM exams ex
             INNER JOIN courses c ON c.id = ex.course_id
@@ -1204,10 +1226,13 @@ class StudentPortalModel extends BaseModel
             ) q ON q.exam_id = ex.id
             LEFT JOIN exam_results r ON r.exam_id = ex.id AND r.student_id = :student_id_result
             {$externalJoin}
+            {$internalJoin}
+            {$internalCountJoin}
             {$submissionJoin}
             WHERE c.status = 'published'
               AND e.status IN ('active', 'completed')
               {$companyFilter}
+              {$internalVisibilityWhere}
             {$orderSql}";
 
         $stmt = $this->db->prepare($sql);
@@ -1221,6 +1246,10 @@ class StudentPortalModel extends BaseModel
         $scheduleSelect = $this->hasExamScheduleColumn() ? 'ex.scheduled_at AS scheduled_at,' : '';
         $externalSelect = 'NULL AS external_link_id, NULL AS external_url, NULL AS external_instructions, NULL AS external_due_at,';
         $externalJoin = '';
+        $internalSelect = 'NULL AS internal_link_id,';
+        $internalJoin = '';
+        $internalCountJoin = '';
+        $internalVisibilityWhere = '';
         $companyId = $this->resolveStudentCompanyId($studentId);
         $companyFilter = '';
         $params = [
@@ -1235,6 +1264,21 @@ class StudentPortalModel extends BaseModel
                AND eel.is_active = 1';
             $params[':student_id_external'] = $studentId;
         }
+        if ($this->hasExamInternalLinksTable()) {
+            $internalSelect = 'eil.id AS internal_link_id,';
+            $internalJoin = 'LEFT JOIN exam_internal_links eil
+                ON eil.exam_id = ex.id
+               AND eil.student_id = :student_id_internal
+               AND eil.is_active = 1';
+            $internalCountJoin = "LEFT JOIN (
+                    SELECT exam_id, COUNT(*) AS internal_links_total
+                    FROM exam_internal_links
+                    WHERE is_active = 1
+                    GROUP BY exam_id
+                ) eilc ON eilc.exam_id = ex.id";
+            $internalVisibilityWhere = ' AND (COALESCE(eilc.internal_links_total, 0) = 0 OR eil.id IS NOT NULL)';
+            $params[':student_id_internal'] = $studentId;
+        }
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $companyFilter = ' AND c.company_id = :company_id';
             $params[':company_id'] = $companyId;
@@ -1247,17 +1291,21 @@ class StudentPortalModel extends BaseModel
                 ex.passing_score,
                 {$scheduleSelect}
                 {$externalSelect}
+                {$internalSelect}
                 c.id AS course_id,
                 c.name AS course_name
             FROM exams ex
             INNER JOIN courses c ON c.id = ex.course_id
             INNER JOIN enrollments e ON e.course_id = c.id
             {$externalJoin}
+            {$internalJoin}
+            {$internalCountJoin}
             WHERE ex.id = :exam_id
               AND e.student_id = :student_id
               AND c.status = 'published'
               AND e.status IN ('active', 'completed')
               {$companyFilter}
+              {$internalVisibilityWhere}
             LIMIT 1");
         $stmt->execute($params);
 
@@ -1307,6 +1355,9 @@ class StudentPortalModel extends BaseModel
         $companyId = $this->resolveStudentCompanyId($studentId);
         $limit = max(1, $limit);
 
+        $internalJoin = '';
+        $internalCountJoin = '';
+        $internalVisibilityWhere = '';
         $sql = "SELECT
                 ex.id,
                 ex.title,
@@ -1315,13 +1366,31 @@ class StudentPortalModel extends BaseModel
                 c.name AS course_name
             FROM exams ex
             INNER JOIN courses c ON c.id = ex.course_id
-            INNER JOIN enrollments e ON e.course_id = c.id
+            INNER JOIN enrollments e ON e.course_id = c.id";
+        $params = [':student_id' => $studentId];
+
+        if ($this->hasExamInternalLinksTable()) {
+            $internalJoin = ' LEFT JOIN exam_internal_links eil
+                ON eil.exam_id = ex.id
+               AND eil.student_id = :student_id_internal
+               AND eil.is_active = 1';
+            $internalCountJoin = " LEFT JOIN (
+                    SELECT exam_id, COUNT(*) AS internal_links_total
+                    FROM exam_internal_links
+                    WHERE is_active = 1
+                    GROUP BY exam_id
+                ) eilc ON eilc.exam_id = ex.id";
+            $internalVisibilityWhere = ' AND (COALESCE(eilc.internal_links_total, 0) = 0 OR eil.id IS NOT NULL)';
+            $params[':student_id_internal'] = $studentId;
+        }
+
+        $sql .= "{$internalJoin}{$internalCountJoin}
             WHERE e.student_id = :student_id
               AND e.status IN ('active', 'completed')
               AND c.status = 'published'
               AND ex.scheduled_at IS NOT NULL
-              AND ex.scheduled_at >= NOW()";
-        $params = [':student_id' => $studentId];
+              AND ex.scheduled_at >= NOW()
+              {$internalVisibilityWhere}";
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
             $sql .= ' AND c.company_id = :company_id';
             $params[':company_id'] = $companyId;
@@ -2061,6 +2130,22 @@ class StudentPortalModel extends BaseModel
         $this->examExternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->examExternalLinksTableExists;
+    }
+
+    private function hasExamInternalLinksTable(): bool
+    {
+        if ($this->examInternalLinksTableExists !== null) {
+            return $this->examInternalLinksTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'exam_internal_links'");
+        $stmt->execute();
+        $this->examInternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->examInternalLinksTableExists;
     }
 
     private function hasStudentProfilePhotoColumn(): bool

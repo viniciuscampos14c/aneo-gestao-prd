@@ -639,6 +639,7 @@ class CourseController extends BaseController
         $students = $this->students->list([], 1000, 1);
         $examScheduleEnabled = $this->courses->examScheduleFeatureAvailable();
         $externalExamFeatureAvailable = $this->courses->externalExamFeatureAvailable();
+        $internalExamAudienceFeatureAvailable = $this->courses->internalExamAudienceFeatureAvailable();
         $upcomingExams = $this->courses->upcomingExamCalendar(90, 14);
         $externalLinks = $externalExamFeatureAvailable
             ? $this->courses->listExternalExamLinks(300)
@@ -653,6 +654,7 @@ class CourseController extends BaseController
             'upcomingExams' => $upcomingExams,
             'examScheduleEnabled' => $examScheduleEnabled,
             'externalExamFeatureAvailable' => $externalExamFeatureAvailable,
+            'internalExamAudienceFeatureAvailable' => $internalExamAudienceFeatureAvailable,
             'externalLinks' => $externalLinks,
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
         ]);
@@ -671,9 +673,43 @@ class CourseController extends BaseController
             'passing_score' => parse_decimal((string) post('passing_score', '7')),
             'scheduled_at' => $this->normalizeDateTime((string) post('scheduled_at')),
         ];
+        $deliveryScope = trim((string) post('delivery_scope_internal', 'course'));
+        $targetStudentId = (int) post('target_student_id');
+        $questionsPayload = $this->normalizeExamQuestionsFromPost();
 
         if ($data['course_id'] <= 0 || $data['title'] === '') {
             $this->error('Curso e titulo sao obrigatorios.');
+            $this->redirect('courses/exams');
+        }
+
+        if (!in_array($deliveryScope, ['course', 'student'], true)) {
+            $deliveryScope = 'course';
+        }
+
+        if ($deliveryScope === 'student') {
+            if (!$this->courses->internalExamAudienceFeatureAvailable()) {
+                $this->error('Direcionamento individual de prova interna indisponivel nesta base. Execute a migracao de publico interno de provas.');
+                $this->redirect('courses/exams');
+            }
+
+            if ($targetStudentId <= 0) {
+                $this->error('Selecione o aluno para o envio individual da prova interna.');
+                $this->redirect('courses/exams');
+            }
+
+            if (!$this->courses->isStudentEnrolledInCourse($targetStudentId, $data['course_id'])) {
+                $this->error('O aluno selecionado nao esta matriculado (ativo/concluido) no curso escolhido.');
+                $this->redirect('courses/exams');
+            }
+        }
+
+        if ($questionsPayload['rows'] === []) {
+            $this->error('Adicione pelo menos uma questao para criar a prova interna.');
+            $this->redirect('courses/exams');
+        }
+
+        if ($questionsPayload['errors'] !== []) {
+            $this->error($questionsPayload['errors'][0]);
             $this->redirect('courses/exams');
         }
 
@@ -683,32 +719,38 @@ class CourseController extends BaseController
             $this->redirect('courses/exams');
         }
 
-        $question = trim((string) post('question_text'));
-        $questionType = trim((string) post('question_type', 'objective'));
-        $optionsJson = trim((string) post('options_json'));
-        $correctAnswer = trim((string) post('correct_answer'));
-        $optionsText = trim((string) post('options_text'));
-
-        if ($optionsText !== '' && $optionsJson === '') {
-            $lines = preg_split('/\r\n|\r|\n/', $optionsText) ?: [];
-            $options = array_values(array_filter(array_map('trim', $lines), fn ($item) => $item !== ''));
-            if ($options !== []) {
-                $optionsJson = json_encode($options, JSON_UNESCAPED_UNICODE);
-            }
-        }
-
-        if ($question !== '') {
+        foreach ($questionsPayload['rows'] as $questionRow) {
             $this->courses->createQuestion(
                 $examId,
-                $questionType,
-                $question,
-                $optionsJson !== '' ? $optionsJson : null,
-                $correctAnswer !== '' ? $correctAnswer : null,
+                (string) $questionRow['question_type'],
+                (string) $questionRow['question_text'],
+                $questionRow['options_json'] !== null ? (string) $questionRow['options_json'] : null,
+                $questionRow['correct_answer'] !== null ? (string) $questionRow['correct_answer'] : null,
                 (int) current_user()['id']
             );
         }
 
-        $this->success('Exame criado.');
+        $audienceMessage = 'Prova interna criada.';
+        if ($deliveryScope === 'student' && $targetStudentId > 0) {
+            $linked = $this->courses->upsertInternalExamAudienceLink([
+                'exam_id' => $examId,
+                'student_id' => $targetStudentId,
+            ], (int) current_user()['id']);
+            $audienceMessage = $linked
+                ? 'Prova interna criada e enviada para 1 aluno.'
+                : 'Prova interna criada. Nao foi possivel aplicar o direcionamento individual.';
+        } elseif ($this->courses->internalExamAudienceFeatureAvailable()) {
+            $result = $this->courses->upsertInternalExamAudienceForExamCourse($examId, (int) current_user()['id']);
+            $eligibleTotal = (int) ($result['eligible_total'] ?? 0);
+            $linkedTotal = (int) ($result['linked_total'] ?? 0);
+            if ($eligibleTotal > 0) {
+                $audienceMessage = "Prova interna criada e enviada para {$linkedTotal} aluno(s) matriculado(s) no curso.";
+            } else {
+                $audienceMessage = 'Prova interna criada. Ainda nao ha alunos ativos/concluidos matriculados neste curso.';
+            }
+        }
+
+        $this->success($audienceMessage);
         $this->redirect('courses/exams');
     }
 
@@ -973,6 +1015,98 @@ class CourseController extends BaseController
         }
 
         return date('Y-m-d', $ts);
+    }
+
+    private function normalizeExamQuestionsFromPost(): array
+    {
+        $types = post('question_type');
+        $texts = post('question_text');
+        $optionsTexts = post('options_text');
+        $answers = post('correct_answer');
+
+        if (!is_array($types) || !is_array($texts)) {
+            $legacyQuestion = trim((string) post('question_text'));
+            if ($legacyQuestion === '') {
+                return ['rows' => [], 'errors' => []];
+            }
+
+            $legacyType = trim((string) post('question_type', 'objective'));
+            if (!in_array($legacyType, ['objective', 'essay'], true)) {
+                $legacyType = 'objective';
+            }
+
+            $legacyOptionsText = trim((string) post('options_text'));
+            $legacyCorrectAnswer = trim((string) post('correct_answer'));
+            $legacyOptions = [];
+            if ($legacyOptionsText !== '') {
+                $lines = preg_split('/\r\n|\r|\n/', $legacyOptionsText) ?: [];
+                $legacyOptions = array_values(array_filter(array_map('trim', $lines), fn ($item) => $item !== ''));
+            }
+
+            if ($legacyType === 'objective') {
+                if (count($legacyOptions) < 2) {
+                    return ['rows' => [], 'errors' => ['Cada questao objetiva precisa de pelo menos duas opcoes.']];
+                }
+                if ($legacyCorrectAnswer === '') {
+                    return ['rows' => [], 'errors' => ['Informe a resposta correta de cada questao objetiva.']];
+                }
+            }
+
+            return [
+                'rows' => [[
+                    'question_type' => $legacyType,
+                    'question_text' => $legacyQuestion,
+                    'options_json' => $legacyType === 'objective' ? json_encode($legacyOptions, JSON_UNESCAPED_UNICODE) : null,
+                    'correct_answer' => $legacyCorrectAnswer !== '' ? $legacyCorrectAnswer : null,
+                ]],
+                'errors' => [],
+            ];
+        }
+
+        $rows = [];
+        $errors = [];
+
+        foreach ($texts as $index => $rawText) {
+            $questionText = trim((string) $rawText);
+            if ($questionText === '') {
+                continue;
+            }
+
+            $questionType = trim((string) ($types[$index] ?? 'objective'));
+            if (!in_array($questionType, ['objective', 'essay'], true)) {
+                $questionType = 'objective';
+            }
+
+            $optionsText = trim((string) ($optionsTexts[$index] ?? ''));
+            $correctAnswer = trim((string) ($answers[$index] ?? ''));
+            $options = [];
+            if ($optionsText !== '') {
+                $lines = preg_split('/\r\n|\r|\n/', $optionsText) ?: [];
+                $options = array_values(array_filter(array_map('trim', $lines), fn ($item) => $item !== ''));
+            }
+
+            if ($questionType === 'objective') {
+                if (count($options) < 2) {
+                    $errors[] = 'Cada questao objetiva precisa de pelo menos duas opcoes.';
+                    continue;
+                }
+                if ($correctAnswer === '') {
+                    $errors[] = 'Informe a resposta correta de cada questao objetiva.';
+                    continue;
+                }
+            }
+
+            $rows[] = [
+                'question_type' => $questionType,
+                'question_text' => $questionText,
+                'options_json' => $questionType === 'objective'
+                    ? json_encode($options, JSON_UNESCAPED_UNICODE)
+                    : null,
+                'correct_answer' => $correctAnswer !== '' ? $correctAnswer : null,
+            ];
+        }
+
+        return ['rows' => $rows, 'errors' => $errors];
     }
 
     private function normalizeDateTime(string $value): ?string

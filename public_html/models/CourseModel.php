@@ -10,6 +10,7 @@ class CourseModel extends BaseModel
     private ?bool $courseLessonsTableExists = null;
     private ?bool $studentLessonProgressTableExists = null;
     private ?bool $examExternalLinksTableExists = null;
+    private ?bool $examInternalLinksTableExists = null;
 
     public function categories(): array
     {
@@ -814,6 +815,44 @@ class CourseModel extends BaseModel
         ]);
     }
 
+    public function isStudentEnrolledInCourse(int $studentId, int $courseId): bool
+    {
+        if ($studentId <= 0 || $courseId <= 0 || !$this->studentBelongsCompany($studentId)) {
+            return false;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('SELECT e.id
+                FROM enrollments e
+                INNER JOIN courses c ON c.id = e.course_id
+                WHERE e.student_id = :student_id
+                  AND e.course_id = :course_id
+                  AND e.status IN (\'active\', \'completed\')
+                  AND c.company_id = :company_id
+                LIMIT 1');
+            $stmt->execute([
+                ':student_id' => $studentId,
+                ':course_id' => $courseId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            return (bool) $stmt->fetchColumn();
+        }
+
+        $stmt = $this->db->prepare('SELECT id
+            FROM enrollments
+            WHERE student_id = :student_id
+              AND course_id = :course_id
+              AND status IN (\'active\', \'completed\')
+            LIMIT 1');
+        $stmt->execute([
+            ':student_id' => $studentId,
+            ':course_id' => $courseId,
+        ]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function trialAccessFeatureAvailable(): bool
     {
         return $this->hasTrialAccessTable();
@@ -1125,6 +1164,17 @@ class CourseModel extends BaseModel
                     GROUP BY exam_id
                 ) el ON el.exam_id = e.id";
         }
+        $internalLinksSelect = '0 AS internal_links_total';
+        $internalLinksJoin = '';
+        if ($this->hasExamInternalLinksTable()) {
+            $internalLinksSelect = 'COALESCE(il.internal_links_total, 0) AS internal_links_total';
+            $internalLinksJoin = "LEFT JOIN (
+                    SELECT exam_id, COUNT(*) AS internal_links_total
+                    FROM exam_internal_links
+                    WHERE is_active = 1
+                    GROUP BY exam_id
+                ) il ON il.exam_id = e.id";
+        }
         $orderSql = $this->hasExamScheduleColumn()
             ? 'ORDER BY (e.scheduled_at IS NULL) ASC, e.scheduled_at ASC, e.id DESC'
             : 'ORDER BY e.id DESC';
@@ -1141,10 +1191,12 @@ class CourseModel extends BaseModel
                 e.created_at,
                 e.updated_at,
                 {$externalLinksSelect},
+                {$internalLinksSelect},
                 c.name AS course_name
             FROM exams e
             LEFT JOIN courses c ON c.id = e.course_id
             {$externalLinksJoin}
+            {$internalLinksJoin}
             WHERE {$whereSql}
             {$orderSql}";
 
@@ -1312,6 +1364,11 @@ class CourseModel extends BaseModel
     public function externalExamFeatureAvailable(): bool
     {
         return $this->hasExamExternalLinksTable();
+    }
+
+    public function internalExamAudienceFeatureAvailable(): bool
+    {
+        return $this->hasExamInternalLinksTable();
     }
 
     public function listExternalExamLinks(int $limit = 250): array
@@ -1488,6 +1545,95 @@ class CourseModel extends BaseModel
 
         foreach ($studentIds as $studentId) {
             $ok = $this->upsertExternalExamLink($payload + [
+                'student_id' => $studentId,
+            ], $createdBy);
+
+            if ($ok) {
+                $linkedTotal++;
+            }
+        }
+
+        return [
+            'ok' => $linkedTotal > 0,
+            'eligible_total' => $eligibleTotal,
+            'linked_total' => $linkedTotal,
+        ];
+    }
+
+    public function upsertInternalExamAudienceLink(array $data, int $createdBy): bool
+    {
+        if (!$this->hasExamInternalLinksTable()) {
+            return false;
+        }
+
+        $examId = (int) ($data['exam_id'] ?? 0);
+        $studentId = (int) ($data['student_id'] ?? 0);
+
+        if (
+            $examId <= 0
+            || $studentId <= 0
+            || !$this->canAccessExam($examId)
+            || !$this->studentBelongsCompany($studentId)
+            || !$this->studentEnrolledInExamCourse($examId, $studentId)
+        ) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO exam_internal_links (
+            exam_id,
+            student_id,
+            is_active,
+            created_by,
+            created_at,
+            updated_at
+        ) VALUES (
+            :exam_id,
+            :student_id,
+            1,
+            :created_by,
+            :created_at,
+            :updated_at
+        )
+        ON DUPLICATE KEY UPDATE
+            is_active = 1,
+            created_by = VALUES(created_by),
+            updated_at = VALUES(updated_at)');
+
+        $stmt->execute([
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+            ':created_by' => $createdBy,
+            ':created_at' => now(),
+            ':updated_at' => now(),
+        ]);
+
+        return true;
+    }
+
+    public function upsertInternalExamAudienceForExamCourse(int $examId, int $createdBy): array
+    {
+        if (!$this->hasExamInternalLinksTable() || $examId <= 0 || !$this->canAccessExam($examId)) {
+            return [
+                'ok' => false,
+                'eligible_total' => 0,
+                'linked_total' => 0,
+            ];
+        }
+
+        $studentIds = $this->listEnrolledStudentIdsForExam($examId);
+        $eligibleTotal = count($studentIds);
+        if ($eligibleTotal <= 0) {
+            return [
+                'ok' => true,
+                'eligible_total' => 0,
+                'linked_total' => 0,
+            ];
+        }
+
+        $linkedTotal = 0;
+        foreach ($studentIds as $studentId) {
+            $ok = $this->upsertInternalExamAudienceLink([
+                'exam_id' => $examId,
                 'student_id' => $studentId,
             ], $createdBy);
 
@@ -2010,6 +2156,22 @@ class CourseModel extends BaseModel
         $this->examExternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->examExternalLinksTableExists;
+    }
+
+    private function hasExamInternalLinksTable(): bool
+    {
+        if ($this->examInternalLinksTableExists !== null) {
+            return $this->examInternalLinksTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'exam_internal_links'");
+        $stmt->execute();
+        $this->examInternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->examInternalLinksTableExists;
     }
 
     private function hasCourseCompanyColumn(): bool
