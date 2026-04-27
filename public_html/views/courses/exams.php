@@ -106,7 +106,12 @@ $externalLinksRows = $externalLinks ?? [];
                 <?php endforeach; ?>
             </select>
 
-            <select name="student_id" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <select name="delivery_scope" id="external-link-scope" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <option value="course">Enviar para todos alunos do curso</option>
+                <option value="student">Enviar para aluno especifico</option>
+            </select>
+
+            <select name="student_id" id="external-link-student" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <option value="">Aluno...</option>
                 <?php foreach ($students as $student): ?>
                     <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?></option>
@@ -117,11 +122,12 @@ $externalLinksRows = $externalLinks ?? [];
             <input type="datetime-local" name="due_at" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <button class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Vincular Prova Externa</button>
 
+            <p id="external-link-hint" class="text-xs text-slate-500 lg:col-span-6">A prova externa sera vinculada automaticamente para todos os alunos ativos/concluidos do curso da prova.</p>
             <textarea name="instructions" rows="2" placeholder="Instrucoes para o aluno (opcional)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-6"></textarea>
         </form>
 
         <section class="rounded-xl border border-slate-200 bg-white p-4">
-            <h3 class="mb-3 text-lg font-semibold">Vinculos de Provas Externas por Aluno</h3>
+            <h3 class="mb-3 text-lg font-semibold">Vinculos de Provas Externas</h3>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead>
@@ -193,6 +199,37 @@ $externalLinksRows = $externalLinks ?? [];
                 </table>
             </div>
         </section>
+
+        <script>
+            (() => {
+                const scopeField = document.getElementById('external-link-scope');
+                const studentField = document.getElementById('external-link-student');
+                const hintField = document.getElementById('external-link-hint');
+
+                if (!scopeField || !studentField) {
+                    return;
+                }
+
+                const syncScope = () => {
+                    const byStudent = scopeField.value === 'student';
+                    studentField.disabled = !byStudent;
+                    studentField.required = byStudent;
+
+                    if (!byStudent) {
+                        studentField.value = '';
+                    }
+
+                    if (hintField) {
+                        hintField.textContent = byStudent
+                            ? 'Selecione o aluno para enviar uma prova externa individual.'
+                            : 'A prova externa sera vinculada automaticamente para todos os alunos ativos/concluidos do curso da prova.';
+                    }
+                };
+
+                scopeField.addEventListener('change', syncScope);
+                syncScope();
+            })();
+        </script>
     <?php endif; ?>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

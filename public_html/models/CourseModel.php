@@ -1441,6 +1441,68 @@ class CourseModel extends BaseModel
         return true;
     }
 
+    public function upsertExternalExamLinksForExamCourse(array $data, int $createdBy): array
+    {
+        if (!$this->hasExamExternalLinksTable()) {
+            return [
+                'ok' => false,
+                'eligible_total' => 0,
+                'linked_total' => 0,
+            ];
+        }
+
+        $examId = (int) ($data['exam_id'] ?? 0);
+        $externalUrl = trim((string) ($data['external_url'] ?? ''));
+
+        if (
+            $examId <= 0
+            || $externalUrl === ''
+            || !$this->isHttpUrl($externalUrl)
+            || !$this->canAccessExam($examId)
+        ) {
+            return [
+                'ok' => false,
+                'eligible_total' => 0,
+                'linked_total' => 0,
+            ];
+        }
+
+        $studentIds = $this->listEnrolledStudentIdsForExam($examId);
+        $eligibleTotal = count($studentIds);
+
+        if ($eligibleTotal <= 0) {
+            return [
+                'ok' => true,
+                'eligible_total' => 0,
+                'linked_total' => 0,
+            ];
+        }
+
+        $linkedTotal = 0;
+        $payload = [
+            'exam_id' => $examId,
+            'external_url' => $externalUrl,
+            'instructions' => trim((string) ($data['instructions'] ?? '')),
+            'due_at' => $this->normalizeDateTimeOrNull((string) ($data['due_at'] ?? '')),
+        ];
+
+        foreach ($studentIds as $studentId) {
+            $ok = $this->upsertExternalExamLink($payload + [
+                'student_id' => $studentId,
+            ], $createdBy);
+
+            if ($ok) {
+                $linkedTotal++;
+            }
+        }
+
+        return [
+            'ok' => $linkedTotal > 0,
+            'eligible_total' => $eligibleTotal,
+            'linked_total' => $linkedTotal,
+        ];
+    }
+
     public function deactivateExternalExamLink(int $linkId): bool
     {
         if (!$this->hasExamExternalLinksTable() || $linkId <= 0) {
@@ -1737,6 +1799,44 @@ class CourseModel extends BaseModel
         ]);
 
         return (bool) $stmt->fetchColumn();
+    }
+
+    private function listEnrolledStudentIdsForExam(int $examId): array
+    {
+        if ($examId <= 0) {
+            return [];
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('SELECT DISTINCT e.student_id
+                FROM exams ex
+                INNER JOIN courses c ON c.id = ex.course_id
+                INNER JOIN enrollments e ON e.course_id = c.id
+                INNER JOIN students s ON s.id = e.student_id
+                WHERE ex.id = :exam_id
+                  AND e.status IN (\'active\', \'completed\')
+                  AND c.company_id = :company_id
+                  AND s.company_id = :company_id');
+            $stmt->execute([
+                ':exam_id' => $examId,
+                ':company_id' => $this->companyId(),
+            ]);
+
+            return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+        }
+
+        $stmt = $this->db->prepare('SELECT DISTINCT e.student_id
+            FROM exams ex
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN enrollments e ON e.course_id = c.id
+            INNER JOIN students s ON s.id = e.student_id
+            WHERE ex.id = :exam_id
+              AND e.status IN (\'active\', \'completed\')');
+        $stmt->execute([
+            ':exam_id' => $examId,
+        ]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
     }
 
     private function normalizeDateTimeOrNull(string $value): ?string

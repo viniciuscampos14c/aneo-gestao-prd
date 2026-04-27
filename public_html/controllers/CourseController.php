@@ -749,11 +749,12 @@ class CourseController extends BaseController
 
         $examId = (int) post('exam_id');
         $studentId = (int) post('student_id');
+        $deliveryScope = trim((string) post('delivery_scope', 'student'));
         $externalUrl = trim((string) post('external_url'));
         $dueAt = $this->normalizeDateTime((string) post('due_at'));
 
-        if ($examId <= 0 || $studentId <= 0 || $externalUrl === '') {
-            $this->error('Exame, aluno e URL externa sao obrigatorios.');
+        if ($examId <= 0 || $externalUrl === '') {
+            $this->error('Exame e URL externa sao obrigatorios.');
             $this->redirect('courses/exams');
         }
 
@@ -762,12 +763,39 @@ class CourseController extends BaseController
             $this->redirect('courses/exams');
         }
 
-        $ok = $this->courses->upsertExternalExamLink([
+        $payload = [
             'exam_id' => $examId,
-            'student_id' => $studentId,
             'external_url' => $externalUrl,
             'instructions' => trim((string) post('instructions')),
             'due_at' => $dueAt,
+        ];
+
+        if ($deliveryScope === 'course') {
+            $result = $this->courses->upsertExternalExamLinksForExamCourse($payload, (int) current_user()['id']);
+            if (!$result['ok']) {
+                $this->error('Nao foi possivel vincular a prova externa em massa. Verifique o exame e as matriculas do curso.');
+                $this->redirect('courses/exams');
+            }
+
+            $eligibleTotal = (int) ($result['eligible_total'] ?? 0);
+            $linkedTotal = (int) ($result['linked_total'] ?? 0);
+
+            if ($eligibleTotal <= 0) {
+                $this->error('Nenhum aluno ativo/concluido matriculado no curso desta prova.');
+                $this->redirect('courses/exams');
+            }
+
+            $this->success("Prova externa vinculada para {$linkedTotal} aluno(s) do curso.");
+            $this->redirect('courses/exams');
+        }
+
+        if ($studentId <= 0) {
+            $this->error('Selecione um aluno ou escolha o envio para todos do curso.');
+            $this->redirect('courses/exams');
+        }
+
+        $ok = $this->courses->upsertExternalExamLink($payload + [
+            'student_id' => $studentId,
         ], (int) current_user()['id']);
 
         if ($ok) {
