@@ -17,6 +17,14 @@ Aplicativo mobile executivo para iOS e Android, desenvolvido em React Native + E
 - Tela de login obrigatoria na abertura do app (usuario + senha) antes de liberar as abas.
 - Remocao do campo de URL da API na tela inicial de login (uso de URL padrao do app).
 - Atualizacao da identidade visual no topo com nova logo ANEO e destaque maior da marca.
+- Nova aba **Degustacao** para criar acesso rapido de curso:
+  - busca de curso publicado;
+  - criacao de acesso com data liberada;
+  - retorno de login/senha gerados;
+  - lista de acessos criados.
+- Tratamento resiliente na aba Degustacao:
+  - carrega cursos mesmo se o endpoint `trial_accesses` falhar;
+  - mensagens especificas para endpoint ausente e permissao insuficiente.
 
 ## Isolamento do projeto mobile
 
@@ -31,6 +39,15 @@ npm run web
 # ou
 npm run android
 ```
+
+## Requisitos de backend para Degustacao
+
+- API deve expor o recurso `trial_accesses` em `api.php`.
+- Login mobile deve gerar token com permissoes:
+  - `courses.search/get`
+  - `trial_accesses.search/get/create`
+- Se o backend for atualizado com esse recurso depois que o app ja estava logado:
+  - executar logout/login no app para renovar o token.
 
 ## Proximas entregas
 

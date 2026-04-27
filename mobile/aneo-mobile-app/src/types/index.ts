@@ -60,3 +60,24 @@ export type ApiInvoice = {
   due_date?: string | null;
   paid_at?: string | null;
 };
+
+export type ApiCourse = {
+  id: number;
+  name: string;
+  status?: string | null;
+};
+
+export type ApiTrialAccess = {
+  id: number;
+  student_id: number;
+  course_id: number;
+  access_date: string;
+  status: string;
+  created_at?: string | null;
+  last_login_at?: string | null;
+  student_name?: string | null;
+  student_email?: string | null;
+  student_phone?: string | null;
+  course_name?: string | null;
+  portal_login?: string | null;
+};

@@ -5,6 +5,7 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { NegotiationScreen } from './src/screens/NegotiationScreen';
 import { ConnectionScreen } from './src/screens/ConnectionScreen';
 import { AppLoginScreen } from './src/screens/AppLoginScreen';
+import { TrialAccessScreen } from './src/screens/TrialAccessScreen';
 import type { ApiConfig } from './src/types';
 import {
   clearStoredApiConfig,
@@ -13,7 +14,7 @@ import {
 } from './src/services/apiConfigStorage';
 import { DEFAULT_API_BASE_URL } from './src/config/constants';
 
-type AppTab = 'dashboard' | 'negotiation' | 'connection';
+type AppTab = 'dashboard' | 'negotiation' | 'trial-access' | 'connection';
 
 export default function App() {
   const [tab, setTab] = useState<AppTab>('dashboard');
@@ -44,6 +45,7 @@ export default function App() {
   const pageTitle = useMemo(() => {
     if (tab === 'dashboard') return 'Dashboard Executivo';
     if (tab === 'negotiation') return 'Negociacao de Alunos';
+    if (tab === 'trial-access') return 'Degustacao Cursos';
     return 'Conexao API';
   }, [tab]);
 
@@ -138,11 +140,21 @@ export default function App() {
               Conexao
             </Text>
           </Pressable>
+
+          <Pressable
+            style={[styles.tab, tab === 'trial-access' && styles.tabActive]}
+            onPress={() => setTab('trial-access')}
+          >
+            <Text style={[styles.tabText, tab === 'trial-access' && styles.tabTextActive]}>
+              Degustacao
+            </Text>
+          </Pressable>
         </View>
       </View>
 
       {tab === 'dashboard' ? <DashboardScreen apiConfig={apiConfig} /> : null}
       {tab === 'negotiation' ? <NegotiationScreen apiConfig={apiConfig} /> : null}
+      {tab === 'trial-access' ? <TrialAccessScreen apiConfig={apiConfig} /> : null}
       {tab === 'connection' ? (
         <ConnectionScreen
           apiConfig={apiConfig}

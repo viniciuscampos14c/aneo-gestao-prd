@@ -65,6 +65,30 @@ Etapa 7 entregue:
 - Texto da marca (`ANEO DIRETORIA`) posicionado abaixo da logo na tela inicial.
 - Novo arquivo de tela de acesso: `src/screens/AppLoginScreen.tsx`.
 
+Etapa 8 entregue:
+
+- Nova aba `Degustacao` no app mobile para diretores criarem acesso rapido de curso.
+- Tela nova `src/screens/TrialAccessScreen.tsx` com:
+  - campos: nome, e-mail, telefone, data liberada;
+  - busca e selecao de curso publicado;
+  - criacao do acesso com retorno de login/senha gerados;
+  - lista dos ultimos acessos de degustacao.
+- Servico novo `src/services/trialAccessService.ts` para:
+  - listar cursos publicados (`courses`);
+  - listar acessos (`trial_accesses`);
+  - criar acesso (`trial_accesses` POST).
+- `App.tsx` atualizado com nova tab e novo titulo de pagina.
+- `src/types/index.ts` atualizado com `ApiCourse` e `ApiTrialAccess`.
+
+Etapa 8.1 (resiliencia) entregue:
+
+- A tela de degustacao passou a tratar erro de endpoint separadamente:
+  - se `trial_accesses` estiver ausente no backend, continua carregando cursos;
+  - mensagem especifica para token sem permissao;
+  - botao de criacao desabilitado quando o recurso nao estiver disponivel.
+- Orientacao operacional adicionada:
+  - apos publicar backend novo, fazer logout/login no app para gerar token com novas permissoes.
+
 ## Estrutura principal
 
 ```txt
@@ -75,6 +99,7 @@ mobile/aneo-mobile-app/
 |   |-- services/
 |   |-- screens/DashboardScreen.tsx
 |   |-- screens/NegotiationScreen.tsx
+|   |-- screens/TrialAccessScreen.tsx
 |   `-- types/index.ts
 |-- assets/
 |-- package.json
@@ -107,6 +132,6 @@ Publicar o conteudo de `dist/` em `public_html/mobile/` no servidor.
 
 ## Proximas etapas
 
-1. Criar endpoint dedicado de negociacao/aditivo no backend.
+1. Adicionar opcao de revogar acesso de degustacao direto no app.
 2. Fluxo real de geracao de aditivo PDF + assinatura.
 3. Finalizar cadastro nas lojas e concluir submissao de producao.
