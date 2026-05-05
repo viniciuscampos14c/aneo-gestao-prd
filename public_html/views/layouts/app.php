@@ -10,8 +10,11 @@
                 if (localStorage.getItem('aneo_admin_theme') === 'light') {
                     document.documentElement.classList.add('admin-theme-light');
                 }
+                if (localStorage.getItem('aneo_admin_sidebar') === 'collapsed') {
+                    document.documentElement.classList.add('admin-sidebar-collapsed');
+                }
             } catch (error) {
-                // Ignora bloqueio de localStorage e segue com tema padrao escuro.
+                // Ignora bloqueio de localStorage e segue com tema padrao.
             }
         })();
     </script>
@@ -36,7 +39,6 @@ $menu = [
     ['module' => 'arsenal', 'label' => 'Arsenal Digital', 'icon' => 'book-open', 'route' => 'arsenal'],
     ['module' => 'requests', 'label' => 'Solicitações', 'icon' => 'inbox-arrow-down', 'route' => 'requests'],
     ['module' => 'students', 'label' => 'Intercâmbio Aluno', 'icon' => 'arrow-path', 'route' => 'exchange'],
-    ['module' => 'automations', 'label' => 'Automações', 'icon' => 'bolt', 'route' => 'automations'],
     ['module' => 'help', 'label' => 'Chat IA Jully', 'icon' => 'question-mark-circle', 'route' => 'help'],
 ];
 
@@ -46,11 +48,17 @@ $cadastroMenu = [
     ['module' => 'companies', 'label' => 'SMTP Email', 'icon' => 'envelope', 'route' => 'companies/smtp'],
 ];
 
+if (has_permission('automations')) {
+    $cadastroMenu[] = ['module' => 'automations', 'label' => 'Automações', 'icon' => 'bolt', 'route' => 'automations'];
+}
+
 if (class_exists('BanksController')) {
     $cadastroMenu[] = ['module' => 'companies', 'label' => 'Bancos', 'icon' => 'banknotes', 'route' => 'banks'];
 }
 
 if (($user['role'] ?? '') === 'admin') {
+    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Gerenciamento de API', 'icon' => 'code-bracket', 'route' => 'api-management'];
+    $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Manual da API', 'icon' => 'document-text', 'route' => 'api-management/manual'];
     $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Logs de Sistema', 'icon' => 'clipboard-document-list', 'route' => 'system/logs'];
     $cadastroMenu[] = ['module' => 'dashboard', 'label' => 'Cron Jobs', 'icon' => 'clock', 'route' => 'cron'];
 }
@@ -62,6 +70,13 @@ foreach ($cadastroMenu as $cadItem) {
     }
 }
 $showCadastro = $cadastroItemsVisible !== [];
+$cadastroActive = false;
+foreach ($cadastroItemsVisible as $cadItem) {
+    if (str_starts_with($currentRoute, $cadItem['route'])) {
+        $cadastroActive = true;
+        break;
+    }
+}
 $isUsersPreviewRoute = str_starts_with($currentRoute, 'users');
 $isDashboardPreviewRoute = $currentRoute === 'dashboard';
 $previewMainClass = 'admin-modern-main';
@@ -79,54 +94,37 @@ $mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 ?>
 <div class="admin-modern-shell flex min-h-screen">
-    <div class="admin-modern-ambient" aria-hidden="true"></div>
-    <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 w-72 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
-        <div class="flex h-16 items-center justify-between border-b border-slate-800 px-6">
-            <div>
+    <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
+        <div class="flex h-16 items-center justify-between border-b border-slate-800 px-6 admin-sidebar-head">
+            <div class="admin-sidebar-brand">
                 <p class="text-xs uppercase tracking-[0.2em] text-cyan-400">ANEO</p>
-                <h1 class="text-lg font-semibold">Gestao Integrada</h1>
+                <h1 class="text-lg font-semibold admin-sidebar-brand-title">Gestao Integrada</h1>
             </div>
             <button class="lg:hidden" data-sidebar-close>
                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <nav class="h-[calc(100vh-10rem)] overflow-y-auto p-4">
+        <nav class="admin-sidebar-nav h-[calc(100vh-10rem)] overflow-y-auto p-4">
             <ul class="space-y-1">
                 <?php foreach ($menu as $item): ?>
                     <?php if (!has_permission($item['module'])) { continue; } ?>
                     <?php $active = str_starts_with($currentRoute, $item['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>
                     <li>
-                        <a href="<?= route($item['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $active; ?>">
+                        <a href="<?= route($item['route']); ?>" class="admin-sidebar-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $active; ?>" title="<?= e($item['label']); ?>">
                             <?= menu_icon_svg((string) ($item['icon'] ?? 'squares-2x2'), 'h-4 w-4 flex-shrink-0'); ?>
-                            <?= e($item['label']); ?>
+                            <span class="admin-sidebar-link-label"><?= e($item['label']); ?></span>
                         </a>
                     </li>
                 <?php endforeach; ?>
 
                 <?php if ($showCadastro): ?>
-                    <?php $cadastroActive = str_starts_with($currentRoute, 'users') || str_starts_with($currentRoute, 'companies') || str_starts_with($currentRoute, 'system/logs') || str_starts_with($currentRoute, 'cron'); ?>
-                    <li class="pt-1">
-                        <button type="button" data-cadastro-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $cadastroActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
-                            <span class="flex items-center gap-3">
+                    <li class="pt-1 admin-sidebar-group" data-admin-group="cadastro">
+                        <button type="button" data-cadastro-trigger aria-haspopup="true" aria-expanded="false" class="admin-sidebar-group-trigger flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $cadastroActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>" title="Cadastro">
+                            <span class="flex items-center gap-3 min-w-0">
                                 <?= menu_icon_svg('squares-2x2', 'h-4 w-4 flex-shrink-0'); ?>
-                                Cadastro
+                                <span class="admin-sidebar-link-label">Cadastro</span>
                             </span>
-                            <svg data-cadastro-chevron class="h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/>
-                            </svg>
-                        </button>
-                    </li>
-                <?php endif; ?>
-
-                <?php if (($user['role'] ?? '') === 'admin'): ?>
-                    <?php $apiActive = str_starts_with($currentRoute, 'api-management'); ?>
-                    <li class="pt-1">
-                        <button type="button" data-api-trigger aria-haspopup="true" aria-expanded="false" class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $apiActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>">
-                            <span class="flex items-center gap-3">
-                                <?= menu_icon_svg('code-bracket', 'h-4 w-4 flex-shrink-0'); ?>
-                                API
-                            </span>
-                            <svg data-api-chevron class="h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <svg data-cadastro-chevron class="admin-sidebar-group-chevron h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/>
                             </svg>
                         </button>
@@ -136,10 +134,13 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
         </nav>
 
         <?php if ($showCadastro): ?>
-            <div data-cadastro-panel class="hidden fixed z-[80] min-w-[220px] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+            <div data-cadastro-panel class="hidden fixed z-[80] min-w-[240px] rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+                <div class="admin-sidebar-popout-head px-3 py-2">
+                    <p class="text-[11px] uppercase tracking-[0.22em] text-cyan-400">Cadastro</p>
+                </div>
                 <?php foreach ($cadastroItemsVisible as $cadItem): ?>
                     <?php $cadActive = str_starts_with($currentRoute, $cadItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white'; ?>
-                    <a href="<?= route($cadItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $cadActive; ?>">
+                    <a href="<?= route($cadItem['route']); ?>" class="admin-sidebar-popout-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $cadActive; ?>">
                         <?= menu_icon_svg((string) ($cadItem['icon'] ?? 'squares-2x2'), 'h-4 w-4 flex-shrink-0'); ?>
                         <?= e($cadItem['label']); ?>
                     </a>
@@ -147,43 +148,46 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             </div>
         <?php endif; ?>
 
-        <?php if (($user['role'] ?? '') === 'admin'): ?>
-            <div data-api-panel class="hidden fixed z-[80] min-w-[220px] rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
-                <?php
-                    $apiMenuItems = [
-                        ['route' => 'api-management',        'label' => 'Gerenciamento de API', 'icon' => 'code-bracket'],
-                        ['route' => 'api-management/manual', 'label' => 'Manual da API', 'icon' => 'document-text'],
-                    ];
-                    foreach ($apiMenuItems as $apiItem):
-                        $aActive = str_starts_with($currentRoute, $apiItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white';
-                ?>
-                    <a href="<?= route($apiItem['route']); ?>" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $aActive; ?>">
-                        <?= menu_icon_svg((string) ($apiItem['icon'] ?? 'code-bracket'), 'h-4 w-4 flex-shrink-0'); ?>
-                        <?= e($apiItem['label']); ?>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
         <div class="admin-sidebar-footer border-t border-slate-800 px-6 py-4">
-            <?php if ($company): ?>
-                <?php $companyName = trim((string) ($company['trade_name'] ?? '')) !== '' ? (string) $company['trade_name'] : (string) ($company['legal_name'] ?? 'Empresa'); ?>
-                <section class="admin-sidebar-company-card">
-                    <p class="admin-sidebar-kicker text-xs uppercase tracking-[0.16em] text-cyan-400">Empresa</p>
-                    <p class="admin-sidebar-company-name text-sm font-semibold"><?= e($companyName); ?></p>
-                    <p class="admin-sidebar-company-doc text-[11px] text-slate-400"><?= e((string) ($company['cnpj'] ?? '')); ?></p>
-                    <a href="<?= route('select-company'); ?>" class="admin-sidebar-company-switch mt-1 inline-flex text-[11px] text-cyan-300 hover:text-cyan-200">Trocar empresa</a>
-                </section>
-            <?php endif; ?>
-            <section class="admin-sidebar-user-card">
-                <p class="admin-sidebar-user-name text-sm font-semibold"><?= e($user['name'] ?? ''); ?></p>
-                <p class="admin-sidebar-user-role text-xs text-slate-400"><?= e(role_label($user['role'] ?? '')); ?></p>
-                <a href="<?= route('logout'); ?>" class="admin-sidebar-logout mt-2 inline-flex text-xs text-rose-300 hover:text-rose-200">Sair</a>
+            <button type="button" data-sidebar-collapse class="admin-sidebar-collapse-btn hidden w-full items-center justify-between rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-600 hover:bg-slate-800 hover:text-white lg:flex" aria-pressed="false">
+                <span class="admin-sidebar-collapse-copy flex items-center gap-2">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 6l-6 6 6 6"/></svg>
+                    <span class="admin-sidebar-link-label">Recolher</span>
+                </span>
+                <span class="admin-sidebar-collapse-icon hidden">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/></svg>
+                </span>
+            </button>
+            <?php $companyName = $company ? (trim((string) ($company['trade_name'] ?? '')) !== '' ? (string) $company['trade_name'] : (string) ($company['legal_name'] ?? 'Empresa')) : 'Empresa'; ?>
+            <section class="admin-sidebar-session-card">
+                <?php if ($company): ?>
+                    <div class="admin-sidebar-session-row">
+                        <span class="admin-sidebar-session-icon">
+                            <?= menu_icon_svg('building-office', 'h-4 w-4'); ?>
+                        </span>
+                        <div class="admin-sidebar-link-label min-w-0">
+                            <p class="admin-sidebar-session-label">Empresa</p>
+                            <p class="admin-sidebar-session-title truncate"><?= e($companyName); ?></p>
+                            <a href="<?= route('select-company'); ?>" class="admin-sidebar-session-link">Trocar empresa</a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                <div class="admin-sidebar-session-divider admin-sidebar-link-label"></div>
+                <div class="admin-sidebar-session-row">
+                    <span class="admin-sidebar-session-icon admin-sidebar-session-user-icon">
+                        <?= menu_icon_svg('users', 'h-4 w-4'); ?>
+                    </span>
+                    <div class="admin-sidebar-link-label min-w-0">
+                        <p class="admin-sidebar-session-title truncate"><?= e($user['name'] ?? ''); ?></p>
+                        <p class="admin-sidebar-session-label"><?= e(role_label($user['role'] ?? '')); ?></p>
+                        <a href="<?= route('logout'); ?>" class="admin-sidebar-session-link admin-sidebar-session-logout">Sair</a>
+                    </div>
+                </div>
             </section>
         </div>
     </aside>
 
-    <div class="flex w-full flex-col">
+    <div class="admin-modern-content flex min-w-0 flex-1 flex-col">
         <header class="admin-modern-header sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
             <div class="flex h-16 items-center gap-3 px-4 lg:px-8">
                 <button class="rounded-lg border border-slate-200 p-2 lg:hidden" data-sidebar-open>

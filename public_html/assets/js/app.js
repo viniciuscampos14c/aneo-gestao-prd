@@ -6,12 +6,48 @@
     const adminThemeIconDark = document.querySelector('[data-theme-icon-dark]');
     const adminThemeIconLight = document.querySelector('[data-theme-icon-light]');
     const adminThemeKey = 'aneo_admin_theme';
+    const sidebarCollapseBtn = document.querySelector('[data-sidebar-collapse]');
+    const sidebarStateKey = 'aneo_admin_sidebar';
 
     if (openBtn && sidebar) {
         openBtn.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
     }
     if (closeBtn && sidebar) {
         closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+    }
+
+    const applySidebarState = (state) => {
+        const isCollapsed = state === 'collapsed';
+        document.documentElement.classList.toggle('admin-sidebar-collapsed', isCollapsed);
+
+        if (sidebarCollapseBtn) {
+            const label = isCollapsed ? 'Expandir menu' : 'Recolher menu';
+            sidebarCollapseBtn.setAttribute('aria-pressed', isCollapsed ? 'true' : 'false');
+            sidebarCollapseBtn.setAttribute('title', label);
+        }
+    };
+
+    let currentSidebarState = 'expanded';
+    try {
+        if (localStorage.getItem(sidebarStateKey) === 'collapsed') {
+            currentSidebarState = 'collapsed';
+        }
+    } catch (error) {
+        currentSidebarState = document.documentElement.classList.contains('admin-sidebar-collapsed') ? 'collapsed' : 'expanded';
+    }
+
+    applySidebarState(currentSidebarState);
+
+    if (sidebarCollapseBtn) {
+        sidebarCollapseBtn.addEventListener('click', () => {
+            currentSidebarState = currentSidebarState === 'collapsed' ? 'expanded' : 'collapsed';
+            applySidebarState(currentSidebarState);
+            try {
+                localStorage.setItem(sidebarStateKey, currentSidebarState);
+            } catch (error) {
+                // Ignora indisponibilidade de storage.
+            }
+        });
     }
 
     const applyAdminTheme = (theme) => {
@@ -213,44 +249,6 @@
                 positionPanel();
             }
         }, true);
-    }
-
-    // Dropdown API — mesmo padrão do Cadastro
-    const apiTrigger = document.querySelector('[data-api-trigger]');
-    const apiPanel   = document.querySelector('[data-api-panel]');
-    const apiChevron = document.querySelector('[data-api-chevron]');
-
-    if (apiTrigger && apiPanel) {
-        let apiCloseTimer = null;
-
-        const apiClearTimer = () => { if (apiCloseTimer !== null) { window.clearTimeout(apiCloseTimer); apiCloseTimer = null; } };
-        const apiSetExpanded = (v) => {
-            apiTrigger.setAttribute('aria-expanded', v ? 'true' : 'false');
-            if (apiChevron) { v ? apiChevron.classList.add('rotate-90') : apiChevron.classList.remove('rotate-90'); }
-        };
-        const apiIsOpen = () => !apiPanel.classList.contains('hidden');
-        const apiPosition = () => {
-            positionFloatingPanel(apiTrigger, apiPanel);
-        };
-        const apiOpen  = () => { apiClearTimer(); apiPanel.classList.remove('hidden'); apiPosition(); apiSetExpanded(true); };
-        const apiClose = () => { apiClearTimer(); apiPanel.classList.add('hidden'); apiSetExpanded(false); };
-        const apiScheduleClose = () => { apiClearTimer(); apiCloseTimer = window.setTimeout(apiClose, 220); };
-
-        apiTrigger.addEventListener('mouseenter', apiOpen);
-        apiTrigger.addEventListener('mouseleave', apiScheduleClose);
-        apiTrigger.addEventListener('focus', apiOpen);
-        apiTrigger.addEventListener('blur', apiScheduleClose);
-        apiPanel.addEventListener('mouseenter', apiClearTimer);
-        apiPanel.addEventListener('mouseleave', apiScheduleClose);
-        apiTrigger.addEventListener('click', (e) => { e.preventDefault(); apiIsOpen() ? apiClose() : apiOpen(); });
-        document.addEventListener('click', (e) => {
-            if (!apiIsOpen()) { return; }
-            if (apiTrigger.contains(e.target) || apiPanel.contains(e.target)) { return; }
-            apiClose();
-        });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && apiIsOpen()) { apiClose(); } });
-        window.addEventListener('resize', () => { if (apiIsOpen()) { apiPosition(); } });
-        window.addEventListener('scroll', () => { if (apiIsOpen()) { apiPosition(); } }, true);
     }
 
     const cards = document.querySelectorAll('[data-student-card]');
