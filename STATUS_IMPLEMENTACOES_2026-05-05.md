@@ -132,6 +132,20 @@ Cria:
   - bloqueio por conflito
   - notificacao no portal
 - Ajustes iterativos de UI/UX no Portal do Aluno com base em testes visuais reais.
+- Publicacao do commit no GitHub:
+  - branch: `main`
+  - commit: `52aedc6950c8dda22496df2397655d806908f81a`
+  - mensagem: `feat(schedule): add student duty scheduling and portal notifications`
+- Publicacao no HML da Hostinger:
+  - aplicacao atualizada em `/home/u674156040/domains/aneobrasil.com.br/public_html/erphml`
+  - backup gerado antes do deploy em:
+    - `/home/u674156040/domains/aneobrasil.com.br/public_html/deploy_backups/hml_before_escala_20260505_20260505_184623.tar.gz`
+  - migrations aplicadas no banco HML:
+    - `20260505_student_duty_schedule.sql`
+    - `20260505_student_portal_notifications.sql`
+  - validacao HTTP da aplicacao publicada:
+    - `https://erp-hml.aneobrasil.com.br/index.php?route=login`
+    - retorno `200`
 
 ## Observacoes operacionais
 - O envio de e-mail depende de SMTP valido por empresa/ambiente.
