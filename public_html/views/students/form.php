@@ -6,6 +6,17 @@ $portalAccount = $portalAccount ?? null;
 $portalLogin = (string) ($portalAccount['login'] ?? '');
 $portalIsActive = isset($portalAccount['is_active']) ? (int) $portalAccount['is_active'] : 0;
 $photoFeatureAvailable = isset($photoFeatureAvailable) ? (bool) $photoFeatureAvailable : true;
+$practiceScheduleAvailable = isset($practiceScheduleAvailable) ? (bool) $practiceScheduleAvailable : false;
+$practiceUnits = isset($practiceUnits) && is_array($practiceUnits) ? $practiceUnits : [];
+$residencyLevel = strtoupper((string) ($student['residency_level'] ?? 'R1'));
+$eligibleSince = null;
+if (!empty($student['enrolled_at'])) {
+    try {
+        $eligibleSince = (new DateTimeImmutable((string) $student['enrolled_at']))->modify('+40 days')->format('d/m/Y');
+    } catch (Throwable $e) {
+        $eligibleSince = null;
+    }
+}
 ?>
 <section class="space-y-6">
     <div class="flex items-center justify-between">
@@ -117,8 +128,42 @@ $photoFeatureAvailable = isset($photoFeatureAvailable) ? (bool) $photoFeatureAva
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Data de entrada</span>
             <input type="date" name="enrolled_at" value="<?= e($student['enrolled_at'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            <span class="mt-1 block text-xs text-slate-400">Usada como base para rematrícula semestral automática.</span>
+            <span class="mt-1 block text-xs text-slate-400">Usada como base para rematricula semestral automatica.</span>
         </label>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:col-span-2">
+            <h3 class="text-sm font-semibold text-slate-800">Escala pratica</h3>
+            <?php if (!$practiceScheduleAvailable): ?>
+                <p class="mt-2 text-xs text-amber-700">Os campos da Escala Aluno ainda nao estao disponiveis no banco. Execute a migration do modulo para habilitar.</p>
+            <?php else: ?>
+                <div class="mt-3 grid gap-3 md:grid-cols-3">
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Unidade / Hospital</span>
+                        <select name="practice_unit_id" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <option value="">Selecione...</option>
+                            <?php foreach ($practiceUnits as $practiceUnit): ?>
+                                <option value="<?= (int) $practiceUnit['id']; ?>" <?= (string) ($student['practice_unit_id'] ?? '') === (string) $practiceUnit['id'] ? 'selected' : ''; ?>><?= e((string) $practiceUnit['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Nivel de residencia</span>
+                        <select name="residency_level" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <?php foreach (['R1', 'R2', 'R3'] as $level): ?>
+                                <option value="<?= e($level); ?>" <?= $residencyLevel === $level ? 'selected' : ''; ?>><?= e($level); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+
+                    <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Elegivel para escala</p>
+                        <p class="mt-1 font-semibold text-slate-800"><?= e($eligibleSince ?? 'Sera calculado apos informar a data de entrada'); ?></p>
+                        <p class="mt-1 text-xs text-slate-400">Regra atual: 40 dias apos a entrada do aluno.</p>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
 
         <label class="block lg:col-span-2">
             <span class="mb-1 block text-sm font-medium">Informacoes Adm (tags/flags)</span>

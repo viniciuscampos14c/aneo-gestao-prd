@@ -50,12 +50,25 @@ abstract class BaseController
                     $data['studentLiveAlertCount'] = 0;
                 }
 
-                $data['studentAlertCount'] = (int) ($data['studentTicketAlertCount'] ?? 0) + (int) ($data['studentLiveAlertCount'] ?? 0);
+                if ($studentId > 0 && $portal->studentPortalNotificationsFeatureAvailable()) {
+                    $data['studentPortalAlerts'] = $portal->listRecentPortalNotifications($studentId, 5);
+                    $data['studentPortalAlertCount'] = $portal->countUnreadPortalNotifications($studentId);
+                } else {
+                    $data['studentPortalAlerts'] = [];
+                    $data['studentPortalAlertCount'] = 0;
+                }
+
+                $data['studentAlertCount'] =
+                    (int) ($data['studentTicketAlertCount'] ?? 0)
+                    + (int) ($data['studentLiveAlertCount'] ?? 0)
+                    + (int) ($data['studentPortalAlertCount'] ?? 0);
             } catch (Throwable $e) {
                 $data['studentTicketAlerts'] = [];
                 $data['studentTicketAlertCount'] = 0;
                 $data['studentLiveAlerts'] = [];
                 $data['studentLiveAlertCount'] = 0;
+                $data['studentPortalAlerts'] = [];
+                $data['studentPortalAlertCount'] = 0;
                 $data['studentAlertCount'] = 0;
             }
         }

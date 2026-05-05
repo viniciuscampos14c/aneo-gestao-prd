@@ -27,6 +27,7 @@ $menu = [
     ['module' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'dashboard'],
     ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students'],
+    ['module' => 'student_schedule', 'label' => 'Escala Aluno', 'icon' => 'calendar-days', 'route' => 'escala-aluno'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
     ['module' => 'finance', 'label' => 'Financeiro', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
     ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot'],
@@ -255,16 +256,16 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 </div>
 
 <?php if ($mobileNegotiationAlerts !== []): ?>
-    <div id="mobile-negotiation-modal" data-ticket-ids="<?= e(json_encode($mobileNegotiationAlertIds)); ?>" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
-        <div class="w-full max-w-2xl rounded-xl border border-indigo-200 bg-white shadow-xl">
-            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+    <div id="mobile-negotiation-modal" data-ticket-ids="<?= e(json_encode($mobileNegotiationAlertIds)); ?>" class="admin-alert-overlay fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
+        <div class="admin-alert-modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-xl">
+            <div class="admin-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <div>
                     <h3 class="text-lg font-semibold text-indigo-700">Novas negociacoes do app</h3>
                     <p class="text-xs text-slate-500">A equipe da diretoria enviou solicitacoes financeiras para tratamento.</p>
                 </div>
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Fechar</button>
             </div>
-            <div class="max-h-[60vh] space-y-2 overflow-y-auto p-4">
+            <div class="admin-alert-modal-body max-h-[60vh] space-y-3 overflow-y-auto p-4">
                 <?php foreach ($mobileNegotiationAlerts as $alert): ?>
                     <?php
                     $ticketId = (int) ($alert['id'] ?? 0);
@@ -273,7 +274,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                         $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
                     }
                     ?>
-                    <article class="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2 text-sm">
+                    <article class="admin-alert-card rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm">
                         <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Negociacao financeira')); ?></p>
                         <p class="mt-1 text-xs text-slate-600">
                             Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
@@ -283,7 +284,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                     </article>
                 <?php endforeach; ?>
             </div>
-            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
+            <div class="admin-alert-modal-foot flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Dispensar</button>
                 <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociacoes</a>
             </div>

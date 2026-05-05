@@ -319,6 +319,421 @@ html.dark .portal-modern-theme .aneo-theme-logo-frame {
     background: rgba(16, 49, 77, 0.82);
 }
 
+/* =====================================================================
+   ALERT MODALS — portal do aluno + administrativo
+   ===================================================================== */
+
+.portal-alert-modal-panel {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,252,0.98));
+    box-shadow:
+        0 28px 60px rgba(15, 23, 42, 0.18),
+        0 10px 24px rgba(14, 116, 144, 0.08);
+}
+
+.portal-alert-modal-head {
+    background:
+        linear-gradient(135deg, rgba(240,249,255,0.96), rgba(236,253,245,0.96));
+}
+
+.portal-alert-modal-body {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.96));
+}
+
+.portal-alert-modal-foot {
+    background:
+        linear-gradient(180deg, rgba(248,250,252,0.98), rgba(241,245,249,0.98));
+}
+
+.portal-alert-card {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+}
+
+.portal-alert-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 2.75rem;
+    border-radius: 0.8rem;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.16s ease;
+    letter-spacing: -0.01em;
+}
+
+.portal-alert-btn-card {
+    min-height: 2.1rem;
+    background: #18283d;
+    border-color: #18283d;
+    color: #7df0c8;
+    box-shadow: 0 10px 18px rgba(24, 40, 61, 0.16);
+}
+
+.portal-alert-btn-card:hover {
+    background: #21324c;
+    border-color: #21324c;
+    color: #a0f7da;
+}
+
+.portal-alert-btn-close {
+    background: #24324a;
+    border-color: #24324a;
+    color: #f8fbff;
+}
+
+.portal-alert-btn-close:hover {
+    background: #31415d;
+    border-color: #31415d;
+}
+
+.portal-alert-btn-schedule {
+    background: linear-gradient(135deg, #effcf6, #ddf5e9);
+    border-color: #67b997;
+    color: #146c51;
+    box-shadow: 0 8px 16px rgba(103, 185, 151, 0.14);
+}
+
+.portal-alert-btn-schedule:hover {
+    background: linear-gradient(135deg, #e5f8ee, #d2ecdf);
+    border-color: #4ea780;
+    color: #0f5b44;
+}
+
+.portal-alert-btn-live {
+    background: linear-gradient(135deg, #f0f9fd, #dceef7);
+    border-color: #6daecc;
+    color: #176b95;
+    box-shadow: 0 8px 16px rgba(109, 174, 204, 0.14);
+}
+
+.portal-alert-btn-live:hover {
+    background: linear-gradient(135deg, #e4f2f9, #cfe6f1);
+    border-color: #5598b8;
+    color: #125878;
+}
+
+.portal-alert-btn-primary {
+    background: linear-gradient(135deg, #1ea2ef, #1283cf);
+    border-color: #1283cf;
+    color: #ffffff;
+    box-shadow: 0 12px 20px rgba(18, 131, 207, 0.18);
+}
+
+.portal-alert-btn-primary:hover {
+    background: linear-gradient(135deg, #1997e1, #0f75bc);
+    border-color: #0f75bc;
+}
+
+.portal-alert-title {
+    font-size: 1.9rem;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.portal-alert-subtitle {
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.portal-alert-section {
+    letter-spacing: 0.12em;
+}
+
+.portal-alert-card-title {
+    font-size: 1.05rem;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+}
+
+.portal-alert-card-copy {
+    font-size: 0.96rem;
+    line-height: 1.55;
+}
+
+.portal-alert-card-meta {
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+}
+
+html:not(.dark) #student-avatar-menu {
+    border-color: rgba(184, 206, 227, 0.9) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(246,250,253,0.99)) !important;
+    box-shadow:
+        0 24px 50px rgba(64, 94, 124, 0.16),
+        0 10px 22px rgba(125, 159, 192, 0.12) !important;
+}
+
+html:not(.dark) #student-avatar-menu > div:first-child {
+    background:
+        linear-gradient(135deg, rgba(241,248,255,0.98), rgba(233,248,246,0.98)) !important;
+    border-bottom-color: rgba(195, 214, 232, 0.9) !important;
+}
+
+html:not(.dark) #student-avatar-menu .bg-slate-50\/70 {
+    background: linear-gradient(180deg, rgba(246,249,252,0.96), rgba(239,244,248,0.98)) !important;
+}
+
+html:not(.dark) #student-avatar-menu .text-slate-900 { color: #1e2f43 !important; }
+html:not(.dark) #student-avatar-menu .text-slate-700 { color: #334a62 !important; }
+html:not(.dark) #student-avatar-menu .text-slate-500,
+html:not(.dark) #student-avatar-menu .text-slate-400 { color: #6f859c !important; }
+html:not(.dark) #student-avatar-menu .border-slate-200 { border-color: rgba(195, 214, 232, 0.92) !important; }
+html:not(.dark) #student-avatar-menu a:hover {
+    background: linear-gradient(135deg, rgba(241, 248, 254, 0.99), rgba(234, 244, 251, 0.99)) !important;
+    color: #2a4762 !important;
+    box-shadow: inset 0 0 0 1px rgba(198, 220, 236, 0.88);
+}
+html:not(.dark) #student-avatar-menu a:hover p,
+html:not(.dark) #student-avatar-menu a:hover .font-medium {
+    color: #2a4762 !important;
+}
+html:not(.dark) #student-avatar-menu a:hover .text-slate-500,
+html:not(.dark) #student-avatar-menu a:hover .text-slate-400 {
+    color: #64809a !important;
+}
+html:not(.dark) #student-avatar-menu a:hover .bg-sky-100,
+html:not(.dark) #student-avatar-menu a:hover .bg-indigo-100,
+html:not(.dark) #student-avatar-menu a:hover .bg-emerald-100,
+html:not(.dark) #student-avatar-menu a:hover .bg-rose-100 {
+    filter: brightness(0.96) saturate(1.04);
+}
+html:not(.dark) #student-avatar-menu a[href*="logout"]:hover {
+    background: linear-gradient(135deg, rgba(255, 241, 244, 0.98), rgba(255, 247, 248, 0.98)) !important;
+    color: #d25572 !important;
+    box-shadow: inset 0 0 0 1px rgba(245, 197, 207, 0.9);
+}
+
+html:not(.dark) .portal-alert-modal-panel {
+    border-color: rgba(181, 214, 223, 0.95) !important;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,251,252,0.99)) !important;
+    box-shadow:
+        0 28px 64px rgba(54, 84, 116, 0.18),
+        0 10px 24px rgba(73, 153, 173, 0.1) !important;
+}
+
+html:not(.dark) .portal-alert-modal-head {
+    background:
+        linear-gradient(135deg, rgba(237,250,255,0.98), rgba(237,252,245,0.98)) !important;
+}
+
+html:not(.dark) .portal-alert-modal-body {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,251,0.98)) !important;
+}
+
+html:not(.dark) .portal-alert-modal-foot {
+    background:
+        linear-gradient(180deg, rgba(248,250,252,0.99), rgba(241,245,249,0.99)) !important;
+}
+
+html:not(.dark) .portal-alert-card {
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.72),
+        0 8px 16px rgba(148, 163, 184, 0.08) !important;
+}
+html:not(.dark) .portal-alert-modal-panel .text-slate-800 { color: #23405b !important; }
+html:not(.dark) .portal-alert-modal-panel .text-slate-700 { color: #31506d !important; }
+html:not(.dark) .portal-alert-modal-panel .text-slate-600 { color: #5c7691 !important; }
+html:not(.dark) .portal-alert-modal-panel .text-slate-500 { color: #7890a7 !important; }
+html:not(.dark) .portal-alert-modal-panel .text-sky-700 { color: #53c8ef !important; }
+html:not(.dark) .portal-alert-modal-panel .text-emerald-700 { color: #2dbd89 !important; }
+html:not(.dark) .portal-alert-modal-panel .text-cyan-700 { color: #1fa7df !important; }
+html:not(.dark) .portal-alert-modal-panel .text-indigo-700 { color: #6374f1 !important; }
+html:not(.dark) .portal-alert-modal-panel .border-slate-200 { border-color: rgba(205, 221, 233, 0.95) !important; }
+html:not(.dark) .portal-alert-modal-panel .bg-slate-200 { background-color: #e8eef5 !important; }
+html:not(.dark) .portal-alert-modal-panel [data-portal-alert-status].text-slate-600 { color: #64748b !important; }
+html:not(.dark) .portal-alert-modal-panel [data-portal-alert-status].bg-slate-200 {
+    background: #e7edf4 !important;
+}
+
+html:not(.dark) .portal-alert-card.bg-emerald-50\/70 {
+    background:
+        linear-gradient(135deg, rgba(236,253,245,0.9), rgba(241,248,247,0.96)) !important;
+    border-color: rgba(110, 231, 183, 0.5) !important;
+}
+
+html:not(.dark) .portal-alert-card.bg-cyan-50\/60 {
+    background:
+        linear-gradient(135deg, rgba(236,254,255,0.9), rgba(241,248,250,0.96)) !important;
+    border-color: rgba(103, 232, 249, 0.45) !important;
+}
+
+html:not(.dark) .portal-alert-card.bg-sky-50\/50 {
+    background:
+        linear-gradient(135deg, rgba(240,249,255,0.92), rgba(245,248,252,0.96)) !important;
+    border-color: rgba(125, 211, 252, 0.45) !important;
+}
+html:not(.dark) .portal-alert-modal-foot {
+    gap: 0.75rem !important;
+}
+html:not(.dark) .portal-alert-modal-foot .portal-alert-btn {
+    min-width: 8.5rem;
+    box-shadow: 0 10px 18px rgba(148, 163, 184, 0.12);
+}
+html:not(.dark) .portal-alert-modal-foot .portal-alert-btn-close {
+    min-width: 5.8rem;
+}
+html:not(.dark) .portal-alert-btn-primary {
+    box-shadow: 0 12px 22px rgba(18, 131, 207, 0.22);
+}
+html.dark .portal-alert-modal-panel {
+    border-color: rgba(51, 65, 85, 0.92) !important;
+    background:
+        linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98));
+    box-shadow:
+        0 28px 70px rgba(2, 6, 23, 0.62),
+        0 10px 24px rgba(8, 145, 178, 0.08);
+}
+
+html.dark .portal-alert-modal-head {
+    background:
+        linear-gradient(135deg, rgba(8,47,73,0.58), rgba(15,23,42,0.95));
+}
+
+html.dark .portal-alert-modal-body {
+    background:
+        linear-gradient(180deg, rgba(15,23,42,0.98), rgba(3,7,18,0.98));
+}
+
+html.dark .portal-alert-modal-foot {
+    background:
+        linear-gradient(180deg, rgba(9,15,28,0.98), rgba(2,6,23,0.98));
+}
+
+html.dark .portal-alert-card {
+    box-shadow:
+        inset 0 1px 0 rgba(148, 163, 184, 0.06),
+        0 10px 18px rgba(2, 6, 23, 0.18);
+}
+
+html.dark .portal-alert-btn-card {
+    background: #0f172a;
+    border-color: #334155;
+    color: #86efcf;
+    box-shadow: 0 10px 18px rgba(2, 6, 23, 0.28);
+}
+
+html.dark .portal-alert-btn-card:hover {
+    background: #162033;
+    border-color: #3d4d66;
+    color: #b1f6df;
+}
+
+html.dark .portal-alert-btn-close {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+html.dark .portal-alert-btn-close:hover {
+    background: #293548;
+}
+
+html.dark .portal-alert-btn-schedule {
+    background: rgba(6, 78, 59, 0.28);
+    border-color: rgba(52, 211, 153, 0.34);
+    color: #6ee7b7;
+}
+
+html.dark .portal-alert-btn-schedule:hover {
+    background: rgba(6, 95, 70, 0.38);
+    color: #a7f3d0;
+}
+
+html.dark .portal-alert-btn-live {
+    background: rgba(8, 47, 73, 0.32);
+    border-color: rgba(34, 211, 238, 0.28);
+    color: #67e8f9;
+}
+
+html.dark .portal-alert-btn-live:hover {
+    background: rgba(8, 65, 96, 0.4);
+    color: #a5f3fc;
+}
+
+html.dark .portal-alert-btn-primary {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    border-color: #0284c7;
+    color: #fff;
+}
+
+html.dark .portal-alert-btn-primary:hover {
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    border-color: #0ea5e9;
+}
+
+html.dark .portal-alert-title {
+    color: #dff7ff;
+}
+
+html.dark .portal-alert-subtitle {
+    color: #9db7cc;
+}
+
+.admin-alert-modal-panel {
+    background:
+        linear-gradient(180deg, rgba(11,27,45,0.985), rgba(4,13,24,0.99));
+    border-color: rgba(99, 102, 241, 0.28) !important;
+    box-shadow:
+        0 30px 70px rgba(2, 6, 23, 0.6),
+        0 12px 26px rgba(79, 70, 229, 0.12);
+}
+
+.admin-alert-modal-head {
+    background:
+        linear-gradient(135deg, rgba(30,41,59,0.92), rgba(30,27,75,0.88));
+}
+
+.admin-alert-modal-body {
+    background:
+        linear-gradient(180deg, rgba(9,19,34,0.96), rgba(3,9,20,0.99));
+}
+
+.admin-alert-modal-foot {
+    background:
+        linear-gradient(180deg, rgba(10,18,31,0.98), rgba(4,11,22,0.99));
+}
+
+.admin-alert-card {
+    box-shadow:
+        inset 0 1px 0 rgba(148, 163, 184, 0.06),
+        0 10px 18px rgba(2, 6, 23, 0.18);
+}
+
+.admin-alert-modal-panel .text-slate-800,
+.admin-alert-modal-panel .text-slate-700 {
+    color: #e2e8f0 !important;
+}
+
+.admin-alert-modal-panel .text-slate-600,
+.admin-alert-modal-panel .text-slate-500 {
+    color: #94a3b8 !important;
+}
+
+.admin-alert-modal-panel .border-slate-200,
+.admin-alert-modal-panel .border-slate-300 {
+    border-color: #334155 !important;
+}
+
+.admin-alert-modal-panel .bg-white,
+.admin-alert-modal-panel .bg-indigo-50\/50 {
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+.admin-alert-modal-panel .bg-indigo-50\/50 {
+    background:
+        linear-gradient(135deg, rgba(49,46,129,0.22), rgba(30,41,59,0.36)) !important;
+}
+
+.admin-alert-modal-panel .border-indigo-100 {
+    border-color: rgba(99, 102, 241, 0.32) !important;
+}
+
 .users-preview-kpi-label {
     color: #a8c8e4;
 }
@@ -5302,4 +5717,154 @@ html:not(.dark) .student-modern-main .student-module-badge-locked {
     border-color: rgba(148, 171, 198, 0.62) !important;
     background: rgba(226, 236, 246, 0.96) !important;
     color: #425f7d !important;
+}
+
+.student-schedule-hero {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(232, 242, 255, 0.9));
+    color: #0f172a;
+}
+
+.student-schedule-hero p {
+    color: #475569;
+}
+
+.student-schedule-empty {
+    border-color: rgba(125, 211, 252, 0.35);
+    background: rgba(255, 255, 255, 0.86);
+    color: #0f172a;
+}
+
+.student-schedule-empty p:last-child {
+    color: #64748b;
+}
+
+.student-schedule-card {
+    border-color: rgba(148, 163, 184, 0.26);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.student-schedule-card-head {
+    border-color: rgba(148, 163, 184, 0.18);
+    background: linear-gradient(135deg, rgba(244, 249, 255, 0.98), rgba(232, 247, 243, 0.95));
+}
+
+.student-schedule-unit {
+    color: #0284c7;
+}
+
+.student-schedule-card h3,
+.student-schedule-date,
+.student-schedule-empty p:first-child {
+    color: #0f172a;
+}
+
+.student-schedule-period,
+.student-schedule-date-sub,
+.student-schedule-week-note {
+    color: #64748b;
+}
+
+.student-schedule-badge {
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    background: rgba(220, 252, 231, 0.9);
+    color: #047857;
+}
+
+.student-schedule-month-wrap {
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.student-schedule-month-head {
+    background: #eaf2ff;
+    color: #1d4ed8;
+}
+
+.student-schedule-month-body {
+    border-color: rgba(148, 163, 184, 0.16);
+    background: rgba(248, 250, 252, 0.92);
+}
+
+.student-schedule-week-card {
+    border-color: rgba(125, 211, 252, 0.3);
+    background: rgba(240, 249, 255, 0.9);
+}
+
+.student-schedule-week-text {
+    color: #334155;
+}
+
+html.dark .student-schedule-hero {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(51, 65, 85, 0.86);
+    color: #f8fafc;
+}
+
+html.dark .student-schedule-hero p {
+    color: #94a3b8;
+}
+
+html.dark .student-schedule-empty {
+    border-color: rgba(14, 165, 233, 0.2);
+    background: rgba(30, 41, 59, 0.82);
+    color: #f8fafc;
+}
+
+html.dark .student-schedule-empty p:last-child {
+    color: #94a3b8;
+}
+
+html.dark .student-schedule-card {
+    border-color: rgba(14, 165, 233, 0.16);
+    background: rgba(30, 41, 59, 0.84);
+}
+
+html.dark .student-schedule-card-head {
+    border-color: rgba(14, 165, 233, 0.14);
+    background: linear-gradient(90deg, rgba(30, 41, 59, 0.96), rgba(8, 47, 73, 0.88));
+}
+
+html.dark .student-schedule-unit {
+    color: #67e8f9;
+}
+
+html.dark .student-schedule-card h3,
+html.dark .student-schedule-date,
+html.dark .student-schedule-empty p:first-child {
+    color: #f8fafc;
+}
+
+html.dark .student-schedule-period,
+html.dark .student-schedule-date-sub,
+html.dark .student-schedule-week-note {
+    color: #94a3b8;
+}
+
+html.dark .student-schedule-badge {
+    border-color: rgba(52, 211, 153, 0.28);
+    background: rgba(16, 185, 129, 0.16);
+    color: #86efac;
+}
+
+html.dark .student-schedule-month-wrap {
+    border-color: rgba(51, 65, 85, 0.8);
+}
+
+html.dark .student-schedule-month-head {
+    background: #020617;
+    color: #bae6fd;
+}
+
+html.dark .student-schedule-month-body {
+    border-color: rgba(51, 65, 85, 0.82);
+    background: rgba(30, 41, 59, 0.72);
+}
+
+html.dark .student-schedule-week-card {
+    border-color: rgba(8, 145, 178, 0.24);
+    background: rgba(8, 47, 73, 0.24);
+}
+
+html.dark .student-schedule-week-text {
+    color: #e2e8f0;
 }

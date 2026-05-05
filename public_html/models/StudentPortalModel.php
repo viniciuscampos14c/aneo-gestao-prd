@@ -19,6 +19,8 @@ class StudentPortalModel extends BaseModel
     private ?bool $studentLessonProgressTableExists = null;
     private ?bool $examExternalLinksTableExists = null;
     private ?bool $examInternalLinksTableExists = null;
+    private ?bool $studentDutyFeatureAvailable = null;
+    private ?bool $studentPortalNotificationsTableExists = null;
 
     public function portalFeatureAvailable(): bool
     {
@@ -48,6 +50,175 @@ class StudentPortalModel extends BaseModel
         return $this->hasCourseModulesTable()
             && $this->hasCourseLessonsTable()
             && $this->hasStudentLessonProgressTable();
+    }
+
+    public function studentDutyScheduleFeatureAvailable(): bool
+    {
+        if ($this->studentDutyFeatureAvailable !== null) {
+            return $this->studentDutyFeatureAvailable;
+        }
+
+        return $this->studentDutyFeatureAvailable =
+            $this->schemaTableExists('student_practice_units')
+            && $this->schemaTableExists('student_duty_schedules')
+            && $this->schemaTableExists('student_duty_schedule_weeks')
+            && $this->schemaTableExists('student_duty_assignments');
+    }
+
+    public function studentPortalNotificationsFeatureAvailable(): bool
+    {
+        if ($this->studentPortalNotificationsTableExists !== null) {
+            return $this->studentPortalNotificationsTableExists;
+        }
+
+        return $this->studentPortalNotificationsTableExists = $this->schemaTableExists('student_portal_notifications');
+    }
+
+    public function myDutySchedule(int $studentId, bool $onlyPublished = true): array
+    {
+        if ($studentId <= 0 || !$this->studentDutyScheduleFeatureAvailable()) {
+            return [];
+        }
+
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $sql = "SELECT
+                s.id AS schedule_id,
+                s.title AS schedule_title,
+                s.status AS schedule_status,
+                s.start_date AS schedule_start_date,
+                s.end_date AS schedule_end_date,
+                u.name AS unit_name,
+                u.city AS unit_city,
+                u.state AS unit_state,
+                w.id AS week_id,
+                w.month_ref,
+                w.week_order,
+                w.start_date AS week_start_date,
+                w.end_date AS week_end_date,
+                w.notes AS week_notes,
+                a.slot_group,
+                a.position_order
+            FROM student_duty_assignments a
+            INNER JOIN student_duty_schedule_weeks w ON w.id = a.schedule_week_id
+            INNER JOIN student_duty_schedules s ON s.id = w.schedule_id
+            INNER JOIN student_practice_units u ON u.id = s.unit_id
+            WHERE a.student_id = :student_id";
+        $params = [':student_id' => $studentId];
+
+        if ($companyId !== null && $companyId > 0) {
+            $sql .= ' AND s.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        if ($onlyPublished) {
+            $sql .= " AND s.status = 'published'";
+        }
+
+        $sql .= ' ORDER BY w.start_date ASC, a.slot_group ASC, a.position_order ASC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function createPortalNotification(array $data): int
+    {
+        if (!$this->studentPortalNotificationsFeatureAvailable()) {
+            return 0;
+        }
+
+        if ($this->portalNotificationExists($data)) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO student_portal_notifications (
+            company_id, student_id, notification_type, title, message, link_url, meta_json, is_read, created_at, read_at
+        ) VALUES (
+            :company_id, :student_id, :notification_type, :title, :message, :link_url, :meta_json, 0, :created_at, NULL
+        )');
+        $stmt->execute([
+            ':company_id' => (int) ($data['company_id'] ?? 0),
+            ':student_id' => (int) ($data['student_id'] ?? 0),
+            ':notification_type' => trim((string) ($data['notification_type'] ?? 'general')),
+            ':title' => trim((string) ($data['title'] ?? 'Notificacao')),
+            ':message' => trim((string) ($data['message'] ?? '')),
+            ':link_url' => trim((string) ($data['link_url'] ?? '')) ?: null,
+            ':meta_json' => !empty($data['meta']) ? json_encode($data['meta'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+            ':created_at' => now(),
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function listRecentPortalNotifications(int $studentId, int $limit = 5): array
+    {
+        if ($studentId <= 0 || !$this->studentPortalNotificationsFeatureAvailable()) {
+            return [];
+        }
+
+        $limit = max(1, min(20, $limit));
+        $stmt = $this->db->prepare("SELECT *
+            FROM student_portal_notifications
+            WHERE student_id = :student_id
+            ORDER BY is_read ASC, created_at DESC, id DESC
+            LIMIT {$limit}");
+        $stmt->execute([':student_id' => $studentId]);
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function countUnreadPortalNotifications(int $studentId): int
+    {
+        if ($studentId <= 0 || !$this->studentPortalNotificationsFeatureAvailable()) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare('SELECT COUNT(*)
+            FROM student_portal_notifications
+            WHERE student_id = :student_id
+              AND is_read = 0');
+        $stmt->execute([':student_id' => $studentId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function markPortalNotificationsAsReadByType(int $studentId, string $type): void
+    {
+        if ($studentId <= 0 || !$this->studentPortalNotificationsFeatureAvailable()) {
+            return;
+        }
+
+        $stmt = $this->db->prepare('UPDATE student_portal_notifications
+            SET is_read = 1,
+                read_at = :read_at
+            WHERE student_id = :student_id
+              AND notification_type = :notification_type
+              AND is_read = 0');
+        $stmt->execute([
+            ':read_at' => now(),
+            ':student_id' => $studentId,
+            ':notification_type' => trim($type),
+        ]);
+    }
+
+    private function portalNotificationExists(array $data): bool
+    {
+        $stmt = $this->db->prepare('SELECT id
+            FROM student_portal_notifications
+            WHERE company_id = :company_id
+              AND student_id = :student_id
+              AND notification_type = :notification_type
+              AND title = :title
+              AND message = :message
+            LIMIT 1');
+        $stmt->execute([
+            ':company_id' => (int) ($data['company_id'] ?? 0),
+            ':student_id' => (int) ($data['student_id'] ?? 0),
+            ':notification_type' => trim((string) ($data['notification_type'] ?? 'general')),
+            ':title' => trim((string) ($data['title'] ?? 'Notificacao')),
+            ':message' => trim((string) ($data['message'] ?? '')),
+        ]);
+
+        return (bool) $stmt->fetch();
     }
 
     public function findAccountByLogin(string $login): ?array

@@ -3,6 +3,8 @@
 abstract class BaseModel
 {
     protected PDO $db;
+    private array $tableExistsCache = [];
+    private array $columnExistsCache = [];
 
     public function __construct()
     {
@@ -42,5 +44,40 @@ abstract class BaseModel
     {
         $alias = trim($alias);
         return $alias !== '' ? ($alias . '.company_id') : 'company_id';
+    }
+
+    protected function schemaTableExists(string $table): bool
+    {
+        if (array_key_exists($table, $this->tableExistsCache)) {
+            return $this->tableExistsCache[$table];
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name");
+        $stmt->execute([':table_name' => $table]);
+
+        return $this->tableExistsCache[$table] = ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    protected function schemaColumnExists(string $table, string $column): bool
+    {
+        $cacheKey = $table . '.' . $column;
+        if (array_key_exists($cacheKey, $this->columnExistsCache)) {
+            return $this->columnExistsCache[$cacheKey];
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+              AND column_name = :column_name");
+        $stmt->execute([
+            ':table_name' => $table,
+            ':column_name' => $column,
+        ]);
+
+        return $this->columnExistsCache[$cacheKey] = ((int) $stmt->fetchColumn()) > 0;
     }
 }

@@ -4,6 +4,15 @@ $canChatOpen = has_permission('chat.open');
 $studentWhatsappLink = whatsapp_link((string) ($student['phone'] ?? ''), 'Ola ' . ($student['full_name'] ?? '') . ', tudo bem?');
 $portalAvailable = isset($portalAvailable) ? (bool) $portalAvailable : false;
 $portalAccount = $portalAccount ?? null;
+$practiceScheduleAvailable = isset($practiceScheduleAvailable) ? (bool) $practiceScheduleAvailable : false;
+$eligibleSince = null;
+if (!empty($student['enrolled_at'])) {
+    try {
+        $eligibleSince = (new DateTimeImmutable((string) $student['enrolled_at']))->modify('+40 days')->format('d/m/Y');
+    } catch (Throwable $e) {
+        $eligibleSince = null;
+    }
+}
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -64,6 +73,9 @@ $portalAccount = $portalAccount ?? null;
                 <div><dt class="text-slate-500">RG</dt><dd class="font-medium"><?= e($student['rg']); ?></dd></div>
                 <div><dt class="text-slate-500">CRO</dt><dd class="font-medium"><?= e($student['cro']); ?></dd></div>
                 <div><dt class="text-slate-500">Mensalidade</dt><dd class="font-medium"><?= e(format_currency($student['monthly_fee'])); ?></dd></div>
+                <div><dt class="text-slate-500">Unidade pratica</dt><dd class="font-medium"><?= e((string) ($student['practice_unit_name'] ?? '-')); ?></dd></div>
+                <div><dt class="text-slate-500">Nivel de residencia</dt><dd class="font-medium"><?= e((string) ($student['residency_level'] ?? 'R1')); ?></dd></div>
+                <div><dt class="text-slate-500">Elegivel para escala</dt><dd class="font-medium"><?= e($eligibleSince ?? '-'); ?></dd></div>
                 <div>
                     <dt class="text-slate-500">Portal do aluno</dt>
                     <dd class="font-medium">
@@ -78,6 +90,9 @@ $portalAccount = $portalAccount ?? null;
                     </dd>
                 </div>
             </dl>
+            <?php if (!$practiceScheduleAvailable): ?>
+                <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">Os dados da Escala Aluno ainda nao estao disponiveis no banco.</p>
+            <?php endif; ?>
             <p class="mt-4 text-sm"><strong>Informacoes Adm:</strong> <?= e($student['admin_info']); ?></p>
             <p class="mt-2 text-sm"><strong>Observacoes:</strong> <?= nl2br(e($student['notes'])); ?></p>
         </section>

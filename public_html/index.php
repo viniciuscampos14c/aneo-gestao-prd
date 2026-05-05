@@ -37,6 +37,7 @@ $cron     = new CronController();
 $exchange    = new ExchangeController();
 $liveSessions = new CourseLiveSessionController();
 $gestaoAluno = class_exists('GestaoAlunoController') ? new GestaoAlunoController() : null;
+$studentSchedule = class_exists('StudentScheduleController') ? new StudentScheduleController() : null;
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -50,6 +51,8 @@ $router->get('student/login', fn () => $studentAuth->showLogin());
 $router->post('student/login', fn () => $studentAuth->login());
 $router->get('student/logout', fn () => $studentAuth->logout());
 $router->get('student/dashboard', fn () => $studentPortal->dashboard());
+$router->get('student/schedule', fn () => $studentPortal->schedule());
+$router->post('student/alerts/read', fn () => $studentPortal->markAlertsRead());
 $router->get('student/courses', fn () => $studentPortal->courses());
 $router->get('student/course', fn () => $studentPortal->course());
 $router->get('student/calendar', fn () => $studentPortal->calendar());
@@ -293,6 +296,25 @@ if ($gestaoAluno !== null) {
     $router->post('gestao-aluno/column/store', fn () => $gestaoAluno->storeColumn());
     $router->post('gestao-aluno/column/update', fn () => $gestaoAluno->updateColumn());
     $router->post('gestao-aluno/column/delete', fn () => $gestaoAluno->deleteColumn());
+}
+
+if ($studentSchedule !== null) {
+    $router->get('escala-aluno', fn () => $studentSchedule->index());
+    $router->get('escala-aluno/create', fn () => $studentSchedule->create());
+    $router->post('escala-aluno/store', fn () => $studentSchedule->store());
+    $router->get('escala-aluno/show', fn () => $studentSchedule->show());
+    $router->get('escala-aluno/edit', fn () => $studentSchedule->edit());
+    $router->post('escala-aluno/update', fn () => $studentSchedule->update());
+    $router->post('escala-aluno/publish', fn () => $studentSchedule->publish());
+    $router->post('escala-aluno/archive', fn () => $studentSchedule->archive());
+    $router->post('escala-aluno/unarchive', fn () => $studentSchedule->unarchive());
+    $router->post('escala-aluno/unit/store', fn () => $studentSchedule->storeUnit());
+    $router->post('escala-aluno/unit/toggle', fn () => $studentSchedule->toggleUnit());
+    $router->post('escala-aluno/weeks/generate', fn () => $studentSchedule->generateWeeks());
+    $router->post('escala-aluno/weeks/update', fn () => $studentSchedule->updateWeek());
+    $router->post('escala-aluno/assignments/store', fn () => $studentSchedule->storeAssignment());
+    $router->post('escala-aluno/assignments/delete', fn () => $studentSchedule->deleteAssignment());
+    $router->get('escala-aluno/export', fn () => $studentSchedule->export());
 }
 
 // Modulos desativados por regra de negocio atual (nao aparecem no menu e nao devem abrir por URL direta).

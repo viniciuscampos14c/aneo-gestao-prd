@@ -4,6 +4,8 @@ class StudentModel extends BaseModel
 {
     private ?bool $portalAccountsTableExists = null;
     private ?bool $studentProfilePhotoColumnExists = null;
+    private ?bool $practiceUnitColumnExists = null;
+    private ?bool $residencyLevelColumnExists = null;
 
     public function stats(): array
     {
@@ -39,6 +41,9 @@ class StudentModel extends BaseModel
     {
         $where = ['s.company_id = :company_id'];
         $params = [':company_id' => $this->companyId()];
+        $unitJoin = $this->practiceScheduleFeatureAvailable()
+            ? 'LEFT JOIN student_practice_units spu ON spu.id = s.practice_unit_id'
+            : '';
 
         if (!empty($filters['q'])) {
             $where[] = '(s.full_name LIKE :q OR s.email_primary LIKE :q OR s.phone LIKE :q OR s.ra LIKE :q OR s.rg LIKE :q OR s.cro LIKE :q)';
@@ -60,11 +65,14 @@ class StudentModel extends BaseModel
         $countSql = "SELECT COUNT(*)
             FROM students s
             LEFT JOIN kanban_status ks ON ks.id = s.kanban_status_id
+            {$unitJoin}
             WHERE {$whereSql}";
 
-        $dataSql = "SELECT s.*, ks.name AS kanban_status_name, ks.color AS kanban_status_color
+        $dataSql = "SELECT s.*, ks.name AS kanban_status_name, ks.color AS kanban_status_color" .
+            ($this->practiceScheduleFeatureAvailable() ? ', spu.name AS practice_unit_name' : '') . "
             FROM students s
             LEFT JOIN kanban_status ks ON ks.id = s.kanban_status_id
+            {$unitJoin}
             WHERE {$whereSql}
             ORDER BY s.id DESC";
 
@@ -73,12 +81,15 @@ class StudentModel extends BaseModel
 
     public function find(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT s.*, ks.name AS kanban_status_name, ks.color AS kanban_status_color
+        $sql = 'SELECT s.*, ks.name AS kanban_status_name, ks.color AS kanban_status_color' .
+            ($this->practiceScheduleFeatureAvailable() ? ', spu.name AS practice_unit_name' : '') . '
             FROM students s
             LEFT JOIN kanban_status ks ON ks.id = s.kanban_status_id
+            ' . ($this->practiceScheduleFeatureAvailable() ? 'LEFT JOIN student_practice_units spu ON spu.id = s.practice_unit_id' : '') . '
             WHERE s.id = :id
               AND s.company_id = :company_id
-            LIMIT 1');
+            LIMIT 1';
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':id' => $id,
             ':company_id' => $this->companyId(),
@@ -92,23 +103,24 @@ class StudentModel extends BaseModel
     {
         $statusId = $data['kanban_status_id'] ? (int) $data['kanban_status_id'] : $this->defaultKanbanStatusId();
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
+        $supportsPractice = $this->practiceScheduleFeatureAvailable();
         $insertSql = $supportsPhoto
             ? 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone, profile_photo, is_active,
-                admin_info, ra, birth_date, enrolled_at, rg, cro, notes, monthly_fee, billing_day,
+                admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone, :profile_photo, :is_active,
-                :admin_info, :ra, :birth_date, :enrolled_at, :rg, :cro, :notes, :monthly_fee, :billing_day,
+                :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )'
             : 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone, is_active,
-                admin_info, ra, birth_date, enrolled_at, rg, cro, notes, monthly_fee, billing_day,
+                admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone, :is_active,
-                :admin_info, :ra, :birth_date, :enrolled_at, :rg, :cro, :notes, :monthly_fee, :billing_day,
+                :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )';
         $stmt = $this->db->prepare($insertSql);
@@ -139,6 +151,10 @@ class StudentModel extends BaseModel
         if ($supportsPhoto) {
             $params[':profile_photo'] = ($data['profile_photo'] ?? '') !== '' ? $data['profile_photo'] : null;
         }
+        if ($supportsPractice) {
+            $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
+            $params[':residency_level'] = in_array(($data['residency_level'] ?? 'R1'), ['R1', 'R2', 'R3'], true) ? $data['residency_level'] : 'R1';
+        }
 
         $stmt->execute($params);
 
@@ -160,6 +176,7 @@ class StudentModel extends BaseModel
 
         $statusId = $data['kanban_status_id'] ? (int) $data['kanban_status_id'] : (int) $current['kanban_status_id'];
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
+        $supportsPractice = $this->practiceScheduleFeatureAvailable();
         $updateSql = $supportsPhoto
             ? 'UPDATE students SET
                 full_name = :full_name,
@@ -172,6 +189,7 @@ class StudentModel extends BaseModel
                 ra = :ra,
                 birth_date = :birth_date,
                 enrolled_at = :enrolled_at,
+                ' . ($supportsPractice ? 'practice_unit_id = :practice_unit_id, residency_level = :residency_level,' : '') . '
                 rg = :rg,
                 cro = :cro,
                 notes = :notes,
@@ -190,6 +208,7 @@ class StudentModel extends BaseModel
                 ra = :ra,
                 birth_date = :birth_date,
                 enrolled_at = :enrolled_at,
+                ' . ($supportsPractice ? 'practice_unit_id = :practice_unit_id, residency_level = :residency_level,' : '') . '
                 rg = :rg,
                 cro = :cro,
                 notes = :notes,
@@ -223,6 +242,10 @@ class StudentModel extends BaseModel
 
         if ($supportsPhoto) {
             $params[':profile_photo'] = ($data['profile_photo'] ?? '') !== '' ? $data['profile_photo'] : null;
+        }
+        if ($supportsPractice) {
+            $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
+            $params[':residency_level'] = in_array(($data['residency_level'] ?? 'R1'), ['R1', 'R2', 'R3'], true) ? $data['residency_level'] : 'R1';
         }
 
         $stmt->execute($params);
@@ -467,9 +490,31 @@ class StudentModel extends BaseModel
         return $this->hasPortalAccountsTable();
     }
 
+    public function practiceScheduleFeatureAvailable(): bool
+    {
+        return $this->hasPracticeUnitColumn()
+            && $this->hasResidencyLevelColumn()
+            && $this->schemaTableExists('student_practice_units');
+    }
+
     public function studentPhotoFeatureAvailable(): bool
     {
         return $this->hasStudentProfilePhotoColumn();
+    }
+
+    public function practiceUnits(): array
+    {
+        if (!$this->practiceScheduleFeatureAvailable()) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare('SELECT id, name, city, state, is_active
+            FROM student_practice_units
+            WHERE company_id = :company_id
+              AND is_active = 1
+            ORDER BY name ASC');
+        $stmt->execute([':company_id' => $this->companyId()]);
+        return $stmt->fetchAll();
     }
 
     public function findPortalAccount(int $studentId): ?array
@@ -574,9 +619,7 @@ class StudentModel extends BaseModel
             return $this->portalAccountsTableExists;
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'student_portal_accounts'");
-        $stmt->execute();
-        $this->portalAccountsTableExists = ((int) $stmt->fetchColumn()) > 0;
+        $this->portalAccountsTableExists = $this->schemaTableExists('student_portal_accounts');
 
         return $this->portalAccountsTableExists;
     }
@@ -587,15 +630,29 @@ class StudentModel extends BaseModel
             return $this->studentProfilePhotoColumnExists;
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*)
-            FROM information_schema.columns
-            WHERE table_schema = DATABASE()
-              AND table_name = 'students'
-              AND column_name = 'profile_photo'");
-        $stmt->execute();
-        $this->studentProfilePhotoColumnExists = ((int) $stmt->fetchColumn()) > 0;
+        $this->studentProfilePhotoColumnExists = $this->schemaColumnExists('students', 'profile_photo');
 
         return $this->studentProfilePhotoColumnExists;
+    }
+
+    private function hasPracticeUnitColumn(): bool
+    {
+        if ($this->practiceUnitColumnExists !== null) {
+            return $this->practiceUnitColumnExists;
+        }
+
+        $this->practiceUnitColumnExists = $this->schemaColumnExists('students', 'practice_unit_id');
+        return $this->practiceUnitColumnExists;
+    }
+
+    private function hasResidencyLevelColumn(): bool
+    {
+        if ($this->residencyLevelColumnExists !== null) {
+            return $this->residencyLevelColumnExists;
+        }
+
+        $this->residencyLevelColumnExists = $this->schemaColumnExists('students', 'residency_level');
+        return $this->residencyLevelColumnExists;
     }
 
     private function scalar(string $sql, array $params = [])

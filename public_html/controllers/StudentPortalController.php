@@ -149,6 +149,36 @@ class StudentPortalController extends BaseController
         exit;
     }
 
+    public function markAlertsRead(): void
+    {
+        require_student_auth();
+        csrf_validate();
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+        $companyId = (int) ($student['company_id'] ?? 0);
+        $studentEmail = trim((string) ($student['email'] ?? ''));
+
+        $this->portal->markPortalNotificationsAsReadByType($studentId, 'duty_schedule');
+
+        $ticketCount = 0;
+        if ($this->tickets->featureAvailable() && $studentId > 0 && $companyId > 0) {
+            $stats = $this->tickets->studentStats($companyId, $studentId, $studentEmail);
+            $ticketCount = (int) ($stats['open'] ?? 0) + (int) ($stats['in_progress'] ?? 0);
+        }
+
+        $liveCount = $studentId > 0 ? count($this->portal->upcomingLiveClasses($studentId)) : 0;
+        $portalCount = $this->portal->countUnreadPortalNotifications($studentId);
+
+        $this->json([
+            'ok' => true,
+            'studentPortalAlertCount' => $portalCount,
+            'studentTicketAlertCount' => $ticketCount,
+            'studentLiveAlertCount' => $liveCount,
+            'studentAlertCount' => $portalCount + $ticketCount + $liveCount,
+        ]);
+    }
+
     public function live(): void
     {
         require_student_auth();
@@ -177,6 +207,71 @@ class StudentPortalController extends BaseController
             'student' => $student,
             'courses' => $data['courses'],
             'uploads' => $data['uploads'],
+        ], 'layouts/student');
+    }
+
+    public function schedule(): void
+    {
+        require_student_auth();
+
+        $student = current_student();
+        $this->checkReenrollmentGate($student);
+        $studentId = (int) ($student['id'] ?? 0);
+        $featureAvailable = $this->portal->studentDutyScheduleFeatureAvailable();
+        $rows = $featureAvailable ? $this->portal->myDutySchedule($studentId, true) : [];
+        $grouped = [];
+
+        foreach ($rows as $row) {
+            $scheduleId = (int) ($row['schedule_id'] ?? 0);
+            $monthRef = (string) ($row['month_ref'] ?? '');
+            $weekId = (int) ($row['week_id'] ?? 0);
+
+            if (!isset($grouped[$scheduleId])) {
+                $grouped[$scheduleId] = [
+                    'schedule_id' => $scheduleId,
+                    'schedule_title' => (string) ($row['schedule_title'] ?? ''),
+                    'schedule_status' => (string) ($row['schedule_status'] ?? ''),
+                    'schedule_start_date' => (string) ($row['schedule_start_date'] ?? ''),
+                    'schedule_end_date' => (string) ($row['schedule_end_date'] ?? ''),
+                    'unit_name' => (string) ($row['unit_name'] ?? ''),
+                    'unit_city' => (string) ($row['unit_city'] ?? ''),
+                    'unit_state' => (string) ($row['unit_state'] ?? ''),
+                    'months' => [],
+                ];
+            }
+
+            if (!isset($grouped[$scheduleId]['months'][$monthRef])) {
+                $grouped[$scheduleId]['months'][$monthRef] = [];
+            }
+
+            if (!isset($grouped[$scheduleId]['months'][$monthRef][$weekId])) {
+                $grouped[$scheduleId]['months'][$monthRef][$weekId] = [
+                    'week_id' => $weekId,
+                    'week_order' => (int) ($row['week_order'] ?? 0),
+                    'week_start_date' => (string) ($row['week_start_date'] ?? ''),
+                    'week_end_date' => (string) ($row['week_end_date'] ?? ''),
+                    'week_notes' => (string) ($row['week_notes'] ?? ''),
+                    'slot_group' => (string) ($row['slot_group'] ?? ''),
+                ];
+            }
+        }
+
+        $schedules = array_values(array_map(function (array $schedule): array {
+            $months = [];
+            foreach ($schedule['months'] as $monthRef => $weeks) {
+                $monthWeeks = array_values($weeks);
+                usort($monthWeeks, fn (array $a, array $b): int => strcmp((string) $a['week_start_date'], (string) $b['week_start_date']));
+                $months[$monthRef] = $monthWeeks;
+            }
+            $schedule['months'] = $months;
+            return $schedule;
+        }, $grouped));
+
+        $this->render('student_portal/schedule', [
+            'title' => 'Minha Escala',
+            'student' => $student,
+            'featureAvailable' => $featureAvailable,
+            'schedules' => $schedules,
         ], 'layouts/student');
     }
 
