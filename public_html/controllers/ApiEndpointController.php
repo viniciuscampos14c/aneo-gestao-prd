@@ -309,6 +309,65 @@ class ApiEndpointController extends BaseController
         $this->ok($course);
     }
 
+    public function listTrialAccesses(): void
+    {
+        ApiAuth::requirePermission($this->token, 'trial_accesses', 'search');
+
+        if (!$this->courses->trialAccessFeatureAvailable()) {
+            ApiAuth::abort(409, 'Funcionalidade de degustacao indisponivel no banco.');
+        }
+
+        $perPage = min(200, max(1, (int) ($_GET['per_page'] ?? 50)));
+        $page    = max(1, (int) ($_GET['page'] ?? 1));
+
+        $result = $this->courses->listTrialAccesses($perPage, $page);
+        $this->ok($result['rows'], $result['meta']);
+    }
+
+    public function getTrialAccess(int $id): void
+    {
+        ApiAuth::requirePermission($this->token, 'trial_accesses', 'get');
+
+        if (!$this->courses->trialAccessFeatureAvailable()) {
+            ApiAuth::abort(409, 'Funcionalidade de degustacao indisponivel no banco.');
+        }
+
+        $trialAccess = $this->courses->findTrialAccess($id);
+        if (!$trialAccess) {
+            ApiAuth::abort(404, 'Acesso de degustacao nao encontrado.');
+        }
+
+        $this->ok($trialAccess);
+    }
+
+    public function createTrialAccess(): void
+    {
+        ApiAuth::requirePermission($this->token, 'trial_accesses', 'create');
+
+        if (!$this->courses->trialAccessFeatureAvailable()) {
+            ApiAuth::abort(409, 'Funcionalidade de degustacao indisponivel no banco.');
+        }
+
+        $data = $this->parseBody();
+        $this->validateRequired($data, ['student_name', 'course_id', 'access_date']);
+
+        $payload = [
+            'student_name' => trim((string) ($data['student_name'] ?? '')),
+            'student_email' => trim((string) ($data['student_email'] ?? '')),
+            'student_phone' => trim((string) ($data['student_phone'] ?? '')),
+            'course_id' => (int) ($data['course_id'] ?? 0),
+            'access_date' => trim((string) ($data['access_date'] ?? '')),
+        ];
+
+        try {
+            $created = $this->courses->createTrialAccess($payload, (int) ($this->token['user_id'] ?? 0));
+        } catch (RuntimeException $e) {
+            ApiAuth::abort(422, $e->getMessage());
+        }
+
+        $this->ok($created, null, 201);
+    }
+
     // =========================================================================
     // USERS (Usuários)
     // =========================================================================

@@ -1,5 +1,5 @@
 <div class="gda-modal-backdrop" id="gdaModalBackdrop">
-    <div class="gda-modal" id="gdaModal">
+    <div class="gda-modal gda-modal-single" id="gdaModal">
 
         <!-- Header -->
         <div class="gda-modal-header">
@@ -13,21 +13,6 @@
             <button class="gda-modal-close" id="gdaModalClose" title="Fechar">&times;</button>
         </div>
 
-        <!-- Tabs -->
-        <div class="gda-modal-tabs">
-            <button class="gda-modal-tab active" data-tab="info">Informações</button>
-            <button class="gda-modal-tab" data-tab="meta">Meta</button>
-            <button class="gda-modal-tab" data-tab="descricao">Descrição</button>
-            <button class="gda-modal-tab" data-tab="notas">Notas</button>
-            <button class="gda-modal-tab" data-tab="anexos">Anexos</button>
-            <button class="gda-modal-tab" data-tab="historico">Histórico</button>
-            <button class="gda-modal-tab" data-tab="membros">Membros</button>
-            <button class="gda-modal-tab" data-tab="etiquetas">Etiquetas</button>
-            <button class="gda-modal-tab" data-tab="checklists">Checklists</button>
-            <button class="gda-modal-tab" data-tab="campos">Campos</button>
-            <button class="gda-modal-tab" data-tab="templates">Templates</button>
-        </div>
-
         <!-- Body -->
         <div class="gda-modal-body" id="gdaModalBody">
             <div class="flex items-center justify-center py-12">
@@ -38,13 +23,14 @@
     </div>
 </div>
 
-<!-- Templates dos painéis (clonados via JS) -->
+<!-- Templates dos paineis (clonados via JS) -->
 <template id="gdaTplModalContent">
 <div>
 
-    <!-- TAB: Informações -->
+    <!-- Painel: Informacoes -->
     <div class="gda-tab-panel active" data-panel="info">
-        <div class="grid grid-cols-2 gap-3 text-sm">
+        <h4 class="gda-section-title">Informacoes</h4>
+        <div class="grid gap-3 text-sm md:grid-cols-2">
             <div><span class="text-slate-400 text-xs">Nome</span><br><strong id="mdInfoNome"></strong></div>
             <div><span class="text-slate-400 text-xs">CPF</span><br><span id="mdInfoCpf" class="text-slate-700"></span></div>
             <div><span class="text-slate-400 text-xs">E-mail</span><br><span id="mdInfoEmail" class="text-slate-700"></span></div>
@@ -54,17 +40,18 @@
         </div>
     </div>
 
-    <!-- TAB: Meta -->
+    <!-- Painel: Meta -->
     <div class="gda-tab-panel" data-panel="meta">
+        <h4 class="gda-section-title">Meta do card</h4>
         <div class="flex flex-col gap-4">
             <div>
                 <label class="text-xs text-slate-500 font-semibold block mb-1">Prioridade</label>
                 <select id="mdMetaPriority" class="gda-input gda-select text-sm">
                     <option value="none">Nenhuma</option>
                     <option value="low">Baixa</option>
-                    <option value="medium">Média</option>
+                    <option value="medium">Media</option>
                     <option value="high">Alta</option>
-                    <option value="critical">Crítica</option>
+                    <option value="critical">Critica</option>
                 </select>
             </div>
             <div>
@@ -77,9 +64,9 @@
                 <button id="mdMetaCoverClear" class="gda-btn gda-btn-default gda-btn-sm ml-2">Remover</button>
             </div>
             <div>
-                <label class="text-xs text-slate-500 font-semibold block mb-1">Responsável</label>
+                <label class="text-xs text-slate-500 font-semibold block mb-1">Responsavel</label>
                 <select id="mdMetaAssigned" class="gda-input gda-select text-sm">
-                    <option value="">— Nenhum —</option>
+                    <option value="">- Nenhum -</option>
                 </select>
             </div>
             <div>
@@ -92,16 +79,18 @@
         </div>
     </div>
 
-    <!-- TAB: Descrição -->
+    <!-- Painel: Descricao -->
     <div class="gda-tab-panel" data-panel="descricao">
-        <textarea id="mdDesc" rows="8" class="gda-input text-sm w-full" placeholder="Escreva uma descrição para o aluno..."></textarea>
+        <h4 class="gda-section-title">Descricao</h4>
+        <textarea id="mdDesc" rows="8" class="gda-input text-sm w-full" placeholder="Escreva uma descricao para o aluno..."></textarea>
         <div class="mt-2">
-            <button id="mdDescSave" class="gda-btn gda-btn-primary text-sm">Salvar Descrição</button>
+            <button id="mdDescSave" class="gda-btn gda-btn-primary text-sm">Salvar Descricao</button>
         </div>
     </div>
 
-    <!-- TAB: Notas -->
+    <!-- Painel: Notas -->
     <div class="gda-tab-panel" data-panel="notas">
+        <h4 class="gda-section-title">Notas</h4>
         <div id="mdNotesList" class="mb-4 flex flex-col gap-2"></div>
         <div class="flex gap-2">
             <input type="text" id="mdNoteInput" class="gda-input text-sm flex-1" placeholder="Adicionar nota...">
@@ -109,8 +98,9 @@
         </div>
     </div>
 
-    <!-- TAB: Anexos -->
+    <!-- Painel: Anexos -->
     <div class="gda-tab-panel" data-panel="anexos">
+        <h4 class="gda-section-title">Anexos</h4>
         <div id="mdAttList" class="mb-4 flex flex-col gap-2"></div>
         <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
             <input type="file" id="mdAttFile" class="hidden" multiple>
@@ -125,34 +115,38 @@
         </div>
     </div>
 
-    <!-- TAB: Histórico -->
+    <!-- Painel: Historico -->
     <div class="gda-tab-panel" data-panel="historico">
+        <h4 class="gda-section-title">Historico</h4>
         <div id="mdHistoryList" class="flex flex-col"></div>
     </div>
 
-    <!-- TAB: Membros -->
+    <!-- Painel: Membros -->
     <div class="gda-tab-panel" data-panel="membros">
-        <p class="text-xs text-slate-400 mb-3">Usuários vinculados a este card:</p>
+        <h4 class="gda-section-title">Membros</h4>
+        <p class="text-xs text-slate-400 mb-3">Usuarios vinculados a este card:</p>
         <div id="mdMembersList" class="flex flex-col gap-2 mb-4"></div>
         <div>
             <label class="text-xs text-slate-500 font-semibold block mb-1">Adicionar membro</label>
             <div class="flex gap-2">
                 <select id="mdMemberSelect" class="gda-input gda-select text-sm flex-1">
-                    <option value="">Selecionar usuário...</option>
+                    <option value="">Selecionar usuario...</option>
                 </select>
                 <button id="mdMemberAdd" class="gda-btn gda-btn-primary text-sm">Adicionar</button>
             </div>
         </div>
     </div>
 
-    <!-- TAB: Etiquetas -->
+    <!-- Painel: Etiquetas -->
     <div class="gda-tab-panel" data-panel="etiquetas">
+        <h4 class="gda-section-title">Etiquetas</h4>
         <div id="mdLabelsList" class="flex flex-wrap gap-2 mb-4"></div>
         <p class="text-xs text-slate-400">Clique em uma etiqueta para adicionar ou remover do card.</p>
     </div>
 
-    <!-- TAB: Checklists -->
+    <!-- Painel: Checklists -->
     <div class="gda-tab-panel" data-panel="checklists">
+        <h4 class="gda-section-title">Checklists</h4>
         <div id="mdChecklistsWrap" class="flex flex-col gap-4 mb-4"></div>
         <div class="flex gap-2 mt-2">
             <input type="text" id="mdNewChecklist" class="gda-input text-sm flex-1" placeholder="Nome da checklist...">
@@ -160,16 +154,18 @@
         </div>
     </div>
 
-    <!-- TAB: Campos Customizados -->
+    <!-- Painel: Campos customizados -->
     <div class="gda-tab-panel" data-panel="campos">
+        <h4 class="gda-section-title">Campos customizados</h4>
         <div id="mdCfWrap" class="flex flex-col gap-3"></div>
         <div class="mt-2">
             <button id="mdCfSave" class="gda-btn gda-btn-primary text-sm">Salvar Campos</button>
         </div>
     </div>
 
-    <!-- TAB: Templates -->
+    <!-- Painel: Templates -->
     <div class="gda-tab-panel" data-panel="templates">
+        <h4 class="gda-section-title">Templates</h4>
         <p class="text-xs text-slate-400 mb-3">Aplicar um template popula checklists e prioridade no card.</p>
         <div class="flex gap-2">
             <select id="mdTplSelect" class="gda-input gda-select text-sm flex-1">

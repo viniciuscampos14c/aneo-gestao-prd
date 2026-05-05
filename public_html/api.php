@@ -10,7 +10,7 @@
  * Exemplo:
  *   curl -H "Authorization: Bearer <token>" "https://erp-hml.aneobrasil.com.br/api.php?r=students"
  *
- * Recursos disponiveis: students, leads, invoices, courses, users, tickets
+ * Recursos disponiveis: students, leads, invoices, courses, trial_accesses, users, tickets
  * Documentacao completa: index.php?route=api-management/manual
  */
 
@@ -95,6 +95,11 @@ try {
         // courses
         $resource === 'courses' && $method === 'GET' && $id === null => $api->listCourses(),
         $resource === 'courses' && $method === 'GET' && $id !== null => $api->getCourse($id),
+
+        // trial accesses (degustacao)
+        $resource === 'trial_accesses' && $method === 'GET' && $id === null => $api->listTrialAccesses(),
+        $resource === 'trial_accesses' && $method === 'GET' && $id !== null => $api->getTrialAccess($id),
+        $resource === 'trial_accesses' && $method === 'POST'                 => $api->createTrialAccess(),
 
         // users
         $resource === 'users' && $method === 'GET' && $id === null => $api->listUsers(),

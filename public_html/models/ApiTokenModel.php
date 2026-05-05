@@ -8,6 +8,7 @@ class ApiTokenModel extends BaseModel
         'leads'    => ['get', 'search', 'create', 'update', 'delete'],
         'invoices' => ['get', 'search', 'create', 'delete'],
         'courses'  => ['get', 'search'],
+        'trial_accesses' => ['get', 'search', 'create'],
         'users'    => ['get', 'search'],
         'tickets'  => ['get', 'search', 'create'],
     ];
@@ -17,6 +18,7 @@ class ApiTokenModel extends BaseModel
         'leads'    => 'Leads',
         'invoices' => 'Faturas',
         'courses'  => 'Cursos',
+        'trial_accesses' => 'Degustacao Cursos',
         'users'    => 'Usuários',
         'tickets'  => 'Chamados',
     ];

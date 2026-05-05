@@ -7,7 +7,6 @@
     const cfg = window.gdaConfig || {};
     let currentStudentId = null;
     let currentCardData  = null;
-    let activeTabPanel   = 'info';
 
     // --------------------------------------------------------
     // CSRF helper
@@ -369,23 +368,7 @@
         fillCampos(card);
         fillTemplates(card);
 
-        // Tab navigation
-        modalBody.querySelectorAll('.gda-modal-tab, [data-tab]').forEach(() => {});
-        document.querySelectorAll('.gda-modal-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.gda-modal-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const tab = btn.dataset.tab;
-                modalBody.querySelectorAll('.gda-tab-panel').forEach(p => {
-                    p.classList.toggle('active', p.dataset.panel === tab);
-                });
-                activeTabPanel = tab;
-            });
-        });
-
-        // Restaurar tab ativa
-        const activeBtn = document.querySelector(`.gda-modal-tab[data-tab="${activeTabPanel}"]`);
-        if (activeBtn) activeBtn.click();
+        // Layout em card unico: todos os paineis ficam visiveis no mesmo modal.
     }
 
     // --- INFO ---

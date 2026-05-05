@@ -178,6 +178,8 @@ class MobileAuthApiController extends BaseController
         return [
             'students' => ['search', 'get'],
             'invoices' => ['search', 'get'],
+            'courses' => ['search', 'get'],
+            'trial_accesses' => ['search', 'get', 'create'],
             'tickets' => ['create', 'search', 'get'],
         ];
     }
