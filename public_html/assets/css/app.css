@@ -6297,3 +6297,169 @@ html.admin-theme-light .admin-sidebar-session-link:hover {
 html.admin-theme-light .admin-sidebar-session-logout {
     color: #c24646;
 }
+
+/* =====================================================================
+   ADMIN SIDEBAR SESSION INTEGRATED
+   ===================================================================== */
+
+.admin-sidebar-session-card {
+    display: grid;
+    gap: 0.68rem;
+    width: calc(100% + 3rem);
+    margin: 0 -1.5rem -1rem;
+    border-top: 1px solid rgba(120, 164, 199, 0.2);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    background: linear-gradient(180deg, rgba(9, 32, 52, 0.72), rgba(5, 20, 34, 0.84));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    padding: 0.9rem 1.5rem 1rem;
+}
+
+.admin-sidebar-session-block {
+    min-width: 0;
+}
+
+.admin-sidebar-session-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.admin-sidebar-session-divider {
+    height: 1px;
+    background: rgba(120, 164, 199, 0.14);
+}
+
+.admin-sidebar-session-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    color: #8fb0cb;
+    font-size: 0.66rem;
+    font-weight: 750;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+}
+
+.admin-sidebar-session-label::before {
+    content: "";
+    width: 0.42rem;
+    height: 0.42rem;
+    flex: 0 0 0.42rem;
+    border-radius: 999px;
+    background: #67e8f9;
+    box-shadow: 0 0 0 3px rgba(103, 232, 249, 0.12);
+}
+
+.admin-sidebar-session-label-user::before {
+    background: #6ee7b7;
+    box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.12);
+}
+
+.admin-sidebar-session-title {
+    margin-top: 0.16rem;
+    color: #edf7ff;
+    font-size: 0.84rem;
+    font-weight: 750;
+    line-height: 1.25;
+}
+
+.admin-sidebar-session-role {
+    margin-top: 0.06rem;
+    color: #8fb0cb;
+    font-size: 0.73rem;
+    line-height: 1.2;
+}
+
+.admin-sidebar-session-link {
+    display: inline-flex;
+    color: #80e8ff;
+    font-size: 0.68rem;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.admin-sidebar-session-link:hover {
+    color: #c5f6ff;
+}
+
+.admin-sidebar-session-logout {
+    color: #ffb3be;
+}
+
+.admin-sidebar-session-logout:hover {
+    color: #ffd0d7;
+}
+
+html.admin-sidebar-collapsed .admin-sidebar-session-card {
+    display: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-card {
+    border-top-color: rgba(121, 160, 194, 0.34);
+    background: linear-gradient(180deg, rgba(226, 239, 250, 0.82), rgba(211, 228, 243, 0.88));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+html.admin-theme-light .admin-sidebar-session-label,
+html.admin-theme-light .admin-sidebar-session-role {
+    color: #617b94;
+}
+
+html.admin-theme-light .admin-sidebar-session-title {
+    color: #1c344a;
+}
+
+html.admin-theme-light .admin-sidebar-session-link {
+    color: #107abf;
+}
+
+html.admin-theme-light .admin-sidebar-session-link:hover {
+    color: #0d659d;
+}
+
+html.admin-theme-light .admin-sidebar-session-logout {
+    color: #b83c46;
+}
+
+/* =====================================================================
+   ADMIN SIDEBAR FOOTER DOCKING
+   Mantem empresa/usuario presos ao rodape real da sidebar.
+   ===================================================================== */
+
+.admin-modern-sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden;
+}
+
+.admin-sidebar-head {
+    flex: 0 0 auto;
+}
+
+.admin-sidebar-nav {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-y: auto;
+}
+
+.admin-sidebar-footer {
+    flex: 0 0 auto !important;
+    margin-top: auto !important;
+    background: linear-gradient(180deg, rgba(8, 32, 52, 0.94), rgba(4, 18, 31, 0.98));
+}
+
+.admin-sidebar-session-card {
+    margin-top: 0;
+}
+
+html.admin-theme-light .admin-sidebar-footer {
+    background: linear-gradient(180deg, rgba(223, 237, 249, 0.96), rgba(207, 224, 239, 0.98));
+}

@@ -94,7 +94,7 @@ $mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 ?>
 <div class="admin-modern-shell flex min-h-screen">
-    <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
+    <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 flex flex-col transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
         <div class="flex h-16 items-center justify-between border-b border-slate-800 px-6 admin-sidebar-head">
             <div class="admin-sidebar-brand">
                 <p class="text-xs uppercase tracking-[0.2em] text-cyan-400">ANEO</p>
@@ -104,7 +104,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <nav class="admin-sidebar-nav h-[calc(100vh-10rem)] overflow-y-auto p-4">
+        <nav class="admin-sidebar-nav min-h-0 flex-1 overflow-y-auto p-4">
             <ul class="space-y-1">
                 <?php foreach ($menu as $item): ?>
                     <?php if (!has_permission($item['module'])) { continue; } ?>
@@ -148,7 +148,7 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             </div>
         <?php endif; ?>
 
-        <div class="admin-sidebar-footer border-t border-slate-800 px-6 py-4">
+        <div class="admin-sidebar-footer flex-shrink-0 border-t border-slate-800 px-6 py-4">
             <button type="button" data-sidebar-collapse class="admin-sidebar-collapse-btn hidden w-full items-center justify-between rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-600 hover:bg-slate-800 hover:text-white lg:flex" aria-pressed="false">
                 <span class="admin-sidebar-collapse-copy flex items-center gap-2">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 6l-6 6 6 6"/></svg>
@@ -161,27 +161,22 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
             <?php $companyName = $company ? (trim((string) ($company['trade_name'] ?? '')) !== '' ? (string) $company['trade_name'] : (string) ($company['legal_name'] ?? 'Empresa')) : 'Empresa'; ?>
             <section class="admin-sidebar-session-card">
                 <?php if ($company): ?>
-                    <div class="admin-sidebar-session-row">
-                        <span class="admin-sidebar-session-icon">
-                            <?= menu_icon_svg('building-office', 'h-4 w-4'); ?>
-                        </span>
-                        <div class="admin-sidebar-link-label min-w-0">
-                            <p class="admin-sidebar-session-label">Empresa</p>
-                            <p class="admin-sidebar-session-title truncate"><?= e($companyName); ?></p>
-                            <a href="<?= route('select-company'); ?>" class="admin-sidebar-session-link">Trocar empresa</a>
+                    <div class="admin-sidebar-session-block admin-sidebar-link-label">
+                        <div class="admin-sidebar-session-line">
+                            <p class="admin-sidebar-session-label admin-sidebar-session-label-company">Empresa</p>
+                            <a href="<?= route('select-company'); ?>" class="admin-sidebar-session-link">Trocar</a>
                         </div>
+                        <p class="admin-sidebar-session-title truncate"><?= e($companyName); ?></p>
                     </div>
                 <?php endif; ?>
                 <div class="admin-sidebar-session-divider admin-sidebar-link-label"></div>
-                <div class="admin-sidebar-session-row">
-                    <span class="admin-sidebar-session-icon admin-sidebar-session-user-icon">
-                        <?= menu_icon_svg('users', 'h-4 w-4'); ?>
-                    </span>
-                    <div class="admin-sidebar-link-label min-w-0">
-                        <p class="admin-sidebar-session-title truncate"><?= e($user['name'] ?? ''); ?></p>
-                        <p class="admin-sidebar-session-label"><?= e(role_label($user['role'] ?? '')); ?></p>
+                <div class="admin-sidebar-session-block admin-sidebar-link-label">
+                    <div class="admin-sidebar-session-line">
+                        <p class="admin-sidebar-session-label admin-sidebar-session-label-user">Usuário</p>
                         <a href="<?= route('logout'); ?>" class="admin-sidebar-session-link admin-sidebar-session-logout">Sair</a>
                     </div>
+                    <p class="admin-sidebar-session-title truncate"><?= e($user['name'] ?? ''); ?></p>
+                    <p class="admin-sidebar-session-role truncate"><?= e(role_label($user['role'] ?? '')); ?></p>
                 </div>
             </section>
         </div>
