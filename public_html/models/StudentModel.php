@@ -6,6 +6,7 @@ class StudentModel extends BaseModel
     private ?bool $studentProfilePhotoColumnExists = null;
     private ?bool $practiceUnitColumnExists = null;
     private ?bool $residencyLevelColumnExists = null;
+    private ?bool $studentCityColumnExists = null;
 
     public function stats(): array
     {
@@ -103,23 +104,24 @@ class StudentModel extends BaseModel
     {
         $statusId = $data['kanban_status_id'] ? (int) $data['kanban_status_id'] : $this->defaultKanbanStatusId();
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
+        $supportsCity = $this->hasStudentCityColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
         $insertSql = $supportsPhoto
             ? 'INSERT INTO students (
-                company_id, full_name, primary_contact, email_primary, phone, profile_photo, is_active,
+                company_id, full_name, primary_contact, email_primary, phone' . ($supportsCity ? ', city' : '') . ', profile_photo, is_active,
                 admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
-                :company_id, :full_name, :primary_contact, :email_primary, :phone, :profile_photo, :is_active,
+                :company_id, :full_name, :primary_contact, :email_primary, :phone' . ($supportsCity ? ', :city' : '') . ', :profile_photo, :is_active,
                 :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )'
             : 'INSERT INTO students (
-                company_id, full_name, primary_contact, email_primary, phone, is_active,
+                company_id, full_name, primary_contact, email_primary, phone' . ($supportsCity ? ', city' : '') . ', is_active,
                 admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
-                :company_id, :full_name, :primary_contact, :email_primary, :phone, :is_active,
+                :company_id, :full_name, :primary_contact, :email_primary, :phone' . ($supportsCity ? ', :city' : '') . ', :is_active,
                 :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )';
@@ -151,6 +153,9 @@ class StudentModel extends BaseModel
         if ($supportsPhoto) {
             $params[':profile_photo'] = ($data['profile_photo'] ?? '') !== '' ? $data['profile_photo'] : null;
         }
+        if ($supportsCity) {
+            $params[':city'] = trim((string) ($data['city'] ?? '')) ?: null;
+        }
         if ($supportsPractice) {
             $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
             $params[':residency_level'] = in_array(($data['residency_level'] ?? 'R1'), ['R1', 'R2', 'R3'], true) ? $data['residency_level'] : 'R1';
@@ -176,6 +181,7 @@ class StudentModel extends BaseModel
 
         $statusId = $data['kanban_status_id'] ? (int) $data['kanban_status_id'] : (int) $current['kanban_status_id'];
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
+        $supportsCity = $this->hasStudentCityColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
         $updateSql = $supportsPhoto
             ? 'UPDATE students SET
@@ -183,6 +189,7 @@ class StudentModel extends BaseModel
                 primary_contact = :primary_contact,
                 email_primary = :email_primary,
                 phone = :phone,
+                ' . ($supportsCity ? 'city = :city,' : '') . '
                 profile_photo = :profile_photo,
                 is_active = :is_active,
                 admin_info = :admin_info,
@@ -203,6 +210,7 @@ class StudentModel extends BaseModel
                 primary_contact = :primary_contact,
                 email_primary = :email_primary,
                 phone = :phone,
+                ' . ($supportsCity ? 'city = :city,' : '') . '
                 is_active = :is_active,
                 admin_info = :admin_info,
                 ra = :ra,
@@ -242,6 +250,9 @@ class StudentModel extends BaseModel
 
         if ($supportsPhoto) {
             $params[':profile_photo'] = ($data['profile_photo'] ?? '') !== '' ? $data['profile_photo'] : null;
+        }
+        if ($supportsCity) {
+            $params[':city'] = trim((string) ($data['city'] ?? '')) ?: null;
         }
         if ($supportsPractice) {
             $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
@@ -633,6 +644,17 @@ class StudentModel extends BaseModel
         $this->studentProfilePhotoColumnExists = $this->schemaColumnExists('students', 'profile_photo');
 
         return $this->studentProfilePhotoColumnExists;
+    }
+
+    private function hasStudentCityColumn(): bool
+    {
+        if ($this->studentCityColumnExists !== null) {
+            return $this->studentCityColumnExists;
+        }
+
+        $this->studentCityColumnExists = $this->schemaColumnExists('students', 'city');
+
+        return $this->studentCityColumnExists;
     }
 
     private function hasPracticeUnitColumn(): bool

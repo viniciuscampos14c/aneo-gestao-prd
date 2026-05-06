@@ -46,6 +46,7 @@ $cadastroMenu = [
     ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'users', 'route' => 'users'],
     ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office', 'route' => 'companies'],
     ['module' => 'companies', 'label' => 'SMTP Email', 'icon' => 'envelope', 'route' => 'companies/smtp'],
+    ['module' => 'data_imports', 'label' => 'Importação de Dados', 'icon' => 'inbox-arrow-down', 'route' => 'data-imports'],
 ];
 
 if (has_permission('automations')) {

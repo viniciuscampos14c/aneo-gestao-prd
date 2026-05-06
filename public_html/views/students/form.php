@@ -55,6 +55,11 @@ if (!empty($student['enrolled_at'])) {
             <input type="text" name="phone" value="<?= e($student['phone'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
         </label>
 
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Cidade</span>
+            <input type="text" name="city" value="<?= e($student['city'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+        </label>
+
         <label class="block lg:col-span-2">
             <span class="mb-1 block text-sm font-medium">Foto do aluno (perfil)</span>
             <div class="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">

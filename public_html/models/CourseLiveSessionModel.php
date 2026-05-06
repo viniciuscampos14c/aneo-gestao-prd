@@ -2,6 +2,8 @@
 
 class CourseLiveSessionModel extends BaseModel
 {
+    private ?bool $zoomCredentialColumnsExist = null;
+
     // -------------------------------------------------------------------------
     // Listagem admin
     // -------------------------------------------------------------------------
@@ -230,6 +232,10 @@ class CourseLiveSessionModel extends BaseModel
      */
     public function getZoomCredentials(int $companyId): ?array
     {
+        if (!$this->hasZoomCredentialColumns()) {
+            return null;
+        }
+
         $stmt = $this->db->prepare(
             "SELECT zoom_account_id, zoom_client_id, zoom_client_secret
              FROM companies WHERE id = :id LIMIT 1"
@@ -254,6 +260,10 @@ class CourseLiveSessionModel extends BaseModel
      */
     public function saveZoomCredentials(int $companyId, string $accountId, string $clientId, string $clientSecret): bool
     {
+        if (!$this->hasZoomCredentialColumns()) {
+            return false;
+        }
+
         $stmt = $this->db->prepare(
             "UPDATE companies
              SET zoom_account_id    = :account_id,
@@ -269,6 +279,20 @@ class CourseLiveSessionModel extends BaseModel
             ':updated_at'    => now(),
             ':id'            => $companyId,
         ]);
+    }
+
+    private function hasZoomCredentialColumns(): bool
+    {
+        if ($this->zoomCredentialColumnsExist !== null) {
+            return $this->zoomCredentialColumnsExist;
+        }
+
+        $this->zoomCredentialColumnsExist =
+            $this->schemaColumnExists('companies', 'zoom_account_id')
+            && $this->schemaColumnExists('companies', 'zoom_client_id')
+            && $this->schemaColumnExists('companies', 'zoom_client_secret');
+
+        return $this->zoomCredentialColumnsExist;
     }
 
     // -------------------------------------------------------------------------

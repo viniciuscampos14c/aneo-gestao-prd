@@ -38,6 +38,7 @@ $exchange    = new ExchangeController();
 $liveSessions = new CourseLiveSessionController();
 $gestaoAluno = class_exists('GestaoAlunoController') ? new GestaoAlunoController() : null;
 $studentSchedule = class_exists('StudentScheduleController') ? new StudentScheduleController() : null;
+$dataImports = class_exists('DataImportController') ? new DataImportController() : null;
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -95,6 +96,13 @@ $router->post('companies/smtp/save', fn () => $companies->saveSmtp());
 $router->post('companies/smtp/test', fn () => $companies->testSmtp());
 $router->post('companies/license/activate', fn () => $license->activate());
 $router->get('system/logs', fn () => $systemLogs->index());
+
+if ($dataImports !== null) {
+    $router->get('data-imports', fn () => $dataImports->index());
+    $router->get('data-imports/template', fn () => $dataImports->template());
+    $router->post('data-imports/upload', fn () => $dataImports->upload());
+    $router->post('data-imports/confirm', fn () => $dataImports->confirm());
+}
 
 if ($banks !== null) {
     $router->get('banks', fn () => $banks->index());

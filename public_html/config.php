@@ -176,6 +176,7 @@ return [
             'automations' => 'Automações',
             'help' => 'Chat IA Jully',
             'companies' => 'Empresas',
+            'data_imports' => 'Importação de Dados',
         ],
         'functions' => [
             'students.create' => 'Alunos: criar',
@@ -225,6 +226,8 @@ return [
             'projects.manage' => 'Projetos: criar/editar/excluir',
             'tasks.manage' => 'Tarefas: criar/editar/excluir',
             'requests.manage' => 'Solicitações: criar/editar/excluir',
+            'data_imports.run' => 'Importação de Dados: validar planilhas',
+            'data_imports.confirm' => 'Importação de Dados: confirmar cargas',
             'support.desk' => 'Central Tecnica: administrar chamados',
             'automations.manage' => 'Automações: criar/editar/excluir',
             'help.manage' => 'Chat IA Jully: criar/editar/excluir',

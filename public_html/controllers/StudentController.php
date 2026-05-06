@@ -367,6 +367,7 @@ class StudentController extends BaseController
             'primary_contact' => trim((string) post('primary_contact')),
             'email_primary' => trim((string) post('email_primary')),
             'phone' => trim((string) post('phone')),
+            'city' => trim((string) post('city')),
             'profile_photo' => trim((string) post('profile_photo_current')),
             'is_active' => (int) post('is_active', 1),
             'admin_info' => trim((string) post('admin_info')),
