@@ -31,7 +31,7 @@ class DataImportModel extends BaseModel
         $this->db->exec("CREATE TABLE IF NOT EXISTS data_import_rows (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             batch_id INT UNSIGNED NOT NULL,
-            row_number INT UNSIGNED NOT NULL,
+            `row_number` INT UNSIGNED NOT NULL,
             source_key VARCHAR(190) NULL,
             status VARCHAR(30) NOT NULL DEFAULT 'valid',
             action VARCHAR(40) NOT NULL DEFAULT 'pending',
@@ -43,7 +43,7 @@ class DataImportModel extends BaseModel
             warnings_json LONGTEXT NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
-            KEY idx_data_import_rows_batch (batch_id, row_number),
+            KEY idx_data_import_rows_batch (batch_id, `row_number`),
             KEY idx_data_import_rows_status (batch_id, status),
             KEY idx_data_import_rows_source (batch_id, source_key)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -105,7 +105,7 @@ class DataImportModel extends BaseModel
         $stmt = $this->db->prepare('SELECT *
             FROM data_import_rows
             WHERE batch_id = :batch_id
-            ORDER BY row_number ASC, id ASC
+            ORDER BY `row_number` ASC, id ASC
             LIMIT :limit');
         $stmt->bindValue(':batch_id', $batchId, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -118,7 +118,7 @@ class DataImportModel extends BaseModel
         $stmt = $this->db->prepare("SELECT *
             FROM data_import_rows
             WHERE batch_id = :batch_id AND status = 'valid'
-            ORDER BY row_number ASC, id ASC");
+            ORDER BY `row_number` ASC, id ASC");
         $stmt->execute([':batch_id' => $batchId]);
         return $stmt->fetchAll();
     }
@@ -151,7 +151,7 @@ class DataImportModel extends BaseModel
     public function insertRow(int $batchId, array $row): int
     {
         $stmt = $this->db->prepare('INSERT INTO data_import_rows (
-            batch_id, row_number, source_key, status, action, raw_data, normalized_data,
+            batch_id, `row_number`, source_key, status, action, raw_data, normalized_data,
             errors_json, warnings_json, created_at, updated_at
         ) VALUES (
             :batch_id, :row_number, :source_key, :status, :action, :raw_data, :normalized_data,

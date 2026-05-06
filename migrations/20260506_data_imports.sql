@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS data_import_batches (
 CREATE TABLE IF NOT EXISTS data_import_rows (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     batch_id INT UNSIGNED NOT NULL,
-    row_number INT UNSIGNED NOT NULL,
+    `row_number` INT UNSIGNED NOT NULL,
     source_key VARCHAR(190) NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'valid',
     action VARCHAR(40) NOT NULL DEFAULT 'pending',
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS data_import_rows (
     warnings_json LONGTEXT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
-    KEY idx_data_import_rows_batch (batch_id, row_number),
+    KEY idx_data_import_rows_batch (batch_id, `row_number`),
     KEY idx_data_import_rows_status (batch_id, status),
     KEY idx_data_import_rows_source (batch_id, source_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
