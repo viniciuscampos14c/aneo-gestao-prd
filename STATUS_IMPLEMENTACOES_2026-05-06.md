@@ -9,6 +9,8 @@ Data: 2026-05-06
 - Ajustada a importacao de alunos para permitir destino por filial/empresa existente.
 - Adicionado campo `cidade` no cadastro do aluno e na planilha de alunos.
 - Corrigida compatibilidade do cadastro de aulas ao vivo quando as colunas de credenciais Zoom ainda nao existem no banco.
+- Corrigida compatibilidade da migration de importacao com MariaDB/Hostinger, escapando a coluna `row_number`.
+- Removido BOM de `config.php` e `core/bootstrap.php` para evitar avisos de header/session em execucoes CLI e reduzir risco operacional.
 
 ## Entregas funcionais
 
@@ -124,6 +126,7 @@ Adiciona na tabela `students`:
 
 ## Arquivos principais alterados
 - `public_html/config.php`
+- `public_html/core/bootstrap.php`
 - `public_html/index.php`
 - `public_html/controllers/DataImportController.php`
 - `public_html/controllers/StudentController.php`
@@ -146,6 +149,28 @@ Adiciona na tabela `students`:
   - validacao de aluno com filial e cidade
 - Sincronizacao local com XAMPP.
 - Aplicacao local da coluna `students.city`.
+- Validacao de sintaxe PHP na Hostinger para arquivos publicados.
+- Aplicacao das migrations na Hostinger com conferencia das tabelas:
+  - `data_import_batches`
+  - `data_import_rows`
+  - `data_import_entity_map`
+  - coluna `students.city`
+- Smoke test em `https://erp-hml.aneobrasil.com.br/index.php?route=login` com retorno HTTP 200.
+
+## Publicacao
+
+### GitHub
+- `ac2d414` - implementacao dos fluxos de importacao.
+- `a406679` - ajuste de compatibilidade MariaDB para `row_number`.
+- `d668a1d` - remocao de BOM dos arquivos de bootstrap/config.
+
+### Hostinger HML
+- Ambiente atualizado em:
+  - `/home/u674156040/domains/aneobrasil.com.br/public_html/erphml`
+- Backup antes da publicacao principal:
+  - `/home/u674156040/domains/aneobrasil.com.br/public_html/deploy_backups/hml_before_imports_20260506_194531.tar.gz`
+- Backup antes do ajuste de BOM:
+  - `/home/u674156040/domains/aneobrasil.com.br/public_html/deploy_backups/hml_before_bomfix_20260506_195233.tar.gz`
 
 ## Observacoes operacionais
 - Filiais/empresas nao sao criadas por importacao nesta entrega.
