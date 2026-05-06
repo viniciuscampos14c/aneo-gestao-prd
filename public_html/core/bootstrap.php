@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 ini_set('default_charset', 'UTF-8');
 if (function_exists('mb_internal_encoding')) {

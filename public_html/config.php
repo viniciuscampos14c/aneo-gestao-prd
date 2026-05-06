@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 return [
     'app' => [
         'name' => 'ANEO Gestão',
