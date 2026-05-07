@@ -653,40 +653,130 @@ class StudentScheduleController extends BaseController
         string $slotGroup,
         string $weekNotes
     ): string {
+        $rawWeekNotes = trim($weekNotes);
         $studentName = e($studentName);
         $scheduleTitle = e($scheduleTitle);
         $unitName = e($unitName);
         $weekRange = e($weekRange);
         $slotGroup = e($slotGroup);
-        $weekNotesHtml = trim($weekNotes) !== ''
-            ? '<p style="margin:16px 0 0;color:#475569;font-size:14px;"><strong>Observacao da semana:</strong> ' . nl2br(e($weekNotes)) . '</p>'
+        $weekNotesHtml = $rawWeekNotes !== ''
+            ? '<tr><td style="padding:14px 0 0 0;"><div style="border-left:4px solid #0ea5e9;background-color:#eff8ff;border-radius:10px;padding:12px 14px;color:#334155;font-size:14px;line-height:1.55;"><strong style="color:#0f2f4a;">Observacao da semana:</strong><br>' . nl2br(e($rawWeekNotes)) . '</div></td></tr>'
             : '';
-        $scheduleUrl = e(route('student/schedule'));
+        $scheduleUrl = e($this->absoluteUrl(route('student/schedule')));
 
         return <<<HTML
 <!doctype html>
 <html lang="pt-BR">
-<body style="margin:0;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a;">
-    <div style="max-width:640px;margin:0 auto;padding:24px;">
-        <div style="background:linear-gradient(135deg,#0f172a,#0f766e);border-radius:18px;padding:28px;color:#fff;">
-            <p style="margin:0 0 8px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#67e8f9;">ANEO</p>
-            <h1 style="margin:0;font-size:26px;line-height:1.2;">Nova alocacao de escala</h1>
-            <p style="margin:14px 0 0;font-size:15px;line-height:1.6;color:#dbeafe;">Ola, {$studentName}. Sua escala foi atualizada e ja esta disponivel no portal do aluno.</p>
-        </div>
-        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;padding:24px;margin-top:18px;">
-            <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#0f172a;">{$scheduleTitle}</p>
-            <p style="margin:0 0 8px;color:#334155;font-size:14px;"><strong>Unidade/Hospital:</strong> {$unitName}</p>
-            <p style="margin:0 0 8px;color:#334155;font-size:14px;"><strong>Semana:</strong> {$weekRange}</p>
-            <p style="margin:0 0 8px;color:#334155;font-size:14px;"><strong>Coluna:</strong> {$slotGroup}</p>
-            {$weekNotesHtml}
-            <div style="margin-top:24px;">
-                <a href="{$scheduleUrl}" style="display:inline-block;background:#0284c7;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:12px;font-weight:700;">Abrir Minha Escala</a>
-            </div>
-        </div>
-    </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova alocacao de escala</title>
+</head>
+<body style="margin:0;padding:0;background-color:#eef5fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">Sua escala foi atualizada no portal do aluno.</span>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background-color:#eef5fb;margin:0;padding:0;">
+        <tr>
+            <td align="center" style="padding:28px 14px;">
+                <table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px;border-collapse:separate;">
+                    <tr>
+                        <td style="background-color:#082f49;border-radius:18px 18px 0 0;padding:28px 30px 26px 30px;">
+                            <p style="margin:0 0 8px 0;font-size:12px;line-height:1.2;letter-spacing:3px;text-transform:uppercase;color:#67e8f9;font-weight:700;">ANEO</p>
+                            <h1 style="margin:0;font-size:26px;line-height:1.25;color:#ffffff;font-weight:700;">Voce foi escalado(a)</h1>
+                            <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:#d9efff;">Ola, {$studentName}. Sua escala foi atualizada e ja esta disponivel no portal do aluno.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color:#ffffff;border-right:1px solid #d7e4ef;border-left:1px solid #d7e4ef;padding:26px 30px 22px 30px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td style="padding:0 0 18px 0;border-bottom:1px solid #e5eef6;">
+                                        <p style="margin:0 0 6px 0;font-size:12px;line-height:1.2;letter-spacing:2px;text-transform:uppercase;color:#0284c7;font-weight:700;">Nova alocacao</p>
+                                        <h2 style="margin:0;font-size:20px;line-height:1.3;color:#0f172a;font-weight:700;">{$scheduleTitle}</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:18px 0 0 0;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                <td width="48%" valign="top" style="padding:0 10px 14px 0;">
+                                                    <p style="margin:0 0 4px 0;font-size:11px;line-height:1.2;color:#64748b;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Unidade/Hospital</p>
+                                                    <p style="margin:0;font-size:15px;line-height:1.45;color:#0f172a;font-weight:700;">{$unitName}</p>
+                                                </td>
+                                                <td width="52%" valign="top" style="padding:0 0 14px 10px;">
+                                                    <p style="margin:0 0 4px 0;font-size:11px;line-height:1.2;color:#64748b;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Semana</p>
+                                                    <p style="margin:0;font-size:15px;line-height:1.45;color:#0f172a;font-weight:700;">{$weekRange}</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td valign="top" style="padding:0 10px 0 0;">
+                                                    <p style="margin:0 0 4px 0;font-size:11px;line-height:1.2;color:#64748b;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Coluna</p>
+                                                    <p style="margin:0;"><span style="display:inline-block;background-color:#e0f2fe;border:1px solid #7dd3fc;border-radius:999px;padding:7px 13px;font-size:14px;line-height:1;color:#075985;font-weight:700;">{$slotGroup}</span></p>
+                                                </td>
+                                                <td valign="top" style="padding:0 0 0 10px;">
+                                                    <p style="margin:0 0 4px 0;font-size:11px;line-height:1.2;color:#64748b;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Status</p>
+                                                    <p style="margin:0;"><span style="display:inline-block;background-color:#dcfce7;border:1px solid #86efac;border-radius:999px;padding:7px 13px;font-size:14px;line-height:1;color:#166534;font-weight:700;">Publicada</span></p>
+                                                </td>
+                                            </tr>
+                                            {$weekNotesHtml}
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:24px 0 0 0;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                <td bgcolor="#0284c7" style="border-radius:12px;">
+                                                    <a href="{$scheduleUrl}" target="_blank" rel="noopener" style="display:inline-block;padding:13px 20px;border-radius:12px;font-size:14px;line-height:1.2;color:#ffffff;text-decoration:none;font-weight:700;background-color:#0284c7;">Abrir Minha Escala</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <p style="margin:14px 0 0 0;font-size:12px;line-height:1.5;color:#64748b;">Se o botao nao abrir, copie e cole este endereco no navegador:<br><a href="{$scheduleUrl}" style="color:#0284c7;text-decoration:underline;word-break:break-all;">{$scheduleUrl}</a></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color:#f8fbfe;border:1px solid #d7e4ef;border-top:0;border-radius:0 0 18px 18px;padding:18px 30px;">
+                            <p style="margin:0;font-size:12px;line-height:1.5;color:#64748b;">Mensagem automatica do sistema ANEO. Consulte o portal do aluno para confirmar todos os detalhes da sua escala.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
 HTML;
+    }
+
+    private function absoluteUrl(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            $path = route('');
+        }
+
+        if (preg_match('#^https?://#i', $path) === 1) {
+            return $path;
+        }
+
+        $base = trim((string) config('app.public_url', ''));
+        if ($base === '') {
+            $base = trim((string) config('app.base_url', ''));
+        }
+
+        if ($base === '') {
+            $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+            $scheme = $isHttps ? 'https' : 'http';
+            $host = trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+            $scriptDir = dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+            $scriptDir = str_replace('\\', '/', $scriptDir);
+            $scriptDir = ($scriptDir === '/' || $scriptDir === '.' || $scriptDir === '\\') ? '' : rtrim($scriptDir, '/');
+            $base = $scheme . '://' . $host . $scriptDir;
+        }
+
+        return rtrim($base, '/') . '/' . ltrim($path, '/');
     }
 
     private function formatWeekPeriod(string $startDate, string $endDate): string
