@@ -39,6 +39,7 @@ $liveSessions = new CourseLiveSessionController();
 $gestaoAluno = class_exists('GestaoAlunoController') ? new GestaoAlunoController() : null;
 $studentSchedule = class_exists('StudentScheduleController') ? new StudentScheduleController() : null;
 $dataImports = class_exists('DataImportController') ? new DataImportController() : null;
+$systemModules = class_exists('SystemModuleController') ? new SystemModuleController() : null;
 
 $router->get('', fn () => redirect('dashboard'));
 $router->get('login', fn () => $auth->showLogin());
@@ -102,6 +103,13 @@ if ($dataImports !== null) {
     $router->get('data-imports/template', fn () => $dataImports->template());
     $router->post('data-imports/upload', fn () => $dataImports->upload());
     $router->post('data-imports/confirm', fn () => $dataImports->confirm());
+}
+
+if ($systemModules !== null) {
+    $router->get('system-modules', fn () => $systemModules->index());
+    $router->post('system-modules/upload', fn () => $systemModules->upload());
+    $router->post('system-modules/activate', fn () => $systemModules->activate());
+    $router->post('system-modules/deactivate', fn () => $systemModules->deactivate());
 }
 
 if ($banks !== null) {
@@ -376,6 +384,10 @@ $router->get('api-management/edit',    fn () => $apiMgmt->edit((int) request('id
 $router->post('api-management/update', fn () => $apiMgmt->update((int) request('id')));
 $router->post('api-management/destroy',fn () => $apiMgmt->destroy((int) request('id')));
 $router->get('api-management/manual',  fn () => $apiMgmt->manual());
+
+if (class_exists('SystemModuleRuntime')) {
+    (new SystemModuleRuntime())->registerRoutes($router);
+}
 
 $route = parse_route();
 $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $route);

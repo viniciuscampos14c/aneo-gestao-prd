@@ -21,6 +21,10 @@ null
 dist/
 docs/
 modules/
+!public_html/modules/
+public_html/modules/*
+!public_html/modules/.gitignore
+!public_html/modules/.htaccess
 wa_js_live/
 wa_js_urls.txt
 wa_static_urls.txt

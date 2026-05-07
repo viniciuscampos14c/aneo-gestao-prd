@@ -42,12 +42,33 @@ $menu = [
     ['module' => 'help', 'label' => 'Chat IA Jully', 'icon' => 'question-mark-circle', 'route' => 'help'],
 ];
 
+try {
+    if (class_exists('SystemModuleRuntime')) {
+        foreach ((new SystemModuleRuntime())->activeMenuItems('main') as $moduleMenuItem) {
+            $menu[] = $moduleMenuItem;
+        }
+    }
+} catch (Throwable $e) {
+    // Se o banco ainda nao tem as tabelas de modulos, apenas nao exibe menus dinamicos.
+}
+
 $cadastroMenu = [
     ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'users', 'route' => 'users'],
     ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office', 'route' => 'companies'],
     ['module' => 'companies', 'label' => 'SMTP Email', 'icon' => 'envelope', 'route' => 'companies/smtp'],
     ['module' => 'data_imports', 'label' => 'Importação de Dados', 'icon' => 'inbox-arrow-down', 'route' => 'data-imports'],
+    ['module' => 'system_modules', 'label' => 'Modulos do Sistema', 'icon' => 'archive-box', 'route' => 'system-modules'],
 ];
+
+try {
+    if (class_exists('SystemModuleRuntime')) {
+        foreach ((new SystemModuleRuntime())->activeMenuItems('cadastro') as $moduleMenuItem) {
+            $cadastroMenu[] = $moduleMenuItem;
+        }
+    }
+} catch (Throwable $e) {
+    // Mantem o menu base caso o runtime de modulos ainda nao esteja pronto.
+}
 
 if (has_permission('automations')) {
     $cadastroMenu[] = ['module' => 'automations', 'label' => 'Automações', 'icon' => 'bolt', 'route' => 'automations'];
