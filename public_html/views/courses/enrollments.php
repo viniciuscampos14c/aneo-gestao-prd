@@ -7,7 +7,7 @@
         <a href="<?= route('courses'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar</a>
     </div>
 
-    <form method="post" action="<?= route('courses/enrollments/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-3">
+    <form method="post" action="<?= route('courses/enrollments/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
         <select name="student_id" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -27,12 +27,14 @@
         <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="active">Ativa</option>
             <option value="cancelled">Cancelada</option>
-            <option value="completed">Concluida</option>
         </select>
 
-        <input type="number" min="0" max="100" name="progress_percent" placeholder="Progresso %" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
         <input type="date" name="started_at" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
         <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Matricular</button>
+
+        <p class="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800 md:col-span-4">
+            O progresso e calculado automaticamente pelas aulas assistidas no portal do aluno.
+        </p>
     </form>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -55,7 +57,16 @@
                         <td class="px-3 py-3"><?= e($row['student_name']); ?></td>
                         <td class="px-3 py-3"><?= e($row['course_name']); ?></td>
                         <td class="px-3 py-3"><?= e($row['status']); ?></td>
-                        <td class="px-3 py-3"><?= (int) $row['progress_percent']; ?>%</td>
+                        <td class="px-3 py-3">
+                            <?php $progress = max(0, min(100, (int) ($row['progress_percent'] ?? 0))); ?>
+                            <div class="flex min-w-44 items-center gap-2">
+                                <div class="h-2 flex-1 rounded-full bg-slate-200">
+                                    <div class="h-2 rounded-full bg-cyan-600" style="width: <?= $progress; ?>%"></div>
+                                </div>
+                                <span class="w-10 text-right text-xs font-semibold text-slate-700"><?= $progress; ?>%</span>
+                            </div>
+                            <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Automatico</span>
+                        </td>
                         <td class="px-3 py-3"><?= e($row['started_at']); ?></td>
                         <td class="px-3 py-3"><?= e($row['completed_at']); ?></td>
                     </tr>

@@ -6463,3 +6463,262 @@ html.admin-theme-light .admin-sidebar-session-logout {
 html.admin-theme-light .admin-sidebar-footer {
     background: linear-gradient(180deg, rgba(223, 237, 249, 0.96), rgba(207, 224, 239, 0.98));
 }
+
+/* =====================================================================
+   EAD POLISH - dashboard do aluno e builder LMS
+   ===================================================================== */
+
+.student-focus-hero,
+.student-focus-panel,
+.admin-lms-builder,
+.admin-lms-kpi-card {
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+html:not(.dark) .student-modern-main .student-focus-hero {
+    border-color: rgba(113, 181, 219, 0.58) !important;
+    background:
+        radial-gradient(520px 220px at 88% 0%, rgba(69, 188, 230, 0.22), transparent 60%),
+        linear-gradient(135deg, rgba(245, 251, 255, 0.98), rgba(224, 244, 252, 0.96)) !important;
+    color: #16334b !important;
+    box-shadow: 0 18px 36px rgba(88, 142, 184, 0.18);
+}
+
+html.dark .student-modern-main .student-focus-hero {
+    border-color: rgba(103, 232, 249, 0.24) !important;
+    background:
+        radial-gradient(560px 240px at 90% 0%, rgba(34, 211, 238, 0.18), transparent 58%),
+        linear-gradient(135deg, rgba(8, 47, 73, 0.92), rgba(15, 23, 42, 0.96)) !important;
+    color: #effaff !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-eyebrow,
+html:not(.dark) .student-modern-main .student-focus-progress-label {
+    color: #1681bd !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-title,
+html:not(.dark) .student-modern-main .student-focus-progress-value {
+    color: #122b42 !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-copy,
+html:not(.dark) .student-modern-main .student-focus-chip {
+    color: #496985 !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-progress-card,
+html:not(.dark) .student-modern-main .student-focus-chip {
+    border-color: rgba(125, 178, 213, 0.48) !important;
+    background: rgba(255, 255, 255, 0.64) !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-progress-track {
+    background: rgba(187, 219, 238, 0.78) !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-progress-fill {
+    background: linear-gradient(90deg, #159bd7, #28c5df) !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-primary {
+    background: linear-gradient(135deg, #0f75b7, #0797c9) !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 20px rgba(15, 117, 183, 0.2);
+}
+
+html:not(.dark) .student-modern-main .student-focus-primary:hover {
+    background: linear-gradient(135deg, #0b689f, #0586b3) !important;
+}
+
+html.dark .student-modern-main .student-focus-eyebrow,
+html.dark .student-modern-main .student-focus-progress-label {
+    color: #a5f3fc !important;
+}
+
+html.dark .student-modern-main .student-focus-title,
+html.dark .student-modern-main .student-focus-progress-value {
+    color: #f8fdff !important;
+}
+
+html.dark .student-modern-main .student-focus-copy,
+html.dark .student-modern-main .student-focus-chip {
+    color: #c9f4ff !important;
+}
+
+html.dark .student-modern-main .student-focus-progress-card,
+html.dark .student-modern-main .student-focus-chip {
+    border-color: rgba(207, 250, 254, 0.16) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .student-modern-main .student-focus-progress-track {
+    background: rgba(255, 255, 255, 0.14) !important;
+}
+
+html.dark .student-modern-main .student-focus-progress-fill {
+    background: linear-gradient(90deg, #67e8f9, #38bdf8) !important;
+}
+
+html.dark .student-modern-main .student-focus-primary {
+    background: #effaff !important;
+    color: #082f49 !important;
+}
+
+html.dark .student-modern-main .student-focus-primary:hover {
+    background: #dff7ff !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-panel {
+    border-color: rgba(135, 175, 207, 0.54) !important;
+    background: rgba(241, 249, 255, 0.92) !important;
+    box-shadow: 0 16px 30px rgba(94, 135, 172, 0.12);
+}
+
+html.dark .student-modern-main .student-focus-panel {
+    border-color: rgba(124, 165, 200, 0.34) !important;
+    background: rgba(12, 37, 59, 0.74) !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-panel-eyebrow {
+    color: #1784be !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-panel-title {
+    color: #1b354d !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-panel-copy {
+    color: #647f98 !important;
+}
+
+html:not(.dark) .student-modern-main .student-focus-note {
+    border-color: rgba(130, 187, 220, 0.42) !important;
+    background: rgba(230, 245, 253, 0.88) !important;
+    color: #23658d !important;
+}
+
+html.dark .student-modern-main .student-focus-panel-eyebrow {
+    color: #8eeaff !important;
+}
+
+html.dark .student-modern-main .student-focus-panel-title {
+    color: #eaf7ff !important;
+}
+
+html.dark .student-modern-main .student-focus-panel-copy {
+    color: #93b2ce !important;
+}
+
+html.dark .student-modern-main .student-focus-note {
+    border-color: rgba(103, 232, 249, 0.18) !important;
+    background: rgba(8, 47, 73, 0.32) !important;
+    color: #b9f2ff !important;
+}
+
+.admin-lms-builder {
+    overflow: hidden;
+}
+
+.admin-lms-builder-head {
+    background:
+        radial-gradient(620px 260px at 90% 0%, rgba(34, 211, 238, 0.16), transparent 58%),
+        linear-gradient(135deg, rgba(8, 31, 51, 0.98), rgba(8, 48, 72, 0.94)) !important;
+    border-color: rgba(120, 164, 199, 0.24) !important;
+    color: #eefaff !important;
+}
+
+.admin-lms-builder-eyebrow,
+.admin-lms-builder-copy,
+.admin-lms-kpi-label {
+    color: #a5efff !important;
+}
+
+.admin-lms-builder-title,
+.admin-lms-kpi-value {
+    color: #f5fbff !important;
+}
+
+.admin-lms-builder-pill,
+.admin-lms-kpi-card {
+    border-color: rgba(165, 243, 252, 0.2) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #d9fbff !important;
+}
+
+.admin-lms-builder-body {
+    background: rgba(8, 31, 51, 0.32) !important;
+}
+
+.admin-lms-section-title {
+    color: #eaf5ff !important;
+}
+
+.admin-lms-section-copy {
+    color: #94b3cf !important;
+}
+
+.admin-lms-help-strip {
+    border-color: rgba(103, 232, 249, 0.22) !important;
+    background: rgba(8, 47, 73, 0.28) !important;
+    color: #bdf5ff !important;
+}
+
+.admin-lms-status-pill {
+    border-color: rgba(110, 231, 183, 0.3) !important;
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #adf7d3 !important;
+}
+
+html.admin-theme-light .admin-lms-builder {
+    border-color: rgba(130, 169, 201, 0.5) !important;
+    background: rgba(242, 249, 254, 0.96) !important;
+    box-shadow: 0 18px 34px rgba(85, 124, 158, 0.12);
+}
+
+html.admin-theme-light .admin-lms-builder-head {
+    background:
+        radial-gradient(620px 260px at 90% 0%, rgba(34, 211, 238, 0.2), transparent 58%),
+        linear-gradient(135deg, rgba(245, 251, 255, 0.98), rgba(220, 240, 250, 0.96)) !important;
+    border-color: rgba(141, 180, 208, 0.5) !important;
+    color: #17324a !important;
+}
+
+html.admin-theme-light .admin-lms-builder-eyebrow,
+html.admin-theme-light .admin-lms-kpi-label {
+    color: #167eae !important;
+}
+
+html.admin-theme-light .admin-lms-builder-title,
+html.admin-theme-light .admin-lms-kpi-value,
+html.admin-theme-light .admin-lms-section-title {
+    color: #19354c !important;
+}
+
+html.admin-theme-light .admin-lms-builder-copy,
+html.admin-theme-light .admin-lms-section-copy {
+    color: #59758f !important;
+}
+
+html.admin-theme-light .admin-lms-builder-pill,
+html.admin-theme-light .admin-lms-kpi-card {
+    border-color: rgba(125, 180, 213, 0.46) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    color: #285470 !important;
+}
+
+html.admin-theme-light .admin-lms-builder-body {
+    background: rgba(232, 244, 252, 0.72) !important;
+}
+
+html.admin-theme-light .admin-lms-help-strip {
+    border-color: rgba(115, 181, 214, 0.44) !important;
+    background: rgba(232, 246, 253, 0.9) !important;
+    color: #256783 !important;
+}
+
+html.admin-theme-light .admin-lms-status-pill {
+    border-color: rgba(105, 190, 151, 0.48) !important;
+    background: rgba(218, 247, 234, 0.92) !important;
+    color: #16724f !important;
+}

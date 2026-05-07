@@ -352,6 +352,8 @@ class StudentPortalModel extends BaseModel
 
     public function dashboardSummary(int $studentId): array
     {
+        $this->syncStudentEnrollmentProgress($studentId);
+
         $trial = $this->trialAccessContext($studentId);
         if (!empty($trial['is_trial'])) {
             $upcomingLive = [];
@@ -370,6 +372,7 @@ class StudentPortalModel extends BaseModel
                     'courses_completed' => 0,
                     'avg_progress' => 0,
                 ],
+                'learning_focus' => $this->emptyLearningFocus(),
                 'upcoming_live' => $upcomingLive,
                 'recent_results' => [],
                 'upcoming_exams' => [],
@@ -478,6 +481,7 @@ class StudentPortalModel extends BaseModel
                 'courses_completed' => (int) ($metrics['courses_completed'] ?? 0),
                 'avg_progress' => (float) ($metrics['avg_progress'] ?? 0),
             ],
+            'learning_focus' => $this->dashboardLearningFocus($studentId),
             'upcoming_live' => $upcomingStmt->fetchAll(),
             'recent_results' => $recentResultsStmt->fetchAll(),
             'upcoming_exams' => $upcomingExams,
@@ -486,6 +490,8 @@ class StudentPortalModel extends BaseModel
 
     public function myCourses(int $studentId): array
     {
+        $this->syncStudentEnrollmentProgress($studentId);
+
         $companyId = $this->resolveStudentCompanyId($studentId);
         $modulesSelect = $this->lmsFeatureAvailable()
             ? '(SELECT COUNT(*) FROM course_modules cm WHERE cm.course_id = c.id AND cm.is_active = 1) AS modules_total,'
@@ -524,6 +530,118 @@ class StudentPortalModel extends BaseModel
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    private function emptyLearningFocus(): array
+    {
+        return [
+            'has_course' => false,
+            'all_done' => false,
+            'course' => null,
+            'module' => null,
+            'lesson' => null,
+            'completion_percent' => 0,
+            'completion_remaining' => 100,
+            'cta_url' => route('student/courses'),
+        ];
+    }
+
+    private function dashboardLearningFocus(int $studentId): array
+    {
+        if ($studentId <= 0 || !$this->lmsFeatureAvailable()) {
+            return $this->emptyLearningFocus();
+        }
+
+        $courses = array_values(array_filter($this->myCourses($studentId), static function (array $course): bool {
+            return (int) ($course['modules_total'] ?? 0) > 0
+                && in_array((string) ($course['enrollment_status'] ?? ''), ['active', 'completed'], true);
+        }));
+
+        if ($courses === []) {
+            return $this->emptyLearningFocus();
+        }
+
+        usort($courses, static function (array $a, array $b): int {
+            $aCompleted = (string) ($a['enrollment_status'] ?? '') === 'completed';
+            $bCompleted = (string) ($b['enrollment_status'] ?? '') === 'completed';
+            if ($aCompleted !== $bCompleted) {
+                return $aCompleted ? 1 : -1;
+            }
+
+            $aProgress = (int) ($a['progress_percent'] ?? 0);
+            $bProgress = (int) ($b['progress_percent'] ?? 0);
+            $aStarted = $aProgress > 0;
+            $bStarted = $bProgress > 0;
+            if ($aStarted !== $bStarted) {
+                return $aStarted ? -1 : 1;
+            }
+
+            return $bProgress <=> $aProgress;
+        });
+
+        $completedFallback = null;
+        foreach ($courses as $course) {
+            $courseId = (int) ($course['course_id'] ?? 0);
+            if ($courseId <= 0) {
+                continue;
+            }
+
+            $path = $this->courseLearningPath($studentId, $courseId);
+            if (!$path) {
+                continue;
+            }
+
+            $summary = is_array($path['summary'] ?? null) ? $path['summary'] : [];
+            $progress = max(0, min(100, (int) ($summary['progress_percent'] ?? $course['progress_percent'] ?? 0)));
+            $selectedLesson = is_array($path['selected_lesson'] ?? null) ? $path['selected_lesson'] : null;
+            $selectedModule = null;
+
+            if ($selectedLesson) {
+                foreach (($path['modules'] ?? []) as $module) {
+                    if ((int) ($module['id'] ?? 0) === (int) ($selectedLesson['module_id'] ?? 0)) {
+                        $selectedModule = $module;
+                        break;
+                    }
+                }
+            }
+
+            $focus = [
+                'has_course' => true,
+                'all_done' => !empty($summary['course_completed']),
+                'course' => [
+                    'id' => $courseId,
+                    'name' => (string) ($course['name'] ?? 'Curso'),
+                    'progress_percent' => $progress,
+                    'enrollment_status' => (string) ($course['enrollment_status'] ?? ''),
+                ],
+                'module' => $selectedModule ? [
+                    'id' => (int) ($selectedModule['id'] ?? 0),
+                    'title' => (string) ($selectedModule['title'] ?? 'Modulo atual'),
+                    'display_order' => (int) ($selectedModule['display_order'] ?? 0),
+                    'completed_lessons' => (int) ($selectedModule['completed_lessons'] ?? 0),
+                    'total_lessons' => (int) ($selectedModule['total_lessons'] ?? 0),
+                ] : null,
+                'lesson' => $selectedLesson ? [
+                    'id' => (int) ($selectedLesson['id'] ?? 0),
+                    'title' => (string) ($selectedLesson['title'] ?? 'Proxima aula'),
+                    'progress_percent' => (int) ($selectedLesson['progress_percent'] ?? 0),
+                    'required_percent' => (int) ($selectedLesson['min_progress_percent'] ?? 70),
+                ] : null,
+                'completion_percent' => $progress,
+                'completion_remaining' => max(0, 100 - $progress),
+                'cta_url' => $selectedLesson
+                    ? route('student/course&course_id=' . $courseId . '&lesson_id=' . (int) ($selectedLesson['id'] ?? 0))
+                    : route('student/course&course_id=' . $courseId),
+            ];
+
+            if (empty($summary['course_completed'])) {
+                return $focus;
+            }
+
+            $completedFallback = $completedFallback ?? $focus;
+        }
+
+        return $completedFallback ?? $this->emptyLearningFocus();
     }
 
     public function upcomingLiveClasses(int $studentId): array
@@ -923,6 +1041,8 @@ class StudentPortalModel extends BaseModel
 
     public function progress(int $studentId): array
     {
+        $this->syncStudentEnrollmentProgress($studentId);
+
         $companyId = $this->resolveStudentCompanyId($studentId);
 
         $summarySql = "SELECT
@@ -2086,6 +2206,26 @@ class StudentPortalModel extends BaseModel
             'required_lessons' => $requiredLessons,
             'required_completed_lessons' => $requiredCompletedLessons,
         ];
+    }
+
+    private function syncStudentEnrollmentProgress(int $studentId): void
+    {
+        if ($studentId <= 0 || !$this->lmsFeatureAvailable()) {
+            return;
+        }
+
+        $stmt = $this->db->prepare("SELECT course_id
+            FROM enrollments
+            WHERE student_id = :student_id
+              AND status <> 'cancelled'");
+        $stmt->execute([':student_id' => $studentId]);
+
+        foreach ($stmt->fetchAll() as $row) {
+            $courseId = (int) ($row['course_id'] ?? 0);
+            if ($courseId > 0) {
+                $this->syncEnrollmentProgressFromLessons($studentId, $courseId);
+            }
+        }
     }
 
     private function trialLiveClasses(int $studentId, int $courseId, string $accessDate): array

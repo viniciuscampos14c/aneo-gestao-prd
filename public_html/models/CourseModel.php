@@ -391,6 +391,103 @@ class CourseModel extends BaseModel
             && $this->hasStudentLessonProgressTable();
     }
 
+    public function syncEnrollmentProgressFromLessons(?int $enrollmentId = null): void
+    {
+        if (!$this->lmsFeatureAvailable()) {
+            return;
+        }
+
+        $where = ["e.status <> 'cancelled'"];
+        $params = [];
+
+        if ($enrollmentId !== null && $enrollmentId > 0) {
+            $where[] = 'e.id = :enrollment_id';
+            $params[':enrollment_id'] = $enrollmentId;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        $sql = 'SELECT
+                e.id,
+                e.started_at,
+                e.completed_at,
+                COUNT(cl.id) AS total_lessons,
+                SUM(CASE WHEN cl.is_required = 1 THEN 1 ELSE 0 END) AS required_lessons,
+                SUM(CASE WHEN COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS completed_lessons,
+                SUM(CASE WHEN cl.is_required = 1 AND COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS required_completed_lessons,
+                AVG(COALESCE(slp.progress_percent, 0)) AS avg_progress_all,
+                AVG(CASE WHEN cl.is_required = 1 THEN COALESCE(slp.progress_percent, 0) END) AS avg_progress_required
+            FROM enrollments e
+            INNER JOIN courses c ON c.id = e.course_id
+            LEFT JOIN course_modules cm ON cm.course_id = e.course_id AND cm.is_active = 1
+            LEFT JOIN course_lessons cl ON cl.module_id = cm.id AND cl.course_id = e.course_id AND cl.is_active = 1
+            LEFT JOIN student_lesson_progress slp ON slp.lesson_id = cl.id AND slp.student_id = e.student_id
+            WHERE ' . implode(' AND ', $where) . '
+            GROUP BY e.id, e.started_at, e.completed_at';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        if ($rows === []) {
+            return;
+        }
+
+        $update = $this->db->prepare('UPDATE enrollments SET
+            progress_percent = :progress_percent,
+            status = :status,
+            started_at = :started_at,
+            completed_at = :completed_at,
+            updated_at = :updated_at
+            WHERE id = :id');
+
+        foreach ($rows as $row) {
+            $totalLessons = (int) ($row['total_lessons'] ?? 0);
+            if ($totalLessons <= 0) {
+                continue;
+            }
+
+            $requiredLessons = (int) ($row['required_lessons'] ?? 0);
+            $requiredCompletedLessons = (int) ($row['required_completed_lessons'] ?? 0);
+            $completedLessons = (int) ($row['completed_lessons'] ?? 0);
+            $avgProgressRequired = (float) ($row['avg_progress_required'] ?? 0);
+            $avgProgressAll = (float) ($row['avg_progress_all'] ?? 0);
+
+            if ($requiredLessons > 0) {
+                $progressPercent = (int) round($avgProgressRequired);
+                $courseCompleted = $requiredCompletedLessons >= $requiredLessons;
+            } else {
+                $progressPercent = (int) round($avgProgressAll);
+                $courseCompleted = $completedLessons >= $totalLessons;
+            }
+
+            $progressPercent = max(0, min(100, $progressPercent));
+            $startedAt = $row['started_at'] ?: null;
+            if (($startedAt === null || $startedAt === '') && $progressPercent > 0) {
+                $startedAt = date('Y-m-d');
+            }
+
+            $completedAt = null;
+            $status = 'active';
+            if ($courseCompleted) {
+                $status = 'completed';
+                $completedAt = $row['completed_at'] ?: date('Y-m-d');
+            }
+
+            $update->execute([
+                ':progress_percent' => $progressPercent,
+                ':status' => $status,
+                ':started_at' => $startedAt,
+                ':completed_at' => $completedAt,
+                ':updated_at' => now(),
+                ':id' => (int) $row['id'],
+            ]);
+        }
+    }
+
     public function listCourseModulesWithLessons(int $courseId): array
     {
         if ($courseId <= 0 || !$this->lmsFeatureAvailable() || !$this->findCourse($courseId)) {
@@ -749,6 +846,8 @@ class CourseModel extends BaseModel
 
     public function listEnrollments(array $filters, int $perPage, int $page): array
     {
+        $this->syncEnrollmentProgressFromLessons();
+
         $where = ['1=1'];
         $params = [];
 
@@ -794,6 +893,10 @@ class CourseModel extends BaseModel
             return;
         }
 
+        $status = in_array(($data['status'] ?? 'active'), ['active', 'cancelled'], true)
+            ? (string) $data['status']
+            : 'active';
+
         $stmt = $this->db->prepare('INSERT INTO enrollments (
             student_id, course_id, status, progress_percent, started_at,
             completed_at, created_by, created_at, updated_at
@@ -805,10 +908,10 @@ class CourseModel extends BaseModel
         $stmt->execute([
             ':student_id' => $studentId,
             ':course_id' => $courseId,
-            ':status' => $data['status'] ?: 'active',
-            ':progress_percent' => (int) ($data['progress_percent'] ?: 0),
+            ':status' => $status,
+            ':progress_percent' => 0,
             ':started_at' => $data['started_at'] ?: null,
-            ':completed_at' => $data['completed_at'] ?: null,
+            ':completed_at' => null,
             ':created_by' => $createdBy,
             ':created_at' => now(),
             ':updated_at' => now(),

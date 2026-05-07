@@ -5,6 +5,34 @@ $courseModules       = $courseModules       ?? [];
 $zoomConfigured      = $zoomConfigured      ?? false;
 $courseZoomSessions  = $courseZoomSessions  ?? [];
 $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'courses';
+$lmsTotalLessons = 0;
+$lmsRequiredLessons = 0;
+$lmsActiveModules = 0;
+$lmsDurationSeconds = 0;
+foreach ($courseModules as $module) {
+    if (!empty($module['is_active'])) {
+        $lmsActiveModules++;
+    }
+    foreach (($module['lessons'] ?? []) as $lesson) {
+        $lmsTotalLessons++;
+        if (!empty($lesson['is_required'])) {
+            $lmsRequiredLessons++;
+        }
+        $lmsDurationSeconds += (int) ($lesson['duration_seconds'] ?? 0);
+    }
+}
+$formatLessonDuration = static function (int $seconds): string {
+    if ($seconds <= 0) {
+        return 'sem duracao';
+    }
+    $minutes = (int) ceil($seconds / 60);
+    if ($minutes < 60) {
+        return $minutes . ' min';
+    }
+    $hours = intdiv($minutes, 60);
+    $remaining = $minutes % 60;
+    return $hours . 'h' . ($remaining > 0 ? ' ' . $remaining . 'min' : '');
+};
 ?>
 <section class="space-y-6">
     <div class="flex items-center justify-between">
@@ -130,15 +158,52 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
         <?php endif; ?>
     </div>
 
-    <div class="rounded-xl border border-slate-200 bg-white p-4">
+    <div class="admin-lms-builder overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="admin-lms-builder-head border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-900 p-5 text-white">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="admin-lms-builder-eyebrow text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Builder EAD</p>
+                    <h3 class="admin-lms-builder-title mt-2 text-xl font-semibold">Trilha LMS</h3>
+                    <p class="admin-lms-builder-copy mt-1 max-w-2xl text-sm text-cyan-100">Monte a jornada do aluno por modulos, aulas obrigatorias e criterios de conclusao automatica.</p>
+                </div>
+                <?php if ($lmsFeatureAvailable && $course): ?>
+                    <span class="admin-lms-builder-pill inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
+                        <?= count($courseModules); ?> modulo(s) configurado(s)
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($lmsFeatureAvailable && $course): ?>
+                <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="admin-lms-kpi-card rounded-2xl border border-white/10 bg-white/10 p-3">
+                        <p class="admin-lms-kpi-label text-xs uppercase tracking-wide text-cyan-100">Modulos ativos</p>
+                        <p class="admin-lms-kpi-value mt-1 text-2xl font-semibold"><?= $lmsActiveModules; ?>/<?= count($courseModules); ?></p>
+                    </div>
+                    <div class="admin-lms-kpi-card rounded-2xl border border-white/10 bg-white/10 p-3">
+                        <p class="admin-lms-kpi-label text-xs uppercase tracking-wide text-cyan-100">Aulas</p>
+                        <p class="admin-lms-kpi-value mt-1 text-2xl font-semibold"><?= $lmsTotalLessons; ?></p>
+                    </div>
+                    <div class="admin-lms-kpi-card rounded-2xl border border-white/10 bg-white/10 p-3">
+                        <p class="admin-lms-kpi-label text-xs uppercase tracking-wide text-cyan-100">Obrigatorias</p>
+                        <p class="admin-lms-kpi-value mt-1 text-2xl font-semibold"><?= $lmsRequiredLessons; ?></p>
+                    </div>
+                    <div class="admin-lms-kpi-card rounded-2xl border border-white/10 bg-white/10 p-3">
+                        <p class="admin-lms-kpi-label text-xs uppercase tracking-wide text-cyan-100">Carga em video</p>
+                        <p class="admin-lms-kpi-value mt-1 text-2xl font-semibold"><?= e($formatLessonDuration($lmsDurationSeconds)); ?></p>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="admin-lms-builder-body p-4">
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h3 class="text-sm font-semibold text-slate-800">Trilha LMS (Modulos e Aulas)</h3>
-                <p class="mt-1 text-xs text-slate-500">Organize o curso em etapas claras: crie modulo, adicione aulas e publique na ordem correta.</p>
+                <h3 class="admin-lms-section-title text-sm font-semibold text-slate-800">Estrutura do curso</h3>
+                <p class="admin-lms-section-copy mt-1 text-xs text-slate-500">Use esta area como quadro de montagem: uma etapa por modulo, aulas em sequencia e regras de conclusao por video.</p>
             </div>
             <?php if ($lmsFeatureAvailable && $course): ?>
-                <span class="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
-                    <?= count($courseModules); ?> modulo(s)
+                <span class="admin-lms-status-pill inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    Progresso automatico ativo
                 </span>
             <?php endif; ?>
         </div>
@@ -150,7 +215,7 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
         <?php elseif (!$course): ?>
             <p class="text-xs text-slate-500">Salve o curso primeiro para cadastrar modulos e aulas.</p>
         <?php else: ?>
-            <div class="mb-4 grid gap-2 rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 text-xs text-cyan-800 md:grid-cols-3">
+            <div class="admin-lms-help-strip mb-4 grid gap-2 rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 text-xs text-cyan-800 md:grid-cols-3">
                 <p><span class="font-semibold">Passo 1:</span> Crie o modulo com nome e ordem.</p>
                 <p><span class="font-semibold">Passo 2:</span> Dentro do modulo, cadastre as aulas com URL do video.</p>
                 <p><span class="font-semibold">Passo 3:</span> Marque como obrigatoria/ativa e salve.</p>
@@ -189,24 +254,39 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
                     <?php
                     $moduleLessons = is_array($module['lessons'] ?? null) ? $module['lessons'] : [];
                     $moduleLessonCount = count($moduleLessons);
+                    $moduleRequiredLessons = 0;
+                    $moduleDurationSeconds = 0;
+                    foreach ($moduleLessons as $lessonMetric) {
+                        if (!empty($lessonMetric['is_required'])) {
+                            $moduleRequiredLessons++;
+                        }
+                        $moduleDurationSeconds += (int) ($lessonMetric['duration_seconds'] ?? 0);
+                    }
                     ?>
-                    <details class="rounded-xl border border-slate-200 bg-slate-50 p-3" <?= $moduleIndex === 0 ? 'open' : ''; ?>>
-                        <summary class="cursor-pointer list-none rounded-lg border border-slate-200 bg-white px-3 py-2">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-800">
-                                        Modulo <?= (int) ($module['display_order'] ?? ($moduleIndex + 1)); ?> - <?= e((string) ($module['title'] ?? 'Sem titulo')); ?>
-                                    </p>
-                                    <p class="text-xs text-slate-500">
-                                        <?= $moduleLessonCount; ?> aula(s) cadastrada(s)
-                                        <?php if (empty($module['is_active'])): ?>
-                                            - modulo inativo
-                                        <?php endif; ?>
-                                    </p>
+                    <details class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm" <?= $moduleIndex === 0 ? 'open' : ''; ?>>
+                        <summary class="cursor-pointer list-none rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-cyan-200 hover:bg-cyan-50/40">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white">
+                                        <?= (int) ($module['display_order'] ?? ($moduleIndex + 1)); ?>
+                                    </span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900"><?= e((string) ($module['title'] ?? 'Sem titulo')); ?></p>
+                                        <p class="text-xs text-slate-500">
+                                            <?= $moduleLessonCount; ?> aula(s) | <?= $moduleRequiredLessons; ?> obrigatoria(s) | <?= e($formatLessonDuration($moduleDurationSeconds)); ?>
+                                        </p>
+                                    </div>
                                 </div>
-                                <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                                    Abrir edicao
-                                </span>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <?php if (!empty($module['is_active'])): ?>
+                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">Ativo</span>
+                                    <?php else: ?>
+                                        <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">Inativo</span>
+                                    <?php endif; ?>
+                                    <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                        Editar etapa
+                                    </span>
+                                </div>
                             </div>
                         </summary>
 
@@ -254,7 +334,21 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
                                 </div>
 
                                 <?php foreach ($moduleLessons as $lesson): ?>
-                                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                                                    Aula <?= (int) ($lesson['display_order'] ?? 1); ?>
+                                                </span>
+                                                <span class="rounded-full <?= !empty($lesson['is_required']) ? 'bg-cyan-50 text-cyan-700 ring-cyan-200' : 'bg-slate-100 text-slate-600 ring-slate-200'; ?> px-2.5 py-1 text-[11px] font-semibold ring-1">
+                                                    <?= !empty($lesson['is_required']) ? 'Obrigatoria' : 'Opcional'; ?>
+                                                </span>
+                                                <span class="rounded-full <?= !empty($lesson['is_active']) ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'; ?> px-2.5 py-1 text-[11px] font-semibold ring-1">
+                                                    <?= !empty($lesson['is_active']) ? 'Publicada na trilha' : 'Oculta'; ?>
+                                                </span>
+                                            </div>
+                                            <p class="text-xs text-slate-500"><?= e($formatLessonDuration((int) ($lesson['duration_seconds'] ?? 0))); ?> | minimo <?= (int) ($lesson['min_progress_percent'] ?? 70); ?>%</p>
+                                        </div>
                                         <form method="post" action="<?= route('courses/lessons/update'); ?>" class="grid gap-3 lg:grid-cols-12">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
@@ -375,6 +469,7 @@ $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'cou
                 <?php endif; ?>
             </div>
         <?php endif; ?>
+        </div>
     </div>
 
     <?php if ($course): ?>

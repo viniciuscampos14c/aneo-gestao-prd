@@ -459,7 +459,6 @@ class CourseController extends BaseController
             'student_id' => (int) post('student_id'),
             'course_id' => (int) post('course_id'),
             'status' => trim((string) post('status', 'active')),
-            'progress_percent' => (int) post('progress_percent', 0),
             'started_at' => trim((string) post('started_at')),
             'completed_at' => trim((string) post('completed_at')),
         ];
