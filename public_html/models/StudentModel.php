@@ -102,7 +102,7 @@ class StudentModel extends BaseModel
 
     public function create(array $data, int $createdBy): int
     {
-        $statusId = $data['kanban_status_id'] ? (int) $data['kanban_status_id'] : $this->defaultKanbanStatusId();
+        $statusId = $this->resolveKanbanStatusId($data['kanban_status_id'] ?? null);
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
         $supportsCity = $this->hasStudentCityColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
@@ -179,7 +179,8 @@ class StudentModel extends BaseModel
             return;
         }
 
-        $statusId = $data['kanban_status_id'] ? (int) $data['kanban_status_id'] : (int) $current['kanban_status_id'];
+        $currentStatusId = $this->positiveIntOrNull($current['kanban_status_id'] ?? null);
+        $statusId = $this->resolveKanbanStatusId($data['kanban_status_id'] ?? null, $currentStatusId);
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
         $supportsCity = $this->hasStudentCityColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
@@ -261,8 +262,9 @@ class StudentModel extends BaseModel
 
         $stmt->execute($params);
 
-        if ((int) $current['kanban_status_id'] !== (int) $statusId) {
-            $this->registerKanbanHistory($id, (int) $current['kanban_status_id'], (int) $statusId, $updatedBy, 'Atualizacao manual');
+        $historyFromStatusId = $this->kanbanStatusExists($currentStatusId) ? $currentStatusId : null;
+        if ($statusId !== null && $historyFromStatusId !== $statusId) {
+            $this->registerKanbanHistory($id, $historyFromStatusId, $statusId, $updatedBy, 'Atualizacao manual');
         }
     }
 
@@ -655,6 +657,40 @@ class StudentModel extends BaseModel
         $this->studentCityColumnExists = $this->schemaColumnExists('students', 'city');
 
         return $this->studentCityColumnExists;
+    }
+
+    private function resolveKanbanStatusId($requestedStatusId, $fallbackStatusId = null): ?int
+    {
+        foreach ([$requestedStatusId, $fallbackStatusId, $this->defaultKanbanStatusId()] as $candidate) {
+            $statusId = $this->positiveIntOrNull($candidate);
+            if ($this->kanbanStatusExists($statusId)) {
+                return $statusId;
+            }
+        }
+
+        return null;
+    }
+
+    private function positiveIntOrNull($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $intValue = (int) $value;
+        return $intValue > 0 ? $intValue : null;
+    }
+
+    private function kanbanStatusExists(?int $statusId): bool
+    {
+        if ($statusId === null || $statusId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM kanban_status WHERE id = :id');
+        $stmt->execute([':id' => $statusId]);
+
+        return ((int) $stmt->fetchColumn()) > 0;
     }
 
     private function hasPracticeUnitColumn(): bool
