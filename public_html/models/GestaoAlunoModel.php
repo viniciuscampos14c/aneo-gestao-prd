@@ -62,6 +62,7 @@ class GestaoAlunoModel extends BaseModel
             // Carregar labels por aluno
             foreach ($students as &$student) {
                 $student['labels'] = $this->cardLabels((int) $student['id']);
+                $student['members'] = $this->cardMembers((int) $student['id']);
             }
             unset($student);
 

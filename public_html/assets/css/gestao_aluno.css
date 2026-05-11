@@ -201,7 +201,31 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+.gda-card-members {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
     margin-left: auto;
+    padding-left: 4px;
+}
+
+.gda-member-avatar {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(7, 29, 49, .96);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .22);
+}
+
+.gda-member-avatar + .gda-member-avatar {
+    margin-left: -7px;
+}
+
+.gda-avatar-more {
+    background: rgba(148, 163, 184, .32);
+    color: #e2f1ff;
+    font-size: 8px;
 }
 
 /* Quick add button */
@@ -1328,6 +1352,16 @@ html.admin-theme-light .admin-modern-theme .gda-avatar,
 html.admin-theme-light .admin-modern-theme .gda-history-dot {
     background: #3B7BB8 !important;
     color: #FFFFFF !important;
+}
+
+html.admin-theme-light .admin-modern-theme .gda-member-avatar {
+    border-color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(90, 108, 125, 0.16) !important;
+}
+
+html.admin-theme-light .admin-modern-theme .gda-avatar-more {
+    background: #A8C8DD !important;
+    color: #263a4d !important;
 }
 
 html.admin-theme-light .admin-modern-theme .gda-board-wrap::-webkit-scrollbar-thumb,

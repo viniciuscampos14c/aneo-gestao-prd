@@ -676,6 +676,8 @@
                 if (r2.ok) {
                     memberIds = (r2.card.members || []).map(m => parseInt(m.user_id));
                     renderMembros(r2.card.members || [], r2.card.all_users || [], memberIds);
+                    updateBoardMembers(r2.card.members || []);
+                    val('mdMemberSelect', '');
                 }
             }
         });
@@ -700,12 +702,52 @@
                     const r2 = await get(cfg.getCardUrl, { id: currentStudentId });
                     if (r2.ok) {
                         const newIds = (r2.card.members || []).map(x => parseInt(x.user_id));
+                        memberIds = newIds;
                         renderMembros(r2.card.members || [], r2.card.all_users || [], newIds);
+                        updateBoardMembers(r2.card.members || []);
                     }
                 }
             });
             list.appendChild(div);
         });
+    }
+
+    function updateBoardMembers(members) {
+        if (!currentStudentId) return;
+        const card = document.querySelector(`.gda-card[data-id="${currentStudentId}"]`);
+        const footer = card?.querySelector('.gda-card-footer');
+        if (!footer) return;
+
+        let wrap = footer.querySelector('.gda-card-members');
+        if (!members.length) {
+            wrap?.remove();
+            return;
+        }
+
+        if (!wrap) {
+            wrap = document.createElement('span');
+            wrap.className = 'gda-card-members';
+            footer.appendChild(wrap);
+        }
+
+        const names = members.map(m => m.name || '').filter(Boolean);
+        wrap.title = 'Membros: ' + names.join(', ');
+        wrap.innerHTML = '';
+
+        members.slice(0, 3).forEach(member => {
+            const avatar = document.createElement('span');
+            avatar.className = 'gda-avatar gda-member-avatar';
+            avatar.title = member.name || '';
+            avatar.textContent = initials(member.name || '?');
+            wrap.appendChild(avatar);
+        });
+
+        if (members.length > 3) {
+            const more = document.createElement('span');
+            more.className = 'gda-avatar gda-member-avatar gda-avatar-more';
+            more.textContent = '+' + (members.length - 3);
+            wrap.appendChild(more);
+        }
     }
 
     // --- ETIQUETAS ---
@@ -903,6 +945,12 @@
     }
     function esc(str) {
         return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function initials(name) {
+        const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+        const first = parts[0] || '?';
+        const last = parts.length > 1 ? parts[parts.length - 1] : '';
+        return ((first[0] || '?') + (last ? last[0] : (first[1] || ''))).toUpperCase();
     }
     function formatMoney(value) {
         const n = Number(value || 0);

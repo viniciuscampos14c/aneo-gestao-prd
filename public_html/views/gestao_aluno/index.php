@@ -5,6 +5,13 @@ $gdaCssPath = __DIR__ . '/../../assets/css/gestao_aluno.css';
 $gdaCssVersion = is_file($gdaCssPath) ? (string) filemtime($gdaCssPath) : date('YmdHis');
 $gdaJsPath = __DIR__ . '/../../assets/js/gestao_aluno.js';
 $gdaJsVersion = is_file($gdaJsPath) ? (string) filemtime($gdaJsPath) : date('YmdHis');
+$gdaInitials = static function (?string $name): string {
+    $parts = preg_split('/\s+/', trim((string) $name)) ?: [];
+    $first = $parts[0] ?? '?';
+    $last = count($parts) > 1 ? $parts[count($parts) - 1] : '';
+    $initials = mb_substr($first, 0, 1) . ($last !== '' ? mb_substr($last, 0, 1) : mb_substr($first, 1, 1));
+    return mb_strtoupper($initials ?: '?');
+};
 ?>
 <link rel="stylesheet" href="assets/css/gestao_aluno.css?v=<?= e($gdaCssVersion); ?>">
 
@@ -147,6 +154,8 @@ $gdaJsVersion = is_file($gdaJsPath) ? (string) filemtime($gdaJsPath) : date('Ymd
                             else                          { $dueLabel = date('d/m', strtotime($dueDate)); }
                         }
                         $labelIds = array_column($s['labels'] ?? [], 'id');
+                        $members = $s['members'] ?? [];
+                        $memberNames = array_map(static fn ($member) => (string) ($member['name'] ?? ''), $members);
                         ?>
                         <div class="gda-card"
                             draggable="true"
@@ -213,9 +222,22 @@ $gdaJsVersion = is_file($gdaJsPath) ? (string) filemtime($gdaJsPath) : date('Ymd
                                         </span>
                                     <?php } ?>
 
-                                    <?php if (!empty($s['assigned_name'])) { ?>
-                                        <span class="gda-avatar" title="<?= e($s['assigned_name']) ?>">
-                                            <?= e(mb_strtoupper(mb_substr($s['assigned_name'], 0, 2))) ?>
+                                    <?php if (!empty($members)) { ?>
+                                        <span class="gda-card-members" title="<?= e('Membros: ' . implode(', ', array_filter($memberNames))) ?>">
+                                            <?php foreach (array_slice($members, 0, 3) as $member) { ?>
+                                                <span class="gda-avatar gda-member-avatar" title="<?= e($member['name'] ?? '') ?>">
+                                                    <?= e($gdaInitials($member['name'] ?? '')) ?>
+                                                </span>
+                                            <?php } ?>
+                                            <?php if (count($members) > 3) { ?>
+                                                <span class="gda-avatar gda-member-avatar gda-avatar-more">+<?= count($members) - 3 ?></span>
+                                            <?php } ?>
+                                        </span>
+                                    <?php } elseif (!empty($s['assigned_name'])) { ?>
+                                        <span class="gda-card-members" title="<?= e('Responsavel: ' . $s['assigned_name']) ?>">
+                                            <span class="gda-avatar gda-member-avatar">
+                                                <?= e($gdaInitials($s['assigned_name'])) ?>
+                                            </span>
                                         </span>
                                     <?php } ?>
                                 </div>
