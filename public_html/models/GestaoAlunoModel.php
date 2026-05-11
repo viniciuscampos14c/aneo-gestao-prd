@@ -20,6 +20,16 @@ class GestaoAlunoModel extends BaseModel
         foreach ($columns as &$col) {
             $params = [':col_id' => $col['id'], ':arch' => $archivedFlag];
 
+            $financeSelect = $this->schemaTableExists('invoices')
+                ? ",
+                (SELECT COUNT(*) FROM invoices i
+                    WHERE i.student_id = s.id AND i.status IN ('open','partial','overdue')) AS finance_open_count,
+                (SELECT COUNT(*) FROM invoices i
+                    WHERE i.student_id = s.id AND i.status = 'overdue') AS finance_overdue_count,
+                (SELECT COALESCE(SUM(GREATEST(i.amount - i.paid_amount, 0)), 0) FROM invoices i
+                    WHERE i.student_id = s.id AND i.status IN ('open','partial','overdue')) AS finance_open_amount"
+                : ", 0 AS finance_open_count, 0 AS finance_overdue_count, 0 AS finance_open_amount";
+
             $sql = "SELECT
                 s.id, s.full_name, s.email_primary, s.phone, {$citySelect},
                 s.gda_priority, s.gda_due_date, s.gda_cover_color,
@@ -33,6 +43,7 @@ class GestaoAlunoModel extends BaseModel
                 (SELECT COUNT(*) FROM gda_checklist_items ci2
                     INNER JOIN gda_checklists c2 ON c2.id = ci2.checklist_id
                     WHERE c2.student_id = s.id) AS checklist_total
+                {$financeSelect}
             FROM students s
             LEFT JOIN users u ON u.id = s.gda_assigned_to
             WHERE s.kanban_status_id = :col_id AND s.gda_is_archived = :arch";
@@ -117,8 +128,91 @@ class GestaoAlunoModel extends BaseModel
         $student['checklists']    = $this->checklistsWithItems($studentId);
         $student['custom_fields'] = $this->customFieldsWithValues($studentId);
         $student['templates']     = $this->allTemplates();
+        $student['financial_snapshot'] = $this->financialSnapshot($studentId);
 
         return $student;
+    }
+
+    public function financialSnapshot(int $studentId): array
+    {
+        $empty = [
+            'summary' => [
+                'total' => 0,
+                'open' => 0,
+                'overdue' => 0,
+                'paid' => 0,
+                'open_amount' => 0.0,
+            ],
+            'installments' => [],
+        ];
+
+        if (!$this->schemaTableExists('invoices')) {
+            return $empty;
+        }
+
+        $hasPaymentItems = $this->schemaTableExists('payment_items');
+        $paymentsSelect = $hasPaymentItems ? 'COALESCE(SUM(pi.amount), 0)' : '0';
+        $paymentsJoin = $hasPaymentItems ? 'LEFT JOIN payment_items pi ON pi.invoice_id = i.id' : '';
+        $companyFilter = '';
+        $params = [':student_id' => $studentId];
+
+        if ($this->schemaColumnExists('invoices', 'company_id') && $this->companyId() > 0) {
+            $companyFilter = ' AND i.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT i.id, i.invoice_number, i.due_date, i.amount, i.paid_amount, i.status,
+                    {$paymentsSelect} AS payments_sum
+             FROM invoices i
+             {$paymentsJoin}
+             WHERE i.student_id = :student_id
+             {$companyFilter}
+             GROUP BY i.id, i.invoice_number, i.due_date, i.amount, i.paid_amount, i.status
+             ORDER BY i.due_date DESC, i.id DESC
+             LIMIT 3"
+        );
+        $stmt->execute($params);
+        $installments = $stmt->fetchAll();
+
+        $summary = [
+            'total' => count($installments),
+            'open' => 0,
+            'overdue' => 0,
+            'paid' => 0,
+            'open_amount' => 0.0,
+        ];
+        $today = date('Y-m-d');
+
+        foreach ($installments as &$row) {
+            $amount = (float) ($row['amount'] ?? 0);
+            $paidAmount = max((float) ($row['paid_amount'] ?? 0), (float) ($row['payments_sum'] ?? 0));
+            $balance = max($amount - $paidAmount, 0);
+            $status = (string) ($row['status'] ?? 'open');
+            $isPaid = $status === 'paid' || $balance <= 0.009;
+            $isOverdue = !$isPaid && (($status === 'overdue') || (!empty($row['due_date']) && (string) $row['due_date'] < $today));
+
+            $row['paid_amount_effective'] = $paidAmount;
+            $row['balance_amount'] = $balance;
+            $row['is_paid'] = $isPaid ? 1 : 0;
+            $row['is_overdue'] = $isOverdue ? 1 : 0;
+
+            if ($isPaid) {
+                $summary['paid']++;
+            } elseif ($isOverdue) {
+                $summary['overdue']++;
+                $summary['open_amount'] += $balance;
+            } else {
+                $summary['open']++;
+                $summary['open_amount'] += $balance;
+            }
+        }
+        unset($row);
+
+        return [
+            'summary' => $summary,
+            'installments' => $installments,
+        ];
     }
 
     // -------------------------------------------------------------------------
@@ -312,7 +406,7 @@ class GestaoAlunoModel extends BaseModel
     public function cardMembers(int $studentId): array
     {
         $stmt = $this->db->prepare(
-            'SELECT u.id, u.name FROM users u
+            'SELECT u.id AS user_id, u.name FROM users u
              INNER JOIN gda_card_members m ON m.user_id = u.id
              WHERE m.student_id = :sid ORDER BY u.name ASC'
         );
@@ -568,12 +662,12 @@ class GestaoAlunoModel extends BaseModel
 
         foreach ($automations as $auto) {
             try {
-                if ($auto['action_type'] === 'move_to' && !empty($auto['action_value'])) {
+                if (in_array($auto['action_type'], ['move_to', 'move_to_column'], true) && !empty($auto['action_value'])) {
                     $targetCol = (int) $auto['action_value'];
                     $this->moveStudent($studentId, $targetCol, $userId);
                 } elseif ($auto['action_type'] === 'set_priority' && !empty($auto['action_value'])) {
                     $this->updateCardMeta($studentId, ['gda_priority' => $auto['action_value']]);
-                } elseif ($auto['action_type'] === 'set_label' && !empty($auto['action_value'])) {
+                } elseif (in_array($auto['action_type'], ['set_label', 'add_label'], true) && !empty($auto['action_value'])) {
                     $this->db->prepare(
                         'INSERT IGNORE INTO gda_card_labels (student_id, label_id) VALUES (:sid, :lid)'
                     )->execute([':sid' => $studentId, ':lid' => (int) $auto['action_value']]);
@@ -705,7 +799,8 @@ class GestaoAlunoModel extends BaseModel
     public function history(int $studentId): array
     {
         $stmt = $this->db->prepare(
-            'SELECT h.*, fs.name AS from_column, ts.name AS to_column, u.name AS changed_by_name
+            'SELECT h.*, h.created_at AS changed_at,
+                    fs.name AS from_name, ts.name AS to_name, u.name AS user_name
              FROM student_kanban_history h
              LEFT JOIN kanban_status fs ON fs.id = h.from_status_id
              LEFT JOIN kanban_status ts ON ts.id = h.to_status_id

@@ -205,6 +205,12 @@ $gdaJsVersion = is_file($gdaJsPath) ? (string) filemtime($gdaJsPath) : date('Ymd
                                         <span class="gda-badge">📎 <?= (int) $s['attachment_count'] ?></span>
                                     <?php } ?>
 
+                                    <?php if ((int) ($s['finance_open_count'] ?? 0) > 0) { ?>
+                                        <span class="gda-badge gda-badge-finance <?= ((int) ($s['finance_overdue_count'] ?? 0) > 0) ? 'gda-fin-overdue' : 'gda-fin-open' ?>">
+                                            Fin <?= (int) $s['finance_open_count'] ?> - <?= e(format_currency($s['finance_open_amount'] ?? 0)) ?>
+                                        </span>
+                                    <?php } ?>
+
                                     <?php if (!empty($s['assigned_name'])) { ?>
                                         <span class="gda-avatar" title="<?= e($s['assigned_name']) ?>">
                                             <?= e(mb_strtoupper(mb_substr($s['assigned_name'], 0, 2))) ?>

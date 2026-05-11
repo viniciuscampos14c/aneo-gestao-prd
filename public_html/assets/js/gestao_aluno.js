@@ -1,5 +1,5 @@
-/* ============================================================
-   GESTÃO DO ALUNO — Board JS
+﻿/* ============================================================
+   GESTÃƒO DO ALUNO â€” Board JS
    ============================================================ */
 (function () {
     'use strict';
@@ -318,6 +318,7 @@
             all_templates: Array.isArray(legacy.all_templates)
                 ? legacy.all_templates
                 : (Array.isArray(legacy.templates) ? legacy.templates : []),
+            financial_snapshot: legacy.financial_snapshot || { summary: {}, installments: [] },
         };
 
         delete normalized.student.notes;
@@ -331,6 +332,7 @@
         delete normalized.student.custom_fields;
         delete normalized.student.templates;
         delete normalized.student.all_templates;
+        delete normalized.student.financial_snapshot;
 
         return normalized;
     }
@@ -357,6 +359,7 @@
 
         // Preencher abas
         fillInfo(card);
+        fillFinanceiro(card);
         fillMeta(card);
         fillDesc(card);
         fillNotas(card);
@@ -375,11 +378,83 @@
     function fillInfo(card) {
         const s = card.student;
         set('mdInfoNome',  s.full_name);
-        set('mdInfoCpf',   s.cpf || '—');
-        set('mdInfoEmail', s.email_primary || '—');
-        set('mdInfoPhone', s.phone || '—');
-        set('mdInfoCity',  [s.city, s.state].filter(Boolean).join(' / ') || '—');
-        set('mdInfoCol',   s.column_name || '—');
+        set('mdInfoCpf',   s.cpf || '-');
+        set('mdInfoEmail', s.email_primary || '-');
+        set('mdInfoPhone', s.phone || '-');
+        set('mdInfoCity',  [s.city, s.state].filter(Boolean).join(' / ') || '-');
+        set('mdInfoCol',   s.column_name || '-');
+    }
+
+    // --- FINANCEIRO ---
+    function fillFinanceiro(card) {
+        const snapshot = card.financial_snapshot || {};
+        const summary = snapshot.summary || {};
+        const installments = Array.isArray(snapshot.installments) ? snapshot.installments : [];
+        const status = id('mdFinanceStatus');
+        const summaryWrap = id('mdFinanceSummary');
+        const list = id('mdFinanceList');
+
+        if (!summaryWrap || !list) return;
+
+        const openAmount = parseFloat(summary.open_amount || 0);
+        const overdue = parseInt(summary.overdue || 0);
+        const open = parseInt(summary.open || 0);
+        const paid = parseInt(summary.paid || 0);
+
+        if (status) {
+            status.className = 'gda-finance-status';
+            if (overdue > 0) {
+                status.textContent = overdue + ' vencida(s)';
+                status.classList.add('danger');
+            } else if (open > 0) {
+                status.textContent = open + ' em aberto';
+                status.classList.add('warning');
+            } else if (paid > 0) {
+                status.textContent = 'Em dia';
+                status.classList.add('success');
+            } else {
+                status.textContent = 'Sem faturas';
+            }
+        }
+
+        summaryWrap.innerHTML = `
+            <div class="gda-finance-kpi">
+                <span>Em aberto</span>
+                <strong>${formatMoney(openAmount)}</strong>
+            </div>
+            <div class="gda-finance-kpi">
+                <span>Pagas</span>
+                <strong>${paid}</strong>
+            </div>
+            <div class="gda-finance-kpi">
+                <span>Vencidas</span>
+                <strong>${overdue}</strong>
+            </div>`;
+
+        list.innerHTML = '';
+        if (!installments.length) {
+            list.innerHTML = '<p class="gda-empty-text">Nenhuma parcela encontrada para este aluno.</p>';
+            return;
+        }
+
+        installments.forEach(inv => {
+            const row = document.createElement('div');
+            const isPaid = parseInt(inv.is_paid || 0) === 1;
+            const isOverdue = parseInt(inv.is_overdue || 0) === 1;
+            const statusLabel = isPaid ? 'Paga' : (isOverdue ? 'Vencida' : 'Aberta');
+            const statusClass = isPaid ? 'paid' : (isOverdue ? 'overdue' : 'open');
+            row.className = 'gda-finance-row ' + statusClass;
+            row.innerHTML = `
+                <div>
+                    <strong>${esc(inv.invoice_number || ('Fatura #' + inv.id))}</strong>
+                    <span>Vencimento ${formatDate(inv.due_date)}</span>
+                </div>
+                <div class="gda-finance-row-value">
+                    <strong>${formatMoney(inv.amount || 0)}</strong>
+                    <span>${statusLabel}</span>
+                </div>`;
+            list.appendChild(row);
+        });
     }
 
     // --- META ---
@@ -424,7 +499,7 @@
         });
     }
 
-    // --- DESCRIÇÃO ---
+    // --- DESCRIÃ‡ÃƒO ---
     function fillDesc(card) {
         val('mdDesc', card.student.gda_description || '');
         id('mdDescSave')?.addEventListener('click', async () => {
@@ -432,7 +507,7 @@
                 student_id:      currentStudentId,
                 gda_description: val('mdDesc'),
             });
-            r.ok ? toast('Descrição salva.', 'success') : toast(r.message || 'Erro.', 'error');
+            r.ok ? toast('Descricao salva.', 'success') : toast(r.message || 'Erro.', 'error');
         });
     }
 
@@ -461,19 +536,19 @@
         if (!list) return;
         list.innerHTML = '';
         if (!notes.length) {
-            list.innerHTML = '<p class="text-xs text-slate-400">Nenhuma nota ainda.</p>';
+            list.innerHTML = '<p class="gda-empty-text">Nenhum follow-up registrado ainda.</p>';
             return;
         }
         notes.forEach(n => {
             const div = document.createElement('div');
-            div.className = 'bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm';
+            div.className = 'gda-followup-item';
             div.innerHTML = `
                 <div class="flex justify-between items-start gap-2">
                     <div class="flex-1">
-                        <p class="text-slate-800">${esc(n.note)}</p>
-                        <p class="text-xs text-slate-400 mt-1">${esc(n.created_at)} — ${esc(n.user_name || '')}</p>
+                        <p class="gda-followup-text">${esc(n.note)}</p>
+                        <p class="gda-followup-meta">${esc(n.created_at)} - ${esc(n.user_name || '')}</p>
                     </div>
-                    <button class="gda-btn gda-btn-danger gda-btn-sm" data-note-id="${n.id}">✕</button>
+                    <button class="gda-btn gda-btn-danger gda-btn-sm" data-note-id="${n.id}">X</button>
                 </div>`;
             div.querySelector('[data-note-id]')?.addEventListener('click', async () => {
                 const r = await post(cfg.deleteNoteUrl, { id: n.id });
@@ -541,10 +616,10 @@
             const div = document.createElement('div');
             div.className = 'gda-attachment-item';
             div.innerHTML = `
-                <span class="text-lg">📎</span>
+                <span class="text-lg">Anexo</span>
                 <span class="gda-attachment-name">${esc(a.original_file_name)}</span>
-                <a href="${cfg.downloadAttUrl}?id=${a.id}" class="gda-btn gda-btn-default gda-btn-sm" download>⬇</a>
-                <button class="gda-btn gda-btn-danger gda-btn-sm" data-att-id="${a.id}">✕</button>`;
+                <a href="${cfg.downloadAttUrl}?id=${a.id}" class="gda-btn gda-btn-default gda-btn-sm" download>Baixar</a>
+                <button class="gda-btn gda-btn-danger gda-btn-sm" data-att-id="${a.id}">X</button>`;
             div.querySelector('[data-att-id]')?.addEventListener('click', async () => {
                 const r = await post(cfg.deleteAttUrl, { id: a.id });
                 if (r.ok) {
@@ -556,13 +631,13 @@
         });
     }
 
-    // --- HISTÓRICO ---
+    // --- HISTÃ“RICO ---
     function fillHistorico(card) {
         const list = id('mdHistoryList');
         if (!list) return;
         const history = card.history || [];
         if (!history.length) {
-            list.innerHTML = '<p class="text-xs text-slate-400">Sem histórico.</p>';
+            list.innerHTML = '<p class="text-xs text-slate-400">Sem historico.</p>';
             return;
         }
         history.forEach(h => {
@@ -571,8 +646,8 @@
             div.innerHTML = `
                 <span class="gda-history-dot"></span>
                 <div>
-                    <div class="gda-history-text">${esc(h.from_name || '—')} → ${esc(h.to_name || '—')}</div>
-                    <div class="gda-history-meta">${esc(h.changed_at)} — ${esc(h.user_name || '')}</div>
+                    <div class="gda-history-text">${esc(h.from_name || '-')} -> ${esc(h.to_name || '-')}</div>
+                    <div class="gda-history-meta">${esc(h.changed_at)} - ${esc(h.user_name || '')}</div>
                     ${h.note ? `<div class="text-xs text-slate-500 mt-1">${esc(h.note)}</div>` : ''}
                 </div>`;
             list.appendChild(div);
@@ -617,7 +692,7 @@
             div.innerHTML = `
                 <span class="gda-avatar text-xs" style="width:28px;height:28px;">${esc((m.name||'?').slice(0,2).toUpperCase())}</span>
                 <span class="text-sm flex-1">${esc(m.name || '')}</span>
-                <button class="gda-btn gda-btn-danger gda-btn-sm" data-uid="${m.user_id}">✕</button>`;
+                <button class="gda-btn gda-btn-danger gda-btn-sm" data-uid="${m.user_id}">X</button>`;
             div.querySelector('[data-uid]')?.addEventListener('click', async () => {
                 const remaining = memberIds.filter(x => x !== parseInt(m.user_id));
                 const r = await post(cfg.setMembersUrl, { student_id: currentStudentId, user_ids: remaining });
@@ -659,7 +734,7 @@
             });
             list.appendChild(span);
         });
-        if (!allLabels.length) list.innerHTML = '<p class="text-xs text-slate-400">Nenhuma etiqueta cadastrada. Crie em Configurações.</p>';
+        if (!allLabels.length) list.innerHTML = '<p class="text-xs text-slate-400">Nenhuma etiqueta cadastrada. Crie em Configuracoes.</p>';
     }
 
     // --- CHECKLISTS ---
@@ -697,7 +772,7 @@
                     <span class="text-sm font-semibold text-slate-700">${esc(cl.title)}</span>
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-slate-400">${done}/${total}</span>
-                        <button class="gda-btn gda-btn-danger gda-btn-sm" data-del-cl="${cl.id}">✕</button>
+                        <button class="gda-btn gda-btn-danger gda-btn-sm" data-del-cl="${cl.id}">X</button>
                     </div>
                 </div>
                 <div class="w-full bg-slate-200 rounded h-1 mb-2">
@@ -716,7 +791,7 @@
                 row.innerHTML = `
                     <input type="checkbox" id="cli_${item.id}" ${item.is_done ? 'checked' : ''}>
                     <label for="cli_${item.id}">${esc(item.text)}</label>
-                    <button class="gda-btn gda-btn-danger gda-btn-sm" data-del-item="${item.id}">✕</button>`;
+                    <button class="gda-btn gda-btn-danger gda-btn-sm" data-del-item="${item.id}">X</button>`;
                 row.querySelector(`#cli_${item.id}`)?.addEventListener('change', async function() {
                     await post(cfg.toggleItemUrl, { id: item.id, done: this.checked ? 1 : 0 });
                     refreshChecklists();
@@ -770,7 +845,7 @@
             } else if (f.field_type === 'select') {
                 const opts = (f.options_json ? JSON.parse(f.options_json) : []);
                 input = `<select id="cf_${f.id}" class="gda-input gda-select text-sm" data-cf="${f.id}">
-                    <option value="">—</option>
+                    <option value="">-</option>
                     ${opts.map(o => `<option value="${esc(o)}" ${f.value === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
                 </select>`;
             } else {
@@ -781,7 +856,7 @@
             wrap.appendChild(row);
         });
 
-        if (!fields.length) wrap.innerHTML = '<p class="text-xs text-slate-400">Nenhum campo customizado. Crie em Configurações.</p>';
+        if (!fields.length) wrap.innerHTML = '<p class="text-xs text-slate-400">Nenhum campo customizado. Crie em Configuracoes.</p>';
 
         id('mdCfSave')?.addEventListener('click', async () => {
             for (const f of fields) {
@@ -806,7 +881,7 @@
         id('mdTplApply')?.addEventListener('click', async () => {
             const tid = parseInt(val('mdTplSelect'));
             if (!tid) return;
-            if (!confirm('Aplicar template? Isso adicionará checklists e meta ao card.')) return;
+            if (!confirm('Aplicar template? Isso adicionara checklists e meta ao card.')) return;
             const r = await post(cfg.applyTemplateUrl, { student_id: currentStudentId, template_id: tid });
             if (r.ok) {
                 toast('Template aplicado.', 'success');
@@ -828,6 +903,16 @@
     }
     function esc(str) {
         return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function formatMoney(value) {
+        const n = Number(value || 0);
+        return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+    function formatDate(value) {
+        if (!value) return '-';
+        const parts = String(value).slice(0, 10).split('-');
+        if (parts.length !== 3) return value;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
     // --------------------------------------------------------

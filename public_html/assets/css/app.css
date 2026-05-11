@@ -6791,3 +6791,1060 @@ html.admin-theme-light .system-modules-kpi {
 html.admin-theme-light .system-modules-kpi-value {
     color: #17334d !important;
 }
+
+/* =====================================================================
+   ANEO LIGHT THEME - OPCAO 1: SaaS Executivo Azul
+   Aplicado somente ao modo claro do admin, portal do aluno e suporte.
+   ===================================================================== */
+
+html.admin-theme-light,
+html:not(.dark) .portal-modern-theme {
+    --aneo-light-page: #f6f8fb;
+    --aneo-light-page-2: #ffffff;
+    --aneo-light-surface: #ffffff;
+    --aneo-light-surface-soft: #eef3f8;
+    --aneo-light-line: #d8e2ec;
+    --aneo-light-line-soft: #e7edf4;
+    --aneo-light-text: #102033;
+    --aneo-light-muted: #61758a;
+    --aneo-light-accent: #0f5e8c;
+    --aneo-light-accent-2: #0f6fae;
+    --aneo-light-success: #0f9f75;
+    --aneo-light-danger: #d33b5c;
+    --aneo-light-shadow: 0 18px 42px rgba(37, 57, 78, 0.12);
+    --aneo-light-shadow-soft: 0 10px 26px rgba(37, 57, 78, 0.08);
+}
+
+html.admin-theme-light body.admin-modern-theme,
+html:not(.dark) body.portal-modern-theme {
+    background:
+        radial-gradient(900px 420px at 18% -10%, rgba(15, 94, 140, 0.08), transparent 65%),
+        radial-gradient(720px 340px at 100% 10%, rgba(15, 111, 174, 0.06), transparent 62%),
+        linear-gradient(135deg, var(--aneo-light-page) 0%, var(--aneo-light-page-2) 100%) !important;
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-shell,
+html:not(.dark) .portal-modern-shell {
+    background:
+        radial-gradient(900px 420px at 18% -10%, rgba(15, 94, 140, 0.07), transparent 65%),
+        radial-gradient(720px 340px at 100% 10%, rgba(15, 111, 174, 0.05), transparent 62%),
+        linear-gradient(135deg, var(--aneo-light-page) 0%, var(--aneo-light-page-2) 100%) !important;
+}
+
+html:not(.dark) .portal-modern-ambient {
+    opacity: 0.42 !important;
+    background-image:
+        radial-gradient(2px 2px at 9% 14%, rgba(15, 94, 140, 0.12), transparent 60%),
+        radial-gradient(2px 2px at 26% 61%, rgba(15, 111, 174, 0.1), transparent 60%),
+        radial-gradient(2px 2px at 74% 31%, rgba(15, 94, 140, 0.1), transparent 60%) !important;
+}
+
+html.admin-theme-light .admin-modern-header,
+html:not(.dark) .student-modern-header,
+html:not(.dark) .support-modern-header {
+    border-color: var(--aneo-light-line) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 10px 28px rgba(37, 57, 78, 0.08) !important;
+    backdrop-filter: blur(14px);
+}
+
+html.admin-theme-light .admin-modern-main,
+html:not(.dark) .student-modern-main,
+html:not(.dark) .support-modern-main {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-main h1,
+html.admin-theme-light .admin-modern-main h2,
+html.admin-theme-light .admin-modern-main h3,
+html.admin-theme-light .admin-modern-main h4,
+html:not(.dark) .student-modern-main h1,
+html:not(.dark) .student-modern-main h2,
+html:not(.dark) .student-modern-main h3,
+html:not(.dark) .support-modern-main h1,
+html:not(.dark) .support-modern-main h2,
+html:not(.dark) .support-modern-main h3 {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="text-slate-900"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-800"],
+html:not(.dark) .student-modern-main [class*="text-slate-900"],
+html:not(.dark) .student-modern-main [class*="text-slate-800"],
+html:not(.dark) .support-modern-main [class*="text-slate-900"],
+html:not(.dark) .support-modern-main [class*="text-slate-800"] {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="text-slate-700"],
+html:not(.dark) .student-modern-main [class*="text-slate-700"],
+html:not(.dark) .support-modern-main [class*="text-slate-700"] {
+    color: #36506a !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="text-slate-600"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-500"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-400"],
+html:not(.dark) .student-modern-main [class*="text-slate-600"],
+html:not(.dark) .student-modern-main [class*="text-slate-500"],
+html:not(.dark) .student-modern-main [class*="text-slate-400"],
+html:not(.dark) .support-modern-main [class*="text-slate-600"],
+html:not(.dark) .support-modern-main [class*="text-slate-500"],
+html:not(.dark) .support-modern-main [class*="text-slate-400"] {
+    color: var(--aneo-light-muted) !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar {
+    border-right-color: var(--aneo-light-line) !important;
+    background: #ffffff !important;
+    box-shadow: 18px 0 42px rgba(37, 57, 78, 0.07) !important;
+}
+
+html.admin-theme-light .admin-sidebar-head,
+html.admin-theme-light .admin-sidebar-footer {
+    border-color: var(--aneo-light-line-soft) !important;
+    background: #ffffff !important;
+}
+
+html.admin-theme-light .admin-sidebar-brand-title,
+html.admin-theme-light .admin-modern-sidebar h1 {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-sidebar-link:not(.bg-slate-800),
+html.admin-theme-light .admin-sidebar-group-trigger:not(.bg-slate-800) {
+    border: 1px solid rgba(188, 208, 224, 0.4) !important;
+    background: rgba(255, 255, 255, 0.44) !important;
+    color: #36506a !important;
+}
+
+html.admin-theme-light .admin-sidebar-link:hover,
+html.admin-theme-light .admin-sidebar-group-trigger:hover {
+    border-color: rgba(15, 94, 140, 0.14) !important;
+    background: #eef3f8 !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+html.admin-theme-light .admin-sidebar-link.bg-slate-800,
+html.admin-theme-light .admin-sidebar-group-trigger.bg-slate-800 {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 22px rgba(15, 94, 140, 0.22) !important;
+}
+
+html.admin-theme-light .admin-sidebar-link.bg-slate-800 svg,
+html.admin-theme-light .admin-sidebar-group-trigger.bg-slate-800 svg {
+    color: #ffffff !important;
+}
+
+html.admin-theme-light .admin-sidebar-collapse-btn,
+html.admin-theme-light .admin-modern-sidebar [data-cadastro-panel],
+html.admin-theme-light .admin-sidebar-session-card,
+html:not(.dark) #student-avatar-menu,
+html:not(.dark) .portal-alert-modal-panel {
+    border-color: var(--aneo-light-line) !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .admin-sidebar-collapse-btn:hover {
+    border-color: rgba(15, 94, 140, 0.26) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-label,
+html.admin-theme-light .admin-sidebar-session-role {
+    color: var(--aneo-light-muted) !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-title {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-link {
+    color: var(--aneo-light-accent) !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-link:hover {
+    color: #065f7d !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-logout {
+    color: var(--aneo-light-danger) !important;
+}
+
+html:not(.dark) .student-modern-header h1,
+html:not(.dark) .support-modern-header h1,
+html:not(.dark) .student-modern-header p[class*="text-slate-900"],
+html:not(.dark) .support-modern-header p[class*="text-slate-800"] {
+    color: var(--aneo-light-text) !important;
+}
+
+html:not(.dark) .student-modern-header p[class*="text-slate-500"],
+html:not(.dark) .support-modern-header p[class*="text-slate-500"] {
+    color: var(--aneo-light-muted) !important;
+}
+
+html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]) {
+    border-color: var(--aneo-light-line) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    color: #36506a !important;
+    box-shadow: 0 8px 18px rgba(37, 57, 78, 0.06) !important;
+}
+
+html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]):hover {
+    border-color: rgba(15, 94, 140, 0.22) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+html:not(.dark) .student-modern-nav a[class*="bg-sky-600"] {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 22px rgba(15, 94, 140, 0.22) !important;
+}
+
+html.admin-theme-light .admin-theme-toggle,
+html:not(.dark) .portal-theme-toggle,
+html:not(.dark) [data-student-alert-trigger] {
+    border-color: var(--aneo-light-line) !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    color: #36506a !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .admin-theme-toggle:hover,
+html:not(.dark) .portal-theme-toggle:hover,
+html:not(.dark) [data-student-alert-trigger]:hover {
+    border-color: rgba(15, 94, 140, 0.26) !important;
+    background: #ffffff !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="bg-white"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-100"],
+html:not(.dark) .student-modern-main [class*="bg-white"],
+html:not(.dark) .student-modern-main [class*="bg-slate-50"],
+html:not(.dark) .student-modern-main [class*="bg-slate-100"],
+html:not(.dark) .support-modern-main [class*="bg-white"],
+html:not(.dark) .support-modern-main [class*="bg-slate-50"],
+html:not(.dark) .support-modern-main [class*="bg-slate-100"] {
+    border-color: var(--aneo-light-line) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="border-slate-100"],
+html.admin-theme-light .admin-modern-main [class*="border-slate-200"],
+html:not(.dark) .student-modern-main [class*="border-slate-100"],
+html:not(.dark) .student-modern-main [class*="border-slate-200"],
+html:not(.dark) .support-modern-main [class*="border-slate-100"],
+html:not(.dark) .support-modern-main [class*="border-slate-200"] {
+    border-color: var(--aneo-light-line) !important;
+}
+
+html.admin-theme-light .admin-modern-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+html.admin-theme-light .admin-modern-theme textarea,
+html.admin-theme-light .admin-modern-theme select,
+html:not(.dark) .portal-modern-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+html:not(.dark) .portal-modern-theme textarea,
+html:not(.dark) .portal-modern-theme select {
+    border-color: var(--aneo-light-line) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: var(--aneo-light-text) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+html.admin-theme-light .admin-modern-theme input::placeholder,
+html.admin-theme-light .admin-modern-theme textarea::placeholder,
+html:not(.dark) .portal-modern-theme input::placeholder,
+html:not(.dark) .portal-modern-theme textarea::placeholder {
+    color: var(--aneo-light-muted) !important;
+}
+
+html.admin-theme-light .admin-modern-theme input:focus,
+html.admin-theme-light .admin-modern-theme textarea:focus,
+html.admin-theme-light .admin-modern-theme select:focus,
+html:not(.dark) .portal-modern-theme input:focus,
+html:not(.dark) .portal-modern-theme textarea:focus,
+html:not(.dark) .portal-modern-theme select:focus {
+    border-color: rgba(15, 111, 174, 0.58) !important;
+    box-shadow: 0 0 0 3px rgba(15, 111, 174, 0.12) !important;
+}
+
+html:not(.dark) #student-avatar-menu > div:first-child,
+html:not(.dark) .portal-alert-modal-head {
+    border-color: var(--aneo-light-line-soft) !important;
+    background:
+        radial-gradient(420px 160px at 100% 0%, rgba(15, 111, 174, 0.08), transparent 60%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 248, 251, 0.98)) !important;
+}
+
+html:not(.dark) #student-avatar-menu a:hover {
+    background: linear-gradient(135deg, rgba(238, 248, 252, 0.98), rgba(255, 255, 255, 0.98)) !important;
+    color: var(--aneo-light-accent) !important;
+    box-shadow: inset 0 0 0 1px rgba(188, 208, 224, 0.86) !important;
+}
+
+html:not(.dark) .portal-alert-modal-body,
+html:not(.dark) .portal-alert-modal-foot {
+    border-color: var(--aneo-light-line-soft) !important;
+    background: rgba(247, 251, 253, 0.96) !important;
+}
+
+html:not(.dark) .portal-alert-card {
+    border-color: rgba(15, 94, 140, 0.2) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html:not(.dark) .portal-alert-btn,
+html:not(.dark) .portal-alert-btn-card,
+html:not(.dark) .portal-alert-btn-close,
+html:not(.dark) .portal-alert-btn-schedule,
+html:not(.dark) .portal-alert-btn-live {
+    border-color: rgba(15, 94, 140, 0.32) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+html:not(.dark) .portal-alert-btn:hover,
+html:not(.dark) .portal-alert-btn-card:hover,
+html:not(.dark) .portal-alert-btn-close:hover,
+html:not(.dark) .portal-alert-btn-schedule:hover,
+html:not(.dark) .portal-alert-btn-live:hover {
+    background: #ffffff !important;
+    color: #065f7d !important;
+}
+
+html:not(.dark) .portal-alert-btn-primary {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 22px rgba(15, 94, 140, 0.22) !important;
+}
+
+/* Ajuste fino do preview claro: menos "botao" no menu e acoes mais ANEO. */
+html.admin-theme-light .admin-sidebar-link:not([class*="bg-slate-800"]),
+html.admin-theme-light .admin-sidebar-group-trigger:not([class*="bg-slate-800"]) {
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #40576f !important;
+}
+
+html.admin-theme-light .admin-sidebar-link:not([class*="bg-slate-800"]):hover,
+html.admin-theme-light .admin-sidebar-group-trigger:not([class*="bg-slate-800"]):hover {
+    border-color: rgba(216, 226, 236, 0.9) !important;
+    background: #eef3f8 !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar nav a[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-sidebar nav button[class*="bg-slate-800"],
+html.admin-theme-light .admin-sidebar-link[class*="bg-slate-800"],
+html.admin-theme-light .admin-sidebar-group-trigger[class*="bg-slate-800"] {
+    border-color: rgba(15, 94, 140, 0.12) !important;
+    background: linear-gradient(135deg, rgba(15, 94, 140, 0.98), rgba(15, 111, 174, 0.96)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 22px rgba(15, 94, 140, 0.22) !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar nav a[class*="bg-slate-800"] *,
+html.admin-theme-light .admin-modern-sidebar nav button[class*="bg-slate-800"] * {
+    color: #ffffff !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-950"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-950"] {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 22px rgba(15, 94, 140, 0.2) !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-950"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-950"]:hover {
+    background: linear-gradient(135deg, #0c527d, #0f5e8c) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+html.admin-theme-light .admin-modern-main button[class*="border-slate-200"],
+html.admin-theme-light .admin-modern-main a[class*="border-slate-200"] {
+    background: rgba(255, 255, 255, 0.84) !important;
+    color: #31506a !important;
+    box-shadow: 0 8px 18px rgba(37, 57, 78, 0.06) !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="border-slate-200"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="border-slate-200"]:hover {
+    border-color: rgba(15, 94, 140, 0.24) !important;
+    background: #ffffff !important;
+    color: var(--aneo-light-accent) !important;
+}
+
+/* =====================================================================
+   ANEO LIGHT THEME - estabilizacao visual
+   Corrige vazamentos de blocos escuros e reduz ruído visual no claro.
+   ===================================================================== */
+
+html.admin-theme-light body.admin-modern-theme,
+html.admin-theme-light .admin-modern-shell,
+html:not(.dark) body.portal-modern-theme,
+html:not(.dark) .portal-modern-shell {
+    background: #f6f8fb !important;
+}
+
+html.admin-theme-light .admin-modern-header,
+html:not(.dark) .student-modern-header,
+html:not(.dark) .support-modern-header {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    box-shadow: 0 1px 0 rgba(16, 32, 51, 0.04), 0 8px 24px rgba(16, 32, 51, 0.04) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="bg-white"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-100"],
+html:not(.dark) .student-modern-main [class*="bg-white"],
+html:not(.dark) .student-modern-main [class*="bg-slate-50"],
+html:not(.dark) .student-modern-main [class*="bg-slate-100"],
+html:not(.dark) .support-modern-main [class*="bg-white"],
+html:not(.dark) .support-modern-main [class*="bg-slate-50"],
+html:not(.dark) .support-modern-main [class*="bg-slate-100"] {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main div[class*="bg-slate-700"],
+html.admin-theme-light .admin-modern-main div[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main div[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main div[class*="bg-slate-950"],
+html.admin-theme-light .admin-modern-main form[class*="bg-slate-700"],
+html.admin-theme-light .admin-modern-main form[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main form[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main form[class*="bg-slate-950"],
+html.admin-theme-light .admin-modern-main section[class*="bg-slate-700"],
+html.admin-theme-light .admin-modern-main section[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main section[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main section[class*="bg-slate-950"] {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    color: #102033 !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+html.admin-theme-light .admin-modern-main thead tr,
+html.admin-theme-light .admin-modern-main tr[class*="bg-slate-900"] {
+    background: #eef3f8 !important;
+    color: #324b63 !important;
+}
+
+html.admin-theme-light .admin-modern-main thead th,
+html.admin-theme-light .admin-modern-main tr[class*="bg-slate-900"] th {
+    color: #405b75 !important;
+}
+
+html.admin-theme-light .admin-modern-main tbody tr {
+    border-color: #e7edf4 !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-950"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-950"] {
+    background: #0f5e8c !important;
+    border-color: #0f5e8c !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-950"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-950"]:hover {
+    background: #0c527d !important;
+    border-color: #0c527d !important;
+    transform: none;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="border-slate-200"],
+html.admin-theme-light .admin-modern-main a[class*="border-slate-200"] {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    color: #324b63 !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="border-slate-200"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="border-slate-200"]:hover {
+    background: #eef3f8 !important;
+    border-color: #c8d6e4 !important;
+    color: #0f5e8c !important;
+}
+
+html.admin-theme-light .admin-modern-main .signatures-config,
+html.admin-theme-light .admin-modern-main .signatures-config-form {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    color: #102033 !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main .signatures-config-form label,
+html.admin-theme-light .admin-modern-main .signatures-config-form span {
+    color: #324b63 !important;
+}
+
+html.admin-theme-light .admin-modern-main .signatures-config-form input[type="text"],
+html.admin-theme-light .admin-modern-main .signatures-config-form input[type="password"] {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    color: #102033 !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-table-wrap {
+    background: #ffffff !important;
+    border-color: #d8e2ec !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-table thead tr {
+    background: #eef3f8 !important;
+    border-color: #d8e2ec !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-table thead th {
+    color: #405b75 !important;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+html.admin-theme-light .admin-modern-main .finance-table tbody .finance-row {
+    background: #ffffff !important;
+    border-color: #e7edf4 !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-table tbody .finance-row:hover {
+    background: #f8fafc !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-table tbody td {
+    color: #21364c !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    border-radius: 0.65rem !important;
+    border-color: #cfdbe7 !important;
+    background: #ffffff !important;
+    color: #334e68 !important;
+    font-weight: 700;
+    line-height: 1.15;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-btn:hover {
+    background: #eef3f8 !important;
+    border-color: #b9cadb !important;
+    color: #0f5e8c !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-btn-settle,
+html.admin-theme-light .admin-modern-main .finance-btn-boleto,
+html.admin-theme-light .admin-modern-main .finance-btn-sync,
+html.admin-theme-light .admin-modern-main .finance-btn-nfe,
+html.admin-theme-light .admin-modern-main .finance-btn-chatwoot {
+    background: #f8fafc !important;
+    border-color: #cfdbe7 !important;
+    color: #0f5e8c !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-btn-whatsapp {
+    background: #f7fbf9 !important;
+    border-color: #cfe2d8 !important;
+    color: #116b55 !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-btn-danger {
+    background: #fff8f9 !important;
+    border-color: #efc7d0 !important;
+    color: #b4234c !important;
+}
+
+/* Cadastro popout no modo claro: remove sobras da cor antiga no hover. */
+html.admin-theme-light .admin-sidebar-group-trigger[data-cadastro-trigger] {
+    color: #40576f !important;
+}
+
+html.admin-theme-light .admin-sidebar-group-trigger[data-cadastro-trigger]:hover {
+    border-color: #d8e2ec !important;
+    background: #eef3f8 !important;
+    color: #0f5e8c !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar [data-cadastro-panel] {
+    border-color: #d8e2ec !important;
+    background: #ffffff !important;
+    box-shadow: 0 18px 36px rgba(16, 32, 51, 0.12) !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-head {
+    border-bottom-color: #e7edf4 !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-head p {
+    color: #0f5e8c !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link {
+    background: transparent !important;
+    color: #40576f !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link:hover {
+    background: #eef3f8 !important;
+    color: #0f5e8c !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link[class*="bg-slate-800"] {
+    background: #0f5e8c !important;
+    color: #ffffff !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link[class*="bg-slate-800"]:hover {
+    background: #0c527d !important;
+    color: #ffffff !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link svg {
+    color: currentColor !important;
+}
+
+/* =====================================================================
+   ANEO LIGHT THEME FINAL - Azul corporativo B2B
+   Paleta: #3B7BB8, #A8C8DD, #5A6C7D, #FFFFFF.
+   Escopo exclusivo do modo claro do admin, portal do aluno e suporte.
+   ===================================================================== */
+
+html.admin-theme-light,
+html:not(.dark) .portal-modern-theme {
+    --aneo-light-primary: #3B7BB8;
+    --aneo-light-primary-soft: #A8C8DD;
+    --aneo-light-neutral: #5A6C7D;
+    --aneo-light-white: #FFFFFF;
+    --aneo-light-page: #FFFFFF;
+    --aneo-light-card: #FFFFFF;
+    --aneo-light-line: rgba(168, 200, 221, 0.72);
+    --aneo-light-line-soft: rgba(168, 200, 221, 0.36);
+    --aneo-light-hover: rgba(168, 200, 221, 0.22);
+    --aneo-light-active: #3B7BB8;
+    --aneo-light-text: #2f4355;
+    --aneo-light-muted: #5A6C7D;
+    --aneo-light-shadow-soft: 0 12px 28px rgba(90, 108, 125, 0.10);
+}
+
+html.admin-theme-light body.admin-modern-theme,
+html.admin-theme-light .admin-modern-shell,
+html:not(.dark) body.portal-modern-theme,
+html:not(.dark) .portal-modern-shell {
+    background:
+        radial-gradient(900px 420px at 12% -8%, rgba(168, 200, 221, 0.28), transparent 68%),
+        radial-gradient(720px 360px at 104% 4%, rgba(59, 123, 184, 0.10), transparent 62%),
+        linear-gradient(180deg, #FFFFFF 0%, rgba(168, 200, 221, 0.16) 100%) !important;
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-header,
+html:not(.dark) .student-modern-header,
+html:not(.dark) .support-modern-header {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: var(--aneo-light-line) !important;
+    box-shadow: 0 1px 0 rgba(90, 108, 125, 0.08), 0 14px 32px rgba(90, 108, 125, 0.08) !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar {
+    background: #FFFFFF !important;
+    border-right-color: var(--aneo-light-line) !important;
+    box-shadow: 16px 0 34px rgba(90, 108, 125, 0.08) !important;
+}
+
+html.admin-theme-light .admin-sidebar-head,
+html.admin-theme-light .admin-sidebar-footer {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line-soft) !important;
+}
+
+html.admin-theme-light .admin-sidebar-brand-title,
+html.admin-theme-light .admin-modern-sidebar h1,
+html.admin-theme-light .admin-modern-main h1,
+html.admin-theme-light .admin-modern-main h2,
+html.admin-theme-light .admin-modern-main h3,
+html.admin-theme-light .admin-modern-main h4,
+html:not(.dark) .student-modern-header h1,
+html:not(.dark) .support-modern-header h1,
+html:not(.dark) .student-modern-main h1,
+html:not(.dark) .student-modern-main h2,
+html:not(.dark) .student-modern-main h3,
+html:not(.dark) .support-modern-main h1,
+html:not(.dark) .support-modern-main h2,
+html:not(.dark) .support-modern-main h3 {
+    color: #263a4d !important;
+}
+
+html.admin-theme-light .admin-modern-main,
+html:not(.dark) .student-modern-main,
+html:not(.dark) .support-modern-main {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar p[class*="text-cyan-400"],
+html.admin-theme-light .admin-modern-sidebar p[class*="text-sky"],
+html.admin-theme-light .admin-modern-main [class*="text-cyan"],
+html.admin-theme-light .admin-modern-main [class*="text-sky"],
+html.admin-theme-light .admin-modern-main [class*="text-blue"],
+html.admin-theme-light .admin-modern-main [class*="text-indigo"],
+html:not(.dark) .portal-modern-theme [class*="text-cyan"],
+html:not(.dark) .portal-modern-theme [class*="text-sky"],
+html:not(.dark) .portal-modern-theme [class*="text-blue"],
+html:not(.dark) .portal-modern-theme [class*="text-indigo"] {
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="text-slate-900"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-800"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-700"],
+html:not(.dark) .portal-modern-theme [class*="text-slate-900"],
+html:not(.dark) .portal-modern-theme [class*="text-slate-800"],
+html:not(.dark) .portal-modern-theme [class*="text-slate-700"] {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="text-slate-600"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-500"],
+html.admin-theme-light .admin-modern-main [class*="text-slate-400"],
+html:not(.dark) .portal-modern-theme [class*="text-slate-600"],
+html:not(.dark) .portal-modern-theme [class*="text-slate-500"],
+html:not(.dark) .portal-modern-theme [class*="text-slate-400"] {
+    color: var(--aneo-light-muted) !important;
+}
+
+html.admin-theme-light .admin-sidebar-link:not([class*="bg-slate-800"]),
+html.admin-theme-light .admin-sidebar-group-trigger:not([class*="bg-slate-800"]) {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--aneo-light-neutral) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-link:not([class*="bg-slate-800"]):hover,
+html.admin-theme-light .admin-sidebar-group-trigger:not([class*="bg-slate-800"]):hover,
+html.admin-theme-light .admin-sidebar-group-trigger[data-cadastro-trigger]:hover {
+    background: var(--aneo-light-hover) !important;
+    border-color: var(--aneo-light-line-soft) !important;
+    color: var(--aneo-light-primary) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-link[class*="bg-slate-800"],
+html.admin-theme-light .admin-sidebar-group-trigger[class*="bg-slate-800"],
+html.admin-theme-light .admin-sidebar-popout-link[class*="bg-slate-800"] {
+    background: var(--aneo-light-primary) !important;
+    border-color: var(--aneo-light-primary) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 10px 20px rgba(59, 123, 184, 0.20) !important;
+}
+
+html.admin-theme-light .admin-sidebar-link[class*="bg-slate-800"] *,
+html.admin-theme-light .admin-sidebar-group-trigger[class*="bg-slate-800"] *,
+html.admin-theme-light .admin-sidebar-popout-link[class*="bg-slate-800"] * {
+    color: #FFFFFF !important;
+}
+
+html.admin-theme-light .admin-modern-sidebar [data-cadastro-panel],
+html.admin-theme-light .admin-modern-sidebar [data-api-panel],
+html.admin-theme-light .admin-sidebar-session-card,
+html:not(.dark) #student-avatar-menu,
+html:not(.dark) .portal-alert-modal-panel {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-head {
+    border-bottom-color: var(--aneo-light-line-soft) !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-head p,
+html.admin-theme-light .admin-sidebar-session-link,
+html.admin-theme-light .admin-sidebar-session-link:hover {
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link {
+    background: transparent !important;
+    color: var(--aneo-light-neutral) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-popout-link:hover {
+    background: var(--aneo-light-hover) !important;
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-label,
+html.admin-theme-light .admin-sidebar-session-role {
+    color: var(--aneo-light-neutral) !important;
+}
+
+html.admin-theme-light .admin-sidebar-session-title {
+    color: #263a4d !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="bg-white"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-100"],
+html.admin-theme-light .admin-modern-main [class*="bg-cyan-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-sky-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-blue-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-indigo-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-700"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-950"],
+html:not(.dark) .portal-modern-theme [class*="bg-white"],
+html:not(.dark) .portal-modern-theme [class*="bg-slate-50"],
+html:not(.dark) .portal-modern-theme [class*="bg-slate-100"],
+html:not(.dark) .portal-modern-theme [class*="bg-cyan-50"],
+html:not(.dark) .portal-modern-theme [class*="bg-sky-50"],
+html:not(.dark) .portal-modern-theme [class*="bg-blue-50"],
+html:not(.dark) .portal-modern-theme [class*="bg-indigo-50"] {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-text) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main section,
+html.admin-theme-light .admin-modern-main article,
+html.admin-theme-light .admin-modern-main form[class*="border"],
+html.admin-theme-light .admin-modern-main div[class*="rounded"][class*="border"],
+html:not(.dark) .student-modern-main section,
+html:not(.dark) .student-modern-main article,
+html:not(.dark) .student-modern-main form[class*="border"],
+html:not(.dark) .student-modern-main div[class*="rounded"][class*="border"],
+html:not(.dark) .support-modern-main section,
+html:not(.dark) .support-modern-main article,
+html:not(.dark) .support-modern-main form[class*="border"],
+html:not(.dark) .support-modern-main div[class*="rounded"][class*="border"] {
+    border-color: var(--aneo-light-line) !important;
+}
+
+html.admin-theme-light .admin-modern-main table thead tr,
+html.admin-theme-light .admin-modern-main tr[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main .finance-table thead tr,
+html.admin-theme-light .admin-modern-main .signatures-table thead tr {
+    background: rgba(168, 200, 221, 0.26) !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-neutral) !important;
+}
+
+html.admin-theme-light .admin-modern-main table thead th,
+html.admin-theme-light .admin-modern-main tr[class*="bg-slate-900"] th,
+html.admin-theme-light .admin-modern-main .finance-table thead th,
+html.admin-theme-light .admin-modern-main .signatures-table thead th {
+    color: var(--aneo-light-neutral) !important;
+}
+
+html.admin-theme-light .admin-modern-main table tbody tr,
+html.admin-theme-light .admin-modern-main .finance-table tbody .finance-row,
+html.admin-theme-light .admin-modern-main .signatures-row {
+    background: #FFFFFF !important;
+    border-color: rgba(168, 200, 221, 0.38) !important;
+}
+
+html.admin-theme-light .admin-modern-main table tbody tr:hover,
+html.admin-theme-light .admin-modern-main .finance-table tbody .finance-row:hover,
+html.admin-theme-light .admin-modern-main .signatures-row:hover {
+    background: rgba(168, 200, 221, 0.16) !important;
+}
+
+html.admin-theme-light .admin-modern-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+html.admin-theme-light .admin-modern-theme textarea,
+html.admin-theme-light .admin-modern-theme select,
+html:not(.dark) .portal-modern-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+html:not(.dark) .portal-modern-theme textarea,
+html:not(.dark) .portal-modern-theme select {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-text) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-theme input::placeholder,
+html.admin-theme-light .admin-modern-theme textarea::placeholder,
+html:not(.dark) .portal-modern-theme input::placeholder,
+html:not(.dark) .portal-modern-theme textarea::placeholder {
+    color: var(--aneo-light-neutral) !important;
+}
+
+html.admin-theme-light .admin-modern-theme input:focus,
+html.admin-theme-light .admin-modern-theme textarea:focus,
+html.admin-theme-light .admin-modern-theme select:focus,
+html:not(.dark) .portal-modern-theme input:focus,
+html:not(.dark) .portal-modern-theme textarea:focus,
+html:not(.dark) .portal-modern-theme select:focus {
+    border-color: var(--aneo-light-primary) !important;
+    box-shadow: 0 0 0 3px rgba(59, 123, 184, 0.16) !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-950"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-950"],
+html.admin-theme-light .admin-modern-main button[class*="bg-cyan"],
+html.admin-theme-light .admin-modern-main a[class*="bg-cyan"],
+html.admin-theme-light .admin-modern-main button[class*="bg-sky"],
+html.admin-theme-light .admin-modern-main a[class*="bg-sky"],
+html.admin-theme-light .admin-modern-main button[class*="bg-blue"],
+html.admin-theme-light .admin-modern-main a[class*="bg-blue"],
+html:not(.dark) .student-modern-nav a[class*="bg-sky-600"],
+html:not(.dark) .portal-alert-btn-primary {
+    background: var(--aneo-light-primary) !important;
+    border-color: var(--aneo-light-primary) !important;
+    color: #FFFFFF !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-950"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-950"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-cyan"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-cyan"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-sky"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-sky"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-blue"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-blue"]:hover {
+    background: #326fa8 !important;
+    border-color: #326fa8 !important;
+    color: #FFFFFF !important;
+    transform: none !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="border-slate"],
+html.admin-theme-light .admin-modern-main a[class*="border-slate"],
+html.admin-theme-light .admin-modern-main .finance-btn,
+html.admin-theme-light .admin-modern-main .signatures-btn,
+html:not(.dark) .portal-alert-btn,
+html:not(.dark) .portal-alert-btn-card,
+html:not(.dark) .portal-alert-btn-close,
+html:not(.dark) .portal-alert-btn-schedule,
+html:not(.dark) .portal-alert-btn-live,
+html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]) {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-neutral) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="border-slate"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="border-slate"]:hover,
+html.admin-theme-light .admin-modern-main .finance-btn:hover,
+html.admin-theme-light .admin-modern-main .signatures-btn:hover,
+html:not(.dark) .portal-alert-btn:hover,
+html:not(.dark) .portal-alert-btn-card:hover,
+html:not(.dark) .portal-alert-btn-close:hover,
+html:not(.dark) .portal-alert-btn-schedule:hover,
+html:not(.dark) .portal-alert-btn-live:hover,
+html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]):hover {
+    background: var(--aneo-light-hover) !important;
+    border-color: var(--aneo-light-primary-soft) !important;
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-btn-settle,
+html.admin-theme-light .admin-modern-main .finance-btn-boleto,
+html.admin-theme-light .admin-modern-main .finance-btn-sync,
+html.admin-theme-light .admin-modern-main .finance-btn-nfe,
+html.admin-theme-light .admin-modern-main .finance-btn-chatwoot,
+html.admin-theme-light .admin-modern-main .signatures-btn-send,
+html.admin-theme-light .admin-modern-main .signatures-btn-sync {
+    background: rgba(168, 200, 221, 0.18) !important;
+    border-color: var(--aneo-light-primary-soft) !important;
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-status-pill,
+html.admin-theme-light .admin-modern-main .finance-boleto-pill,
+html.admin-theme-light .admin-modern-main .signatures-status-pill,
+html:not(.dark) .portal-alert-modal-panel [data-portal-alert-status] {
+    border-color: var(--aneo-light-primary-soft) !important;
+    background: rgba(168, 200, 221, 0.24) !important;
+    color: var(--aneo-light-neutral) !important;
+}
+
+html.admin-theme-light .admin-theme-toggle,
+html:not(.dark) .portal-theme-toggle,
+html:not(.dark) [data-student-alert-trigger],
+html.admin-theme-light .admin-modern-theme #fab-toggle {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-primary) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .admin-modern-theme #fab-toggle {
+    background: var(--aneo-light-primary) !important;
+    color: #FFFFFF !important;
+}
+
+html.admin-theme-light .admin-modern-theme #fab-menu,
+html:not(.dark) .portal-alert-modal-head,
+html:not(.dark) .portal-alert-modal-body,
+html:not(.dark) .portal-alert-modal-foot,
+html:not(.dark) .portal-alert-card,
+html:not(.dark) #student-avatar-menu > div:first-child {
+    background: #FFFFFF !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html.admin-theme-light .admin-modern-theme ::-webkit-scrollbar-thumb,
+html:not(.dark) .portal-modern-theme ::-webkit-scrollbar-thumb {
+    background: var(--aneo-light-primary-soft) !important;
+    border-color: #FFFFFF !important;
+}

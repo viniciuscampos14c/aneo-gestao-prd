@@ -127,6 +127,7 @@ class GestaoAlunoController extends BaseController
         $checklists = $student['checklists'] ?? [];
         $customFields = $student['custom_fields'] ?? [];
         $allTemplates = $student['all_templates'] ?? ($student['templates'] ?? []);
+        $financialSnapshot = $student['financial_snapshot'] ?? ['summary' => [], 'installments' => []];
 
         unset(
             $student['notes'],
@@ -139,7 +140,8 @@ class GestaoAlunoController extends BaseController
             $student['checklists'],
             $student['custom_fields'],
             $student['templates'],
-            $student['all_templates']
+            $student['all_templates'],
+            $student['financial_snapshot']
         );
 
         $this->json([
@@ -156,6 +158,7 @@ class GestaoAlunoController extends BaseController
                 'checklists' => $checklists,
                 'custom_fields' => $customFields,
                 'all_templates' => $allTemplates,
+                'financial_snapshot' => $financialSnapshot,
             ],
         ]);
     }

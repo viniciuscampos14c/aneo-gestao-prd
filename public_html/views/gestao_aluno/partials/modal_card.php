@@ -40,6 +40,19 @@
         </div>
     </div>
 
+    <!-- Painel: Financeiro -->
+    <div class="gda-tab-panel gda-panel-featured" data-panel="financeiro">
+        <div class="gda-panel-head">
+            <div>
+                <h4 class="gda-section-title">Financeiro</h4>
+                <p class="gda-panel-subtitle">Ultimas 3 parcelas vinculadas ao aluno.</p>
+            </div>
+            <span id="mdFinanceStatus" class="gda-finance-status">Sem faturas</span>
+        </div>
+        <div id="mdFinanceSummary" class="gda-finance-summary"></div>
+        <div id="mdFinanceList" class="gda-finance-list"></div>
+    </div>
+
     <!-- Painel: Meta -->
     <div class="gda-tab-panel" data-panel="meta">
         <h4 class="gda-section-title">Meta do card</h4>
@@ -89,12 +102,17 @@
     </div>
 
     <!-- Painel: Notas -->
-    <div class="gda-tab-panel" data-panel="notas">
-        <h4 class="gda-section-title">Notas</h4>
+    <div class="gda-tab-panel gda-panel-followup" data-panel="notas">
+        <div class="gda-panel-head">
+            <div>
+                <h4 class="gda-section-title">Follow-up</h4>
+                <p class="gda-panel-subtitle">Registre os ultimos contatos e combinados com o aluno.</p>
+            </div>
+        </div>
         <div id="mdNotesList" class="mb-4 flex flex-col gap-2"></div>
         <div class="flex gap-2">
-            <input type="text" id="mdNoteInput" class="gda-input text-sm flex-1" placeholder="Adicionar nota...">
-            <button id="mdNoteSave" class="gda-btn gda-btn-primary text-sm">Adicionar</button>
+            <input type="text" id="mdNoteInput" class="gda-input text-sm flex-1" placeholder="Registrar novo follow-up...">
+            <button id="mdNoteSave" class="gda-btn gda-btn-primary text-sm">Registrar</button>
         </div>
     </div>
 
