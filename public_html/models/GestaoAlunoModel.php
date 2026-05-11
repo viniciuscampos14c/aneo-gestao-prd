@@ -523,6 +523,8 @@ class GestaoAlunoModel extends BaseModel
 
     public function saveAttachment(int $studentId, int $userId, array $file): int
     {
+        $originalName = $file['original_file_name'] ?? ($file['original_name'] ?? basename((string) ($file['file_name'] ?? 'arquivo')));
+
         $this->db->prepare(
             'INSERT INTO gda_attachments
                 (student_id, file_name, original_file_name, file_type, file_size, uploaded_by, created_at)
@@ -530,7 +532,7 @@ class GestaoAlunoModel extends BaseModel
         )->execute([
             ':sid'  => $studentId,
             ':fn'   => $file['file_name'],
-            ':ofn'  => $file['original_file_name'],
+            ':ofn'  => $originalName,
             ':ft'   => $file['file_type'],
             ':fs'   => $file['file_size'],
             ':uid'  => $userId,

@@ -480,7 +480,7 @@ class GestaoAlunoController extends BaseController
         }
 
         $id = $this->gda->saveAttachment($studentId, (int) current_user()['id'], $uploaded);
-        $this->json(['ok' => true, 'id' => $id, 'file_name' => $uploaded['original_name']]);
+        $this->json(['ok' => true, 'id' => $id, 'file_name' => $uploaded['original_file_name']]);
     }
 
     public function deleteAttachment(): void
@@ -522,7 +522,7 @@ class GestaoAlunoController extends BaseController
         }
 
         $uploadsBase = realpath(__DIR__ . '/../uploads');
-        $fullPath    = realpath(__DIR__ . '/../' . $att['file_path']);
+        $fullPath    = realpath(__DIR__ . '/../' . $att['file_name']);
 
         if (!$uploadsBase || !$fullPath || !str_starts_with($fullPath, $uploadsBase)) {
             http_response_code(403);
@@ -814,11 +814,16 @@ class GestaoAlunoController extends BaseController
 
         $originalName = basename((string) $file['name']);
         $ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-        $storedName   = uniqid('gda_', true) . '.' . $ext;
+        $ext          = preg_replace('/[^a-z0-9]/', '', $ext);
+        $storedName   = uniqid('gda_', true) . ($ext ? '.' . $ext : '');
         $targetDir    = __DIR__ . '/../uploads/gestao_aluno';
 
-        if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0755, true);
+        if (!is_dir($targetDir) && !mkdir($targetDir, 0755, true)) {
+            return ['ok' => false, 'message' => 'Nao foi possivel criar a pasta de anexos.'];
+        }
+
+        if (!is_writable($targetDir)) {
+            return ['ok' => false, 'message' => 'A pasta de anexos nao esta com permissao de escrita.'];
         }
 
         $finalPath = $targetDir . '/' . $storedName;
@@ -829,7 +834,7 @@ class GestaoAlunoController extends BaseController
         return [
             'ok'            => true,
             'file_name'     => 'uploads/gestao_aluno/' . $storedName,
-            'original_name' => $originalName,
+            'original_file_name' => $originalName,
             'file_type'     => (string) ($file['type'] ?? ''),
             'file_size'     => (int) ($file['size'] ?? 0),
         ];
