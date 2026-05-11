@@ -1,10 +1,12 @@
 <?php
 $user   = current_user();
 $userId = (int) ($user['id'] ?? 0);
+$gdaCssPath = __DIR__ . '/../../assets/css/gestao_aluno.css';
+$gdaCssVersion = is_file($gdaCssPath) ? (string) filemtime($gdaCssPath) : date('YmdHis');
 $gdaJsPath = __DIR__ . '/../../assets/js/gestao_aluno.js';
 $gdaJsVersion = is_file($gdaJsPath) ? (string) filemtime($gdaJsPath) : date('YmdHis');
 ?>
-<link rel="stylesheet" href="assets/css/gestao_aluno.css">
+<link rel="stylesheet" href="assets/css/gestao_aluno.css?v=<?= e($gdaCssVersion); ?>">
 
 <div class="p-4">
 
