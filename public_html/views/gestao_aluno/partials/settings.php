@@ -1,22 +1,26 @@
-<?php $csrf = '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">'; ?>
-<link rel="stylesheet" href="assets/css/gestao_aluno.css">
+<?php
+$csrf = '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">';
+$gdaCssPath = __DIR__ . '/../../../assets/css/gestao_aluno.css';
+$gdaCssVersion = is_file($gdaCssPath) ? (string) filemtime($gdaCssPath) : date('YmdHis');
+?>
+<link rel="stylesheet" href="assets/css/gestao_aluno.css?v=<?= e($gdaCssVersion); ?>">
 
 <div class="p-4 max-w-5xl mx-auto">
 
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-lg font-bold text-slate-800">ConfiguraÃ§Ãµes â€” GestÃ£o do Aluno</h2>
-            <p class="text-xs text-slate-500">Gerencie colunas, etiquetas, campos, automaÃ§Ãµes e templates</p>
+            <h2 class="text-lg font-bold text-slate-800">Configurações - Gestão do Aluno</h2>
+            <p class="text-xs text-slate-500">Gerencie colunas, etiquetas, campos, automações e templates</p>
         </div>
-        <a href="<?= route('gestao-aluno') ?>" class="gda-btn gda-btn-default text-sm">â† Voltar ao Board</a>
+        <a href="<?= route('gestao-aluno') ?>" class="gda-btn gda-btn-default text-sm">&larr; Voltar ao Board</a>
     </div>
 
-    <!-- Abas de configuraÃ§Ã£o -->
+    <!-- Abas de configuração -->
     <div class="flex gap-2 border-b border-slate-200 mb-6 overflow-x-auto">
         <button class="gda-modal-tab active" data-stab="columns">Colunas</button>
         <button class="gda-modal-tab" data-stab="labels">Etiquetas</button>
         <button class="gda-modal-tab" data-stab="fields">Campos</button>
-        <button class="gda-modal-tab" data-stab="automations">AutomaÃ§Ãµes</button>
+        <button class="gda-modal-tab" data-stab="automations">Automações</button>
         <button class="gda-modal-tab" data-stab="templates">Templates</button>
     </div>
 
@@ -29,7 +33,7 @@
                         <th class="text-left px-4 py-3">Cor</th>
                         <th class="text-left px-4 py-3">Nome</th>
                         <th class="text-left px-4 py-3">Ordem</th>
-                        <th class="text-left px-4 py-3">PadrÃ£o</th>
+                        <th class="text-left px-4 py-3">Padrão</th>
                         <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
@@ -42,7 +46,7 @@
                             <td class="px-4 py-2 font-semibold text-slate-700"><?= e($col['name']) ?></td>
                             <td class="px-4 py-2 text-slate-500"><?= (int) $col['display_order'] ?></td>
                             <td class="px-4 py-2">
-                                <?= $col['is_default'] ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">PadrÃ£o</span>' : '' ?>
+                                <?= $col['is_default'] ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Padrão</span>' : '' ?>
                             </td>
                             <td class="px-4 py-2 text-right">
                                 <button class="gda-btn gda-btn-default gda-btn-sm" onclick="openEditCol(<?= (int)$col['id'] ?>, '<?= e(addslashes($col['name'])) ?>', '<?= e($col['color']) ?>', <?= (int)$col['display_order'] ?>, <?= $col['is_default'] ? 1 : 0 ?>)">Editar</button>
@@ -69,7 +73,7 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="text-xs text-slate-500 font-semibold block mb-1">Nome *</label>
-                        <input type="text" name="name" id="colName" class="gda-input text-sm" required placeholder="Ex: Em NegociaÃ§Ã£o">
+                        <input type="text" name="name" id="colName" class="gda-input text-sm" required placeholder="Ex: Em Negociação">
                     </div>
                     <div>
                         <label class="text-xs text-slate-500 font-semibold block mb-1">Cor</label>
@@ -81,7 +85,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <input type="checkbox" name="is_default" id="colDefault" value="1" class="rounded">
-                        <label for="colDefault" class="text-sm text-slate-600">Coluna padrÃ£o para novos alunos</label>
+                        <label for="colDefault" class="text-sm text-slate-600">Coluna padrão para novos alunos</label>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -154,7 +158,7 @@
                     <tr>
                         <th class="text-left px-4 py-3">Nome</th>
                         <th class="text-left px-4 py-3">Tipo</th>
-                        <th class="text-left px-4 py-3">OpÃ§Ãµes</th>
+                        <th class="text-left px-4 py-3">Opções</th>
                         <th class="text-left px-4 py-3">Ordem</th>
                         <th class="px-4 py-3"></th>
                     </tr>
@@ -190,15 +194,15 @@
                     <label class="text-xs text-slate-500 font-semibold block mb-1">Tipo</label>
                     <select id="fieldType" class="gda-input gda-select text-sm">
                         <option value="text">Texto</option>
-                        <option value="number">NÃºmero</option>
+                        <option value="number">Número</option>
                         <option value="date">Data</option>
-                        <option value="select">SeleÃ§Ã£o</option>
+                        <option value="select">Seleção</option>
                         <option value="checkbox">Checkbox</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-xs text-slate-500 font-semibold block mb-1">OpÃ§Ãµes (para tipo SeleÃ§Ã£o, JSON array)</label>
-                    <input type="text" id="fieldOptions" class="gda-input text-sm" placeholder='["OpÃ§Ã£o 1","OpÃ§Ã£o 2"]'>
+                    <label class="text-xs text-slate-500 font-semibold block mb-1">Opções (para tipo Seleção, JSON array)</label>
+                    <input type="text" id="fieldOptions" class="gda-input text-sm" placeholder='["Opção 1","Opção 2"]'>
                 </div>
                 <div>
                     <label class="text-xs text-slate-500 font-semibold block mb-1">Ordem</label>
@@ -212,7 +216,7 @@
         </div>
     </div>
 
-    <!-- ======== AUTOMAÃ‡Ã•ES ======== -->
+    <!-- ======== AUTOMAÇÕES ======== -->
     <div class="gda-stab-panel" data-stab="automations">
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
             <table class="w-full text-sm">
@@ -220,7 +224,7 @@
                     <tr>
                         <th class="text-left px-4 py-3">Nome</th>
                         <th class="text-left px-4 py-3">Gatilho</th>
-                        <th class="text-left px-4 py-3">AÃ§Ã£o</th>
+                        <th class="text-left px-4 py-3">Ação</th>
                         <th class="text-left px-4 py-3">Ativo</th>
                         <th class="px-4 py-3"></th>
                     </tr>
@@ -231,7 +235,7 @@
                             <td class="px-4 py-2 font-semibold text-slate-700"><?= e($a['name']) ?></td>
                             <td class="px-4 py-2 text-slate-500"><?= e($a['trigger_type']) ?><?= $a['trigger_value'] ? ' = ' . e($a['trigger_value']) : '' ?></td>
                             <td class="px-4 py-2 text-slate-500"><?= e($a['action_type']) ?><?= $a['action_value'] ? ' = ' . e($a['action_value']) : '' ?></td>
-                            <td class="px-4 py-2"><?= $a['is_active'] ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Sim</span>' : '<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">NÃ£o</span>' ?></td>
+                            <td class="px-4 py-2"><?= $a['is_active'] ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Sim</span>' : '<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Não</span>' ?></td>
                             <td class="px-4 py-2 text-right">
                                 <button class="gda-btn gda-btn-default gda-btn-sm" onclick="openEditAuto(<?= (int)$a['id'] ?>, '<?= e(addslashes($a['name'])) ?>', '<?= e($a['trigger_type']) ?>', '<?= e(addslashes($a['trigger_value']??'')) ?>', '<?= e($a['action_type']) ?>', '<?= e(addslashes($a['action_value']??'')) ?>', <?= $a['is_active'] ? 1 : 0 ?>)">Editar</button>
                                 <button class="gda-btn gda-btn-danger gda-btn-sm" onclick="deleteAutomation(<?= (int)$a['id'] ?>)">Remover</button>
@@ -239,13 +243,13 @@
                         </tr>
                     <?php } ?>
                     <?php if (empty($automations)) { ?>
-                        <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400 text-sm">Nenhuma automaÃ§Ã£o cadastrada.</td></tr>
+                        <tr><td colspan="5" class="px-4 py-6 text-center text-slate-400 text-sm">Nenhuma automação cadastrada.</td></tr>
                     <?php } ?>
                 </tbody>
             </table>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
-            <h3 class="font-bold text-slate-700 mb-4 text-sm" id="autoFormTitle">Nova AutomaÃ§Ã£o</h3>
+            <h3 class="font-bold text-slate-700 mb-4 text-sm" id="autoFormTitle">Nova Automação</h3>
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <input type="hidden" id="autoId" value="0">
                 <div><label class="text-xs text-slate-500 font-semibold block mb-1">Nome *</label><input type="text" id="autoName" class="gda-input text-sm" placeholder="Ex: Mover para Contrato ao pagar"></div>
@@ -258,19 +262,19 @@
                     </select>
                 </div>
                 <div><label class="text-xs text-slate-500 font-semibold block mb-1">Valor do Gatilho (ID da coluna, etc.)</label><input type="text" id="autoTriggerVal" class="gda-input text-sm"></div>
-                <div><label class="text-xs text-slate-500 font-semibold block mb-1">Tipo de AÃ§Ã£o</label>
+                <div><label class="text-xs text-slate-500 font-semibold block mb-1">Tipo de Ação</label>
                     <select id="autoActionType" class="gda-input gda-select text-sm">
                         <option value="move_to_column">Mover para coluna</option>
                         <option value="set_priority">Definir prioridade</option>
                         <option value="add_label">Adicionar etiqueta</option>
-                        <option value="notify_assigned">Notificar responsÃ¡vel</option>
+                        <option value="notify_assigned">Notificar responsável</option>
                     </select>
                 </div>
-                <div><label class="text-xs text-slate-500 font-semibold block mb-1">Valor da AÃ§Ã£o</label><input type="text" id="autoActionVal" class="gda-input text-sm"></div>
-                <div class="flex items-center gap-2"><input type="checkbox" id="autoActive" checked class="rounded"><label for="autoActive" class="text-sm text-slate-600">AutomaÃ§Ã£o ativa</label></div>
+                <div><label class="text-xs text-slate-500 font-semibold block mb-1">Valor da Ação</label><input type="text" id="autoActionVal" class="gda-input text-sm"></div>
+                <div class="flex items-center gap-2"><input type="checkbox" id="autoActive" checked class="rounded"><label for="autoActive" class="text-sm text-slate-600">Automação ativa</label></div>
             </div>
             <div class="flex gap-2">
-                <button class="gda-btn gda-btn-primary text-sm" onclick="saveAutomation()">Salvar AutomaÃ§Ã£o</button>
+                <button class="gda-btn gda-btn-primary text-sm" onclick="saveAutomation()">Salvar Automação</button>
                 <button class="gda-btn gda-btn-default text-sm" onclick="resetAutoForm()">Cancelar</button>
             </div>
         </div>
@@ -309,16 +313,16 @@
             <h3 class="font-bold text-slate-700 mb-4 text-sm">Novo Template</h3>
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div><label class="text-xs text-slate-500 font-semibold block mb-1">Nome *</label><input type="text" id="tplName" class="gda-input text-sm"></div>
-                <div><label class="text-xs text-slate-500 font-semibold block mb-1">Prioridade padrÃ£o</label>
+                <div><label class="text-xs text-slate-500 font-semibold block mb-1">Prioridade padrão</label>
                     <select id="tplPriority" class="gda-input gda-select text-sm">
                         <option value="none">Nenhuma</option>
                         <option value="low">Baixa</option>
-                        <option value="medium">MÃ©dia</option>
+                        <option value="medium">Média</option>
                         <option value="high">Alta</option>
-                        <option value="critical">CrÃ­tica</option>
+                        <option value="critical">Crítica</option>
                     </select>
                 </div>
-                <div class="col-span-2"><label class="text-xs text-slate-500 font-semibold block mb-1">DescriÃ§Ã£o</label><input type="text" id="tplDesc" class="gda-input text-sm w-full"></div>
+                <div class="col-span-2"><label class="text-xs text-slate-500 font-semibold block mb-1">Descrição</label><input type="text" id="tplDesc" class="gda-input text-sm w-full"></div>
                 <div><label class="text-xs text-slate-500 font-semibold block mb-1">Ordem</label><input type="number" id="tplOrder" value="99" class="gda-input text-sm w-24"></div>
             </div>
             <div class="flex gap-2">
@@ -451,7 +455,7 @@
               : toast(r.message || 'Erro.', 'error');
     };
 
-    // ---- AUTOMAÃ‡Ã•ES ----
+    // ---- AUTOMAÇÕES ----
     window.openEditAuto = (id, name, tType, tVal, aType, aVal, active) => {
         document.getElementById('autoId').value = id;
         document.getElementById('autoName').value = name;
@@ -460,12 +464,12 @@
         document.getElementById('autoActionType').value = aType;
         document.getElementById('autoActionVal').value = aVal;
         document.getElementById('autoActive').checked = !!active;
-        document.getElementById('autoFormTitle').textContent = 'Editar AutomaÃ§Ã£o';
+        document.getElementById('autoFormTitle').textContent = 'Editar Automação';
     };
     window.resetAutoForm = () => {
         ['autoId','autoName','autoTriggerVal','autoActionVal'].forEach(n => document.getElementById(n).value = n === 'autoId' ? '0' : '');
         document.getElementById('autoActive').checked = true;
-        document.getElementById('autoFormTitle').textContent = 'Nova AutomaÃ§Ã£o';
+        document.getElementById('autoFormTitle').textContent = 'Nova Automação';
     };
     window.saveAutomation = async () => {
         const r = await apiPost(<?= json_encode(route('gestao-aluno/automation/save')) ?>, {
@@ -477,11 +481,11 @@
             action_value:  document.getElementById('autoActionVal').value,
             is_active:     document.getElementById('autoActive').checked ? 1 : 0,
         });
-        r.ok ? (toast('AutomaÃ§Ã£o salva.', 'success'), setTimeout(() => location.reload(), 800))
+        r.ok ? (toast('Automação salva.', 'success'), setTimeout(() => location.reload(), 800))
               : toast(r.message || 'Erro.', 'error');
     };
     window.deleteAutomation = async (id) => {
-        if (!confirm('Remover automaÃ§Ã£o?')) return;
+        if (!confirm('Remover automação?')) return;
         const r = await apiPost(<?= json_encode(route('gestao-aluno/automation/delete')) ?>, { id });
         r.ok ? (toast('Removida.', 'success'), setTimeout(() => location.reload(), 800))
               : toast(r.message || 'Erro.', 'error');
