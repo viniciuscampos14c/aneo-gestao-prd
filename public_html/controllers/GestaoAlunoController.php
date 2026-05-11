@@ -44,7 +44,7 @@ class GestaoAlunoController extends BaseController
         }
 
         $this->render('gestao_aluno/calendar', [
-            'title'  => 'Gestão do Aluno — Calendário',
+            'title'  => 'Gestão do Aluno - Calendário',
             'year'   => $year,
             'month'  => $month,
             'cards'  => $this->gda->calendarCards($year, $month),
