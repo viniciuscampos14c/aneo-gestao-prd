@@ -8,6 +8,8 @@ $summary = $summary ?? [
 $selectedLesson = $selectedLesson ?? null;
 $progressPercent = (int) ($summary['progress_percent'] ?? 0);
 $courseCompleted = !empty($summary['course_completed']);
+$courseComments = $courseComments ?? [];
+$courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
 ?>
 <section class="student-course-player-shell space-y-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
@@ -92,75 +94,111 @@ $courseCompleted = !empty($summary['course_completed']);
             <?php endif; ?>
         </aside>
 
-        <section class="student-course-player-stage rounded-xl border border-slate-200 bg-white p-4">
-            <?php if ($selectedLesson): ?>
-                <div class="space-y-3">
-                    <div>
-                        <h3 class="student-stage-title text-xl font-semibold text-slate-900"><?= e((string) $selectedLesson['title']); ?></h3>
-                        <?php if (trim((string) ($selectedLesson['description'] ?? '')) !== ''): ?>
-                            <p class="student-stage-description text-sm text-slate-500"><?= e((string) $selectedLesson['description']); ?></p>
+        <div class="space-y-6">
+            <section class="student-course-player-stage rounded-xl border border-slate-200 bg-white p-4">
+                <?php if ($selectedLesson): ?>
+                    <div class="space-y-3">
+                        <div>
+                            <h3 class="student-stage-title text-xl font-semibold text-slate-900"><?= e((string) $selectedLesson['title']); ?></h3>
+                            <?php if (trim((string) ($selectedLesson['description'] ?? '')) !== ''): ?>
+                                <p class="student-stage-description text-sm text-slate-500"><?= e((string) $selectedLesson['description']); ?></p>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php
+                        $videoUrl   = (string) ($selectedLesson['video_url'] ?? '');
+                        $youtubeId  = null;
+                        if (preg_match('/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $_ytm)) {
+                            $youtubeId = $_ytm[1];
+                        }
+                        $lessonDataAttrs = implode(' ', [
+                            'data-course-id="'         . (int) ($course['course_id'] ?? 0) . '"',
+                            'data-lesson-id="'         . (int) ($selectedLesson['id'] ?? 0) . '"',
+                            'data-required-percent="'  . (int) ($selectedLesson['min_progress_percent'] ?? 70) . '"',
+                            'data-initial-watched="'   . (int) ($selectedLesson['watched_seconds'] ?? 0) . '"',
+                            'data-initial-position="'  . (int) ($selectedLesson['last_position_seconds'] ?? 0) . '"',
+                            'data-initial-progress="'  . (int) ($selectedLesson['progress_percent'] ?? 0) . '"',
+                            'data-initial-completed="' . (!empty($selectedLesson['is_completed']) ? '1' : '0') . '"',
+                        ]);
+                        ?>
+                        <?php if ($youtubeId): ?>
+                            <div
+                                id="yt-player-wrap"
+                                class="relative w-full overflow-hidden rounded-xl bg-black"
+                                style="padding-top:56.25%"
+                                data-youtube-id="<?= e($youtubeId); ?>"
+                                <?= $lessonDataAttrs; ?>
+                            >
+                                <div id="yt-player" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+                            </div>
+                        <?php else: ?>
+                            <video
+                                id="lesson-video"
+                                controls
+                                preload="metadata"
+                                class="w-full rounded-xl bg-black"
+                                src="<?= e($videoUrl); ?>"
+                                <?= $lessonDataAttrs; ?>
+                            ></video>
+                        <?php endif; ?>
+
+                        <div class="student-stage-progress rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                                <p class="font-medium text-slate-700">Progresso da aula: <span id="lesson-progress-label"><?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%</span></p>
+                                <p id="lesson-status-label" class="text-xs <?= !empty($selectedLesson['is_completed']) ? 'text-emerald-700' : 'text-slate-500'; ?>">
+                                    <?= !empty($selectedLesson['is_completed']) ? 'Aula concluida.' : 'Assista no minimo ' . (int) ($selectedLesson['min_progress_percent'] ?? 70) . '% para concluir.'; ?>
+                                </p>
+                            </div>
+                            <div class="mt-2 h-2 rounded-full bg-slate-200">
+                                <div id="lesson-progress-bar" class="h-2 rounded-full <?= !empty($selectedLesson['is_completed']) ? 'bg-emerald-600' : 'bg-cyan-600'; ?>" style="width: <?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%"></div>
+                            </div>
+                        </div>
+
+                        <p class="student-stage-help text-xs text-slate-500">
+                            Suporte a links do YouTube (youtube.com/watch ou youtu.be) e arquivos diretos (MP4/WebM).
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <div class="student-stage-empty rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                        Nenhuma aula disponivel para abrir agora. Finalize os modulos anteriores para liberar os proximos.
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <?php if ($courseCommentsFeatureAvailable): ?>
+                <section class="rounded-xl border border-slate-200 bg-white p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900">Mural do curso</h3>
+                            <p class="text-sm text-slate-500">Recados e orientacoes publicados pela equipe administrativa deste curso.</p>
+                        </div>
+                        <span class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
+                            <?= count($courseComments); ?> comentario(s)
+                        </span>
+                    </div>
+
+                    <div class="mt-4 space-y-3">
+                        <?php foreach ($courseComments as $commentRow): ?>
+                            <article class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <p class="text-sm font-semibold text-slate-800">
+                                        <?= e((string) (($commentRow['author_name'] ?? '') !== '' ? $commentRow['author_name'] : 'Equipe administrativa')); ?>
+                                    </p>
+                                    <p class="text-xs text-slate-500"><?= e((string) ($commentRow['created_at'] ?? '')); ?></p>
+                                </div>
+                                <p class="mt-2 text-sm leading-6 text-slate-700"><?= nl2br(e((string) ($commentRow['comment'] ?? ''))); ?></p>
+                            </article>
+                        <?php endforeach; ?>
+
+                        <?php if ($courseComments === []): ?>
+                            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                Ainda nao ha comentarios publicados para este curso.
+                            </div>
                         <?php endif; ?>
                     </div>
-
-                    <?php
-                    $videoUrl   = (string) ($selectedLesson['video_url'] ?? '');
-                    $youtubeId  = null;
-                    if (preg_match('/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $_ytm)) {
-                        $youtubeId = $_ytm[1];
-                    }
-                    $lessonDataAttrs = implode(' ', [
-                        'data-course-id="'         . (int) ($course['course_id'] ?? 0) . '"',
-                        'data-lesson-id="'         . (int) ($selectedLesson['id'] ?? 0) . '"',
-                        'data-required-percent="'  . (int) ($selectedLesson['min_progress_percent'] ?? 70) . '"',
-                        'data-initial-watched="'   . (int) ($selectedLesson['watched_seconds'] ?? 0) . '"',
-                        'data-initial-position="'  . (int) ($selectedLesson['last_position_seconds'] ?? 0) . '"',
-                        'data-initial-progress="'  . (int) ($selectedLesson['progress_percent'] ?? 0) . '"',
-                        'data-initial-completed="' . (!empty($selectedLesson['is_completed']) ? '1' : '0') . '"',
-                    ]);
-                    ?>
-                    <?php if ($youtubeId): ?>
-                        <div
-                            id="yt-player-wrap"
-                            class="relative w-full overflow-hidden rounded-xl bg-black"
-                            style="padding-top:56.25%"
-                            data-youtube-id="<?= e($youtubeId); ?>"
-                            <?= $lessonDataAttrs; ?>
-                        >
-                            <div id="yt-player" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
-                        </div>
-                    <?php else: ?>
-                        <video
-                            id="lesson-video"
-                            controls
-                            preload="metadata"
-                            class="w-full rounded-xl bg-black"
-                            src="<?= e($videoUrl); ?>"
-                            <?= $lessonDataAttrs; ?>
-                        ></video>
-                    <?php endif; ?>
-
-                    <div class="student-stage-progress rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-                            <p class="font-medium text-slate-700">Progresso da aula: <span id="lesson-progress-label"><?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%</span></p>
-                            <p id="lesson-status-label" class="text-xs <?= !empty($selectedLesson['is_completed']) ? 'text-emerald-700' : 'text-slate-500'; ?>">
-                                <?= !empty($selectedLesson['is_completed']) ? 'Aula concluida.' : 'Assista no minimo ' . (int) ($selectedLesson['min_progress_percent'] ?? 70) . '% para concluir.'; ?>
-                            </p>
-                        </div>
-                        <div class="mt-2 h-2 rounded-full bg-slate-200">
-                            <div id="lesson-progress-bar" class="h-2 rounded-full <?= !empty($selectedLesson['is_completed']) ? 'bg-emerald-600' : 'bg-cyan-600'; ?>" style="width: <?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%"></div>
-                        </div>
-                    </div>
-
-                    <p class="student-stage-help text-xs text-slate-500">
-                        Suporte a links do YouTube (youtube.com/watch ou youtu.be) e arquivos diretos (MP4/WebM).
-                    </p>
-                </div>
-            <?php else: ?>
-                <div class="student-stage-empty rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                    Nenhuma aula disponivel para abrir agora. Finalize os modulos anteriores para liberar os proximos.
-                </div>
+                </section>
             <?php endif; ?>
-        </section>
+        </div>
     </div>
 </section>
 

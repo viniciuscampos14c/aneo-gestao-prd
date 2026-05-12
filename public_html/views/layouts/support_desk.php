@@ -16,13 +16,19 @@
         })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=<?= e((string) (is_file(__DIR__ . '/../../favicon.ico') ? filemtime(__DIR__ . '/../../favicon.ico') : date('YmdHis'))); ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=<?= e((string) (is_file(__DIR__ . '/../../favicon-32x32.png') ? filemtime(__DIR__ . '/../../favicon-32x32.png') : date('YmdHis'))); ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=<?= e((string) (is_file(__DIR__ . '/../../favicon-16x16.png') ? filemtime(__DIR__ . '/../../favicon-16x16.png') : date('YmdHis'))); ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=<?= e((string) (is_file(__DIR__ . '/../../apple-touch-icon.png') ? filemtime(__DIR__ . '/../../apple-touch-icon.png') : date('YmdHis'))); ?>">
+    <link rel="manifest" href="site.webmanifest?v=<?= e((string) (is_file(__DIR__ . '/../../site.webmanifest') ? filemtime(__DIR__ . '/../../site.webmanifest') : date('YmdHis'))); ?>">
+    <meta name="theme-color" content="#0a1628">
     <link rel="stylesheet" href="assets/css/app.css?v=<?= e((string) (is_file(__DIR__ . '/../../assets/css/app.css') ? filemtime(__DIR__ . '/../../assets/css/app.css') : date('YmdHis'))); ?>">
 </head>
 <body class="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-sky-50 via-slate-100 to-blue-100 text-slate-800 portal-modern-theme support-modern-theme">
 <?php
 $supportAuth = $_SESSION['support_desk_auth'] ?? [];
 $supportUser = trim((string) ($supportAuth['name'] ?? '')) !== '' ? (string) ($supportAuth['name'] ?? '') : (string) ($supportAuth['username'] ?? '');
-$logoBuild = '20260423-logos-r2';
+$logoBuild = '20260512-brand-kit-v1';
 ?>
 <div class="portal-modern-shell min-h-screen">
     <div class="portal-modern-ambient" aria-hidden="true"></div>
@@ -32,10 +38,10 @@ $logoBuild = '20260423-logos-r2';
                 <div class="flex items-center gap-3">
                     <a href="support.php?route=support" class="flex items-center" title="Ir para Home">
                         <span class="aneo-theme-logo-frame aneo-logo-scope-support">
-                            <img src="assets/img/aneo_escura_painel_suporte_desktop_48px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte escuro desktop" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
-                            <img src="assets/img/aneo_escura_painel_suporte_mobile_40px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte escuro mobile" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
-                            <img src="assets/img/aneo_clara_painel_suporte_desktop_48px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte claro desktop" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
-                            <img src="assets/img/aneo_clara_painel_suporte_mobile_40px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO painel suporte claro mobile" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
+                            <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO central tecnica tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
+                            <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO central tecnica tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
+                            <img src="assets/brand/aneo-wordmark-simples-light.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO central tecnica tema claro" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
+                            <img src="assets/brand/aneo-wordmark-simples-light.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO central tecnica tema claro" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
                         </span>
                     </a>
                     <div>

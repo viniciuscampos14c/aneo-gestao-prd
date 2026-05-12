@@ -19,6 +19,7 @@ class StudentPortalModel extends BaseModel
     private ?bool $studentLessonProgressTableExists = null;
     private ?bool $examExternalLinksTableExists = null;
     private ?bool $examInternalLinksTableExists = null;
+    private ?bool $courseCommentsTableExists = null;
     private ?bool $studentDutyFeatureAvailable = null;
     private ?bool $studentPortalNotificationsTableExists = null;
 
@@ -72,6 +73,113 @@ class StudentPortalModel extends BaseModel
         }
 
         return $this->studentPortalNotificationsTableExists = $this->schemaTableExists('student_portal_notifications');
+    }
+
+    public function courseCommentsFeatureAvailable(): bool
+    {
+        if ($this->courseCommentsTableExists !== null) {
+            return $this->courseCommentsTableExists;
+        }
+
+        return $this->courseCommentsTableExists = $this->schemaTableExists('course_comments');
+    }
+
+    public function listCourseCommentsForStudent(int $studentId, int $courseId, int $limit = 12): array
+    {
+        if ($studentId <= 0 || $courseId <= 0 || !$this->courseCommentsFeatureAvailable()) {
+            return [];
+        }
+
+        $course = $this->findStudentCourse($studentId, $courseId);
+        if (!$course) {
+            return [];
+        }
+
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $limit = max(1, min(50, $limit));
+
+        $sql = "SELECT
+                cm.id,
+                cm.course_id,
+                cm.comment,
+                cm.created_at,
+                u.name AS author_name
+            FROM course_comments cm
+            INNER JOIN courses c ON c.id = cm.course_id
+            LEFT JOIN users u ON u.id = cm.created_by
+            WHERE cm.course_id = :course_id";
+        $params = [':course_id' => $courseId];
+
+        if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+            $sql .= ' AND c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        $sql .= " ORDER BY cm.id DESC
+            LIMIT {$limit}";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function notifyStudentsAboutCourseComment(int $courseId, string $comment, ?int $authorId = null): int
+    {
+        if ($courseId <= 0 || !$this->studentPortalNotificationsFeatureAvailable()) {
+            return 0;
+        }
+
+        $comment = trim($comment);
+        if ($comment === '') {
+            return 0;
+        }
+
+        $course = $this->findCourseForNotifications($courseId);
+        if (!$course) {
+            return 0;
+        }
+
+        $students = $this->listStudentsToNotifyForCourse($courseId, (int) ($course['company_id'] ?? 0));
+        if ($students === []) {
+            return 0;
+        }
+
+        $authorName = $this->resolveUserName($authorId);
+        $title = 'Novo comentario em ' . trim((string) ($course['name'] ?? 'seu curso'));
+        $messagePrefix = $authorName !== '' ? $authorName . ' comentou: ' : 'Novo recado da equipe: ';
+        $normalizedComment = preg_replace('/\s+/', ' ', $comment) ?? $comment;
+        $message = $messagePrefix . mb_strimwidth($normalizedComment, 0, 220, '...');
+        $linkUrl = route('student/course&course_id=' . $courseId);
+
+        $created = 0;
+        foreach ($students as $student) {
+            $studentId = (int) ($student['id'] ?? 0);
+            $companyId = (int) ($student['company_id'] ?? 0);
+            if ($studentId <= 0 || $companyId <= 0) {
+                continue;
+            }
+
+            $notificationId = $this->createPortalNotification([
+                'company_id' => $companyId,
+                'student_id' => $studentId,
+                'notification_type' => 'course_comment',
+                'title' => $title,
+                'message' => $message,
+                'link_url' => $linkUrl,
+                'meta' => [
+                    'course_id' => $courseId,
+                    'course_name' => (string) ($course['name'] ?? ''),
+                    'comment_excerpt' => $normalizedComment,
+                ],
+            ]);
+
+            if ($notificationId > 0) {
+                $created++;
+            }
+        }
+
+        return $created;
     }
 
     public function myDutySchedule(int $studentId, bool $onlyPublished = true): array
@@ -2369,6 +2477,66 @@ class StudentPortalModel extends BaseModel
         $value = $stmt->fetchColumn();
 
         return $value !== false ? (int) $value : null;
+    }
+
+    private function findCourseForNotifications(int $courseId): ?array
+    {
+        if ($courseId <= 0) {
+            return null;
+        }
+
+        $companySelect = $this->hasCourseCompanyColumn() ? 'company_id,' : 'NULL AS company_id,';
+        $stmt = $this->db->prepare("SELECT
+                id,
+                {$companySelect}
+                name
+            FROM courses
+            WHERE id = :id
+            LIMIT 1");
+        $stmt->execute([':id' => $courseId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    private function listStudentsToNotifyForCourse(int $courseId, int $companyId): array
+    {
+        if ($courseId <= 0) {
+            return [];
+        }
+
+        $sql = "SELECT DISTINCT
+                s.id,
+                s.company_id
+            FROM enrollments e
+            INNER JOIN students s ON s.id = e.student_id
+            WHERE e.course_id = :course_id
+              AND e.status IN ('active', 'completed')
+              AND s.is_active = 1";
+        $params = [':course_id' => $courseId];
+
+        if ($companyId > 0) {
+            $sql .= ' AND s.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function resolveUserName(?int $userId): string
+    {
+        if (($userId ?? 0) <= 0) {
+            return '';
+        }
+
+        $stmt = $this->db->prepare('SELECT name FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => (int) $userId]);
+        $value = $stmt->fetchColumn();
+
+        return $value !== false ? trim((string) $value) : '';
     }
 
     private function hasPortalAccountsTable(): bool

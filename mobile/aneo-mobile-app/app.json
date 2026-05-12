@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0b024f"
+      "backgroundColor": "#0a1628"
     },
     "ios": {
       "supportsTablet": false,
@@ -24,7 +24,7 @@
       "package": "br.com.aneobrasil.diretoria",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0b024f"
+        "backgroundColor": "#0a1628"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false

@@ -256,10 +256,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginBrand: {
-    color: '#7db2ff',
+    color: '#d4af37',
     fontSize: 32,
     fontWeight: '700',
-    letterSpacing: 3,
+    letterSpacing: 1,
   },
   brandRow: {
     flexDirection: 'row',
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   brand: {
-    color: '#7db2ff',
+    color: '#d4af37',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,

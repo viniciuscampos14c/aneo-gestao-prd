@@ -4,6 +4,7 @@ class CourseController extends BaseController
 {
     private CourseModel $courses;
     private StudentModel $students;
+    private StudentPortalModel $portal;
     private AcademicCalendarModel $calendar;
     private AuditLogService $audit;
     private CourseLiveSessionModel $liveSessions;
@@ -12,6 +13,7 @@ class CourseController extends BaseController
     {
         $this->courses      = new CourseModel();
         $this->students     = new StudentModel();
+        $this->portal       = new StudentPortalModel();
         $this->calendar     = new AcademicCalendarModel();
         $this->audit        = new AuditLogService();
         $this->liveSessions = new CourseLiveSessionModel();
@@ -900,9 +902,15 @@ class CourseController extends BaseController
         $comment = trim((string) post('comment'));
 
         if ($courseId > 0 && $comment !== '') {
-            $ok = $this->courses->createComment($courseId, $comment, (int) current_user()['id']);
+            $currentUserId = (int) (current_user()['id'] ?? 0);
+            $ok = $this->courses->createComment($courseId, $comment, $currentUserId);
             if ($ok) {
-                $this->success('Comentario registrado.');
+                $notifiedStudents = $this->portal->notifyStudentsAboutCourseComment($courseId, $comment, $currentUserId);
+                $message = 'Comentario registrado.';
+                if ($notifiedStudents > 0) {
+                    $message .= ' Alerta enviado para ' . $notifiedStudents . ' aluno(s) no portal.';
+                }
+                $this->success($message);
             } else {
                 $this->error('Curso invalido para esta empresa.');
             }

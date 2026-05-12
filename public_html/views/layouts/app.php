@@ -19,6 +19,12 @@
         })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=<?= e((string) (is_file(__DIR__ . '/../../favicon.ico') ? filemtime(__DIR__ . '/../../favicon.ico') : date('YmdHis'))); ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=<?= e((string) (is_file(__DIR__ . '/../../favicon-32x32.png') ? filemtime(__DIR__ . '/../../favicon-32x32.png') : date('YmdHis'))); ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=<?= e((string) (is_file(__DIR__ . '/../../favicon-16x16.png') ? filemtime(__DIR__ . '/../../favicon-16x16.png') : date('YmdHis'))); ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=<?= e((string) (is_file(__DIR__ . '/../../apple-touch-icon.png') ? filemtime(__DIR__ . '/../../apple-touch-icon.png') : date('YmdHis'))); ?>">
+    <link rel="manifest" href="site.webmanifest?v=<?= e((string) (is_file(__DIR__ . '/../../site.webmanifest') ? filemtime(__DIR__ . '/../../site.webmanifest') : date('YmdHis'))); ?>">
+    <meta name="theme-color" content="#0a1628">
     <link rel="stylesheet" href="assets/css/app.css?v=<?= e((string) (is_file(__DIR__ . '/../../assets/css/app.css') ? filemtime(__DIR__ . '/../../assets/css/app.css') : date('YmdHis'))); ?>&build=20260423-arsenal">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-800 admin-modern-theme">
@@ -109,7 +115,7 @@ if ($isUsersPreviewRoute) {
 }
 $appJsPath = __DIR__ . '/../../assets/js/app.js';
 $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('YmdHis');
-$logoBuild = '20260423-logos-r2';
+$logoBuild = '20260512-brand-kit-v1';
 $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNegotiationAlerts) ? $mobileNegotiationAlerts : [];
 $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
 $mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array_column($mobileNegotiationAlerts, 'id')), fn ($id) => $id > 0));
@@ -212,10 +218,10 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 </button>
                 <a href="<?= route('dashboard'); ?>" class="hidden items-center md:flex" title="Ir para Home">
                     <span class="aneo-theme-logo-frame aneo-logo-scope-admin">
-                        <img src="assets/img/aneo_escura_administrativo_desktop_46px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo escuro desktop" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
-                        <img src="assets/img/aneo_escura_administrativo_mobile_38px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo escuro mobile" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
-                        <img src="assets/img/aneo_clara_administrativo_desktop_46px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo claro desktop" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
-                        <img src="assets/img/aneo_clara_administrativo_mobile_38px.png?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo claro mobile" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
+                        <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
+                        <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
+                        <img src="assets/brand/aneo-wordmark-simples-light.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo tema claro" class="aneo-theme-logo aneo-logo-light aneo-logo-desktop">
+                        <img src="assets/brand/aneo-wordmark-simples-light.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo tema claro" class="aneo-theme-logo aneo-logo-light aneo-logo-mobile">
                     </span>
                 </a>
                 <form class="flex-1" action="<?= route('search'); ?>" method="get">

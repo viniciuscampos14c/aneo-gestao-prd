@@ -1,6 +1,9 @@
 <div class="grid w-full gap-10 lg:grid-cols-2">
     <section class="space-y-6">
-        <p class="inline-flex rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">ANEO EAD</p>
+        <div class="flex flex-wrap items-center gap-4">
+            <img src="assets/brand/aneo-wordmark-transparente-branco.svg?v=20260512-brand-kit-v1" alt="Logo ANEO" class="h-12 w-auto">
+            <p class="inline-flex rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">ANEO EAD</p>
+        </div>
         <h1 class="text-4xl font-semibold leading-tight">Portal do Aluno</h1>
         <p class="text-slate-300">Acesse seus cursos, aulas ao vivo, materiais, progresso e historico de avaliacoes em um ambiente separado do painel administrativo.</p>
         <div class="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
@@ -12,6 +15,7 @@
     </section>
 
     <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-cyan-900/20">
+        <img src="assets/brand/aneo-wordmark-transparente-branco.svg?v=20260512-brand-kit-v1" alt="Logo ANEO" class="mb-6 h-8 w-auto">
         <h2 class="mb-6 text-2xl font-semibold">Entrar no portal</h2>
 
         <?php if ($msg = flash('error')): ?>

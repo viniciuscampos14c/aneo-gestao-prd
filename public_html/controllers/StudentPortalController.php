@@ -117,6 +117,11 @@ class StudentPortalController extends BaseController
             $this->redirect('student/courses');
         }
 
+        $courseCommentsFeatureAvailable = $this->portal->courseCommentsFeatureAvailable();
+        $courseComments = $courseCommentsFeatureAvailable
+            ? $this->portal->listCourseCommentsForStudent($studentId, $courseId, 12)
+            : [];
+
         $this->render('student_portal/course_player', [
             'title' => 'Aulas do Curso',
             'student' => $student,
@@ -124,6 +129,8 @@ class StudentPortalController extends BaseController
             'modules' => $path['modules'],
             'selectedLesson' => $path['selected_lesson'],
             'summary' => $path['summary'],
+            'courseCommentsFeatureAvailable' => $courseCommentsFeatureAvailable,
+            'courseComments' => $courseComments,
         ], 'layouts/student');
     }
 

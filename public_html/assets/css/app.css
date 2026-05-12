@@ -122,8 +122,8 @@ html.dark .theme-toggle .icon-moon { display: none; }
     justify-content: center;
     line-height: 0;
     vertical-align: middle;
-    padding: 0.2rem 0.34rem;
-    border-radius: 0.72rem;
+    padding: 0.12rem 0.28rem;
+    border-radius: 0.6rem;
     border: 1px solid rgba(111, 157, 194, 0.32);
     background: linear-gradient(145deg, rgba(16, 44, 70, 0.92), rgba(8, 26, 43, 0.96));
     box-shadow:
@@ -145,12 +145,21 @@ html.dark .theme-toggle .icon-moon { display: none; }
 .aneo-theme-logo {
     display: none;
     width: auto;
-    height: auto;
+    height: 1.95rem;
     max-width: none;
 }
 
 .aneo-logo-mobile {
     display: none;
+}
+
+.aneo-logo-scope-admin .aneo-theme-logo {
+    height: 1.75rem;
+}
+
+.aneo-logo-scope-student .aneo-theme-logo,
+.aneo-logo-scope-support .aneo-theme-logo {
+    height: 1.9rem;
 }
 
 /* Administrativo: tema escuro padrao / claro com admin-theme-light */
@@ -174,6 +183,20 @@ html.dark .aneo-logo-scope-support .aneo-logo-dark.aneo-logo-desktop {
 }
 
 @media (max-width: 768px) {
+    .aneo-theme-logo-frame {
+        padding: 0.1rem 0.24rem;
+        border-radius: 0.52rem;
+    }
+
+    .aneo-logo-scope-admin .aneo-theme-logo {
+        height: 1.5rem;
+    }
+
+    .aneo-logo-scope-student .aneo-theme-logo,
+    .aneo-logo-scope-support .aneo-theme-logo {
+        height: 1.6rem;
+    }
+
     html:not(.admin-theme-light) .aneo-logo-scope-admin .aneo-logo-dark.aneo-logo-desktop,
     html.admin-theme-light .aneo-logo-scope-admin .aneo-logo-light.aneo-logo-desktop,
     html:not(.dark) .aneo-logo-scope-student .aneo-logo-light.aneo-logo-desktop,

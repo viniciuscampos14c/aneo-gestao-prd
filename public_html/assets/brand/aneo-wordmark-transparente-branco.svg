@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 140" width="600" height="140">
+  <defs>
+    <linearGradient id="aneoGoldT1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fbe28a"/>
+      <stop offset="50%" stop-color="#f4c542"/>
+      <stop offset="100%" stop-color="#d49b1f"/>
+    </linearGradient>
+  </defs>
+  <text x="300" y="92" text-anchor="middle" font-family="'Fraunces', 'Times New Roman', serif" font-size="92" font-weight="500" fill="#ffffff" letter-spacing="14">ANEO</text>
+  <path d="M 412 48 Q 450 22, 488 48" fill="none" stroke="url(#aneoGoldT1)" stroke-width="5" stroke-linecap="round"/>
+</svg>
