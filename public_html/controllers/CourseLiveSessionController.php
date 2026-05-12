@@ -425,6 +425,12 @@ class CourseLiveSessionController extends BaseController
         $safeMeetingPassword = e($meetingPassword !== '' ? $meetingPassword : '-');
         $safePortalLogin = e($portalLogin !== '' ? $portalLogin : '-');
         $safeJoinUrl = e($joinUrl);
+        $publicBase = rtrim(trim((string) config('app.public_url', '')), '/');
+        if ($publicBase === '') {
+            $publicBase = rtrim(trim((string) config('app.base_url', '')), '/');
+        }
+        $logoUrl = $publicBase !== '' ? $publicBase . '/assets/brand/aneo-wordmark-transparente-branco.png?v=20260512-brand-kit-v1' : '';
+        $safeLogoUrl = e($logoUrl);
 
         $ctaButton = '';
         $ctaFallback = '<p style="margin:14px 0 0 0;font-size:13px;color:#64748b;">Link da aula indisponivel no momento. Consulte o Portal do Aluno em <strong>Aulas ao Vivo</strong>.</p>';
@@ -448,8 +454,11 @@ class CourseLiveSessionController extends BaseController
             '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:#f1f5f9;">',
             '<tr><td align="center" style="padding:24px 12px;">',
             '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;border-collapse:separate;background:#ffffff;border:1px solid #dbe7f3;border-radius:16px;overflow:hidden;">',
-            '<tr><td style="padding:22px 24px;background:linear-gradient(120deg,#0b2443 0%, #0c3d73 55%, #0ea5e9 100%);">',
-            '<p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#bae6fd;text-transform:uppercase;">ANEO | Aulas ao Vivo</p>',
+            '<tr><td bgcolor="#0b2443" style="padding:22px 24px;background:#0b2443;">',
+            ($logoUrl !== ''
+                ? '<img src="' . $safeLogoUrl . '" alt="ANEO" height="44" style="display:inline-block;height:44px;width:auto;vertical-align:middle;">'
+                : '<p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#bae6fd;text-transform:uppercase;">ANEO | Aulas ao Vivo</p>'),
+            '<p style="margin:' . ($logoUrl !== '' ? '14px' : '8px') . ' 0 0 0;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#bae6fd;text-transform:uppercase;">ANEO | Aulas ao Vivo</p>',
             '<h1 style="margin:8px 0 0 0;font-size:24px;line-height:1.3;color:#ffffff;">Nova aula ao vivo agendada</h1>',
             '</td></tr>',
             '<tr><td style="padding:24px;">',
