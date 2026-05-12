@@ -9,6 +9,7 @@ $canInvoiceWhatsapp = has_permission('finance.invoice.whatsapp');
 $canBoletoGenerate = has_permission('finance.invoice.boleto.generate');
 $canBoletoSync = has_permission('finance.invoice.boleto.sync');
 $canChatOpen = has_permission('chat.open');
+$isAdminUser = is_admin();
 $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
 ?>
 <section class="space-y-6">
@@ -81,13 +82,22 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
             <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
         </form>
 
-        <?php if ($canInvoiceRecurrence): ?>
-            <form method="post" action="<?= route('finance/invoices/recurring'); ?>" class="flex items-center gap-2">
-                <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                <input type="month" name="reference_month" value="<?= date('Y-m'); ?>" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Gerar Recorrentes</button>
-            </form>
-        <?php endif; ?>
+        <div class="flex flex-wrap items-center gap-2">
+            <?php if ($canBoletoGenerate): ?>
+                <form method="post" action="<?= route('finance/invoices/boleto-issue-due'); ?>" class="flex items-center gap-2">
+                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                    <button class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-100">Emitir boletos da janela (10 dias)</button>
+                </form>
+            <?php endif; ?>
+
+            <?php if ($canInvoiceRecurrence): ?>
+                <form method="post" action="<?= route('finance/invoices/recurring'); ?>" class="flex items-center gap-2">
+                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                    <input type="month" name="reference_month" value="<?= date('Y-m'); ?>" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Gerar Recorrentes</button>
+                </form>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="finance-table-wrap overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -121,7 +131,7 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                         'paid', 'received' => 'Pago',
                         'overdue' => 'Vencido',
                         'cancelled' => 'Cancelado',
-                        'failed' => 'Falhou',
+                        'failed', 'error' => 'Falhou',
                         'pending' => 'Pendente',
                         default => 'Nao gerado',
                     };
@@ -129,20 +139,31 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                         'issued', 'registered' => 'bg-emerald-100 text-emerald-700',
                         'processing', 'pending' => 'bg-amber-100 text-amber-700',
                         'paid', 'received' => 'bg-cyan-100 text-cyan-700',
-                        'overdue', 'failed', 'cancelled' => 'bg-rose-100 text-rose-700',
+                        'overdue', 'failed', 'error', 'cancelled' => 'bg-rose-100 text-rose-700',
                         default => 'bg-slate-100 text-slate-700',
                     };
                     $boletoToneClass = match ($boletoStatus) {
                         'issued', 'registered' => 'finance-boleto-issued',
                         'processing', 'pending' => 'finance-boleto-pending',
                         'paid', 'received' => 'finance-boleto-paid',
-                        'overdue', 'failed', 'cancelled' => 'finance-boleto-overdue',
+                        'overdue', 'failed', 'error', 'cancelled' => 'finance-boleto-overdue',
                         default => 'finance-boleto-default',
                     };
                     $paymentMethodName = trim((string) ($row['payment_method_name'] ?? ''));
                     $paymentMethodMode = trim((string) ($row['payment_method_mode'] ?? ''));
+                    $paymentMethodProvider = trim((string) ($row['payment_method_provider_key'] ?? ''));
                     $paymentMethodLabel = $paymentMethodName !== '' ? $paymentMethodName : 'Nao definido';
                     $canBoletoAutomation = !$invoicePaymentMethodsAvailable || $paymentMethodName === '' || $paymentMethodMode === 'integrated';
+                    $windowDays = (int) ($row['student_boleto_days_before'] ?? 10);
+                    $windowDays = $windowDays > 0 ? $windowDays : 10;
+                    $automaticIssueDate = null;
+                    if (!empty($row['due_date'])) {
+                        try {
+                            $automaticIssueDate = (new DateTimeImmutable((string) $row['due_date']))->modify('-' . $windowDays . ' days')->format('Y-m-d');
+                        } catch (Throwable $e) {
+                            $automaticIssueDate = null;
+                        }
+                    }
                     ?>
                     <tr class="finance-row border-b border-slate-100 hover:bg-slate-50 align-top">
                         <td class="px-3 py-3 font-medium"><?= e($row['invoice_number']); ?></td>
@@ -207,6 +228,10 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                             <?php else: ?>
                                 <div class="space-y-1">
                                     <span class="finance-boleto-pill rounded-full px-2 py-1 text-xs font-semibold <?= $boletoStatusColor; ?> <?= $boletoToneClass; ?>"><?= e($boletoStatusLabel); ?></span>
+
+                                    <?php if (empty($row['boleto_id']) && $paymentMethodProvider === 'itau' && $automaticIssueDate): ?>
+                                        <p class="text-[11px] text-slate-500">Envio automatico previsto a partir de <?= e($automaticIssueDate); ?>.</p>
+                                    <?php endif; ?>
 
                                     <?php if ($boletoLink): ?>
                                         <div>
@@ -307,6 +332,9 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                                     <input type="hidden" name="return_route" value="finance/invoices">
                                     <button class="finance-btn finance-btn-chatwoot rounded border border-cyan-200 px-2 py-1 text-xs text-cyan-700 hover:bg-cyan-50">Atender no Chatwoot</button>
                                 </form>
+                            <?php endif; ?>
+                            <?php if ($isAdminUser): ?>
+                                <a href="<?= route('finance/invoices/edit&id=' . (int) $row['id']); ?>" class="mb-2 inline-flex rounded border border-amber-200 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50">Editar</a>
                             <?php endif; ?>
                             <?php if ($canInvoiceDelete): ?>
                                 <form method="post" action="<?= route('finance/invoices/delete'); ?>" onsubmit="return confirm('Excluir fatura?');">

@@ -264,6 +264,41 @@ class FinanceController extends BaseController
         $this->redirect('finance/invoices');
     }
 
+    public function issueDueBankSlips(): void
+    {
+        require_auth();
+        require_permission('finance.invoice.boleto.generate');
+        csrf_validate();
+
+        $before = [
+            'company_id' => (int) (current_company_id() ?? 0),
+            'executed_at' => now(),
+        ];
+
+        $result = $this->finance->issueDueBankSlips((int) current_user()['id'], 10);
+
+        $this->audit->log([
+            'module' => 'finance.faturas',
+            'action' => 'issue_due_bank_slips',
+            'entity_type' => 'invoice_batch',
+            'entity_id' => null,
+            'entity_label' => 'Emissao automatica de boletos Itau',
+            'description' => (string) ($result['message'] ?? 'Processamento da fila de boletos.'),
+            'before' => $before,
+            'after' => $result,
+            'metadata' => ['days_before' => 10],
+            'company_id' => (int) (current_company_id() ?? 0),
+        ]);
+
+        if (!($result['ok'] ?? false)) {
+            $this->error((string) ($result['message'] ?? 'Nao foi possivel emitir os boletos da janela.'));
+            $this->redirect('finance/invoices');
+        }
+
+        $this->success((string) ($result['message'] ?? 'Fila de boletos processada com sucesso.'));
+        $this->redirect('finance/invoices');
+    }
+
     public function createInvoice(): void
     {
         require_auth();
@@ -271,10 +306,36 @@ class FinanceController extends BaseController
 
         $this->render('finance/invoice_form', [
             'title' => 'Nova Fatura',
+            'invoice' => null,
             'students' => $this->finance->listStudents(),
             'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
             'paymentMethodsAvailable' => $this->finance->invoicePaymentMethodsAvailable(),
             'action' => route('finance/invoices/store'),
+            'actionLabel' => 'Salvar Fatura',
+            'isEdit' => false,
+        ]);
+    }
+
+    public function editInvoice(): void
+    {
+        require_admin();
+
+        $invoiceId = (int) request('id');
+        $invoice = $this->finance->findInvoice($invoiceId);
+        if (!$invoice) {
+            $this->error('Fatura nao encontrada para edicao.');
+            $this->redirect('finance/invoices');
+        }
+
+        $this->render('finance/invoice_form', [
+            'title' => 'Editar Fatura',
+            'invoice' => $invoice,
+            'students' => $this->finance->listStudents(),
+            'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
+            'paymentMethodsAvailable' => $this->finance->invoicePaymentMethodsAvailable(),
+            'action' => route('finance/invoices/update&id=' . $invoiceId),
+            'actionLabel' => 'Salvar Alteracoes',
+            'isEdit' => true,
         ]);
     }
 
@@ -330,6 +391,71 @@ class FinanceController extends BaseController
         $this->auditInvoiceEvent('create', $id, [], $after, 'Fatura criada.');
 
         $this->success('Fatura criada #' . $id . '.');
+        $this->redirect('finance/invoices');
+    }
+
+    public function updateInvoice(): void
+    {
+        require_admin();
+        csrf_validate();
+
+        $invoiceId = (int) request('id');
+        $invoice = $this->finance->findInvoice($invoiceId);
+        if (!$invoice) {
+            $this->error('Fatura nao encontrada.');
+            $this->redirect('finance/invoices');
+        }
+
+        $data = [
+            'student_id' => (int) post('student_id'),
+            'payment_method_id' => (int) post('payment_method_id'),
+            'due_date' => trim((string) post('due_date')),
+            'amount' => parse_decimal((string) post('amount', '0')),
+            'tax_amount' => parse_decimal((string) post('tax_amount', '0')),
+            'status' => trim((string) post('status', 'open')),
+            'tags' => trim((string) post('tags')),
+            'project_name' => trim((string) post('project_name')),
+            'boleto_url' => trim((string) post('boleto_url')),
+            'is_recurring' => post('is_recurring') ? 1 : 0,
+            'recurrence_interval' => trim((string) post('recurrence_interval', 'monthly')),
+        ];
+
+        if ($data['student_id'] <= 0 || $data['due_date'] === '' || $data['amount'] <= 0) {
+            $this->error('Preencha aluno, vencimento e quantia.');
+            $this->redirect('finance/invoices/edit&id=' . $invoiceId);
+        }
+
+        if ($this->finance->invoicePaymentMethodsAvailable()) {
+            if ($data['payment_method_id'] <= 0) {
+                $this->error('Selecione a forma de pagamento da fatura.');
+                $this->redirect('finance/invoices/edit&id=' . $invoiceId);
+            }
+
+            $method = $this->finance->findPaymentMethod($data['payment_method_id']);
+            if (!$method || (int) ($method['is_active'] ?? 0) !== 1) {
+                $this->error('Forma de pagamento invalida ou inativa.');
+                $this->redirect('finance/invoices/edit&id=' . $invoiceId);
+            }
+        } else {
+            $data['payment_method_id'] = 0;
+        }
+
+        if ($data['boleto_url'] !== '' && !filter_var($data['boleto_url'], FILTER_VALIDATE_URL)) {
+            $this->error('Informe um link de boleto valido (URL completa).');
+            $this->redirect('finance/invoices/edit&id=' . $invoiceId);
+        }
+
+        $before = $this->invoiceSnapshot($invoice);
+        $result = $this->finance->updateInvoice($invoiceId, $data, (int) current_user()['id']);
+        if (!($result['ok'] ?? false)) {
+            $this->error((string) ($result['message'] ?? 'Nao foi possivel atualizar a fatura.'));
+            $this->redirect('finance/invoices/edit&id=' . $invoiceId);
+        }
+
+        $after = $this->invoiceSnapshotById($invoiceId);
+        $this->auditInvoiceEvent('update', $invoiceId, $before, $after, 'Fatura editada por administrador.');
+
+        $this->success((string) ($result['message'] ?? 'Fatura atualizada com sucesso.'));
         $this->redirect('finance/invoices');
     }
 

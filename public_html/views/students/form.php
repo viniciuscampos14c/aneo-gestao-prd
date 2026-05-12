@@ -8,7 +8,17 @@ $portalIsActive = isset($portalAccount['is_active']) ? (int) $portalAccount['is_
 $photoFeatureAvailable = isset($photoFeatureAvailable) ? (bool) $photoFeatureAvailable : true;
 $practiceScheduleAvailable = isset($practiceScheduleAvailable) ? (bool) $practiceScheduleAvailable : false;
 $practiceUnits = isset($practiceUnits) && is_array($practiceUnits) ? $practiceUnits : [];
+$financialPlanFeatureAvailable = isset($financialPlanFeatureAvailable) ? (bool) $financialPlanFeatureAvailable : false;
+$paymentMethods = isset($paymentMethods) && is_array($paymentMethods) ? $paymentMethods : [];
+$paymentMethodsAvailable = isset($paymentMethodsAvailable) ? (bool) $paymentMethodsAvailable : false;
 $residencyLevel = strtoupper((string) ($student['residency_level'] ?? 'R1'));
+$financialPlanProfile = (string) ($student['financial_plan_profile'] ?? '');
+$financialPlanInstallments = (string) ($student['financial_plan_installments'] ?? '');
+$financialPlanFirstDueDate = (string) ($student['financial_plan_first_due_date'] ?? '');
+$financialPlanPaymentMethodId = (string) ($student['financial_plan_payment_method_id'] ?? '');
+$financialPlanAutoGenerate = (int) ($student['financial_plan_auto_generate'] ?? 0) === 1;
+$financialPlanBoletoDaysBefore = (string) ($student['financial_plan_boleto_days_before'] ?? '10');
+$financialPlanGeneratedAt = (string) ($student['financial_plan_generated_at'] ?? '');
 $eligibleSince = null;
 if (!empty($student['enrolled_at'])) {
     try {
@@ -120,15 +130,92 @@ if (!empty($student['enrolled_at'])) {
             </select>
         </label>
 
-        <label class="block">
-            <span class="mb-1 block text-sm font-medium">Mensalidade (recorrencia)</span>
-            <input type="text" name="monthly_fee" value="<?= e((string) ($student['monthly_fee'] ?? '')); ?>" placeholder="0,00" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-        </label>
+        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:col-span-2">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-800">Plano financeiro do aluno</h3>
+                    <p class="mt-1 text-xs text-slate-500">O sistema gera todas as faturas internas do plano e deixa a emissao do boleto Itaú apenas para a janela de 10 dias antes do vencimento.</p>
+                </div>
+                <?php if ($financialPlanGeneratedAt !== ''): ?>
+                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                        Plano gerado em <?= e($financialPlanGeneratedAt); ?>
+                    </div>
+                <?php endif; ?>
+            </div>
 
-        <label class="block">
-            <span class="mb-1 block text-sm font-medium">Dia do vencimento</span>
-            <input type="number" min="1" max="31" name="billing_day" value="<?= e((string) ($student['billing_day'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-        </label>
+            <?php if (!$financialPlanFeatureAvailable): ?>
+                <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    Estrutura do plano financeiro ainda nao encontrada no banco. Execute a migration <code>migrations/20260512_student_financial_plan_itau_window.sql</code>.
+                </p>
+            <?php else: ?>
+                <input type="hidden" name="financial_plan_generated_at" value="<?= e($financialPlanGeneratedAt); ?>">
+                <div class="mt-3 grid gap-3 md:grid-cols-3">
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Modelo de plano</span>
+                        <select id="financial-plan-profile" name="financial_plan_profile" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <option value="">Selecione...</option>
+                            <option value="preset_36_2200" <?= $financialPlanProfile === 'preset_36_2200' ? 'selected' : ''; ?>>36x de R$ 2.200,00</option>
+                            <option value="preset_36_2900" <?= $financialPlanProfile === 'preset_36_2900' ? 'selected' : ''; ?>>36x de R$ 2.900,00</option>
+                            <option value="preset_48_2240_25" <?= $financialPlanProfile === 'preset_48_2240_25' ? 'selected' : ''; ?>>48x de R$ 2.240,25</option>
+                            <option value="custom" <?= $financialPlanProfile === 'custom' ? 'selected' : ''; ?>>Personalizado</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Valor da parcela</span>
+                        <input id="financial-plan-amount" type="text" name="monthly_fee" value="<?= e((string) ($student['monthly_fee'] ?? '')); ?>" placeholder="0,00" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Quantidade de parcelas</span>
+                        <input id="financial-plan-installments" type="number" min="1" max="120" name="financial_plan_installments" value="<?= e($financialPlanInstallments); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Primeiro vencimento</span>
+                        <input id="financial-plan-first-due-date" type="date" name="financial_plan_first_due_date" value="<?= e($financialPlanFirstDueDate); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Dia do vencimento</span>
+                        <input id="financial-plan-billing-day" type="number" min="1" max="31" name="billing_day" value="<?= e((string) ($student['billing_day'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Forma de pagamento padrao</span>
+                        <select name="financial_plan_payment_method_id" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" <?= $paymentMethodsAvailable ? '' : 'disabled'; ?>>
+                            <option value=""><?= $paymentMethodsAvailable ? 'Selecione...' : 'Nao disponivel'; ?></option>
+                            <?php foreach ($paymentMethods as $method): ?>
+                                <?php $methodName = trim((string) ($method['name'] ?? '')); ?>
+                                <?php if ($methodName === '') { continue; } ?>
+                                <option value="<?= (int) ($method['id'] ?? 0); ?>" <?= $financialPlanPaymentMethodId === (string) ($method['id'] ?? '') ? 'selected' : ''; ?>>
+                                    <?= e($methodName); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Emitir boleto Itaú com antecedencia</span>
+                        <input type="number" min="0" max="60" name="financial_plan_boleto_days_before" value="<?= e($financialPlanBoletoDaysBefore !== '' ? $financialPlanBoletoDaysBefore : '10'); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <span class="mt-1 block text-xs text-slate-400">Padrao recomendado: 10 dias.</span>
+                    </label>
+
+                    <label class="block md:col-span-2">
+                        <span class="mb-1 block text-sm font-medium">Geracao automatica</span>
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                            <input type="checkbox" name="financial_plan_auto_generate" value="1" <?= $financialPlanAutoGenerate ? 'checked' : ''; ?>>
+                            Gerar todas as faturas internas ao salvar o aluno
+                        </label>
+                    </label>
+
+                    <div class="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Como funciona</p>
+                        <p class="mt-1 text-slate-700">O ERP cria o contas a receber completo agora. O custo bancario do Itaú so acontece quando a parcela entra na janela de emissao.</p>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
 
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Data de entrada</span>
@@ -222,3 +309,32 @@ if (!empty($student['enrolled_at'])) {
         </div>
     </form>
 </section>
+<?php if ($financialPlanFeatureAvailable): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const profile = document.getElementById('financial-plan-profile');
+    const amount = document.getElementById('financial-plan-amount');
+    const installments = document.getElementById('financial-plan-installments');
+
+    if (!profile || !amount || !installments) {
+        return;
+    }
+
+    const presets = {
+        preset_36_2200: { amount: '2200,00', installments: '36' },
+        preset_36_2900: { amount: '2900,00', installments: '36' },
+        preset_48_2240_25: { amount: '2240,25', installments: '48' }
+    };
+
+    profile.addEventListener('change', function () {
+        const preset = presets[profile.value];
+        if (!preset) {
+            return;
+        }
+
+        amount.value = preset.amount;
+        installments.value = preset.installments;
+    });
+});
+</script>
+<?php endif; ?>

@@ -3,6 +3,7 @@
 abstract class BaseModel
 {
     protected PDO $db;
+    protected ?int $companyIdOverride = null;
     private array $tableExistsCache = [];
     private array $columnExistsCache = [];
 
@@ -35,8 +36,18 @@ abstract class BaseModel
         ];
     }
 
+    public function useCompany(?int $companyId): static
+    {
+        $this->companyIdOverride = $companyId !== null && $companyId > 0 ? (int) $companyId : null;
+        return $this;
+    }
+
     protected function companyId(): int
     {
+        if ($this->companyIdOverride !== null) {
+            return $this->companyIdOverride;
+        }
+
         return (int) (current_company_id() ?? 0);
     }
 

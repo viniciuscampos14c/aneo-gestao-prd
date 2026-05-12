@@ -3,10 +3,12 @@
 class StudentController extends BaseController
 {
     private StudentModel $students;
+    private FinanceModel $finance;
 
     public function __construct()
     {
         $this->students = new StudentModel();
+        $this->finance = new FinanceModel();
     }
 
     public function index(): void
@@ -77,6 +79,9 @@ class StudentController extends BaseController
             'practiceScheduleAvailable' => $this->students->practiceScheduleFeatureAvailable(),
             'practiceUnits' => $this->students->practiceUnits(),
             'portalAvailable' => $this->students->portalFeatureAvailable(),
+            'financialPlanFeatureAvailable' => $this->students->financialPlanFeatureAvailable(),
+            'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
+            'paymentMethodsAvailable' => $this->finance->invoicePaymentMethodsAvailable(),
             'portalAccount' => null,
             'statuses' => $this->students->allKanbanStatuses(),
             'flags' => config('student_flags', []),
@@ -96,6 +101,10 @@ class StudentController extends BaseController
         if ($data['full_name'] === '') {
             $this->error('Nome completo e obrigatorio.');
             $this->redirect('students/create');
+        }
+
+        if (!$this->validateFinancialPlanData($data, 'students/create')) {
+            return;
         }
 
         if (!$this->validatePortalData($portal, true, 0, null, 'students/create')) {
@@ -121,7 +130,8 @@ class StudentController extends BaseController
             $this->handleDocumentUpload($id, $_FILES['document']);
         }
 
-        $this->success('Aluno criado com sucesso.');
+        $planMessage = $this->handleFinancialPlanGeneration($id, $data);
+        $this->success('Aluno criado com sucesso.' . $planMessage);
         $this->redirect('students/show&id=' . $id);
     }
 
@@ -145,6 +155,9 @@ class StudentController extends BaseController
             'practiceScheduleAvailable' => $this->students->practiceScheduleFeatureAvailable(),
             'practiceUnits' => $this->students->practiceUnits(),
             'portalAvailable' => $this->students->portalFeatureAvailable(),
+            'financialPlanFeatureAvailable' => $this->students->financialPlanFeatureAvailable(),
+            'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
+            'paymentMethodsAvailable' => $this->finance->invoicePaymentMethodsAvailable(),
             'portalAccount' => $this->students->findPortalAccount($id),
             'statuses' => $this->students->allKanbanStatuses(),
             'flags' => config('student_flags', []),
@@ -175,6 +188,10 @@ class StudentController extends BaseController
             $this->redirect('students/edit&id=' . $id);
         }
 
+        if (!$this->validateFinancialPlanData($data, 'students/edit&id=' . $id)) {
+            return;
+        }
+
         if (!$this->validatePortalData($portal, false, $id, $portalAccount, 'students/edit&id=' . $id)) {
             return;
         }
@@ -199,7 +216,8 @@ class StudentController extends BaseController
             $this->handleDocumentUpload($id, $_FILES['document']);
         }
 
-        $this->success('Aluno atualizado com sucesso.');
+        $planMessage = $this->handleFinancialPlanGeneration($id, $data);
+        $this->success('Aluno atualizado com sucesso.' . $planMessage);
         $this->redirect('students/show&id=' . $id);
     }
 
@@ -381,8 +399,149 @@ class StudentController extends BaseController
             'notes' => trim((string) post('notes')),
             'monthly_fee' => parse_decimal((string) post('monthly_fee', '0')),
             'billing_day' => trim((string) post('billing_day')),
+            'financial_plan_profile' => trim((string) post('financial_plan_profile')),
+            'financial_plan_installments' => post('financial_plan_installments') !== '' ? (int) post('financial_plan_installments') : null,
+            'financial_plan_first_due_date' => trim((string) post('financial_plan_first_due_date')),
+            'financial_plan_payment_method_id' => post('financial_plan_payment_method_id') !== '' ? (int) post('financial_plan_payment_method_id') : null,
+            'financial_plan_auto_generate' => post('financial_plan_auto_generate') ? 1 : 0,
+            'financial_plan_boleto_days_before' => post('financial_plan_boleto_days_before') !== '' ? (int) post('financial_plan_boleto_days_before') : 10,
+            'financial_plan_generated_at' => trim((string) post('financial_plan_generated_at')),
             'kanban_status_id' => post('kanban_status_id') !== '' ? (int) post('kanban_status_id') : null,
         ];
+    }
+
+    private function validateFinancialPlanData(array &$data, string $redirectRoute): bool
+    {
+        if (!$this->students->financialPlanFeatureAvailable()) {
+            $data['financial_plan_profile'] = '';
+            $data['financial_plan_installments'] = null;
+            $data['financial_plan_first_due_date'] = '';
+            $data['financial_plan_payment_method_id'] = null;
+            $data['financial_plan_auto_generate'] = 0;
+            $data['financial_plan_boleto_days_before'] = 10;
+            $data['financial_plan_generated_at'] = trim((string) ($data['financial_plan_generated_at'] ?? ''));
+            return true;
+        }
+
+        $hasPlanInput = !empty($data['financial_plan_auto_generate'])
+            || !empty($data['financial_plan_installments'])
+            || !empty($data['financial_plan_first_due_date'])
+            || !empty($data['financial_plan_payment_method_id'])
+            || trim((string) ($data['financial_plan_profile'] ?? '')) !== '';
+
+        $data['financial_plan_profile'] = $this->normalizeFinancialPlanProfile((string) ($data['financial_plan_profile'] ?? ''));
+        $data['financial_plan_boleto_days_before'] = max(0, min(60, (int) ($data['financial_plan_boleto_days_before'] ?? 10)));
+        $data['financial_plan_generated_at'] = trim((string) ($data['financial_plan_generated_at'] ?? ''));
+
+        if (!empty($data['financial_plan_first_due_date']) && empty($data['billing_day'])) {
+            $data['billing_day'] = date('d', strtotime((string) $data['financial_plan_first_due_date']));
+        }
+
+        if (!$hasPlanInput) {
+            $data['financial_plan_profile'] = $data['financial_plan_profile'] === 'legacy' ? 'legacy' : '';
+            $data['financial_plan_installments'] = null;
+            $data['financial_plan_first_due_date'] = '';
+            $data['financial_plan_payment_method_id'] = null;
+            $data['financial_plan_auto_generate'] = 0;
+            return true;
+        }
+
+        if ((float) ($data['monthly_fee'] ?? 0) <= 0) {
+            $this->error('Informe o valor da parcela para o plano financeiro do aluno.');
+            $this->redirect($redirectRoute);
+            return false;
+        }
+
+        if ((int) ($data['financial_plan_installments'] ?? 0) <= 0) {
+            $this->error('Informe a quantidade de parcelas do plano financeiro.');
+            $this->redirect($redirectRoute);
+            return false;
+        }
+
+        if (!$this->isValidDate((string) ($data['financial_plan_first_due_date'] ?? ''))) {
+            $this->error('Informe um primeiro vencimento valido para o plano financeiro.');
+            $this->redirect($redirectRoute);
+            return false;
+        }
+
+        $billingDay = (int) ($data['billing_day'] ?? 0);
+        if ($billingDay <= 0 || $billingDay > 31) {
+            $this->error('Informe um dia de vencimento entre 1 e 31.');
+            $this->redirect($redirectRoute);
+            return false;
+        }
+
+        if ($this->finance->invoicePaymentMethodsAvailable()) {
+            $paymentMethodId = (int) ($data['financial_plan_payment_method_id'] ?? 0);
+            if ($paymentMethodId <= 0) {
+                $this->error('Selecione a forma de pagamento padrao do plano financeiro.');
+                $this->redirect($redirectRoute);
+                return false;
+            }
+
+            $method = $this->finance->findPaymentMethod($paymentMethodId);
+            if (!$method || (int) ($method['is_active'] ?? 0) !== 1) {
+                $this->error('Forma de pagamento padrao invalida ou inativa.');
+                $this->redirect($redirectRoute);
+                return false;
+            }
+        } else {
+            $data['financial_plan_payment_method_id'] = null;
+        }
+
+        if ($data['financial_plan_profile'] === '') {
+            $data['financial_plan_profile'] = 'custom';
+        }
+
+        return true;
+    }
+
+    private function handleFinancialPlanGeneration(int $studentId, array $data): string
+    {
+        if (!$this->students->financialPlanFeatureAvailable() || empty($data['financial_plan_auto_generate'])) {
+            return '';
+        }
+
+        $result = $this->finance->generateStudentFinancialPlan($studentId, (int) current_user()['id']);
+        if (!($result['ok'] ?? false)) {
+            flash('error', (string) ($result['message'] ?? 'Nao foi possivel gerar o plano financeiro automaticamente.'));
+            return '';
+        }
+
+        $created = (int) ($result['created'] ?? 0);
+        $existing = (int) ($result['existing'] ?? 0);
+        $failed = (int) ($result['failed'] ?? 0);
+        $parts = [];
+
+        if ($created > 0) {
+            $parts[] = $created . ' fatura(s) do plano gerada(s)';
+        }
+        if ($existing > 0) {
+            $parts[] = $existing . ' parcela(s) ja existiam';
+        }
+        if ($failed > 0) {
+            flash('error', $failed . ' parcela(s) do plano nao puderam ser geradas automaticamente.');
+        }
+
+        return $parts !== [] ? ' Plano financeiro: ' . implode(', ', $parts) . '.' : '';
+    }
+
+    private function normalizeFinancialPlanProfile(string $profile): string
+    {
+        $profile = trim(strtolower($profile));
+        $allowed = ['custom', 'preset_36_2200', 'preset_36_2900', 'preset_48_2240_25', 'legacy'];
+        return in_array($profile, $allowed, true) ? $profile : '';
+    }
+
+    private function isValidDate(string $date): bool
+    {
+        $date = trim($date);
+        if ($date === '') {
+            return false;
+        }
+
+        $parsed = DateTime::createFromFormat('Y-m-d', $date);
+        return $parsed && $parsed->format('Y-m-d') === $date;
     }
 
     private function collectPortalData(): array

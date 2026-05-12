@@ -7,6 +7,7 @@ class StudentModel extends BaseModel
     private ?bool $practiceUnitColumnExists = null;
     private ?bool $residencyLevelColumnExists = null;
     private ?bool $studentCityColumnExists = null;
+    private ?bool $studentFinancialPlanColumnsExist = null;
 
     public function stats(): array
     {
@@ -106,23 +107,28 @@ class StudentModel extends BaseModel
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
         $supportsCity = $this->hasStudentCityColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
+        $supportsFinancialPlan = $this->financialPlanFeatureAvailable();
         $insertSql = $supportsPhoto
             ? 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone' . ($supportsCity ? ', city' : '') . ', profile_photo, is_active,
                 admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
+                ' . ($supportsFinancialPlan ? 'financial_plan_profile, financial_plan_installments, financial_plan_first_due_date, financial_plan_payment_method_id, financial_plan_auto_generate, financial_plan_boleto_days_before, financial_plan_generated_at,' : '') . '
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone' . ($supportsCity ? ', :city' : '') . ', :profile_photo, :is_active,
                 :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
+                ' . ($supportsFinancialPlan ? ':financial_plan_profile, :financial_plan_installments, :financial_plan_first_due_date, :financial_plan_payment_method_id, :financial_plan_auto_generate, :financial_plan_boleto_days_before, :financial_plan_generated_at,' : '') . '
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )'
             : 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone' . ($supportsCity ? ', city' : '') . ', is_active,
                 admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
+                ' . ($supportsFinancialPlan ? 'financial_plan_profile, financial_plan_installments, financial_plan_first_due_date, financial_plan_payment_method_id, financial_plan_auto_generate, financial_plan_boleto_days_before, financial_plan_generated_at,' : '') . '
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone' . ($supportsCity ? ', :city' : '') . ', :is_active,
                 :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
+                ' . ($supportsFinancialPlan ? ':financial_plan_profile, :financial_plan_installments, :financial_plan_first_due_date, :financial_plan_payment_method_id, :financial_plan_auto_generate, :financial_plan_boleto_days_before, :financial_plan_generated_at,' : '') . '
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )';
         $stmt = $this->db->prepare($insertSql);
@@ -160,6 +166,25 @@ class StudentModel extends BaseModel
             $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
             $params[':residency_level'] = in_array(($data['residency_level'] ?? 'R1'), ['R1', 'R2', 'R3'], true) ? $data['residency_level'] : 'R1';
         }
+        if ($supportsFinancialPlan) {
+            $params[':financial_plan_profile'] = trim((string) ($data['financial_plan_profile'] ?? '')) !== ''
+                ? trim((string) $data['financial_plan_profile'])
+                : null;
+            $params[':financial_plan_installments'] = !empty($data['financial_plan_installments'])
+                ? (int) $data['financial_plan_installments']
+                : null;
+            $params[':financial_plan_first_due_date'] = trim((string) ($data['financial_plan_first_due_date'] ?? '')) !== ''
+                ? trim((string) $data['financial_plan_first_due_date'])
+                : null;
+            $params[':financial_plan_payment_method_id'] = !empty($data['financial_plan_payment_method_id'])
+                ? (int) $data['financial_plan_payment_method_id']
+                : null;
+            $params[':financial_plan_auto_generate'] = !empty($data['financial_plan_auto_generate']) ? 1 : 0;
+            $params[':financial_plan_boleto_days_before'] = max(0, min(60, (int) ($data['financial_plan_boleto_days_before'] ?? 10)));
+            $params[':financial_plan_generated_at'] = !empty($data['financial_plan_generated_at'])
+                ? trim((string) $data['financial_plan_generated_at'])
+                : null;
+        }
 
         $stmt->execute($params);
 
@@ -184,6 +209,7 @@ class StudentModel extends BaseModel
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
         $supportsCity = $this->hasStudentCityColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
+        $supportsFinancialPlan = $this->financialPlanFeatureAvailable();
         $updateSql = $supportsPhoto
             ? 'UPDATE students SET
                 full_name = :full_name,
@@ -203,6 +229,13 @@ class StudentModel extends BaseModel
                 notes = :notes,
                 monthly_fee = :monthly_fee,
                 billing_day = :billing_day,
+                ' . ($supportsFinancialPlan ? 'financial_plan_profile = :financial_plan_profile,
+                financial_plan_installments = :financial_plan_installments,
+                financial_plan_first_due_date = :financial_plan_first_due_date,
+                financial_plan_payment_method_id = :financial_plan_payment_method_id,
+                financial_plan_auto_generate = :financial_plan_auto_generate,
+                financial_plan_boleto_days_before = :financial_plan_boleto_days_before,
+                financial_plan_generated_at = :financial_plan_generated_at,' : '') . '
                 kanban_status_id = :kanban_status_id,
                 updated_at = :updated_at
                 WHERE id = :id AND company_id = :company_id'
@@ -223,6 +256,13 @@ class StudentModel extends BaseModel
                 notes = :notes,
                 monthly_fee = :monthly_fee,
                 billing_day = :billing_day,
+                ' . ($supportsFinancialPlan ? 'financial_plan_profile = :financial_plan_profile,
+                financial_plan_installments = :financial_plan_installments,
+                financial_plan_first_due_date = :financial_plan_first_due_date,
+                financial_plan_payment_method_id = :financial_plan_payment_method_id,
+                financial_plan_auto_generate = :financial_plan_auto_generate,
+                financial_plan_boleto_days_before = :financial_plan_boleto_days_before,
+                financial_plan_generated_at = :financial_plan_generated_at,' : '') . '
                 kanban_status_id = :kanban_status_id,
                 updated_at = :updated_at
                 WHERE id = :id AND company_id = :company_id';
@@ -259,6 +299,25 @@ class StudentModel extends BaseModel
             $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
             $params[':residency_level'] = in_array(($data['residency_level'] ?? 'R1'), ['R1', 'R2', 'R3'], true) ? $data['residency_level'] : 'R1';
         }
+        if ($supportsFinancialPlan) {
+            $params[':financial_plan_profile'] = trim((string) ($data['financial_plan_profile'] ?? '')) !== ''
+                ? trim((string) $data['financial_plan_profile'])
+                : null;
+            $params[':financial_plan_installments'] = !empty($data['financial_plan_installments'])
+                ? (int) $data['financial_plan_installments']
+                : null;
+            $params[':financial_plan_first_due_date'] = trim((string) ($data['financial_plan_first_due_date'] ?? '')) !== ''
+                ? trim((string) $data['financial_plan_first_due_date'])
+                : null;
+            $params[':financial_plan_payment_method_id'] = !empty($data['financial_plan_payment_method_id'])
+                ? (int) $data['financial_plan_payment_method_id']
+                : null;
+            $params[':financial_plan_auto_generate'] = !empty($data['financial_plan_auto_generate']) ? 1 : 0;
+            $params[':financial_plan_boleto_days_before'] = max(0, min(60, (int) ($data['financial_plan_boleto_days_before'] ?? 10)));
+            $params[':financial_plan_generated_at'] = !empty($data['financial_plan_generated_at'])
+                ? trim((string) $data['financial_plan_generated_at'])
+                : null;
+        }
 
         $stmt->execute($params);
 
@@ -266,6 +325,31 @@ class StudentModel extends BaseModel
         if ($statusId !== null && $historyFromStatusId !== $statusId) {
             $this->registerKanbanHistory($id, $historyFromStatusId, $statusId, $updatedBy, 'Atualizacao manual');
         }
+    }
+
+    public function financialPlanFeatureAvailable(): bool
+    {
+        if ($this->studentFinancialPlanColumnsExist !== null) {
+            return $this->studentFinancialPlanColumnsExist;
+        }
+
+        $requiredColumns = [
+            'financial_plan_profile',
+            'financial_plan_installments',
+            'financial_plan_first_due_date',
+            'financial_plan_payment_method_id',
+            'financial_plan_auto_generate',
+            'financial_plan_boleto_days_before',
+            'financial_plan_generated_at',
+        ];
+
+        foreach ($requiredColumns as $column) {
+            if (!$this->schemaColumnExists('students', $column)) {
+                return $this->studentFinancialPlanColumnsExist = false;
+            }
+        }
+
+        return $this->studentFinancialPlanColumnsExist = true;
     }
 
     public function updateProfilePhoto(int $id, ?string $photoPath): void

@@ -165,8 +165,11 @@ $router->post('leads/status/delete', fn () => $leads->deleteStatusConfig());
 
 $router->get('finance/invoices', fn () => $finance->invoices());
 $router->get('finance/invoices/create', fn () => $finance->createInvoice());
+$router->get('finance/invoices/edit', fn () => $finance->editInvoice());
 $router->post('finance/invoices/store', fn () => $finance->storeInvoice());
+$router->post('finance/invoices/update', fn () => $finance->updateInvoice());
 $router->post('finance/invoices/boleto-generate', fn () => $finance->generateBankSlip());
+$router->post('finance/invoices/boleto-issue-due', fn () => $finance->issueDueBankSlips());
 $router->post('finance/invoices/boleto-sync', fn () => $finance->syncBankSlip());
 $router->post('finance/invoices/settle', fn () => $finance->settleInvoice());
 $router->post('finance/invoices/fiscal-generate', fn () => $finance->generateFiscalInvoice());

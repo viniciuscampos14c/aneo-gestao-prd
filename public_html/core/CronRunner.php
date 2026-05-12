@@ -114,6 +114,10 @@ class CronRunner
             return $this->jobFinanceBillingNotifications();
         };
 
+        $this->jobs['boleto_issue_due'] = function (): array {
+            return $this->jobBoletoIssueDue();
+        };
+
         $this->jobs['boleto_sync'] = function (): array {
             return $this->jobBoletoSync();
         };
@@ -147,6 +151,54 @@ class CronRunner
     }
 
     /**
+     * Job: emite boletos Itau apenas para faturas que entraram na janela configurada.
+     */
+    private function jobBoletoIssueDue(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT DISTINCT i.company_id
+             FROM invoices i
+             INNER JOIN payment_methods pm ON pm.id = i.payment_method_id AND pm.company_id = i.company_id
+             WHERE i.status IN ('open','partial','overdue')
+               AND pm.mode = 'integrated'
+               AND pm.provider_key = 'itau'
+             ORDER BY i.company_id ASC"
+        );
+
+        if (!$stmt) {
+            return ['ok' => true, 'message' => 'Nenhuma empresa elegivel para emissao automatica de boletos.'];
+        }
+
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        if ($companies === []) {
+            return ['ok' => true, 'message' => 'Nenhuma empresa elegivel para emissao automatica de boletos.'];
+        }
+
+        $processed = 0;
+        $issued = 0;
+        $pending = 0;
+        $errors = 0;
+
+        foreach ($companies as $row) {
+            $companyId = (int) ($row['company_id'] ?? 0);
+            if ($companyId <= 0) {
+                continue;
+            }
+
+            $result = (new FinanceModel($companyId))->issueDueBankSlips(0, 10);
+            $processed += (int) ($result['processed'] ?? 0);
+            $issued += (int) ($result['issued'] ?? 0);
+            $pending += (int) ($result['pending'] ?? 0);
+            $errors += (int) ($result['errors'] ?? 0);
+        }
+
+        return [
+            'ok' => $errors === 0,
+            'message' => "Faturas processadas: {$processed}. Emitidos: {$issued}. Pendentes: {$pending}. Erros: {$errors}.",
+        ];
+    }
+
+    /**
      * Job: sincroniza status de boletos com status 'pending' ou 'processing'.
      */
     private function jobBoletoSync(): array
@@ -157,8 +209,9 @@ class CronRunner
 
         // Busca boletos pendentes de todas as empresas
         $stmt = $this->db->query(
-            "SELECT bs.id AS slip_id, bs.invoice_id
+            "SELECT bs.id AS slip_id, bs.invoice_id, i.company_id
              FROM bank_slips bs
+             INNER JOIN invoices i ON i.id = bs.invoice_id
              WHERE bs.status IN ('pending','processing')
              ORDER BY bs.created_at ASC
              LIMIT 100"
@@ -172,9 +225,14 @@ class CronRunner
         $synced = 0;
         $errors = 0;
 
-        $model = new FinanceModel();
         foreach ($rows as $row) {
-            $result = $model->syncBankSlipStatus((int) $row['invoice_id'], 0);
+            $companyId = (int) ($row['company_id'] ?? 0);
+            if ($companyId <= 0) {
+                $errors++;
+                continue;
+            }
+
+            $result = (new FinanceModel($companyId))->syncBankSlipStatus((int) $row['invoice_id'], 0);
             if ($result['ok'] ?? false) {
                 $synced++;
             } else {
