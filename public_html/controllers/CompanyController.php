@@ -430,6 +430,51 @@ class CompanyController extends BaseController
         $this->redirect('companies&integration_company_id=' . $companyId);
     }
 
+    public function saveD4Sign(): void
+    {
+        require_auth();
+        require_permission('companies');
+        csrf_validate();
+
+        if (!$this->integrations->tableExists()) {
+            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->redirect('companies');
+        }
+
+        $companyId = (int) post('company_id');
+        $company = $companyId > 0 ? $this->companies->find($companyId) : null;
+        if (!$company) {
+            $this->error('Empresa invalida para salvar configuracao D4Sign.');
+            $this->redirect('companies');
+        }
+
+        $d4sign = $this->collectD4SignSettings();
+        $changedBy = (int) (current_user()['id'] ?? 0);
+        $this->integrations->save($companyId, 'd4sign', $d4sign['enabled'], $d4sign['settings'], $changedBy);
+
+        if ((int) (current_company_id() ?? 0) === $companyId) {
+            $this->refreshSessionCompany($companyId);
+        }
+
+        if (!$d4sign['enabled']) {
+            $this->success('Integracao D4Sign desativada para a empresa selecionada.');
+            $this->redirect('companies&integration_company_id=' . $companyId);
+        }
+
+        $configured = isset($d4sign['settings']['token_api'], $d4sign['settings']['crypt_key'], $d4sign['settings']['safe_uuid'])
+            && $d4sign['settings']['token_api'] !== ''
+            && $d4sign['settings']['crypt_key'] !== ''
+            && $d4sign['settings']['safe_uuid'] !== '';
+
+        if ($configured) {
+            $this->success('Configuracao D4Sign atualizada com sucesso.');
+        } else {
+            $this->success('Configuracao salva. Faltam token_api, crypt_key ou safe_uuid para envio de contratos.');
+        }
+
+        $this->redirect('companies&integration_company_id=' . $companyId);
+    }
+
     private function loadIntegrationSettings(int $companyId): array
     {
         return [
@@ -599,6 +644,10 @@ class CompanyController extends BaseController
             'webhook_token' => trim((string) post('d4sign_webhook_token')),
             'webhook_hmac_secret' => trim((string) post('d4sign_webhook_hmac_secret')),
         ];
+
+        if ($settings['base_url'] !== '') {
+            $settings['base_url'] = rtrim($settings['base_url'], '/');
+        }
 
         foreach ($settings as $key => $value) {
             if ($value === '') {

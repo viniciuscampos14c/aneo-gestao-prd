@@ -93,6 +93,7 @@ $router->post('companies/store', fn () => $companies->store());
 $router->post('companies/update', fn () => $companies->update());
 $router->post('companies/toggle', fn () => $companies->toggle());
 $router->post('companies/integrations/update', fn () => $companies->updateIntegrations());
+$router->post('companies/d4sign/save', fn () => $companies->saveD4Sign());
 $router->post('companies/smtp/save', fn () => $companies->saveSmtp());
 $router->post('companies/smtp/test', fn () => $companies->testSmtp());
 $router->post('companies/license/activate', fn () => $license->activate());
