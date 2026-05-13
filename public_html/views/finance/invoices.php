@@ -8,7 +8,6 @@ $canInvoiceRecurrence = has_permission('finance.invoice.recurrence');
 $canInvoiceWhatsapp = has_permission('finance.invoice.whatsapp');
 $canBoletoGenerate = has_permission('finance.invoice.boleto.generate');
 $canBoletoSync = has_permission('finance.invoice.boleto.sync');
-$canChatOpen = has_permission('chat.open');
 $isAdminUser = is_admin();
 $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
 $paginationBase = [
@@ -364,14 +363,6 @@ $exportQuery = http_build_query([
                             ?>
                             <?php if ($canInvoiceWhatsapp && $row['status'] !== 'paid' && $invoiceWhatsappLink): ?>
                                 <a target="_blank" rel="noopener" href="<?= e($invoiceWhatsappLink); ?>" class="finance-btn finance-btn-whatsapp mb-2 inline-flex rounded border border-emerald-200 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50">Enviar boleto WhatsApp</a>
-                            <?php endif; ?>
-                            <?php if ($canChatOpen && (int) $row['student_id'] > 0): ?>
-                                <form method="post" action="<?= route('chatwoot/open-student'); ?>" class="mb-2">
-                                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                                    <input type="hidden" name="student_id" value="<?= (int) $row['student_id']; ?>">
-                                    <input type="hidden" name="return_route" value="finance/invoices">
-                                    <button class="finance-btn finance-btn-chatwoot rounded border border-cyan-200 px-2 py-1 text-xs text-cyan-700 hover:bg-cyan-50">Atender no Chatwoot</button>
-                                </form>
                             <?php endif; ?>
                             <?php if ($isAdminUser): ?>
                                 <a href="<?= route('finance/invoices/edit&id=' . (int) $row['id']); ?>" class="mb-2 inline-flex rounded border border-amber-200 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50">Editar</a>
