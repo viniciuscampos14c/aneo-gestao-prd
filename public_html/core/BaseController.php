@@ -9,9 +9,20 @@ abstract class BaseController
                 $tickets = new SupportTicketModel();
                 $data['mobileNegotiationAlerts'] = $tickets->latestMobileNegotiationAlerts(5);
                 $data['mobileNegotiationAlertCount'] = $tickets->countOpenMobileNegotiations();
+                if (has_permission('students')) {
+                    $exchange = new StudentExchangeModel();
+                    $companyId = (int) (current_company_id() ?? 0);
+                    $data['exchangeAlerts'] = $exchange->latestPendingAlerts($companyId, 5);
+                    $data['exchangeAlertCount'] = $exchange->countPendingAlerts($companyId);
+                } else {
+                    $data['exchangeAlerts'] = [];
+                    $data['exchangeAlertCount'] = 0;
+                }
             } catch (Throwable $e) {
                 $data['mobileNegotiationAlerts'] = [];
                 $data['mobileNegotiationAlertCount'] = 0;
+                $data['exchangeAlerts'] = [];
+                $data['exchangeAlertCount'] = 0;
             }
         }
 

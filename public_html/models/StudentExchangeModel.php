@@ -4,10 +4,6 @@ class StudentExchangeModel extends BaseModel
 {
     private ?bool $tableExists = null;
 
-    // -------------------------------------------------------------------------
-    // Feature guard
-    // -------------------------------------------------------------------------
-
     public function featureAvailable(): bool
     {
         if ($this->tableExists !== null) {
@@ -24,18 +20,14 @@ class StudentExchangeModel extends BaseModel
         return $this->tableExists;
     }
 
-    // -------------------------------------------------------------------------
-    // Student side
-    // -------------------------------------------------------------------------
-
     public function submit(
-        int    $studentId,
-        int    $companyId,
+        int $studentId,
+        int $companyId,
         string $studentName,
         string $currentUnit,
         string $targetUnit,
         string $desiredMonth,
-        int    $monthsEnrolled
+        int $monthsEnrolled
     ): bool {
         if (!$this->featureAvailable()) {
             return false;
@@ -51,20 +43,19 @@ class StudentExchangeModel extends BaseModel
 
         $now = now();
         return $stmt->execute([
-            ':company_id'      => $companyId,
-            ':student_id'      => $studentId,
-            ':student_name'    => $studentName,
-            ':current_unit'    => $currentUnit,
-            ':target_unit'     => $targetUnit,
-            ':desired_month'   => $desiredMonth,
+            ':company_id' => $companyId,
+            ':student_id' => $studentId,
+            ':student_name' => $studentName,
+            ':current_unit' => $currentUnit,
+            ':target_unit' => $targetUnit,
+            ':desired_month' => $desiredMonth,
             ':months_enrolled' => $monthsEnrolled,
-            ':status'          => 'pending',
-            ':created_at'      => $now,
-            ':updated_at'      => $now,
+            ':status' => 'pending',
+            ':created_at' => $now,
+            ':updated_at' => $now,
         ]);
     }
 
-    /** Verifica se o aluno já tem uma solicitação pendente/visualizada */
     public function hasPendingRequest(int $studentId): bool
     {
         if (!$this->featureAvailable()) {
@@ -77,7 +68,6 @@ class StudentExchangeModel extends BaseModel
         return ((int) $stmt->fetchColumn()) > 0;
     }
 
-    /** Últimas solicitações do aluno */
     public function myRequests(int $studentId): array
     {
         if (!$this->featureAvailable()) {
@@ -92,34 +82,30 @@ class StudentExchangeModel extends BaseModel
         return $stmt->fetchAll();
     }
 
-    // -------------------------------------------------------------------------
-    // Admin side
-    // -------------------------------------------------------------------------
-
     public function listRequests(array $filters, int $perPage, int $page): array
     {
         if (!$this->featureAvailable()) {
             return ['rows' => [], 'meta' => ['total' => 0, 'page' => 1, 'per_page' => $perPage, 'last_page' => 1]];
         }
 
-        $where  = ['1=1'];
+        $where = ['1=1'];
         $params = [];
 
         $companyId = (int) current_company_id();
         if ($companyId > 0) {
-            $where[]                = 'r.company_id = :company_id';
-            $params[':company_id']  = $companyId;
+            $where[] = 'r.company_id = :company_id';
+            $params[':company_id'] = $companyId;
         }
 
         $status = trim((string) ($filters['status'] ?? ''));
         if ($status !== '') {
-            $where[]         = 'r.status = :status';
+            $where[] = 'r.status = :status';
             $params[':status'] = $status;
         }
 
         $q = trim((string) ($filters['q'] ?? ''));
         if ($q !== '') {
-            $where[]    = '(r.student_name LIKE :q OR r.current_unit LIKE :q OR r.target_unit LIKE :q)';
+            $where[] = '(r.student_name LIKE :q OR r.current_unit LIKE :q OR r.target_unit LIKE :q)';
             $params[':q'] = '%' . $q . '%';
         }
 
@@ -144,17 +130,17 @@ class StudentExchangeModel extends BaseModel
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
-        $stmt->bindValue(':limit',  $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset,  PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
         return [
             'rows' => $rows,
             'meta' => [
-                'total'     => $total,
-                'page'      => $page,
-                'per_page'  => $perPage,
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
                 'last_page' => max(1, (int) ceil($total / $perPage)),
             ],
         ];
@@ -169,7 +155,7 @@ class StudentExchangeModel extends BaseModel
         $params = [':id' => $id];
         $andCompany = '';
         if ($companyId > 0) {
-            $andCompany         = ' AND r.company_id = :company_id';
+            $andCompany = ' AND r.company_id = :company_id';
             $params[':company_id'] = $companyId;
         }
 
@@ -209,16 +195,16 @@ class StudentExchangeModel extends BaseModel
         }
 
         $params = [
-            ':status'     => $status,
-            ':notes'      => $notes !== '' ? $notes : null,
+            ':status' => $status,
+            ':notes' => $notes !== '' ? $notes : null,
             ':updated_at' => now(),
-            ':id'         => $id,
+            ':id' => $id,
         ];
 
         $andCompany = '';
         if ($companyId > 0) {
-            $andCompany                = ' AND company_id = :company_id';
-            $params[':company_id']     = $companyId;
+            $andCompany = ' AND company_id = :company_id';
+            $params[':company_id'] = $companyId;
         }
 
         $stmt = $this->db->prepare("UPDATE student_exchange_requests
@@ -228,7 +214,6 @@ class StudentExchangeModel extends BaseModel
         return $stmt->execute($params);
     }
 
-    /** Contagens por status — para badges no menu */
     public function countByStatus(int $companyId): array
     {
         if (!$this->featureAvailable()) {
@@ -251,18 +236,51 @@ class StudentExchangeModel extends BaseModel
 
         $counts = ['pending' => 0, 'viewed' => 0, 'approved' => 0, 'rejected' => 0, 'total' => 0];
         foreach ($rows as $row) {
-            $s = (string) ($row['status'] ?? '');
-            $c = (int) ($row['cnt'] ?? 0);
-            if (isset($counts[$s])) {
-                $counts[$s] = $c;
+            $status = (string) ($row['status'] ?? '');
+            $count = (int) ($row['cnt'] ?? 0);
+            if (isset($counts[$status])) {
+                $counts[$status] = $count;
             }
-            $counts['total'] += $c;
+            $counts['total'] += $count;
         }
 
         return $counts;
     }
 
-    /** Lista de empresas (unidades) para o formulário do aluno */
+    public function latestPendingAlerts(int $companyId, int $limit = 5): array
+    {
+        if (!$this->featureAvailable() || $companyId <= 0) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT id, student_name, current_unit, target_unit, desired_month, created_at, status
+            FROM student_exchange_requests
+            WHERE company_id = :company_id
+              AND status = 'pending'
+            ORDER BY created_at DESC, id DESC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $companyId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function countPendingAlerts(int $companyId): int
+    {
+        if (!$this->featureAvailable() || $companyId <= 0) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM student_exchange_requests
+            WHERE company_id = :company_id
+              AND status = 'pending'");
+        $stmt->execute([':company_id' => $companyId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     public function listCompanies(): array
     {
         $stmt = $this->db->prepare("SELECT id, trade_name, legal_name

@@ -118,8 +118,24 @@ $appJsVersion = is_file($appJsPath) ? (string) filemtime($appJsPath) : date('Ymd
 $logoBuild = '20260512-brand-kit-v1';
 $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNegotiationAlerts) ? $mobileNegotiationAlerts : [];
 $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
-$mobileNegotiationAlertIds = array_values(array_filter(array_map('intval', array_column($mobileNegotiationAlerts, 'id')), fn ($id) => $id > 0));
+$exchangeAlerts = isset($exchangeAlerts) && is_array($exchangeAlerts) ? $exchangeAlerts : [];
+$exchangeAlertCount = (int) ($exchangeAlertCount ?? count($exchangeAlerts));
+$adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount;
+$adminAlertKeys = [];
+foreach ($mobileNegotiationAlerts as $alert) {
+    $id = (int) ($alert['id'] ?? 0);
+    if ($id > 0) {
+        $adminAlertKeys[] = 'mobile-negotiation-' . $id;
+    }
+}
+foreach ($exchangeAlerts as $alert) {
+    $id = (int) ($alert['id'] ?? 0);
+    if ($id > 0) {
+        $adminAlertKeys[] = 'exchange-request-' . $id;
+    }
+}
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
+$exchangeQueueRoute = route('exchange&status=pending');
 ?>
 <div class="admin-modern-shell flex min-h-screen">
     <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 flex flex-col transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
@@ -233,12 +249,12 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 </a>
                 <button type="button"
                         data-mobile-neg-trigger
-                        data-mobile-neg-queue="<?= e($mobileQueueRoute); ?>"
+                        data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : $mobileQueueRoute); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                        title="Notificacoes de negociacao mobile">
+                        title="Notificacoes administrativas">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-                    <?php if ($mobileNegotiationAlertCount > 0): ?>
-                        <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $mobileNegotiationAlertCount); ?></span>
+                    <?php if ($adminAlertCount > 0): ?>
+                        <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $adminAlertCount); ?></span>
                     <?php endif; ?>
                 </button>
                 <button type="button" data-admin-theme-toggle class="theme-toggle admin-theme-toggle" aria-label="Alternar tema claro e escuro" title="Alternar tema">
@@ -282,74 +298,119 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
     </div>
 </div>
 
-<?php if ($mobileNegotiationAlerts !== []): ?>
-    <div id="mobile-negotiation-modal" data-ticket-ids="<?= e(json_encode($mobileNegotiationAlertIds)); ?>" class="admin-alert-overlay fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
+<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== []): ?>
+    <div id="mobile-negotiation-modal" data-alert-keys="<?= e(json_encode($adminAlertKeys)); ?>" class="admin-alert-overlay fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
         <div class="admin-alert-modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-xl">
             <div class="admin-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-indigo-700">Novas negociacoes do app</h3>
-                    <p class="text-xs text-slate-500">A equipe da diretoria enviou solicitacoes financeiras para tratamento.</p>
+                    <h3 class="text-lg font-semibold text-indigo-700">Alertas administrativos</h3>
+                    <p class="text-xs text-slate-500">Solicitacoes dos alunos e pendencias operacionais que exigem atencao da equipe.</p>
                 </div>
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Fechar</button>
             </div>
             <div class="admin-alert-modal-body max-h-[60vh] space-y-3 overflow-y-auto p-4">
-                <?php foreach ($mobileNegotiationAlerts as $alert): ?>
-                    <?php
-                    $ticketId = (int) ($alert['id'] ?? 0);
-                    $ticketCode = trim((string) ($alert['ticket_code'] ?? ''));
-                    if (!preg_match('/^ANEO\d+$/', $ticketCode) && $ticketId > 0) {
-                        $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
-                    }
-                    ?>
-                    <article class="admin-alert-card rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm">
-                        <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Negociacao financeira')); ?></p>
-                        <p class="mt-1 text-xs text-slate-600">
-                            Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
-                            | Status: <?= e((string) ($alert['status'] ?? 'open')); ?>
-                            | Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?>
-                        </p>
-                    </article>
-                <?php endforeach; ?>
+                <?php if ($exchangeAlerts !== []): ?>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-slate-800">Solicitacoes de intercambio</h4>
+                            <span class="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-700"><?= (int) $exchangeAlertCount; ?> pendente(s)</span>
+                        </div>
+                        <?php foreach ($exchangeAlerts as $alert): ?>
+                            <?php
+                            $desiredMonth = trim((string) ($alert['desired_month'] ?? ''));
+                            $desiredMonthLabel = $desiredMonth;
+                            if ($desiredMonth !== '' && preg_match('/^(\d{4})-(\d{2})$/', $desiredMonth, $matches)) {
+                                $desiredMonthLabel = $matches[2] . '/' . $matches[1];
+                            }
+                            ?>
+                            <article class="admin-alert-card rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3 text-sm">
+                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['student_name'] ?? 'Solicitacao de intercambio')); ?></p>
+                                <p class="mt-1 text-xs text-slate-600">
+                                    Destino: <?= e((string) ($alert['target_unit'] ?? '-')); ?>
+                                    <?php if (trim((string) ($alert['current_unit'] ?? '')) !== ''): ?>
+                                        | Atual: <?= e((string) $alert['current_unit']); ?>
+                                    <?php endif; ?>
+                                    <?php if ($desiredMonthLabel !== ''): ?>
+                                        | Mes desejado: <?= e($desiredMonthLabel); ?>
+                                    <?php endif; ?>
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-500">Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?></p>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($mobileNegotiationAlerts !== []): ?>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-slate-800">Negociacoes do app</h4>
+                            <span class="rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-semibold text-indigo-700"><?= (int) $mobileNegotiationAlertCount; ?> alerta(s)</span>
+                        </div>
+                        <?php foreach ($mobileNegotiationAlerts as $alert): ?>
+                            <?php
+                            $ticketId = (int) ($alert['id'] ?? 0);
+                            $ticketCode = trim((string) ($alert['ticket_code'] ?? ''));
+                            if (!preg_match('/^ANEO\d+$/', $ticketCode) && $ticketId > 0) {
+                                $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+                            }
+                            ?>
+                            <article class="admin-alert-card rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm">
+                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Negociacao financeira')); ?></p>
+                                <p class="mt-1 text-xs text-slate-600">
+                                    Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
+                                    | Status: <?= e((string) ($alert['status'] ?? 'open')); ?>
+                                    | Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?>
+                                </p>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="admin-alert-modal-foot flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Dispensar</button>
-                <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociacoes</a>
+                <?php if ($exchangeAlerts !== []): ?>
+                    <a href="<?= e($exchangeQueueRoute); ?>" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Abrir intercambios</a>
+                <?php endif; ?>
+                <?php if ($mobileNegotiationAlerts !== []): ?>
+                    <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociacoes</a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 <?php endif; ?>
 
 <script src="assets/js/app.js?v=<?= e($appJsVersion); ?>"></script>
-<?php if ($mobileNegotiationAlerts !== []): ?>
+<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== []): ?>
     <script>
         (function () {
             const modal = document.getElementById('mobile-negotiation-modal');
             const trigger = document.querySelector('[data-mobile-neg-trigger]');
             if (!modal) return;
 
-            let ids = [];
+            let keys = [];
             try {
-                ids = JSON.parse(modal.dataset.ticketIds || '[]');
+                keys = JSON.parse(modal.dataset.alertKeys || '[]');
             } catch (error) {
-                ids = [];
+                keys = [];
             }
-            ids = ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
-            if (ids.length === 0) return;
+            keys = keys.map((key) => String(key || '').trim()).filter((key) => key !== '');
+            if (keys.length === 0) return;
 
             const params = new URLSearchParams(window.location.search || '');
             const isQueueRoute = params.get('route') === 'requests' && params.get('mobile_flow') === '1';
-            if (isQueueRoute) return;
+            const isExchangeRoute = params.get('route') === 'exchange';
+            if (isQueueRoute || isExchangeRoute) return;
 
-            const seenKey = (id) => 'aneo_mobile_negotiation_seen_' + id;
-            const isSeen = (id) => {
+            const seenKey = (key) => 'aneo_admin_alert_seen_' + key;
+            const isSeen = (key) => {
                 try {
-                    if (localStorage.getItem(seenKey(id))) {
+                    if (localStorage.getItem(seenKey(key))) {
                         return true;
                     }
                 } catch (error) {
                 }
                 try {
-                    if (sessionStorage.getItem(seenKey(id))) {
+                    if (sessionStorage.getItem(seenKey(key))) {
                         return true;
                     }
                 } catch (error) {
@@ -357,18 +418,18 @@ $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
                 return false;
             };
 
-            const unseen = ids.filter((id) => {
-                return !isSeen(id);
+            const unseen = keys.filter((key) => {
+                return !isSeen(key);
             });
 
             const markAsSeen = function () {
-                unseen.forEach((id) => {
+                unseen.forEach((key) => {
                     try {
-                        localStorage.setItem(seenKey(id), '1');
+                        localStorage.setItem(seenKey(key), '1');
                     } catch (error) {
                     }
                     try {
-                        sessionStorage.setItem(seenKey(id), '1');
+                        sessionStorage.setItem(seenKey(key), '1');
                     } catch (error) {
                     }
                 });
