@@ -18,11 +18,10 @@ class FinanceController extends BaseController
         require_auth();
         require_permission('finance');
 
-        $filters = [
-            'q' => trim((string) request('q', '')),
-            'status' => trim((string) request('status', '')),
-            'student_id' => request('student_id', ''),
-        ];
+        $filters = $this->collectFinanceDateFilters();
+        $filters['q'] = trim((string) request('q', ''));
+        $filters['status'] = trim((string) request('status', ''));
+        $filters['student_id'] = request('student_id', '');
 
         $perPage = (int) request('per_page', config('app.default_pagination', 50));
         if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
@@ -137,11 +136,12 @@ class FinanceController extends BaseController
             }
         } elseif ($tab === 'receivables') {
             $rows = $this->finance->reportReceivables($filters, 100000, 1)['rows'];
-            fputcsv($out, ['ID', 'Fatura', 'Aluno', 'Vencimento', 'Valor', 'Pago', 'Saldo', 'Status', 'Dias em atraso', 'Data baixa', 'NF status'], ';');
+            fputcsv($out, ['ID', 'Fatura', 'Parcela', 'Aluno', 'Vencimento', 'Valor', 'Pago', 'Saldo', 'Status', 'Dias em atraso', 'Data baixa', 'NF status'], ';');
             foreach ($rows as $row) {
                 fputcsv($out, [
                     $row['id'],
                     $row['invoice_number'],
+                    $row['installment_label'] ?? '',
                     $row['student_name'],
                     $row['due_date'],
                     $row['amount'],
@@ -549,18 +549,24 @@ class FinanceController extends BaseController
         require_auth();
         require_permission('finance.invoice.export');
 
-        $result = $this->finance->listInvoices(['q' => trim((string) request('q', ''))], 10000, 1);
+        $filters = $this->collectFinanceDateFilters();
+        $filters['q'] = trim((string) request('q', ''));
+        $filters['status'] = trim((string) request('status', ''));
+        $filters['student_id'] = request('student_id', '');
+
+        $result = $this->finance->listInvoices($filters, 10000, 1);
 
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=faturas_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['ID', 'Numero', 'Aluno', 'Vencimento', 'Quantia', 'Pago', 'Status', 'Forma de Pagamento', 'Data Baixa', 'Boleto Status', 'Boleto ID Externo', 'Link Boleto', 'NF Status', 'Imposto', 'Projeto', 'Tags'], ';');
+        fputcsv($out, ['ID', 'Numero', 'Parcela', 'Aluno', 'Vencimento', 'Quantia', 'Pago', 'Status', 'Forma de Pagamento', 'Data Baixa', 'Boleto Status', 'Boleto ID Externo', 'Link Boleto', 'NF Status', 'Imposto', 'Projeto', 'Tags'], ';');
 
         foreach ($result['rows'] as $row) {
             fputcsv($out, [
                 $row['id'],
                 $row['invoice_number'],
+                $row['installment_label'] ?? '',
                 $row['student_name'],
                 $row['due_date'],
                 $row['amount'],
@@ -624,9 +630,9 @@ class FinanceController extends BaseController
         require_auth();
         require_permission('finance');
 
-        $filters = [
-            'q' => trim((string) request('q', '')),
-        ];
+        $filters = $this->collectFinanceDateFilters();
+        $filters['q'] = trim((string) request('q', ''));
+        $filters['student_id'] = request('student_id', '');
 
         $perPage = (int) request('per_page', config('app.default_pagination', 50));
         if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
@@ -636,16 +642,30 @@ class FinanceController extends BaseController
 
         $result = $this->finance->listPayments($filters, $perPage, $page);
 
-        $openInvoices = $this->finance->listInvoices(['status' => 'open'], 1000, 1);
-        $partialInvoices = $this->finance->listInvoices(['status' => 'partial'], 1000, 1);
+        $poolBaseFilters = [
+            'period' => $filters['period'],
+            'start_date' => $filters['start_date'],
+            'end_date' => $filters['end_date'],
+            'q' => $filters['q'],
+            'student_id' => $filters['student_id'],
+        ];
+        $openInvoices = $this->finance->listInvoices($poolBaseFilters + ['status' => 'open'], 300, 1);
+        $partialInvoices = $this->finance->listInvoices($poolBaseFilters + ['status' => 'partial'], 300, 1);
+        $overdueInvoices = $this->finance->listInvoices($poolBaseFilters + ['status' => 'overdue'], 300, 1);
 
-        $invoicePool = array_merge($openInvoices['rows'], $partialInvoices['rows']);
+        $invoicePool = [];
+        foreach (array_merge($openInvoices['rows'], $partialInvoices['rows'], $overdueInvoices['rows']) as $row) {
+            $invoicePool[(int) ($row['id'] ?? 0)] = $row;
+        }
+        $invoicePool = array_values($invoicePool);
 
         $this->render('finance/payments', [
             'title' => 'Pagamentos',
+            'filters' => $filters,
             'rows' => $result['rows'],
             'meta' => $result['meta'],
             'invoicesPool' => $invoicePool,
+            'students' => $this->finance->listStudents(),
             'paymentMethods' => $this->finance->paymentMethodsForInvoiceSelection(),
             'paymentMethodsAvailable' => $this->finance->paymentsPaymentMethodsAvailable(),
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
@@ -930,6 +950,29 @@ class FinanceController extends BaseController
         ];
     }
 
+    private function collectFinanceDateFilters(): array
+    {
+        $period = trim((string) request('period', 'month_current'));
+        [$startDate, $endDate] = $this->resolvePeriod($period);
+
+        $customStart = trim((string) request('start_date', ''));
+        $customEnd = trim((string) request('end_date', ''));
+        if ($customStart !== '' && $customEnd !== '') {
+            $startDate = $customStart;
+            $endDate = $customEnd;
+        }
+
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        return [
+            'period' => $period,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ];
+    }
+
     private function reportTab(): string
     {
         $tab = trim((string) request('tab', 'overview'));
@@ -947,7 +990,7 @@ class FinanceController extends BaseController
             'last_30' => [date('Y-m-d', strtotime('-29 days')), $today],
             'month_previous' => [date('Y-m-01', strtotime('first day of previous month')), date('Y-m-t', strtotime('last day of previous month'))],
             'custom' => [$today, $today],
-            default => [date('Y-m-01'), $today],
+            default => [date('Y-m-01'), date('Y-m-t')],
         };
     }
 }

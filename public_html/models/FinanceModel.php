@@ -249,6 +249,12 @@ class FinanceModel extends BaseModel
             $params[':student_id'] = (int) $filters['student_id'];
         }
 
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $where[] = 'i.due_date BETWEEN :start_date AND :end_date';
+            $params[':start_date'] = (string) $filters['start_date'];
+            $params[':end_date'] = (string) $filters['end_date'];
+        }
+
         $whereSql = implode(' AND ', $where);
 
         $bankJoin = $hasBankSlipTable ? "LEFT JOIN bank_slips bs ON bs.invoice_id = i.id" : "";
@@ -287,9 +293,11 @@ class FinanceModel extends BaseModel
             {$fiscalJoin}
             {$paymentJoin}
             WHERE {$whereSql}
-            ORDER BY i.id DESC";
+            ORDER BY i.due_date ASC, i.id DESC";
 
-        return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+        $result = $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+        $result['rows'] = $this->decorateInvoiceRows($result['rows']);
+        return $result;
     }
 
     public function findInvoice(int $id): ?array
@@ -1279,6 +1287,7 @@ class FinanceModel extends BaseModel
                 i.paid_amount,
                 i.paid_at,
                 i.status,
+                i.tags,
                 (i.amount - i.paid_amount) AS outstanding_amount,
                 GREATEST(DATEDIFF(CURDATE(), i.due_date), 0) AS days_overdue,
                 s.full_name AS student_name,
@@ -1289,7 +1298,9 @@ class FinanceModel extends BaseModel
             WHERE {$whereSql}
             ORDER BY i.due_date ASC, i.id DESC";
 
-        return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+        $result = $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+        $result['rows'] = $this->decorateInvoiceRows($result['rows']);
+        return $result;
     }
 
     public function reportAging(array $filters): array
@@ -1447,6 +1458,25 @@ class FinanceModel extends BaseModel
         if (!empty($filters['q'])) {
             $where[] = '(p.payment_ref LIKE :q OR p.method LIKE :q OR p.notes LIKE :q)';
             $params[':q'] = '%' . $filters['q'] . '%';
+        }
+
+        if (!empty($filters['student_id'])) {
+            $where[] = 'EXISTS (
+                SELECT 1
+                FROM payment_items pi_student
+                INNER JOIN invoices i_student ON i_student.id = pi_student.invoice_id
+                WHERE pi_student.payment_id = p.id
+                  AND i_student.company_id = :student_company_id
+                  AND i_student.student_id = :student_id
+            )';
+            $params[':student_company_id'] = $this->companyId();
+            $params[':student_id'] = (int) $filters['student_id'];
+        }
+
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $where[] = 'p.paid_at BETWEEN :start_date AND :end_date';
+            $params[':start_date'] = (string) $filters['start_date'];
+            $params[':end_date'] = (string) $filters['end_date'];
         }
 
         $whereSql = implode(' AND ', $where);
@@ -1955,6 +1985,39 @@ class FinanceModel extends BaseModel
             $installment,
             $qty
         );
+    }
+
+    private function decorateInvoiceRows(array $rows): array
+    {
+        foreach ($rows as &$row) {
+            $meta = $this->extractInstallmentMeta((string) ($row['tags'] ?? ''));
+            $row['installment_number'] = $meta['number'];
+            $row['installment_total'] = $meta['total'];
+            $row['installment_label'] = $meta['label'];
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private function extractInstallmentMeta(string $tags): array
+    {
+        $tags = trim($tags);
+        if ($tags !== '' && preg_match('/Parcela\s+(\d{1,3})\/(\d{1,3})/i', $tags, $matches)) {
+            $number = (int) $matches[1];
+            $total = (int) $matches[2];
+            return [
+                'number' => $number,
+                'total' => $total,
+                'label' => $number . '/' . $total,
+            ];
+        }
+
+        return [
+            'number' => null,
+            'total' => null,
+            'label' => '',
+        ];
     }
 
     private function syncLinkedBankSlipAfterInvoiceEdit(array $previousInvoice, array $newData, int $updatedBy): void

@@ -11,6 +11,25 @@ $canBoletoSync = has_permission('finance.invoice.boleto.sync');
 $canChatOpen = has_permission('chat.open');
 $isAdminUser = is_admin();
 $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
+$paginationBase = [
+    'route' => 'finance/invoices',
+    'q' => $filters['q'],
+    'status' => $filters['status'],
+    'student_id' => $filters['student_id'],
+    'period' => $filters['period'] ?? 'month_current',
+    'start_date' => $filters['start_date'] ?? '',
+    'end_date' => $filters['end_date'] ?? '',
+    'per_page' => $meta['per_page'] ?? 50,
+];
+$exportQuery = http_build_query([
+    'route' => 'finance/invoices/export',
+    'q' => $filters['q'],
+    'status' => $filters['status'],
+    'student_id' => $filters['student_id'],
+    'period' => $filters['period'] ?? 'month_current',
+    'start_date' => $filters['start_date'] ?? '',
+    'end_date' => $filters['end_date'] ?? '',
+]);
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -26,7 +45,7 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
             <a href="<?= route('finance/reports'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Relatorios</a>
             <a href="<?= route('finance/payment-methods'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Formas de pagamento</a>
             <?php if ($canInvoiceExport): ?>
-                <a href="<?= route('finance/invoices/export&q=' . urlencode($filters['q'])); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Exportar</a>
+                <a href="index.php?<?= $exportQuery; ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Exportar</a>
             <?php endif; ?>
         </div>
     </div>
@@ -55,8 +74,18 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
     </div>
 
     <div class="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 lg:grid-cols-[1fr_auto]">
-        <form method="get" action="index.php" class="grid gap-3 md:grid-cols-4">
+        <form method="get" action="index.php" class="grid gap-3 md:grid-cols-4 xl:grid-cols-7">
             <input type="hidden" name="route" value="finance/invoices">
+            <select name="period" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <option value="today" <?= ($filters['period'] ?? '') === 'today' ? 'selected' : ''; ?>>Hoje</option>
+                <option value="last_7" <?= ($filters['period'] ?? '') === 'last_7' ? 'selected' : ''; ?>>Ultimos 7 dias</option>
+                <option value="last_30" <?= ($filters['period'] ?? '') === 'last_30' ? 'selected' : ''; ?>>Ultimos 30 dias</option>
+                <option value="month_current" <?= ($filters['period'] ?? 'month_current') === 'month_current' ? 'selected' : ''; ?>>Mes atual</option>
+                <option value="month_previous" <?= ($filters['period'] ?? '') === 'month_previous' ? 'selected' : ''; ?>>Mes anterior</option>
+                <option value="custom" <?= ($filters['period'] ?? '') === 'custom' ? 'selected' : ''; ?>>Personalizado</option>
+            </select>
+            <input type="date" name="start_date" value="<?= e((string) ($filters['start_date'] ?? '')); ?>" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <input type="date" name="end_date" value="<?= e((string) ($filters['end_date'] ?? '')); ?>" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <input type="text" name="q" value="<?= e($filters['q']); ?>" placeholder="Buscar faturas..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
 
             <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -79,7 +108,10 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                 <?php endforeach; ?>
             </select>
 
-            <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
+            <div class="flex gap-2 xl:col-span-7">
+                <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
+                <a href="index.php?<?= http_build_query(['route' => 'finance/invoices']); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Limpar</a>
+            </div>
         </form>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -105,6 +137,7 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
             <thead>
                 <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                     <th class="px-3 py-3">Numero</th>
+                    <th class="px-3 py-3">Parcela</th>
                     <th class="px-3 py-3">Aluno</th>
                     <th class="px-3 py-3">Vencimento</th>
                     <th class="px-3 py-3">Quantia</th>
@@ -167,6 +200,13 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                     ?>
                     <tr class="finance-row border-b border-slate-100 hover:bg-slate-50 align-top">
                         <td class="px-3 py-3 font-medium"><?= e($row['invoice_number']); ?></td>
+                        <td class="px-3 py-3">
+                            <?php if (!empty($row['installment_label'])): ?>
+                                <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700"><?= e($row['installment_label']); ?></span>
+                            <?php else: ?>
+                                <span class="text-xs text-slate-400">Avulsa</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="px-3 py-3"><?= e($row['student_name']); ?></td>
                         <td class="px-3 py-3"><?= e($row['due_date']); ?></td>
                         <td class="px-3 py-3"><?= e(format_currency($row['amount'])); ?></td>
@@ -351,7 +391,7 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
                 <?php endforeach; ?>
                 <?php if ($rows === []): ?>
                     <tr>
-                        <td colspan="14" class="px-3 py-6 text-center text-slate-500">Nenhuma fatura encontrada.</td>
+                        <td colspan="15" class="px-3 py-6 text-center text-slate-500">Nenhuma fatura encontrada.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -362,7 +402,7 @@ $invoicePaymentMethodsAvailable = !empty($invoicePaymentMethodsAvailable);
         <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
-                <a href="index.php?<?= build_query(['route' => 'finance/invoices', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
+                <a href="index.php?<?= http_build_query($paginationBase + ['page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
             <?php endfor; ?>
         </div>
     </div>

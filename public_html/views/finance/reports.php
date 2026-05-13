@@ -198,6 +198,7 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
                 <thead>
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th class="px-3 py-3">Fatura</th>
+                        <th class="px-3 py-3">Parcela</th>
                         <th class="px-3 py-3">Aluno</th>
                         <th class="px-3 py-3">Vencimento</th>
                         <th class="px-3 py-3">Valor</th>
@@ -212,6 +213,13 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
                     <?php foreach ($rows as $row): ?>
                         <tr class="finance-reports-row border-b border-slate-100 hover:bg-slate-50">
                             <td class="px-3 py-3 font-medium"><?= e($row['invoice_number']); ?></td>
+                            <td class="px-3 py-3">
+                                <?php if (!empty($row['installment_label'])): ?>
+                                    <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700"><?= e($row['installment_label']); ?></span>
+                                <?php else: ?>
+                                    <span class="text-xs text-slate-400">Avulsa</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="px-3 py-3"><?= e($row['student_name']); ?></td>
                             <td class="px-3 py-3"><?= e($row['due_date']); ?></td>
                             <td class="px-3 py-3"><?= e(format_currency($row['amount'])); ?></td>
@@ -223,7 +231,7 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
                         </tr>
                     <?php endforeach; ?>
                     <?php if ($rows === []): ?>
-                        <tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Nenhuma conta a receber encontrada.</td></tr>
+                        <tr><td colspan="10" class="px-3 py-6 text-center text-slate-500">Nenhuma conta a receber encontrada.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
