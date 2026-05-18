@@ -17,13 +17,12 @@ import type { ApiConfig } from './types';
 
 type AppTab = 'dashboard' | 'negotiation' | 'trial-access' | 'students' | 'tickets' | 'connection';
 
-const tabs: Array<{ id: AppTab; label: string; badge: string }> = [
-  { id: 'dashboard', label: 'Indicadores', badge: 'I' },
-  { id: 'negotiation', label: 'Negociacao', badge: '%' },
-  { id: 'trial-access', label: 'Degustacao', badge: 'D' },
-  { id: 'students', label: 'Alunos', badge: 'A' },
-  { id: 'tickets', label: 'Chamados', badge: 'T' },
-  { id: 'connection', label: 'Conexao', badge: 'C' },
+const navigationTabs: Array<{ id: Exclude<AppTab, 'connection'>; label: string; mobileLabel: string; badge: string }> = [
+  { id: 'dashboard', label: 'Indicadores', mobileLabel: 'Inicio', badge: 'I' },
+  { id: 'negotiation', label: 'Negociacao', mobileLabel: 'Negociar', badge: '%' },
+  { id: 'trial-access', label: 'Degustacao', mobileLabel: 'Degustar', badge: 'D' },
+  { id: 'students', label: 'Alunos', mobileLabel: 'Alunos', badge: 'A' },
+  { id: 'tickets', label: 'Chamados', mobileLabel: 'Fila', badge: 'T' },
 ];
 
 export default function App() {
@@ -93,10 +92,14 @@ export default function App() {
       <div className="app-shell login-shell">
         <main className="login-layout">
           <section className="brand-panel">
+            <div className="launch-badge-row">
+              <span className="launch-badge">APP oficial</span>
+              <span className="launch-badge launch-badge-soft">Acesso direto da diretoria</span>
+            </div>
             <div className="brand-mark">
               <img src="/aneo-logo.png" alt="ANEO" className="brand-logo" />
             </div>
-            <p className="eyebrow">PWA Executivo</p>
+            <p className="eyebrow">APP Executivo</p>
             <h1>ANEO Diretoria</h1>
             <p className="lead">
               Versao instalavel para celular e desktop, sem loja e sem alterar o ERP principal.
@@ -128,13 +131,13 @@ export default function App() {
             <img src="/aneo-logo.png" alt="ANEO" className="sidebar-logo" />
           </div>
           <div>
-            <p className="eyebrow">PWA Executivo</p>
+            <p className="eyebrow">APP Executivo</p>
             <h2>ANEO Diretoria</h2>
           </div>
         </div>
 
         <nav className="nav-list">
-          {tabs.map((tab) => (
+          {navigationTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -142,7 +145,8 @@ export default function App() {
               onClick={() => setActiveTab(tab.id)}
             >
               <span className="nav-badge">{tab.badge}</span>
-              <span>{tab.label}</span>
+              <span className="nav-label nav-label-desktop">{tab.label}</span>
+              <span className="nav-label nav-label-mobile">{tab.mobileLabel}</span>
             </button>
           ))}
         </nav>
@@ -150,17 +154,17 @@ export default function App() {
 
       <main className="main-panel">
         <header className="topbar surface-card">
-          <div>
+          <div className="topbar-copy">
             <p className="eyebrow">Ambiente instalado</p>
             <h1>{pageTitle}</h1>
-            <p className="status-line">
-              {apiConfig?.token ? 'API conectada em tempo real' : 'Sem conexao ativa'}
-            </p>
+            <div className="topbar-badges">
+              <span className="topbar-pill">APP oficial ANEO</span>
+            </div>
           </div>
 
           <button
             type="button"
-            className="ghost-button"
+            className="ghost-button topbar-action"
             onClick={() => {
               void handleDisconnect();
             }}
@@ -171,7 +175,7 @@ export default function App() {
 
         <section className="content-grid">
           {activeTab === 'dashboard' ? (
-            <DashboardView apiConfig={apiConfig} />
+            <DashboardView apiConfig={apiConfig} onNavigateTab={setActiveTab} />
           ) : null}
           {activeTab === 'negotiation' ? <NegotiationView apiConfig={apiConfig} /> : null}
           {activeTab === 'trial-access' ? <TrialAccessView apiConfig={apiConfig} /> : null}

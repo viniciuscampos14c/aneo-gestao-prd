@@ -65,7 +65,7 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
   return (
     <div className="form-card">
       <p className="eyebrow">Acesso seguro</p>
-      <h3>Entrar no PWA</h3>
+      <h3>Entrar no APP</h3>
       <p className="muted">Use o mesmo login da diretoria. O token continua sendo gerado pelo ERP.</p>
 
       <div className="field-grid">
@@ -74,6 +74,11 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
           <input
             id="login"
             className="text-input"
+            type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="username"
             value={login}
             onChange={(event) => {
               setLogin(event.target.value);
@@ -88,6 +93,7 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
           <input
             id="password"
             className="text-input"
+            autoComplete="current-password"
             value={password}
             onChange={(event) => {
               setPassword(event.target.value);
@@ -104,6 +110,8 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
           {loading ? 'Autenticando...' : requiresCompany ? 'Validar novamente' : 'Entrar'}
         </button>
       </div>
+
+      {loading ? <div className="loading-chip">Validando credenciais...</div> : null}
 
       {requiresCompany ? (
         <div className="detail-card">

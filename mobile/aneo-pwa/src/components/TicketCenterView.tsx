@@ -7,6 +7,8 @@ type TicketCenterViewProps = {
   apiConfig: ApiConfig | null;
 };
 
+const RESULTS_PAGE_SIZE = 12;
+
 function statusLabel(status: string | null | undefined): string {
   const normalized = String(status ?? '').trim().toLowerCase();
   if (normalized === 'open') return 'Aberto';
@@ -28,6 +30,7 @@ function priorityLabel(priority: string | null | undefined): string {
 export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
   const [rows, setRows] = useState<ApiTicket[]>([]);
   const [query, setQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const loadingRef = useRef(false);
@@ -93,9 +96,16 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
     });
   }, [rows, query]);
 
+  const visibleRows = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMoreResults = visibleRows.length < filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(RESULTS_PAGE_SIZE);
+  }, [query, rows]);
+
   return (
     <section className="surface-card">
-      <div className="inline-between">
+      <div className="module-toolbar">
         <div>
           <p className="eyebrow">Chamados</p>
           <h3>Central de chamados</h3>
@@ -117,14 +127,41 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
         <>
           <input
             className="search-input"
+            type="search"
+            inputMode="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar por codigo, assunto ou solicitante..."
             style={{ marginTop: 16 }}
           />
 
+          {loading && filtered.length === 0 ? (
+            <div className="skeleton-grid" style={{ marginTop: 16 }}>
+              <div className="skeleton-card" />
+              <div className="skeleton-card" />
+              <div className="skeleton-card" />
+            </div>
+          ) : null}
+
           <div className="list-stack" style={{ marginTop: 16 }}>
-            {filtered.map((ticket) => (
+            <div className="list-results-meta">
+              <span className="muted">
+                {filtered.length === 0
+                  ? 'Nenhum chamado encontrado'
+                  : `Mostrando ${visibleRows.length} de ${filtered.length} chamados`}
+              </span>
+              {hasMoreResults ? (
+                <button
+                  type="button"
+                  className="secondary-button list-more-button"
+                  onClick={() => setVisibleCount((current) => current + RESULTS_PAGE_SIZE)}
+                >
+                  Ver mais chamados
+                </button>
+              ) : null}
+            </div>
+
+            {visibleRows.map((ticket) => (
               <article key={ticket.id} className="list-card">
                 <div className="ticket-row-header">
                   <strong>{String(ticket.ticket_code ?? `ID ${ticket.id}`)}</strong>
@@ -136,7 +173,21 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
                 <p className="muted">Origem: {String(ticket.source ?? '-')}</p>
               </article>
             ))}
-            {filtered.length === 0 ? <p className="muted">Nenhum chamado encontrado.</p> : null}
+            {!loading && filtered.length === 0 ? (
+              <div className="empty-state">
+                <h4>Nenhum chamado encontrado</h4>
+                <p className="muted">Tente buscar por codigo, assunto ou solicitante.</p>
+              </div>
+            ) : null}
+            {!loading && filtered.length > 0 && hasMoreResults ? (
+              <button
+                type="button"
+                className="secondary-button list-load-more"
+                onClick={() => setVisibleCount((current) => current + RESULTS_PAGE_SIZE)}
+              >
+                Carregar mais {Math.min(RESULTS_PAGE_SIZE, filtered.length - visibleRows.length)} chamados
+              </button>
+            ) : null}
           </div>
         </>
       ) : (

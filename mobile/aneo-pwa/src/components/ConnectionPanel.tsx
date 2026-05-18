@@ -79,7 +79,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
       <section className="surface-card">
         <p className="eyebrow">Sessao</p>
         <h3>Conexao com a API ANEO</h3>
-        <p className="muted">O PWA usa exatamente o fluxo de token que ja existe no backend.</p>
+        <p className="muted">O APP usa exatamente o fluxo de token que ja existe no backend.</p>
 
         <div className="status-card">
           <div className="inline-between">
@@ -96,6 +96,10 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
             <input
               id="baseUrl"
               className="text-input"
+              type="url"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
               value={baseUrl}
               onChange={(event) => {
                 setBaseUrl(event.target.value);
@@ -110,6 +114,11 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
             <input
               id="conn-login"
               className="text-input"
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="username"
               value={login}
               onChange={(event) => {
                 setLogin(event.target.value);
@@ -124,6 +133,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
             <input
               id="conn-password"
               className="text-input"
+              autoComplete="current-password"
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
@@ -146,7 +156,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
             onClick={() => {
               onDisconnect();
               setPassword('');
-              setMessage('Conexao removida. O PWA aguarda novo login.');
+              setMessage('Conexao removida. O APP aguarda novo login.');
               setError('');
               resetCompanySelection();
             }}
@@ -154,6 +164,8 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
             Limpar conexao
           </button>
         </div>
+
+        {loading ? <div className="loading-chip">Atualizando sessao segura...</div> : null}
 
         {requiresCompany ? (
           <div className="detail-card">
@@ -198,7 +210,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
 
       <section className="surface-card">
         <p className="eyebrow">Permissoes</p>
-        <h3>Escopo atual do PWA</h3>
+        <h3>Escopo atual do APP</h3>
         <div className="list-stack">
           <div className="list-card">
             <strong>Leitura</strong>

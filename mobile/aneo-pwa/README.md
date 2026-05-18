@@ -26,6 +26,32 @@ PWA executivo da ANEO criado em projeto separado, sem alterar o ERP principal.
 - central de chamados
 - manifest e service worker de PWA
 
+## Evolucao aplicada
+
+- nomenclatura publica ajustada de `PWA` para `APP` na experiencia do usuario
+- barra mobile simplificada para `5` modulos principais
+- home executiva reduzida para uma leitura mais curta:
+  - `Visao do dia`
+  - `O que decidir primeiro`
+  - `Panorama geral`
+- fluxo de negociacao melhorado com:
+  - rolagem automatica ao selecionar aluno
+  - recolhimento da lista apos selecao
+  - botao `Trocar aluno`
+- listas padronizadas com exibicao progressiva em:
+  - negociacao
+  - alunos
+  - degustacao
+  - chamados
+- ajustes mobile de botoes, espacamento e densidade visual para uso real no celular
+
+## Estado atual da interface
+
+- foco exclusivo no projeto `mobile/aneo-pwa`
+- ERP principal permanece intocado
+- instalacao continua por link com atualizacao web
+- home sem blocos duplicados e sem secoes repetindo a mesma informacao
+
 ## Publicacao atual
 
 - URL publicada: `https://mobile.aneobrasil.com.br/`

@@ -9,18 +9,32 @@ type NegotiationViewProps = {
   apiConfig: ApiConfig | null;
 };
 
+const RESULTS_PAGE_SIZE = 12;
+
+function localIsoDateNow(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function NegotiationView({ apiConfig }: NegotiationViewProps) {
   const [query, setQuery] = useState('');
   const [profiles, setProfiles] = useState<StudentDebtProfile[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [listCollapsed, setListCollapsed] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE);
   const [discountPercent, setDiscountPercent] = useState('8');
   const [installments, setInstallments] = useState('3');
-  const [firstDueDate, setFirstDueDate] = useState('2026-05-10');
+  const [firstDueDate, setFirstDueDate] = useState(localIsoDateNow());
   const [lastAction, setLastAction] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sending, setSending] = useState<'none' | 'aditivo' | 'negociacao'>('none');
   const loadingRef = useRef(false);
+  const searchSectionRef = useRef<HTMLElement | null>(null);
+  const simulatorSectionRef = useRef<HTMLElement | null>(null);
 
   const connected = useMemo(() => !!apiConfig?.token, [apiConfig]);
   const selected = useMemo(
@@ -57,6 +71,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     if (!apiConfig) {
       setProfiles([]);
       setSelectedId(null);
+      setListCollapsed(false);
       setLoading(false);
       setError('');
       setLastAction('');
@@ -78,6 +93,17 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     return () => window.clearInterval(intervalId);
   }, [apiConfig, refreshProfiles]);
 
+  useEffect(() => {
+    if (!selected) {
+      return;
+    }
+
+    setListCollapsed(true);
+    window.setTimeout(() => {
+      simulatorSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }, [selected]);
+
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return profiles;
@@ -87,6 +113,17 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
         student.name.toLowerCase().includes(term) || student.document.toLowerCase().includes(term)
       );
     });
+  }, [query, profiles]);
+
+  const visibleProfiles = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+
+  const hasMoreResults = visibleProfiles.length < filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(RESULTS_PAGE_SIZE);
   }, [query, profiles]);
 
   const totalDebt = selected ? selected.openAmount + selected.overdueAmount : 0;
@@ -146,14 +183,31 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     }
   }
 
+  function handleSelectStudent(studentId: number) {
+    setSelectedId(studentId);
+  }
+
+  function handleChangeStudent() {
+    setListCollapsed(false);
+    setVisibleCount(RESULTS_PAGE_SIZE);
+    window.setTimeout(() => {
+      searchSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
+
   return (
     <div className="field-grid">
-      <section className="surface-card">
-        <div className="inline-between">
+      <section ref={searchSectionRef} className="surface-card">
+        <div className="module-toolbar">
           <div>
             <p className="eyebrow">Base financeira</p>
             <h3>Buscar aluno para negociar</h3>
             <p className="muted">Consulta em tempo real com base nos recursos `students` e `invoices`.</p>
+            {selected ? (
+              <p className="success-text">
+                Aluno selecionado: {selected.name}. {listCollapsed ? 'Toque em "Trocar aluno" para voltar a lista.' : ''}
+              </p>
+            ) : null}
             {error ? <p className="alert-text">{error}</p> : null}
           </div>
 
@@ -171,42 +225,101 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
           <>
             <input
               className="search-input"
+              type="search"
+              inputMode="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Nome ou documento"
               style={{ marginTop: 16 }}
             />
 
-            <div className="list-stack" style={{ marginTop: 16 }}>
-              {filtered.map((student) => {
-                const isSelected = selectedId === student.id;
-                return (
+            {selected && listCollapsed ? (
+              <div className="selection-summary-card" style={{ marginTop: 16 }}>
+                <div>
+                  <strong>{selected.name}</strong>
+                  <p className="muted">Documento: {selected.document}</p>
+                  <p className="muted">
+                    Aberto: {formatCurrency(selected.openAmount)} | Vencido: {formatCurrency(selected.overdueAmount)}
+                  </p>
+                </div>
+                <button type="button" className="secondary-button" onClick={handleChangeStudent}>
+                  Trocar aluno
+                </button>
+              </div>
+            ) : null}
+
+            {!listCollapsed && loading && filtered.length === 0 ? (
+              <div className="skeleton-grid" style={{ marginTop: 16 }}>
+                <div className="skeleton-card" />
+                <div className="skeleton-card" />
+                <div className="skeleton-card" />
+              </div>
+            ) : null}
+
+            {!listCollapsed ? (
+              <div className="list-stack" style={{ marginTop: 16 }}>
+                <div className="list-results-meta">
+                  <span className="muted">
+                    {filtered.length === 0
+                      ? 'Nenhum aluno encontrado'
+                      : `Mostrando ${visibleProfiles.length} de ${filtered.length} alunos`}
+                  </span>
+                  {hasMoreResults ? (
+                    <button
+                      type="button"
+                      className="secondary-button list-more-button"
+                      onClick={() => setVisibleCount((current) => current + RESULTS_PAGE_SIZE)}
+                    >
+                      Ver mais alunos
+                    </button>
+                  ) : null}
+                </div>
+
+                {visibleProfiles.map((student) => {
+                  const isSelected = selectedId === student.id;
+                  return (
+                    <button
+                      key={student.id}
+                      type="button"
+                      className={`list-row${isSelected ? ' is-selected' : ''}`}
+                      onClick={() => handleSelectStudent(student.id)}
+                    >
+                      <div className="list-row-header">
+                        <strong>{student.name}</strong>
+                        <span className="pill pill-warning">{student.document}</span>
+                      </div>
+                      <p className="muted">Aberto: {formatCurrency(student.openAmount)}</p>
+                      <p className="muted">Vencido: {formatCurrency(student.overdueAmount)}</p>
+                    </button>
+                  );
+                })}
+                {!loading && filtered.length === 0 ? (
+                  <div className="empty-state">
+                    <h4>Nenhum aluno encontrado</h4>
+                    <p className="muted">Tente buscar por outro nome ou documento para iniciar a negociacao.</p>
+                  </div>
+                ) : null}
+                {!loading && filtered.length > 0 && hasMoreResults ? (
                   <button
-                    key={student.id}
                     type="button"
-                    className={`list-row${isSelected ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedId(student.id)}
+                    className="secondary-button list-load-more"
+                    onClick={() => setVisibleCount((current) => current + RESULTS_PAGE_SIZE)}
                   >
-                    <div className="list-row-header">
-                      <strong>{student.name}</strong>
-                      <span className="pill pill-warning">{student.document}</span>
-                    </div>
-                    <p className="muted">Aberto: {formatCurrency(student.openAmount)}</p>
-                    <p className="muted">Vencido: {formatCurrency(student.overdueAmount)}</p>
+                    Carregar mais {Math.min(RESULTS_PAGE_SIZE, filtered.length - visibleProfiles.length)} alunos
                   </button>
-                );
-              })}
-            </div>
+                ) : null}
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="status-card" style={{ marginTop: 16 }}>
-            <p className="muted">Conecte a API na aba Conexao para carregar alunos e enviar negociacoes.</p>
+            <p className="muted">Entre novamente no APP para renovar a sessao e carregar os dados de negociacao.</p>
           </div>
         )}
       </section>
 
       {connected && selected ? (
-        <section className="surface-card">
+        <section ref={simulatorSectionRef} className="surface-card">
           <p className="eyebrow">Simulador</p>
           <h3>Negociacao de {selected.name}</h3>
           <p className="muted">
@@ -220,6 +333,8 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
               <input
                 id="discount"
                 className="text-input"
+                type="number"
+                inputMode="decimal"
                 value={discountPercent}
                 onChange={(event) => setDiscountPercent(event.target.value)}
               />
@@ -230,6 +345,8 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
               <input
                 id="installments"
                 className="text-input"
+                type="number"
+                inputMode="numeric"
                 value={installments}
                 onChange={(event) => setInstallments(event.target.value)}
               />
@@ -240,6 +357,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
               <input
                 id="dueDate"
                 className="text-input"
+                type="date"
                 value={firstDueDate}
                 onChange={(event) => setFirstDueDate(event.target.value)}
               />
@@ -251,7 +369,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
             <p className="muted">Parcela estimada: {formatCurrency(simulatedDeal.installmentValue)}</p>
           </div>
 
-          <div className="install-actions">
+          <div className="install-actions action-cluster">
             <button
               type="button"
               className="primary-button"
@@ -263,7 +381,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
 
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-button emphasis-button"
               onClick={() => void handleSend('negociacao')}
               disabled={sending !== 'none'}
             >

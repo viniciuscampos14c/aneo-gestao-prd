@@ -13,6 +13,9 @@ type TrialAccessViewProps = {
   apiConfig: ApiConfig | null;
 };
 
+const COURSE_PAGE_SIZE = 10;
+const HISTORY_PAGE_SIZE = 12;
+
 function localIsoDateNow(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -38,6 +41,8 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
   const [accessDate, setAccessDate] = useState(localIsoDateNow());
   const [courseQuery, setCourseQuery] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [visibleCourseCount, setVisibleCourseCount] = useState(COURSE_PAGE_SIZE);
+  const [visibleHistoryCount, setVisibleHistoryCount] = useState(HISTORY_PAGE_SIZE);
   const [lastCreated, setLastCreated] = useState<CreatedTrialAccess | null>(null);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -59,6 +64,18 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
 
     return courses.filter((course) => String(course.name).toLowerCase().includes(term));
   }, [courseQuery, courses]);
+
+  const visibleCourses = useMemo(
+    () => filteredCourses.slice(0, visibleCourseCount),
+    [filteredCourses, visibleCourseCount]
+  );
+  const hasMoreCourses = visibleCourses.length < filteredCourses.length;
+
+  const visibleHistory = useMemo(
+    () => rows.slice(0, visibleHistoryCount),
+    [rows, visibleHistoryCount]
+  );
+  const hasMoreHistory = visibleHistory.length < rows.length;
 
   const refreshData = useCallback(
     async (mode: 'manual' | 'auto' | 'initial') => {
@@ -122,6 +139,14 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
 
     void refreshData('initial');
   }, [apiConfig, refreshData]);
+
+  useEffect(() => {
+    setVisibleCourseCount(COURSE_PAGE_SIZE);
+  }, [courseQuery, courses]);
+
+  useEffect(() => {
+    setVisibleHistoryCount(HISTORY_PAGE_SIZE);
+  }, [rows]);
 
   useEffect(() => {
     if (!apiConfig) {
@@ -193,11 +218,11 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
   return (
     <div className="field-grid">
       <section className="surface-card">
-        <div className="inline-between">
+        <div className="module-toolbar">
           <div>
             <p className="eyebrow">Degustacao</p>
             <h3>Criar acesso rapido</h3>
-            <p className="muted">O PWA reutiliza os mesmos recursos `courses` e `trial_accesses` do backend.</p>
+            <p className="muted">O APP reutiliza os mesmos recursos `courses` e `trial_accesses` do backend.</p>
             {error ? <p className="alert-text">{error}</p> : null}
           </div>
 
@@ -219,6 +244,7 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
                 <input
                   id="trial-name"
                   className="text-input"
+                  autoCapitalize="words"
                   value={studentName}
                   onChange={(event) => setStudentName(event.target.value)}
                   placeholder="Nome completo"
@@ -230,6 +256,10 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
                 <input
                   id="trial-email"
                   className="text-input"
+                  type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   value={studentEmail}
                   onChange={(event) => setStudentEmail(event.target.value)}
                   placeholder="aluno@email.com"
@@ -241,6 +271,8 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
                 <input
                   id="trial-phone"
                   className="text-input"
+                  type="tel"
+                  inputMode="tel"
                   value={studentPhone}
                   onChange={(event) => setStudentPhone(event.target.value)}
                   placeholder="(00) 00000-0000"
@@ -252,6 +284,7 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
                 <input
                   id="trial-date"
                   className="text-input"
+                  type="date"
                   value={accessDate}
                   onChange={(event) => setAccessDate(event.target.value)}
                   placeholder="2026-05-18"
@@ -264,14 +297,40 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
               <input
                 id="trial-course-query"
                 className="text-input"
+                type="search"
+                inputMode="search"
                 value={courseQuery}
                 onChange={(event) => setCourseQuery(event.target.value)}
                 placeholder="Buscar curso..."
               />
             </div>
 
+            {loading && filteredCourses.length === 0 ? (
+              <div className="skeleton-grid" style={{ marginTop: 16 }}>
+                <div className="skeleton-card" />
+                <div className="skeleton-card" />
+              </div>
+            ) : null}
+
             <div className="course-list" style={{ marginTop: 16 }}>
-              {filteredCourses.slice(0, 10).map((course) => {
+              <div className="list-results-meta">
+                <span className="muted">
+                  {filteredCourses.length === 0
+                    ? 'Nenhum curso encontrado'
+                    : `Mostrando ${visibleCourses.length} de ${filteredCourses.length} cursos`}
+                </span>
+                {hasMoreCourses ? (
+                  <button
+                    type="button"
+                    className="secondary-button list-more-button"
+                    onClick={() => setVisibleCourseCount((current) => current + COURSE_PAGE_SIZE)}
+                  >
+                    Ver mais cursos
+                  </button>
+                ) : null}
+              </div>
+
+              {visibleCourses.map((course) => {
                 const selected = Number(course.id) === selectedCourseId;
                 return (
                   <button
@@ -284,11 +343,27 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
                   </button>
                 );
               })}
+              {!loading && filteredCourses.length > 0 && hasMoreCourses ? (
+                <button
+                  type="button"
+                  className="secondary-button list-load-more"
+                  onClick={() => setVisibleCourseCount((current) => current + COURSE_PAGE_SIZE)}
+                >
+                  Carregar mais {Math.min(COURSE_PAGE_SIZE, filteredCourses.length - visibleCourses.length)} cursos
+                </button>
+              ) : null}
             </div>
+
+            {!loading && filteredCourses.length === 0 ? (
+              <div className="empty-state">
+                <h4>Nenhum curso encontrado</h4>
+                <p className="muted">Tente outro termo para localizar um curso publicado.</p>
+              </div>
+            ) : null}
 
             {selectedCourse ? <p className="success-text">Curso selecionado: {selectedCourse.name}</p> : null}
 
-            <div className="install-actions">
+            <div className="install-actions action-cluster">
               <button
                 type="button"
                 className="primary-button"
@@ -325,8 +400,35 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
           <p className="eyebrow">Historico</p>
           <h3>Ultimos acessos de degustacao</h3>
           <div className="list-stack" style={{ marginTop: 16 }}>
-            {rows.length === 0 ? <p className="muted">Nenhum acesso de degustacao cadastrado.</p> : null}
-            {rows.slice(0, 12).map((row) => {
+            <div className="list-results-meta">
+              <span className="muted">
+                {rows.length === 0
+                  ? 'Nenhum acesso cadastrado'
+                  : `Mostrando ${visibleHistory.length} de ${rows.length} acessos`}
+              </span>
+              {hasMoreHistory ? (
+                <button
+                  type="button"
+                  className="secondary-button list-more-button"
+                  onClick={() => setVisibleHistoryCount((current) => current + HISTORY_PAGE_SIZE)}
+                >
+                  Ver mais acessos
+                </button>
+              ) : null}
+            </div>
+            {loading && rows.length === 0 ? (
+              <div className="skeleton-grid">
+                <div className="skeleton-card" />
+                <div className="skeleton-card" />
+              </div>
+            ) : null}
+            {!loading && rows.length === 0 ? (
+              <div className="empty-state">
+                <h4>Nenhum acesso cadastrado</h4>
+                <p className="muted">Crie uma degustacao acima para acompanhar os acessos recentes.</p>
+              </div>
+            ) : null}
+            {visibleHistory.map((row) => {
               const isRevoked = String(row.status ?? '').toLowerCase() === 'revoked';
               return (
                 <article key={row.id} className="list-card">
@@ -342,6 +444,15 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
                 </article>
               );
             })}
+            {!loading && rows.length > 0 && hasMoreHistory ? (
+              <button
+                type="button"
+                className="secondary-button list-load-more"
+                onClick={() => setVisibleHistoryCount((current) => current + HISTORY_PAGE_SIZE)}
+              >
+                Carregar mais {Math.min(HISTORY_PAGE_SIZE, rows.length - visibleHistory.length)} acessos
+              </button>
+            ) : null}
           </div>
         </section>
       ) : null}

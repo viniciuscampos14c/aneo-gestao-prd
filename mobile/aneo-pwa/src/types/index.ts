@@ -9,6 +9,52 @@ export type ExecutiveMetric = {
   description: string;
 };
 
+export type ExecutiveSummaryTone = 'positive' | 'warning' | 'critical';
+
+export type ExecutiveSummary = {
+  headline: string;
+  message: string;
+  tone: ExecutiveSummaryTone;
+  pendingLabel: string;
+  pendingValue: string;
+  recoveryLabel: string;
+  recoveryValue: string;
+};
+
+export type ExecutiveAlert = {
+  id: string;
+  category: string;
+  priority: string;
+  title: string;
+  detail: string;
+  actionLabel: string;
+  targetTab: 'negotiation' | 'trial-access' | 'students' | 'tickets' | 'connection';
+  tone: MetricTone;
+};
+
+export type ExecutiveSnapshot = {
+  id: string;
+  label: string;
+  value: string;
+  helper: string;
+};
+
+export type ExecutivePulse = {
+  id: string;
+  label: string;
+  status: string;
+  detail: string;
+  tone: MetricTone;
+};
+
+export type ExecutiveDashboardData = {
+  metrics: ExecutiveMetric[];
+  summary: ExecutiveSummary;
+  alerts: ExecutiveAlert[];
+  snapshots: ExecutiveSnapshot[];
+  pulses: ExecutivePulse[];
+};
+
 export type StudentDebtProfile = {
   id: number;
   name: string;

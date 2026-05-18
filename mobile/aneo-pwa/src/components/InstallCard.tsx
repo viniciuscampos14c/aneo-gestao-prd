@@ -67,7 +67,7 @@ export function InstallCard({ compact = false }: InstallCardProps) {
       <p className="eyebrow">Instalacao</p>
       <h3>Adicionar ao celular</h3>
       {installed ? (
-        <p className="success-text">Este PWA ja esta aberto em modo instalado.</p>
+        <p className="success-text">Este APP ja esta aberto em modo instalado.</p>
       ) : (
         <div className="install-guide">
           <p className="muted">
@@ -78,7 +78,9 @@ export function InstallCard({ compact = false }: InstallCardProps) {
             <ol className="install-steps">
               <li>Abra este link no Chrome do celular.</li>
               <li>Se aparecer, toque em <strong>Instalar app</strong>.</li>
-              <li>Se nao aparecer, abra o menu do Chrome e toque em <strong>Adicionar a tela inicial</strong> ou <strong>Instalar app</strong>.</li>
+              <li>
+                Se nao aparecer, abra o menu do Chrome e toque em <strong>Adicionar a tela inicial</strong> ou <strong>Instalar app</strong>.
+              </li>
             </ol>
           ) : null}
 
@@ -92,7 +94,7 @@ export function InstallCard({ compact = false }: InstallCardProps) {
 
           {platform === 'desktop' ? (
             <ol className="install-steps">
-              <li>Abra o link em um navegador compatível.</li>
+              <li>Abra o link em um navegador compativel.</li>
               <li>Use o botao de instalar do navegador ou o menu lateral.</li>
             </ol>
           ) : null}
