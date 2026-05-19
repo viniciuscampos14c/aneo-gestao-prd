@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppLoginForm } from './components/AppLoginForm';
 import { ConnectionPanel } from './components/ConnectionPanel';
 import { DashboardView } from './components/DashboardView';
@@ -12,6 +12,7 @@ import {
   clearStoredApiConfig,
   loadStoredApiConfig,
   saveStoredApiConfig,
+  touchStoredApiConfigSession,
 } from './services/apiConfigStorage';
 import type { ApiConfig } from './types';
 
@@ -61,19 +62,66 @@ export default function App() {
     return 'Conexao e sessao';
   }, [activeTab]);
 
-  async function handleAuthenticated(config: ApiConfig) {
+  const handleAuthenticated = useCallback(async (config: ApiConfig) => {
     setApiConfig(config);
     setSessionAuthenticated(true);
     setActiveTab('dashboard');
     await saveStoredApiConfig(config);
-  }
+  }, []);
 
-  async function handleDisconnect() {
+  const handleDisconnect = useCallback(async () => {
     setApiConfig(null);
     setSessionAuthenticated(false);
     setActiveTab('dashboard');
     await clearStoredApiConfig();
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!sessionAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshStoredSession = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+
+      void touchStoredApiConfigSession();
+    };
+
+    const validateStoredSession = async () => {
+      const storedConfig = await loadStoredApiConfig();
+      if (cancelled) {
+        return;
+      }
+
+      if (!storedConfig) {
+        await handleDisconnect();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void validateStoredSession();
+    }, 60_000);
+
+    window.addEventListener('pointerdown', refreshStoredSession, { passive: true });
+    window.addEventListener('keydown', refreshStoredSession);
+    window.addEventListener('scroll', refreshStoredSession, { passive: true });
+    document.addEventListener('visibilitychange', refreshStoredSession);
+
+    void touchStoredApiConfigSession();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener('pointerdown', refreshStoredSession);
+      window.removeEventListener('keydown', refreshStoredSession);
+      window.removeEventListener('scroll', refreshStoredSession);
+      document.removeEventListener('visibilitychange', refreshStoredSession);
+    };
+  }, [handleDisconnect, sessionAuthenticated]);
 
   if (!configReady) {
     return (

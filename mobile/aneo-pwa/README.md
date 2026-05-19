@@ -51,6 +51,7 @@ PWA executivo da ANEO criado em projeto separado, sem alterar o ERP principal.
 - ERP principal permanece intocado
 - instalacao continua por link com atualizacao web
 - home sem blocos duplicados e sem secoes repetindo a mesma informacao
+- sessao com expiracao automatica apos `8 horas` de inatividade
 
 ## Publicacao atual
 
