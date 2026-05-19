@@ -65,6 +65,7 @@ class LeadModel extends BaseModel
 
     public function create(array $data, int $createdBy): int
     {
+        $createdBy = $createdBy > 0 ? $createdBy : 1;
         $statusId = $data['lead_status_id'] ? (int) $data['lead_status_id'] : $this->defaultStatusId();
 
         $stmt = $this->db->prepare('INSERT INTO leads (
@@ -104,6 +105,7 @@ class LeadModel extends BaseModel
 
     public function update(int $id, array $data, int $userId): void
     {
+        $userId = $userId > 0 ? $userId : 1;
         $current = $this->find($id);
         if (!$current) {
             return;
@@ -158,6 +160,7 @@ class LeadModel extends BaseModel
 
     public function setStatus(int $id, int $statusId, int $userId, string $note = ''): void
     {
+        $userId = $userId > 0 ? $userId : 1;
         $stmt = $this->db->prepare('UPDATE leads SET lead_status_id = :status_id, updated_at = :updated_at WHERE id = :id AND company_id = :company_id');
         $stmt->execute([
             ':status_id' => $statusId,
@@ -172,6 +175,7 @@ class LeadModel extends BaseModel
 
     public function addHistory(int $leadId, string $interaction, int $createdBy, ?int $statusId = null): void
     {
+        $createdBy = $createdBy > 0 ? $createdBy : 1;
         if (!$this->find($leadId)) {
             return;
         }

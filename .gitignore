@@ -29,3 +29,6 @@ wa_js_live/
 wa_js_urls.txt
 wa_static_urls.txt
 wa_pricing*.html
+node_modules/
+test-results/
+playwright-report/

@@ -1,0 +1,24 @@
+{
+  "name": "aneo-gestao-prd",
+  "version": "1.0.0",
+  "description": "Sistema MVC em PHP puro para operacao administrativa, portal do aluno e central tecnica.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/viniciuscampos14c/aneo-gestao-prd.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/viniciuscampos14c/aneo-gestao-prd/issues"
+  },
+  "homepage": "https://github.com/viniciuscampos14c/aneo-gestao-prd#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

@@ -397,8 +397,10 @@ $exchangeQueueRoute = route('exchange&status=pending');
             if (keys.length === 0) return;
 
             const params = new URLSearchParams(window.location.search || '');
-            const isQueueRoute = params.get('route') === 'requests' && params.get('mobile_flow') === '1';
-            const isExchangeRoute = params.get('route') === 'exchange';
+            const currentRoute = params.get('route') || '';
+            const isQueueRoute = currentRoute === 'requests' && params.get('mobile_flow') === '1';
+            const isExchangeRoute = currentRoute === 'exchange';
+            const isDashboardRoute = currentRoute === 'dashboard' || currentRoute === '';
             if (isQueueRoute || isExchangeRoute) return;
 
             const seenKey = (key) => 'aneo_admin_alert_seen_' + key;
@@ -452,7 +454,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 });
             }
 
-            if (unseen.length > 0) {
+            if (unseen.length > 0 && isDashboardRoute) {
                 open();
             }
 
@@ -467,6 +469,12 @@ $exchangeQueueRoute = route('exchange&status=pending');
 
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
+                    close();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('flex')) {
                     close();
                 }
             });

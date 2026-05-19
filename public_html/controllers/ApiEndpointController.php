@@ -72,7 +72,7 @@ class ApiEndpointController extends BaseController
             'kanban_status_id' => '', 'is_active' => 1, 'profile_photo' => '',
         ], $data);
 
-        $id = $this->students->create($data, 0);
+        $id = $this->students->create($data, $this->actorUserId());
         $student = $this->students->find($id);
         $this->ok($student, null, 201);
     }
@@ -105,7 +105,7 @@ class ApiEndpointController extends BaseController
             'profile_photo'   => $student['profile_photo'] ?? '',
         ], $data);
 
-        $this->students->update($id, $merged, 0);
+        $this->students->update($id, $merged, $this->actorUserId());
         $updated = $this->students->find($id);
         $this->ok($updated);
     }
@@ -166,7 +166,7 @@ class ApiEndpointController extends BaseController
             'unit_name' => '', 'tags' => '', 'last_contact_at' => '',
         ], $data);
 
-        $id = $this->leads->create($data, 0);
+        $id = $this->leads->create($data, $this->actorUserId());
         $lead = $this->leads->find($id);
         $this->ok($lead, null, 201);
     }
@@ -194,7 +194,7 @@ class ApiEndpointController extends BaseController
             'last_contact_at' => $lead['last_contact_at'] ?? '',
         ], $data);
 
-        $this->leads->update($id, $merged, 0);
+        $this->leads->update($id, $merged, $this->actorUserId());
         $updated = $this->leads->find($id);
         $this->ok($updated);
     }
@@ -261,7 +261,7 @@ class ApiEndpointController extends BaseController
             'paid_at'             => null,
         ], $data);
 
-        $id = $this->finance->createInvoice($data, 0);
+        $id = $this->finance->createInvoice($data, $this->actorUserId());
         $invoice = $this->finance->findInvoice($id);
         $this->ok($invoice, null, 201);
     }
@@ -480,5 +480,11 @@ class ApiEndpointController extends BaseController
             $payload['meta'] = $meta;
         }
         $this->json($payload, $status);
+    }
+
+    private function actorUserId(): int
+    {
+        $userId = (int) ($this->token['user_id'] ?? 0);
+        return $userId > 0 ? $userId : 1;
     }
 }
