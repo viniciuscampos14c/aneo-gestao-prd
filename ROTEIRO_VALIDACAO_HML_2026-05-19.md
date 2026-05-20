@@ -45,9 +45,14 @@ Passou
 - API com `POST /api.php?r=leads` criando lead com sucesso.
 
 Observacoes
-- O admin possui um overlay/modal recorrente que pode atrapalhar cliques na interface.
 - Os "graficos" do dashboard e do financeiro sao componentes HTML/CSS e cards KPI, nao canvas.
 - A regra de escala por data de entrada foi validada no HML com bloqueio antes de 40 dias.
+
+Atualizacao em 2026-05-20
+- Hotfix publicado no HML para o modal `Alertas administrativos` do dashboard.
+- Comportamento validado apos publicacao:
+  - o modal pode abrir automaticamente ao entrar no dashboard quando houver alerta novo;
+  - apos fechar, navegar e voltar ao dashboard na mesma sessao, ele nao reabre sozinho.
 
 ## Passo a passo manual
 

@@ -17,10 +17,13 @@ const ticketSubject = `QA Ticket ${runId}`;
 const apiTokenName = `QA Token ${runId}`;
 
 async function clearAdminOverlay(page: Page) {
-  await page.evaluate(() => {
-    document.querySelectorAll('#mobile-negotiation-modal, .admin-alert-overlay').forEach((node) => node.remove());
-    document.body.style.overflow = 'auto';
-  }).catch(() => {});
+  const closeButton = page.locator('#mobile-negotiation-modal [data-mobile-neg-close]').first();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click().catch(() => {});
+  }
+
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.waitForTimeout(150).catch(() => {});
 }
 
 async function loginAdmin(page: Page) {

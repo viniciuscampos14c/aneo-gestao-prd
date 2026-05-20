@@ -404,6 +404,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
             if (isQueueRoute || isExchangeRoute) return;
 
             const seenKey = (key) => 'aneo_admin_alert_seen_' + key;
+            const autoShownKey = (key) => 'aneo_admin_alert_autoshown_' + key;
             const isSeen = (key) => {
                 try {
                     if (localStorage.getItem(seenKey(key))) {
@@ -419,9 +420,21 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 }
                 return false;
             };
+            const wasAutoShown = (key) => {
+                try {
+                    if (sessionStorage.getItem(autoShownKey(key))) {
+                        return true;
+                    }
+                } catch (error) {
+                }
+                return false;
+            };
 
             const unseen = keys.filter((key) => {
                 return !isSeen(key);
+            });
+            const unseenNotAutoShown = unseen.filter((key) => {
+                return !wasAutoShown(key);
             });
 
             const markAsSeen = function () {
@@ -432,6 +445,14 @@ $exchangeQueueRoute = route('exchange&status=pending');
                     }
                     try {
                         sessionStorage.setItem(seenKey(key), '1');
+                    } catch (error) {
+                    }
+                });
+            };
+            const markAutoShown = function () {
+                unseen.forEach((key) => {
+                    try {
+                        sessionStorage.setItem(autoShownKey(key), '1');
                     } catch (error) {
                     }
                 });
@@ -454,7 +475,8 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 });
             }
 
-            if (unseen.length > 0 && isDashboardRoute) {
+            if (unseenNotAutoShown.length > 0 && isDashboardRoute) {
+                markAutoShown();
                 open();
             }
 
