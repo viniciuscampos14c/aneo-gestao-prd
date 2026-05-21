@@ -1,17 +1,18 @@
 <?php
-$canCreate = has_permission('students.create');
+$isProfessorView = is_professor();
+$canCreate = !$isProfessorView && has_permission('students.create');
 $canExport = has_permission('students.export');
-$canImport = has_permission('students.import');
-$canBulk = has_permission('students.bulk');
-$canEdit = has_permission('students.edit');
-$canDelete = has_permission('students.delete');
+$canImport = !$isProfessorView && has_permission('students.import');
+$canBulk = !$isProfessorView && has_permission('students.bulk');
+$canEdit = !$isProfessorView && has_permission('students.edit');
+$canDelete = !$isProfessorView && has_permission('students.delete');
 $canStudentWhatsapp = has_permission('students.whatsapp');
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Alunos</h2>
-            <p class="text-sm text-slate-500">Cadastro, manutencao, importacao e exportacao de alunos/clientes.</p>
+            <p class="text-sm text-slate-500"><?= $isProfessorView ? 'Consulta rapida da base de alunos com informacoes essenciais para acompanhamento.' : 'Cadastro, manutencao, importacao e exportacao de alunos/clientes.'; ?></p>
         </div>
         <div class="flex flex-wrap gap-2">
             <?php if ($canCreate): ?>
@@ -53,12 +54,14 @@ $canStudentWhatsapp = has_permission('students.whatsapp');
                 <option value="0" <?= $filters['is_active'] === '0' ? 'selected' : ''; ?>>Inativos</option>
             </select>
 
-            <select name="kanban_status_id" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <option value="">Todos os status</option>
-                <?php foreach ($statuses as $st): ?>
-                    <option value="<?= (int) $st['id']; ?>" <?= (string) $filters['kanban_status_id'] === (string) $st['id'] ? 'selected' : ''; ?>><?= e($st['name']); ?></option>
-                <?php endforeach; ?>
-            </select>
+            <?php if (!$isProfessorView): ?>
+                <select name="kanban_status_id" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <option value="">Todos os status</option>
+                    <?php foreach ($statuses as $st): ?>
+                        <option value="<?= (int) $st['id']; ?>" <?= (string) $filters['kanban_status_id'] === (string) $st['id'] ? 'selected' : ''; ?>><?= e($st['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            <?php endif; ?>
 
             <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
@@ -111,13 +114,15 @@ $canStudentWhatsapp = has_permission('students.whatsapp');
                     <th class="px-2 py-3">Email</th>
                     <th class="px-2 py-3">Telefone</th>
                     <th class="px-2 py-3">Status</th>
-                    <th class="px-2 py-3">Informacoes Adm</th>
-                    <th class="px-2 py-3">Criado</th>
-                    <th class="px-2 py-3">RA</th>
-                    <th class="px-2 py-3">Nascimento</th>
-                    <th class="px-2 py-3">RG</th>
-                    <th class="px-2 py-3">CRO</th>
-                    <th class="px-2 py-3">Acoes</th>
+                    <?php if (!$isProfessorView): ?>
+                        <th class="px-2 py-3">Informacoes Adm</th>
+                        <th class="px-2 py-3">Criado</th>
+                        <th class="px-2 py-3">RA</th>
+                        <th class="px-2 py-3">Nascimento</th>
+                        <th class="px-2 py-3">RG</th>
+                        <th class="px-2 py-3">CRO</th>
+                    <?php endif; ?>
+                    <th class="px-2 py-3"><?= $isProfessorView ? 'Resumo' : 'Acoes'; ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -145,15 +150,21 @@ $canStudentWhatsapp = has_permission('students.whatsapp');
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <td class="px-2 py-3"><?= e($student['admin_info']); ?></td>
-                        <td class="px-2 py-3"><?= e($student['created_at']); ?></td>
-                        <td class="px-2 py-3"><?= e($student['ra']); ?></td>
-                        <td class="px-2 py-3"><?= e($student['birth_date']); ?></td>
-                        <td class="px-2 py-3"><?= e($student['rg']); ?></td>
-                        <td class="px-2 py-3"><?= e($student['cro']); ?></td>
+                        <?php if (!$isProfessorView): ?>
+                            <td class="px-2 py-3"><?= e($student['admin_info']); ?></td>
+                            <td class="px-2 py-3"><?= e($student['created_at']); ?></td>
+                            <td class="px-2 py-3"><?= e($student['ra']); ?></td>
+                            <td class="px-2 py-3"><?= e($student['birth_date']); ?></td>
+                            <td class="px-2 py-3"><?= e($student['rg']); ?></td>
+                            <td class="px-2 py-3"><?= e($student['cro']); ?></td>
+                        <?php endif; ?>
                         <td class="px-2 py-3">
                             <div class="flex gap-2">
-                                <a href="<?= route('students/show&id=' . (int) $student['id']); ?>" class="rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-100">Ver</a>
+                                <?php if ($isProfessorView): ?>
+                                    <span class="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-600">Somente leitura</span>
+                                <?php else: ?>
+                                    <a href="<?= route('students/show&id=' . (int) $student['id']); ?>" class="rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-100">Ver</a>
+                                <?php endif; ?>
                                 <?php if ($canStudentWhatsapp): ?>
                                     <?php $studentWhatsappLink = whatsapp_link((string) ($student['phone'] ?? ''), 'Ola ' . ($student['full_name'] ?? '') . ', tudo bem?'); ?>
                                     <?php if ($studentWhatsappLink): ?>
@@ -176,7 +187,7 @@ $canStudentWhatsapp = has_permission('students.whatsapp');
                 <?php endforeach; ?>
                 <?php if ($students === []): ?>
                     <tr>
-                        <td colspan="14" class="px-2 py-6 text-center text-slate-500">Nenhum aluno encontrado.</td>
+                        <td colspan="<?= $isProfessorView ? '8' : '14'; ?>" class="px-2 py-6 text-center text-slate-500">Nenhum aluno encontrado.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>

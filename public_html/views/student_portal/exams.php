@@ -68,7 +68,7 @@ $calendarRows = $examCalendar ?? [];
                             <td class="px-3 py-2"><?= e($exam['title']); ?></td>
                             <td class="px-3 py-2">
                                 <?php if ($scheduledTs !== false): ?>
-                                    <span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700"><?= e(date('d/m/Y H:i', $scheduledTs)); ?></span>
+                                    <span class="inline-flex rounded-full border border-sky-400 bg-sky-200 px-2 py-1 text-xs font-semibold text-sky-950"><?= e(date('d/m/Y H:i', $scheduledTs)); ?></span>
                                 <?php else: ?>
                                     <span class="text-xs text-slate-500">Nao definida</span>
                                 <?php endif; ?>
@@ -79,27 +79,27 @@ $calendarRows = $examCalendar ?? [];
                             <td class="px-3 py-2"><?= (int) $exam['questions_total']; ?></td>
                             <td class="px-3 py-2">
                                 <?php if ($hasResult): ?>
-                                    <span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">Resultado publicado</span>
+                                    <span class="inline-flex rounded-full border border-emerald-400 bg-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-950">Resultado publicado</span>
                                 <?php elseif ($hasExternal): ?>
-                                    <span class="inline-flex rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-700">Prova externa</span>
+                                    <span class="inline-flex rounded-full border border-cyan-400 bg-cyan-200 px-2 py-1 text-xs font-semibold text-cyan-950">Prova externa</span>
                                 <?php elseif ($hasSubmission): ?>
-                                    <span class="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Enviada (aguardando)</span>
+                                    <span class="inline-flex rounded-full border border-amber-400 bg-amber-200 px-2 py-1 text-xs font-semibold text-amber-950">Enviada (aguardando)</span>
                                 <?php elseif ($isLockedBySchedule): ?>
-                                    <span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700">Agendada</span>
+                                    <span class="inline-flex rounded-full border border-sky-400 bg-sky-200 px-2 py-1 text-xs font-semibold text-sky-950">Agendada</span>
                                 <?php elseif ((int) $exam['questions_total'] <= 0): ?>
-                                    <span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">Sem questoes</span>
+                                    <span class="inline-flex rounded-full border border-slate-400 bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-950">Sem questoes</span>
                                 <?php else: ?>
-                                    <span class="inline-flex rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-700">Disponivel</span>
+                                    <span class="inline-flex rounded-full border border-cyan-400 bg-cyan-200 px-2 py-1 text-xs font-semibold text-cyan-950">Disponivel</span>
                                 <?php endif; ?>
                             </td>
                             <td class="px-3 py-2">
                                 <?php if ($canOpenExternal): ?>
-                                    <a href="<?= route('student/exams/external&id=' . (int) $exam['id']); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Abrir prova externa</a>
+                                    <a href="<?= route('student/exams/external&id=' . (int) $exam['id']); ?>" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-lg border border-cyan-400 bg-cyan-200 px-3 py-1.5 text-xs font-semibold text-cyan-950 hover:bg-cyan-300">Abrir prova externa</a>
                                     <?php if (trim((string) ($exam['external_instructions'] ?? '')) !== ''): ?>
                                         <p class="mt-1 text-xs text-slate-500"><?= e((string) $exam['external_instructions']); ?></p>
                                     <?php endif; ?>
                                 <?php elseif ($canTakeInternal): ?>
-                                    <a href="<?= route('student/exams/take&id=' . (int) $exam['id']); ?>" class="inline-flex rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Responder agora</a>
+                                    <a href="<?= route('student/exams/take&id=' . (int) $exam['id']); ?>" class="inline-flex rounded-lg border border-cyan-400 bg-cyan-200 px-3 py-1.5 text-xs font-semibold text-cyan-950 hover:bg-cyan-300">Responder agora</a>
                                 <?php elseif ($isLockedBySchedule): ?>
                                     <span class="text-xs text-slate-500">Liberada em <?= e(date('d/m H:i', (int) $scheduledTs)); ?></span>
                                 <?php elseif ($hasExternal && !$hasResult): ?>
@@ -124,9 +124,9 @@ $calendarRows = $examCalendar ?? [];
         <h3 class="mb-3 text-lg font-semibold">Provas enviadas aguardando correcao</h3>
         <div class="space-y-2 text-sm">
             <?php foreach ($pendingSubmissions as $pending): ?>
-                <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                <div class="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2">
                     <p class="font-medium"><?= e($pending['exam_title']); ?> <span class="text-slate-500">(<?= e($pending['course_name']); ?>)</span></p>
-                    <p class="text-xs text-amber-800">Enviada em <?= e(date('d/m/Y H:i', strtotime((string) $pending['submitted_at']))); ?>.</p>
+                    <p class="text-xs font-medium text-amber-950">Enviada em <?= e(date('d/m/Y H:i', strtotime((string) $pending['submitted_at']))); ?>.</p>
                 </div>
             <?php endforeach; ?>
             <?php if ($pendingSubmissions === []): ?>
@@ -159,7 +159,7 @@ $calendarRows = $examCalendar ?? [];
                             <td class="px-3 py-3"><?= e(number_format((float) $row['passing_score'], 2, ',', '.')); ?></td>
                             <td class="px-3 py-3"><?= e(number_format((float) $row['score'], 2, ',', '.')); ?></td>
                             <td class="px-3 py-3">
-                                <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold <?= $approved ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'; ?>">
+                                <span class="inline-flex rounded-full border px-2 py-1 text-xs font-semibold <?= $approved ? 'border-emerald-400 bg-emerald-200 text-emerald-950' : 'border-rose-400 bg-rose-200 text-rose-950'; ?>">
                                     <?= $approved ? 'Aprovado' : 'Reprovado'; ?>
                                 </span>
                             </td>

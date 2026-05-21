@@ -7,6 +7,7 @@ class StudentPortalController extends BaseController
     private SupportTicketModel $tickets;
     private StudentExchangeModel $exchange;
     private ReenrollmentModel $reenrollment;
+    private EmailService $emails;
 
     public function __construct()
     {
@@ -15,6 +16,7 @@ class StudentPortalController extends BaseController
         $this->tickets      = new SupportTicketModel();
         $this->exchange     = new StudentExchangeModel();
         $this->reenrollment = new ReenrollmentModel();
+        $this->emails       = new EmailService();
     }
 
     // Gate de rematrícula com dois comportamentos:
@@ -156,6 +158,25 @@ class StudentPortalController extends BaseController
         exit;
     }
 
+    public function confirmLessonCompletion(): void
+    {
+        require_student_auth();
+        csrf_validate();
+
+        $student = current_student();
+        $studentId = (int) ($student['id'] ?? 0);
+
+        $result = $this->portal->confirmLessonCompletion(
+            $studentId,
+            (int) post('course_id'),
+            (int) post('lesson_id')
+        );
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     public function markAlertsRead(): void
     {
         require_student_auth();
@@ -166,7 +187,7 @@ class StudentPortalController extends BaseController
         $companyId = (int) ($student['company_id'] ?? 0);
         $studentEmail = trim((string) ($student['email'] ?? ''));
 
-        $this->portal->markPortalNotificationsAsReadByType($studentId, 'duty_schedule');
+        $this->portal->markAllPortalNotificationsAsRead($studentId);
 
         $ticketCount = 0;
         if ($this->tickets->featureAvailable() && $studentId > 0 && $companyId > 0) {
@@ -551,7 +572,7 @@ class StudentPortalController extends BaseController
         }
 
         $profile = $this->portal->studentAcademicProfile($studentId) ?? [];
-        $history = $this->portal->examHistory($studentId);
+        $history = $this->portal->academicHistoryRecords($studentId);
         $courses = $this->portal->myCourses($studentId);
 
         $courseWorkload = [];
@@ -904,6 +925,15 @@ class StudentPortalController extends BaseController
                 $submittedAt
             );
 
+            $this->notifyStudentExamResult(
+                $student,
+                $examId,
+                (string) ($exam['title'] ?? 'Avaliacao'),
+                (string) ($exam['course_name'] ?? 'Curso'),
+                (float) $score,
+                (float) $exam['passing_score']
+            );
+
             $this->success('Prova enviada. Nota calculada automaticamente: ' . number_format((float) $score, 2, ',', '.') . '.');
             $this->redirect('student/exams');
         }
@@ -918,6 +948,86 @@ class StudentPortalController extends BaseController
         $value = preg_replace('/\s+/', ' ', $value) ?: $value;
 
         return strtolower($value);
+    }
+
+    private function notifyStudentExamResult(
+        array $student,
+        int $examId,
+        string $examTitle,
+        string $courseName,
+        float $score,
+        float $passingScore
+    ): void {
+        $studentId = (int) ($student['id'] ?? 0);
+        $companyId = (int) ($student['company_id'] ?? 0);
+        if ($studentId <= 0 || $companyId <= 0) {
+            return;
+        }
+
+        $studentName = trim((string) ($student['name'] ?? 'Aluno'));
+        $studentEmail = trim((string) ($student['email'] ?? ''));
+        $approved = $score >= $passingScore;
+        $statusLabel = $approved ? 'Aprovado(a)' : 'Necessita revisao';
+
+        if ($this->portal->studentPortalNotificationsFeatureAvailable()) {
+            $this->portal->createPortalNotification([
+                'company_id' => $companyId,
+                'student_id' => $studentId,
+                'notification_type' => 'exam_result',
+                'title' => 'Resultado de avaliacao publicado',
+                'message' => sprintf(
+                    '%s: sua nota em %s foi %s (minimo %s).',
+                    $courseName,
+                    $examTitle,
+                    number_format($score, 2, ',', '.'),
+                    number_format($passingScore, 2, ',', '.')
+                ),
+                'link_url' => route('student/exams'),
+                'meta' => [
+                    'exam_id' => $examId,
+                    'exam_title' => $examTitle,
+                    'course_name' => $courseName,
+                    'score' => $score,
+                    'passing_score' => $passingScore,
+                    'status' => $approved ? 'approved' : 'failed',
+                ],
+            ]);
+        }
+
+        if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
+            $body = '<p>Ola ' . e($studentName) . ',</p>'
+                . '<p>Seu resultado foi publicado no portal do aluno.</p>'
+                . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
+                . '<strong>Avaliacao:</strong> ' . e($examTitle) . '<br>'
+                . '<strong>Nota:</strong> ' . e(number_format($score, 2, ',', '.')) . '<br>'
+                . '<strong>Nota minima:</strong> ' . e(number_format($passingScore, 2, ',', '.')) . '<br>'
+                . '<strong>Status:</strong> ' . e($statusLabel) . '</p>'
+                . '<p><a href="' . e($this->absoluteUrl(route('student/exams'))) . '">Abrir portal do aluno</a></p>';
+
+            $this->emails->send($studentEmail, 'Resultado de avaliacao publicado | ' . $courseName, $body, [
+                'company_id' => $companyId,
+                'is_html' => true,
+            ]);
+        }
+    }
+
+    private function absoluteUrl(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        $base = trim((string) config('app.public_url', ''));
+        if ($base === '') {
+            $base = trim((string) config('app.base_url', ''));
+        }
+
+        return rtrim($base, '/') . '/' . ltrim($path, '/');
     }
 
     private function normalizeTicketPriority(string $priority): string

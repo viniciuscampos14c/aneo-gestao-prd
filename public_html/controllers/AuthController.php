@@ -50,6 +50,8 @@ class AuthController extends BaseController
             ]);
         }
 
+        session_regenerate_id(true);
+        unset($_SESSION['student']);
         $_SESSION['user'] = [
             'id' => (int) $user['id'],
             'name' => $user['name'],
@@ -130,6 +132,7 @@ class AuthController extends BaseController
         $_SESSION = [];
         session_destroy();
         session_start();
+        session_regenerate_id(true);
         $this->success('Sessao encerrada.');
         $this->redirect('login');
     }

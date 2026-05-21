@@ -32,10 +32,12 @@
 $currentRoute = parse_route();
 $user = current_user();
 $company = current_company();
+$isProfessor = is_professor();
+$homeRoute = route($isProfessor ? 'students' : default_admin_route());
 $menu = [
-    ['module' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'dashboard'],
+    ['module' => $isProfessor ? 'students' : 'dashboard', 'label' => $isProfessor ? 'Inicio' : 'Dashboard', 'icon' => 'chart-bar', 'route' => $isProfessor ? 'students' : 'dashboard'],
     ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
-    ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students'],
+    ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students', 'hide_for_professor' => true],
     ['module' => 'student_schedule', 'label' => 'Escala Aluno', 'icon' => 'calendar-days', 'route' => 'escala-aluno'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
     ['module' => 'finance', 'label' => 'Financeiro', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
@@ -120,6 +122,13 @@ $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNe
 $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
 $exchangeAlerts = isset($exchangeAlerts) && is_array($exchangeAlerts) ? $exchangeAlerts : [];
 $exchangeAlertCount = (int) ($exchangeAlertCount ?? count($exchangeAlerts));
+
+if ($isProfessor) {
+    // Professor externo nao deve receber alertas financeiros/administrativos.
+    $mobileNegotiationAlerts = [];
+    $mobileNegotiationAlertCount = 0;
+}
+
 $adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount;
 $adminAlertKeys = [];
 foreach ($mobileNegotiationAlerts as $alert) {
@@ -152,6 +161,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
             <ul class="space-y-1">
                 <?php foreach ($menu as $item): ?>
                     <?php if (!has_permission($item['module'])) { continue; } ?>
+                    <?php if ($isProfessor && !empty($item['hide_for_professor'])) { continue; } ?>
                     <?php $active = str_starts_with($currentRoute, $item['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>
                     <li>
                         <a href="<?= route($item['route']); ?>" class="admin-sidebar-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $active; ?>" title="<?= e($item['label']); ?>">
@@ -232,7 +242,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 <button class="rounded-lg border border-slate-200 p-2 lg:hidden" data-sidebar-open>
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <a href="<?= route('dashboard'); ?>" class="hidden items-center md:flex" title="Ir para Home">
+                <a href="<?= e($homeRoute); ?>" class="hidden items-center md:flex" title="Ir para Home">
                     <span class="aneo-theme-logo-frame aneo-logo-scope-admin">
                         <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
                         <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO administrativo tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
@@ -251,7 +261,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
                         data-mobile-neg-trigger
                         data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : $mobileQueueRoute); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                        title="Notificacoes administrativas">
+                        title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificacoes administrativas'; ?>">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
                     <?php if ($adminAlertCount > 0): ?>
                         <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $adminAlertCount); ?></span>
@@ -303,8 +313,8 @@ $exchangeQueueRoute = route('exchange&status=pending');
         <div class="admin-alert-modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-xl">
             <div class="admin-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-indigo-700">Alertas administrativos</h3>
-                    <p class="text-xs text-slate-500">Solicitacoes dos alunos e pendencias operacionais que exigem atencao da equipe.</p>
+                    <h3 class="text-lg font-semibold text-indigo-700"><?= $isProfessor ? 'Alertas dos alunos' : 'Alertas administrativos'; ?></h3>
+                    <p class="text-xs text-slate-500"><?= $isProfessor ? 'Acompanhe solicitacoes ligadas aos alunos.' : 'Solicitacoes dos alunos e pendencias operacionais que exigem atencao da equipe.'; ?></p>
                 </div>
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Fechar</button>
             </div>

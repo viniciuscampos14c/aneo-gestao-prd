@@ -112,6 +112,7 @@ class StudentAuthController extends BaseController
     public function logout(): void
     {
         unset($_SESSION['student']);
+        session_regenerate_id(true);
         $this->success('Sessao do aluno encerrada.');
         $this->redirect('student/login');
     }

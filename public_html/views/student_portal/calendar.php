@@ -74,10 +74,10 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
                             default => 'Evento',
                         };
                         $typeBadge = match ($type) {
-                            'exam' => 'bg-amber-100 text-amber-700',
-                            'live_class' => 'bg-cyan-100 text-cyan-700',
-                            'activity' => 'bg-indigo-100 text-indigo-700',
-                            default => 'bg-slate-100 text-slate-700',
+                            'exam' => 'border border-amber-300/70 bg-amber-200 text-amber-950 shadow-sm',
+                            'live_class' => 'border border-cyan-300/70 bg-cyan-200 text-cyan-950 shadow-sm',
+                            'activity' => 'border border-indigo-300/70 bg-indigo-100 text-indigo-900 shadow-sm',
+                            default => 'border border-slate-300 bg-slate-100 text-slate-800 shadow-sm',
                         };
                         ?>
                         <tr class="border-b border-slate-100 hover:bg-slate-50">

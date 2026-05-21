@@ -4,10 +4,10 @@ Data: 2026-05-20
 
 ## Resumo
 
-- Repositorio local atual: `acd7eb9e5583329da03596b41271fa8576220c85`
-- Branch local: `main`
+- Branch local auditada no dia: `main`
 - O HML continua fora de Git e segue com historico de deploy manual.
-- O hotfix do modal administrativo foi publicado diretamente no HML em `2026-05-20`.
+- O hotfix inicial do modal administrativo foi publicado diretamente no HML em `2026-05-20`.
+- Depois desta auditoria inicial, o ambiente recebeu novas rodadas de correcao e publicacao no mesmo dia.
 - O relatorio antigo de `2026-05-05` serviu como alerta, mas parte dele esta desatualizada no estado atual do ambiente.
 
 ## Confirmacoes do dia
@@ -48,13 +48,13 @@ Nos arquivos abaixo, `HML`, `Local` e `Git` estao equivalentes em conteudo textu
 
 Tambem foi confirmado no dia:
 - `public_html/views/layouts/app.php`
-  - `HML = Local != Git` no momento, por causa do hotfix publicado hoje que ainda nao foi commitado.
+  - no recorte auditado daquele momento, `HML = Local` e o commit ainda seria consolidado depois.
 
 ## Leitura pratica
 
 1. O alerta estrutural do relatorio de `2026-05-05` foi valido naquele momento, mas nao pode mais ser usado como verdade atual para esses arquivos auditados.
 2. Hoje, no recorte tecnico mais sensivel que foi conferido diretamente do servidor, o ambiente esta bem mais alinhado do que parecia.
-3. O principal ponto de divergencia confirmado agora e o hotfix do modal administrativo, que ja esta no HML e no local, mas ainda nao foi consolidado em commit.
+3. O principal ponto de divergencia confirmado naquela janela era o hotfix do modal administrativo, que ja estava no HML e no local e seria consolidado em commit posteriormente.
 
 ## Riscos que continuam existindo
 
@@ -65,10 +65,7 @@ Tambem foi confirmado no dia:
 
 ## Proximo passo recomendado
 
-1. Consolidar em commit os arquivos do hotfix de `2026-05-20`:
-   - `public_html/views/layouts/app.php`
-   - `tests/e2e/hml-validation.spec.ts`
-   - documentacao associada
+1. Consolidar em commit os arquivos do hotfix e das rodadas publicadas em `2026-05-20`.
 2. Manter o snapshot `audit/hml-snapshot-2026-05-20/` como evidencia tecnica desta auditoria.
 3. Se houver necessidade de saneamento completo, auditar na proxima rodada:
    - `database.sql`

@@ -5,6 +5,9 @@ $statusClass = match ($status) {
     'archived' => 'border border-slate-500/40 bg-slate-700 text-slate-100',
     default => 'bg-amber-100 text-amber-700',
 };
+$isProfessorView = is_professor();
+$canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorView;
+$canExportSchedule = has_permission('student_schedule.export');
 ?>
 <section class="space-y-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
@@ -17,22 +20,26 @@ $statusClass = match ($status) {
             <p class="text-sm text-slate-500">Periodo: <?= e(date('d/m/Y', strtotime((string) $schedule['start_date']))); ?> ate <?= e(date('d/m/Y', strtotime((string) $schedule['end_date']))); ?></p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="<?= route('escala-aluno/edit&id=' . (int) $schedule['id']); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Editar</a>
-            <a href="<?= route('escala-aluno/export&id=' . (int) $schedule['id']); ?>" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Imprimir</a>
-            <?php if ($status !== 'published'): ?>
+            <?php if ($canManageSchedule): ?>
+                <a href="<?= route('escala-aluno/edit&id=' . (int) $schedule['id']); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Editar</a>
+            <?php endif; ?>
+            <?php if ($canExportSchedule): ?>
+                <a href="<?= route('escala-aluno/export&id=' . (int) $schedule['id']); ?>" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Imprimir</a>
+            <?php endif; ?>
+            <?php if ($canManageSchedule && $status !== 'published'): ?>
                 <form method="post" action="<?= route('escala-aluno/publish'); ?>">
                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                     <input type="hidden" name="id" value="<?= (int) $schedule['id']; ?>">
                     <button class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Publicar</button>
                 </form>
             <?php endif; ?>
-            <?php if ($status !== 'archived'): ?>
+            <?php if ($canManageSchedule && $status !== 'archived'): ?>
                 <form method="post" action="<?= route('escala-aluno/archive'); ?>" onsubmit="return confirm('Encerrar esta escala? Ela ficara bloqueada para edicao ate ser desarquivada.');">
                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                     <input type="hidden" name="id" value="<?= (int) $schedule['id']; ?>">
                     <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">Encerrar escala</button>
                 </form>
-            <?php else: ?>
+            <?php elseif ($canManageSchedule): ?>
                 <form method="post" action="<?= route('escala-aluno/unarchive'); ?>" onsubmit="return confirm('Reabrir esta escala para edicao?');">
                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                     <input type="hidden" name="id" value="<?= (int) $schedule['id']; ?>">
@@ -52,7 +59,7 @@ $statusClass = match ($status) {
         <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600"><?= nl2br(e((string) $schedule['notes'])); ?></div>
     <?php endif; ?>
 
-    <?php if ($status !== 'archived'): ?>
+    <?php if ($canManageSchedule && $status !== 'archived'): ?>
         <div class="rounded-xl border border-slate-200 bg-white p-4">
             <div class="mb-3">
                 <h3 class="text-lg font-semibold">Gerar semanas</h3>
@@ -120,7 +127,7 @@ $statusClass = match ($status) {
                                 <td class="border border-slate-300 px-3 py-3">
                                     <p class="font-semibold"><?= e(date('d', strtotime((string) $week['start_date'])) . ' a ' . date('d', strtotime((string) $week['end_date']))); ?></p>
                                     <p class="mt-1 text-xs text-slate-500"><?= e(date('d/m', strtotime((string) $week['start_date'])) . ' - ' . date('d/m', strtotime((string) $week['end_date']))); ?></p>
-                                    <?php if ($status !== 'archived'): ?>
+                                    <?php if ($canManageSchedule && $status !== 'archived'): ?>
                                         <form method="post" action="<?= route('escala-aluno/weeks/update'); ?>" class="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white p-2">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="week_id" value="<?= (int) $week['id']; ?>">
@@ -158,7 +165,7 @@ $statusClass = match ($status) {
                                                         <p class="text-sm font-semibold"><?= e((string) $assignment['student_name']); ?></p>
                                                         <p class="text-[11px] uppercase tracking-wide text-slate-400"><?= e((string) $assignment['residency_level_snapshot']); ?></p>
                                                     </div>
-                                                    <?php if ($status !== 'archived'): ?>
+                                                    <?php if ($canManageSchedule && $status !== 'archived'): ?>
                                                         <form method="post" action="<?= route('escala-aluno/assignments/delete'); ?>">
                                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                                             <input type="hidden" name="week_id" value="<?= (int) $week['id']; ?>">
@@ -169,7 +176,7 @@ $statusClass = match ($status) {
                                                 </div>
                                             <?php endforeach; ?>
 
-                                            <?php if ($status !== 'archived' && count($week['assignments'][$group] ?? []) < $slotLimit): ?>
+                                            <?php if ($canManageSchedule && $status !== 'archived' && count($week['assignments'][$group] ?? []) < $slotLimit): ?>
                                                 <form method="post" action="<?= route('escala-aluno/assignments/store'); ?>" class="rounded-lg border border-dashed border-slate-300 bg-white p-2">
                                                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                                     <input type="hidden" name="week_id" value="<?= (int) $week['id']; ?>">

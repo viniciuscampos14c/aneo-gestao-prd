@@ -237,19 +237,38 @@ $studentCsrfToken = csrf_token();
         <div class="portal-alert-modal-body max-h-[60vh] space-y-3 overflow-y-auto p-4">
             <?php if ($studentPortalAlerts !== []): ?>
                 <div class="mb-3">
-                    <p class="portal-alert-section mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Escalas</p>
+                    <p class="portal-alert-section mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Portal do aluno</p>
                     <div class="space-y-2">
                         <?php foreach ($studentPortalAlerts as $alert): ?>
                             <?php
+                            $alertType = trim((string) ($alert['notification_type'] ?? 'general'));
                             $alertTitle = trim((string) ($alert['title'] ?? 'Nova escala'));
                             $alertMessage = trim((string) ($alert['message'] ?? 'Voce recebeu uma nova alocacao de escala.'));
                             $alertCreatedAt = trim((string) ($alert['created_at'] ?? ''));
                             $alertRead = (int) ($alert['is_read'] ?? 0) === 1;
                             $alertLink = trim((string) ($alert['link_url'] ?? '')) !== '' ? trim((string) $alert['link_url']) : $studentScheduleRoute;
+                            $alertSectionLabel = match ($alertType) {
+                                'exam_published' => 'Avaliacao',
+                                'exam_result' => 'Resultado',
+                                'duty_schedule' => 'Escala',
+                                default => 'Portal',
+                            };
+                            $alertButtonLabel = match ($alertType) {
+                                'exam_published' => 'Abrir Avaliacoes',
+                                'exam_result' => 'Ver Resultado',
+                                'duty_schedule' => 'Abrir Minha Escala',
+                                default => 'Abrir Notificacao',
+                            };
+                            $alertCardClass = match ($alertType) {
+                                'exam_published' => 'border-sky-100 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/30',
+                                'exam_result' => 'border-indigo-100 bg-indigo-50/70 dark:border-indigo-900/60 dark:bg-indigo-950/30',
+                                default => 'border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/30',
+                            };
                             ?>
-                            <article class="portal-alert-card rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
+                            <article class="portal-alert-card rounded-xl border px-4 py-3 text-sm <?= $alertCardClass; ?>">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
+                                        <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"><?= e($alertSectionLabel); ?></p>
                                         <p class="portal-alert-card-title font-semibold text-slate-800 dark:text-slate-100"><?= e($alertTitle); ?></p>
                                         <p class="portal-alert-card-copy mt-1 text-xs text-slate-600 dark:text-slate-300"><?= e($alertMessage); ?></p>
                                         <p class="portal-alert-card-meta mt-2 text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-500">
@@ -262,7 +281,7 @@ $studentCsrfToken = csrf_token();
                                 </div>
                                 <div class="mt-3">
                                     <a href="<?= e($alertLink); ?>" class="portal-alert-btn portal-alert-btn-card inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold">
-                                        Abrir Minha Escala
+                                        <?= e($alertButtonLabel); ?>
                                     </a>
                                 </div>
                             </article>

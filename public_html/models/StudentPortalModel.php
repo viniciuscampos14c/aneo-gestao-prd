@@ -308,6 +308,23 @@ class StudentPortalModel extends BaseModel
         ]);
     }
 
+    public function markAllPortalNotificationsAsRead(int $studentId): void
+    {
+        if ($studentId <= 0 || !$this->studentPortalNotificationsFeatureAvailable()) {
+            return;
+        }
+
+        $stmt = $this->db->prepare('UPDATE student_portal_notifications
+            SET is_read = 1,
+                read_at = :read_at
+            WHERE student_id = :student_id
+              AND is_read = 0');
+        $stmt->execute([
+            ':read_at' => now(),
+            ':student_id' => $studentId,
+        ]);
+    }
+
     private function portalNotificationExists(array $data): bool
     {
         $stmt = $this->db->prepare('SELECT id
@@ -1269,7 +1286,8 @@ class StudentPortalModel extends BaseModel
 
             $lesson['progress_percent'] = $progressPercent;
             $lesson['min_progress_percent'] = $threshold;
-            $lesson['is_completed'] = $progressPercent >= $threshold;
+            $lesson['is_completed'] = !empty($lesson['completed_at']);
+            $lesson['ready_to_complete'] = empty($lesson['completed_at']) && $progressPercent >= $threshold;
             $lessonsByModule[$moduleId][] = $lesson;
         }
 
@@ -1290,6 +1308,17 @@ class StudentPortalModel extends BaseModel
             ];
 
             $moduleLessons = $lessonsByModule[$moduleId] ?? [];
+            $previousLessonCompleted = true;
+            foreach ($moduleLessons as $lessonIndex => $moduleLesson) {
+                $lessonCompleted = !empty($moduleLesson['is_completed']);
+                $moduleLesson['is_unlocked'] = !empty($moduleStatus['is_unlocked']) && $previousLessonCompleted;
+                $moduleLessons[$lessonIndex] = $moduleLesson;
+
+                if (!$lessonCompleted) {
+                    $previousLessonCompleted = false;
+                }
+            }
+
             $module = [
                 'id' => $moduleId,
                 'title' => (string) ($row['title'] ?? ''),
@@ -1307,6 +1336,9 @@ class StudentPortalModel extends BaseModel
 
             if ($module['is_unlocked']) {
                 foreach ($moduleLessons as $lesson) {
+                    if (empty($lesson['is_unlocked'])) {
+                        continue;
+                    }
                     if ($firstUnlocked === null) {
                         $firstUnlocked = $lesson;
                     }
@@ -1327,7 +1359,7 @@ class StudentPortalModel extends BaseModel
                     continue;
                 }
                 foreach ($module['lessons'] as $lesson) {
-                    if ((int) ($lesson['id'] ?? 0) === $preferredLessonId) {
+                    if (!empty($lesson['is_unlocked']) && (int) ($lesson['id'] ?? 0) === $preferredLessonId) {
                         $selectedLesson = $lesson;
                         break 2;
                     }
@@ -1422,7 +1454,7 @@ class StudentPortalModel extends BaseModel
         $existingWatched = (int) ($existing['watched_seconds'] ?? 0);
         $existingPosition = (int) ($existing['last_position_seconds'] ?? 0);
         $existingProgress = (int) ($existing['progress_percent'] ?? 0);
-        $wasCompleted = $existingProgress >= $threshold;
+        $wasCompleted = !empty($existing['completed_at']);
 
         $newWatched = max($existingWatched, $watchedSeconds, $positionSeconds);
         if ($newWatched > $durationSeconds) {
@@ -1441,10 +1473,15 @@ class StudentPortalModel extends BaseModel
             $newProgress = 100;
         }
 
-        $isCompleted = $newProgress >= $threshold;
+        $isReadyToComplete = $newProgress >= $threshold;
         $completedAt = $existing['completed_at'] ?? null;
-        if ($isCompleted && $completedAt === null) {
+        $isCompleted = $completedAt !== null && $completedAt !== '';
+
+        // Evita o estado "99% e bloqueado": ao atingir o minimo exigido, conclui a aula.
+        if (!$isCompleted && $isReadyToComplete) {
             $completedAt = now();
+            $isCompleted = true;
+            $newProgress = 100;
         }
 
         if ($existing) {
@@ -1520,7 +1557,87 @@ class StudentPortalModel extends BaseModel
         $result['progress_percent'] = $newProgress;
         $result['required_percent'] = $threshold;
         $result['lesson_completed'] = $isCompleted;
+        $result['lesson_ready_to_complete'] = !$isCompleted && $isReadyToComplete;
         $result['lesson_just_completed'] = !$wasCompleted && $isCompleted;
+        $result['module_completed'] = !empty($moduleStatus['is_completed']);
+        $result['next_module_id'] = $nextModuleId;
+        $result['next_module_unlocked'] = $nextModuleUnlocked;
+        $result['course_progress_percent'] = (int) ($progressSync['progress_percent'] ?? 0);
+        $result['course_completed'] = !empty($progressSync['course_completed']);
+
+        return $result;
+    }
+
+    public function confirmLessonCompletion(int $studentId, int $courseId, int $lessonId): array
+    {
+        $result = [
+            'ok' => false,
+            'message' => 'Nao foi possivel concluir a aula.',
+        ];
+
+        if ($studentId <= 0 || $courseId <= 0 || $lessonId <= 0 || !$this->lmsFeatureAvailable()) {
+            $result['message'] = 'Funcionalidade de conclusao indisponivel.';
+            return $result;
+        }
+
+        $lesson = $this->findStudentCourseLesson($studentId, $courseId, $lessonId);
+        if (!$lesson) {
+            $result['message'] = 'Aula nao encontrada para este curso.';
+            return $result;
+        }
+
+        $threshold = (int) ($lesson['min_progress_percent'] ?? 70);
+        if ($threshold <= 0 || $threshold > 100) {
+            $threshold = 70;
+        }
+
+        $stmt = $this->db->prepare('SELECT id, progress_percent, completed_at
+            FROM student_lesson_progress
+            WHERE student_id = :student_id
+              AND lesson_id = :lesson_id
+            LIMIT 1');
+        $stmt->execute([
+            ':student_id' => $studentId,
+            ':lesson_id' => $lessonId,
+        ]);
+        $progress = $stmt->fetch() ?: null;
+
+        if (!$progress || (int) ($progress['progress_percent'] ?? 0) < $threshold) {
+            $result['message'] = 'Esta aula ainda nao atingiu o percentual minimo para conclusao.';
+            return $result;
+        }
+
+        if (empty($progress['completed_at'])) {
+            $update = $this->db->prepare('UPDATE student_lesson_progress SET
+                progress_percent = 100,
+                completed_at = :completed_at,
+                last_event_at = :last_event_at,
+                updated_at = :updated_at
+                WHERE id = :id');
+            $update->execute([
+                ':completed_at' => now(),
+                ':last_event_at' => now(),
+                ':updated_at' => now(),
+                ':id' => (int) $progress['id'],
+            ]);
+        }
+
+        $progressSync = $this->syncEnrollmentProgressFromLessons($studentId, $courseId);
+        $lessonStatus = $this->findStudentCourseLesson($studentId, $courseId, $lessonId);
+        $moduleId = (int) ($lessonStatus['module_id'] ?? 0);
+        $statusAfter = $this->moduleStatusMap($studentId, $courseId);
+        $moduleStatus = $statusAfter[$moduleId] ?? [];
+        $nextModuleId = $moduleStatus['next_module_id'] ?? null;
+        $nextModuleUnlocked = false;
+        if ($nextModuleId !== null && isset($statusAfter[(int) $nextModuleId])) {
+            $nextModuleUnlocked = !empty($statusAfter[(int) $nextModuleId]['is_unlocked']);
+        }
+
+        $result['ok'] = true;
+        $result['message'] = 'Aula concluida com sucesso.';
+        $result['progress_percent'] = 100;
+        $result['lesson_completed'] = true;
+        $result['lesson_just_completed'] = true;
         $result['module_completed'] = !empty($moduleStatus['is_completed']);
         $result['next_module_id'] = $nextModuleId;
         $result['next_module_unlocked'] = $nextModuleUnlocked;
@@ -1623,7 +1740,15 @@ class StudentPortalModel extends BaseModel
                 FROM exam_questions
                 GROUP BY exam_id
             ) q ON q.exam_id = ex.id
-            LEFT JOIN exam_results r ON r.exam_id = ex.id AND r.student_id = :student_id_result
+            LEFT JOIN (
+                SELECT latest.id, latest.exam_id, latest.student_id, latest.score, latest.status
+                FROM exam_results latest
+                INNER JOIN (
+                    SELECT exam_id, student_id, MAX(id) AS max_id
+                    FROM exam_results
+                    GROUP BY exam_id, student_id
+                ) latest_idx ON latest_idx.max_id = latest.id
+            ) r ON r.exam_id = ex.id AND r.student_id = :student_id_result
             {$externalJoin}
             {$internalJoin}
             {$internalCountJoin}
@@ -1929,6 +2054,22 @@ class StudentPortalModel extends BaseModel
 
         $status = $score >= $passingScore ? 'approved' : 'failed';
 
+        $existingId = $this->findLatestExamResultId($examId, $studentId);
+        if ($existingId > 0) {
+            $stmt = $this->db->prepare('UPDATE exam_results SET
+                score = :score,
+                status = :status,
+                submitted_at = :submitted_at
+                WHERE id = :id');
+            $stmt->execute([
+                ':score' => $score,
+                ':status' => $status,
+                ':submitted_at' => $submittedAt,
+                ':id' => $existingId,
+            ]);
+            return;
+        }
+
         $stmt = $this->db->prepare('INSERT INTO exam_results (
             exam_id, student_id, score, status, submitted_at, created_by, created_at
         ) VALUES (
@@ -1989,8 +2130,49 @@ class StudentPortalModel extends BaseModel
                 ex.passing_score,
                 c.name AS course_name
             FROM exam_results r
+            INNER JOIN (
+                SELECT exam_id, student_id, MAX(id) AS max_id
+                FROM exam_results
+                GROUP BY exam_id, student_id
+            ) latest ON latest.max_id = r.id
             INNER JOIN exams ex ON ex.id = r.exam_id
             INNER JOIN courses c ON c.id = ex.course_id
+            WHERE r.student_id = :student_id";
+        $params = [':student_id' => $studentId];
+        if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
+            $sql .= ' AND c.company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+        $sql .= ' ORDER BY r.submitted_at DESC, r.id DESC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    public function academicHistoryRecords(int $studentId): array
+    {
+        $companyId = $this->resolveStudentCompanyId($studentId);
+        $sql = "SELECT
+                r.id,
+                r.score,
+                r.status,
+                r.submitted_at,
+                ex.title AS exam_title,
+                ex.passing_score,
+                c.id AS course_id,
+                c.name AS course_name
+            FROM exam_results r
+            INNER JOIN exams ex ON ex.id = r.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN (
+                SELECT ex2.course_id, r2.student_id, MAX(r2.id) AS max_id
+                FROM exam_results r2
+                INNER JOIN exams ex2 ON ex2.id = r2.exam_id
+                WHERE r2.status = 'approved'
+                GROUP BY ex2.course_id, r2.student_id
+            ) latest ON latest.max_id = r.id
             WHERE r.student_id = :student_id";
         $params = [':student_id' => $studentId];
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {
@@ -2112,7 +2294,61 @@ class StudentPortalModel extends BaseModel
         $stmt->execute($params);
         $row = $stmt->fetch();
 
-        return $row ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        if (!$this->isLessonUnlockedForStudent($studentId, $courseId, (int) ($row['module_id'] ?? 0), $lessonId)) {
+            return null;
+        }
+
+        return $row;
+    }
+
+    private function isLessonUnlockedForStudent(int $studentId, int $courseId, int $moduleId, int $lessonId): bool
+    {
+        if ($studentId <= 0 || $courseId <= 0 || $moduleId <= 0 || $lessonId <= 0) {
+            return false;
+        }
+
+        $statusMap = $this->moduleStatusMap($studentId, $courseId);
+        if (empty($statusMap[$moduleId]['is_unlocked'])) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('SELECT
+                cl.id,
+                COALESCE(slp.completed_at, NULL) AS completed_at
+            FROM course_lessons cl
+            LEFT JOIN student_lesson_progress slp ON slp.lesson_id = cl.id AND slp.student_id = :student_id
+            WHERE cl.module_id = :module_id
+              AND cl.is_active = 1
+            ORDER BY cl.display_order ASC, cl.id ASC');
+        $stmt->execute([
+            ':student_id' => $studentId,
+            ':module_id' => $moduleId,
+        ]);
+        $lessons = $stmt->fetchAll();
+        if ($lessons === []) {
+            return false;
+        }
+
+        $previousLessonCompleted = true;
+        foreach ($lessons as $lessonRow) {
+            $currentLessonId = (int) ($lessonRow['id'] ?? 0);
+            $isUnlocked = $previousLessonCompleted;
+            $isCompleted = !empty($lessonRow['completed_at']);
+
+            if ($currentLessonId === $lessonId) {
+                return $isUnlocked;
+            }
+
+            if (!$isCompleted) {
+                $previousLessonCompleted = false;
+            }
+        }
+
+        return false;
     }
 
     private function moduleStatusMap(int $studentId, int $courseId): array
@@ -2126,8 +2362,8 @@ class StudentPortalModel extends BaseModel
                 cm.display_order,
                 COUNT(cl.id) AS total_lessons,
                 SUM(CASE WHEN cl.is_required = 1 THEN 1 ELSE 0 END) AS required_lessons,
-                SUM(CASE WHEN cl.is_required = 1 AND COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS required_completed_lessons,
-                SUM(CASE WHEN COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS completed_lessons
+                SUM(CASE WHEN cl.is_required = 1 AND slp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS required_completed_lessons,
+                SUM(CASE WHEN slp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_lessons
             FROM course_modules cm
             LEFT JOIN course_lessons cl ON cl.module_id = cm.id AND cl.is_active = 1
             LEFT JOIN student_lesson_progress slp ON slp.lesson_id = cl.id AND slp.student_id = :student_id
@@ -2232,8 +2468,8 @@ class StudentPortalModel extends BaseModel
         $stmt = $this->db->prepare('SELECT
                 COUNT(cl.id) AS total_lessons,
                 SUM(CASE WHEN cl.is_required = 1 THEN 1 ELSE 0 END) AS required_lessons,
-                SUM(CASE WHEN COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS completed_lessons,
-                SUM(CASE WHEN cl.is_required = 1 AND COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS required_completed_lessons,
+                SUM(CASE WHEN slp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_lessons,
+                SUM(CASE WHEN cl.is_required = 1 AND slp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS required_completed_lessons,
                 AVG(COALESCE(slp.progress_percent, 0)) AS avg_progress_all,
                 AVG(CASE WHEN cl.is_required = 1 THEN COALESCE(slp.progress_percent, 0) END) AS avg_progress_required
             FROM course_lessons cl
@@ -2906,5 +3142,25 @@ class StudentPortalModel extends BaseModel
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    private function findLatestExamResultId(int $examId, int $studentId): int
+    {
+        if ($examId <= 0 || $studentId <= 0) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare('SELECT id
+            FROM exam_results
+            WHERE exam_id = :exam_id
+              AND student_id = :student_id
+            ORDER BY submitted_at DESC, id DESC
+            LIMIT 1');
+        $stmt->execute([
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+        ]);
+
+        return (int) ($stmt->fetchColumn() ?: 0);
     }
 }

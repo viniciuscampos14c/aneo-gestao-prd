@@ -8,6 +8,7 @@ class CourseController extends BaseController
     private AcademicCalendarModel $calendar;
     private AuditLogService $audit;
     private CourseLiveSessionModel $liveSessions;
+    private EmailService $emails;
 
     public function __construct()
     {
@@ -17,6 +18,7 @@ class CourseController extends BaseController
         $this->calendar     = new AcademicCalendarModel();
         $this->audit        = new AuditLogService();
         $this->liveSessions = new CourseLiveSessionModel();
+        $this->emails       = new EmailService();
     }
 
     public function index(): void
@@ -28,6 +30,10 @@ class CourseController extends BaseController
             'q' => trim((string) request('q', '')),
             'status' => trim((string) request('status', '')),
         ];
+        $viewMode = trim((string) request('view', 'cards'));
+        if (!in_array($viewMode, ['cards', 'list'], true)) {
+            $viewMode = 'cards';
+        }
 
         $perPage = (int) request('per_page', config('app.default_pagination', 50));
         if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
@@ -36,12 +42,16 @@ class CourseController extends BaseController
         $page = max(1, (int) request('page', 1));
 
         $result = $this->courses->listCourses($filters, $perPage, $page);
+        $stats = $this->courses->courseCatalogStats($filters);
 
         $this->render('courses/index', [
             'title' => 'Cursos EAD',
             'rows' => $result['rows'],
             'meta' => $result['meta'],
             'filters' => $filters,
+            'stats' => $stats,
+            'viewMode' => $viewMode,
+            'useCourseDashboard' => true,
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
         ]);
     }
@@ -147,6 +157,64 @@ class CourseController extends BaseController
         $this->redirect('courses');
     }
 
+    public function preview(): void
+    {
+        require_auth();
+        require_permission('courses');
+
+        $id = (int) request('id');
+        $course = $this->courses->findCourse($id);
+        if (!$course) {
+            $this->error('Curso nao encontrado.');
+            $this->redirect('courses');
+        }
+
+        $this->render('courses/preview', [
+            'title' => 'Preview do Curso',
+            'course' => $course,
+            'courseModules' => $this->courses->listCourseModulesWithLessons($id),
+        ]);
+    }
+
+    public function duplicate(): void
+    {
+        require_auth();
+        require_permission('courses.create');
+        csrf_validate();
+
+        $id = (int) post('id');
+        $newId = $this->courses->duplicateCourse($id, (int) current_user()['id']);
+        if ($newId <= 0) {
+            $this->error('Nao foi possivel duplicar o curso.');
+            $this->redirect('courses');
+        }
+
+        $this->success('Curso duplicado com sucesso.');
+        $this->redirect('courses/edit&id=' . $newId);
+    }
+
+    public function updateStatus(): void
+    {
+        require_auth();
+        require_permission('courses.edit');
+        csrf_validate();
+
+        $id = (int) post('id');
+        $status = trim((string) post('status'));
+        if (!$this->courses->updateCourseStatus($id, $status)) {
+            $this->error('Nao foi possivel atualizar o status do curso.');
+            $this->redirect('courses');
+        }
+
+        $labels = [
+            'draft' => 'Curso movido para rascunho.',
+            'published' => 'Curso publicado.',
+            'archived' => 'Curso arquivado.',
+        ];
+        $this->success($labels[$status] ?? 'Status do curso atualizado.');
+        $this->redirect('courses');
+    }
+
     public function uploadMaterial(): void
     {
         require_auth();
@@ -166,7 +234,7 @@ class CourseController extends BaseController
             $this->error('Nenhum arquivo valido foi enviado.');
         }
 
-        $this->redirect('courses/edit&id=' . $courseId);
+        $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
     }
 
     public function deleteMaterial(): void
@@ -199,7 +267,7 @@ class CourseController extends BaseController
         $this->courses->deleteCourseMaterial($uploadId);
 
         $this->success('Arquivo removido.');
-        $this->redirect('courses/edit&id=' . $courseId);
+        $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
     }
 
     public function storeModule(): void
@@ -232,7 +300,7 @@ class CourseController extends BaseController
             $this->error('Nao foi possivel criar o modulo. Verifique os dados obrigatorios.');
         }
 
-        $this->redirect('courses/edit&id=' . $courseId);
+        $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
     }
 
     public function updateModule(): void
@@ -332,6 +400,7 @@ class CourseController extends BaseController
 
         $courseId = (int) post('course_id');
         $lessonId = (int) post('lesson_id');
+        $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $lessonId <= 0) {
             $this->error('Aula invalida.');
             $this->redirect('courses');
@@ -354,7 +423,7 @@ class CourseController extends BaseController
             $this->error('Nao foi possivel atualizar a aula.');
         }
 
-        $this->redirect('courses/edit&id=' . $courseId);
+        $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
     }
 
     public function deleteLesson(): void
@@ -365,6 +434,7 @@ class CourseController extends BaseController
 
         $courseId = (int) post('course_id');
         $lessonId = (int) post('lesson_id');
+        $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $lessonId <= 0) {
             $this->error('Aula invalida.');
             $this->redirect('courses');
@@ -376,7 +446,7 @@ class CourseController extends BaseController
             $this->error('Nao foi possivel remover a aula.');
         }
 
-        $this->redirect('courses/edit&id=' . $courseId);
+        $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
     }
 
     public function categories(): void
@@ -428,6 +498,7 @@ class CourseController extends BaseController
         $filters = [
             'q' => trim((string) request('q', '')),
             'status' => trim((string) request('status', '')),
+            'course_id' => (int) request('course_id', 0),
         ];
 
         $perPage = (int) request('per_page', config('app.default_pagination', 50));
@@ -447,6 +518,7 @@ class CourseController extends BaseController
             'meta' => $result['meta'],
             'courses' => $allCourses['rows'],
             'students' => $allStudents['rows'],
+            'filters' => $filters,
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
         ]);
     }
@@ -627,6 +699,7 @@ class CourseController extends BaseController
 
         $filters = [
             'q' => trim((string) request('q', '')),
+            'course_id' => (int) request('course_id', 0),
         ];
 
         $perPage = (int) request('per_page', config('app.default_pagination', 50));
@@ -645,11 +718,13 @@ class CourseController extends BaseController
         $externalLinks = $externalExamFeatureAvailable
             ? $this->courses->listExternalExamLinks(300)
             : [];
+        $recentExamResults = $this->courses->listExamResultsFeed(250);
 
         $this->render('courses/exams', [
             'title' => 'Exames',
             'rows' => $result['rows'],
             'meta' => $result['meta'],
+            'filters' => $filters,
             'courses' => $courses['rows'],
             'students' => $students['rows'],
             'upcomingExams' => $upcomingExams,
@@ -657,6 +732,7 @@ class CourseController extends BaseController
             'externalExamFeatureAvailable' => $externalExamFeatureAvailable,
             'internalExamAudienceFeatureAvailable' => $internalExamAudienceFeatureAvailable,
             'externalLinks' => $externalLinks,
+            'recentExamResults' => $recentExamResults,
             'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
         ]);
     }
@@ -674,8 +750,14 @@ class CourseController extends BaseController
             'passing_score' => parse_decimal((string) post('passing_score', '7')),
             'scheduled_at' => $this->normalizeDateTime((string) post('scheduled_at')),
         ];
+        $examKind = trim((string) post('exam_kind', 'internal'));
         $deliveryScope = trim((string) post('delivery_scope_internal', 'course'));
         $targetStudentId = (int) post('target_student_id');
+        $externalDeliveryScope = trim((string) post('delivery_scope_external', 'course'));
+        $externalTargetStudentId = (int) post('target_student_id_external');
+        $externalUrl = trim((string) post('external_url'));
+        $externalDueAt = $this->normalizeDateTime((string) post('external_due_at'));
+        $externalInstructions = trim((string) post('external_instructions'));
         $questionsPayload = $this->normalizeExamQuestionsFromPost();
 
         if ($data['course_id'] <= 0 || $data['title'] === '') {
@@ -683,40 +765,116 @@ class CourseController extends BaseController
             $this->redirect('courses/exams');
         }
 
-        if (!in_array($deliveryScope, ['course', 'student'], true)) {
-            $deliveryScope = 'course';
+        if (!in_array($examKind, ['internal', 'external'], true)) {
+            $examKind = 'internal';
         }
 
-        if ($deliveryScope === 'student') {
-            if (!$this->courses->internalExamAudienceFeatureAvailable()) {
-                $this->error('Direcionamento individual de prova interna indisponivel nesta base. Execute a migracao de publico interno de provas.');
+        // Se houver link externo valido, prioriza o fluxo externo mesmo que o hidden exam_kind venha incorreto.
+        if ($externalUrl !== '' && $this->isHttpUrl($externalUrl)) {
+            $examKind = 'external';
+        }
+
+        if ($examKind === 'external') {
+            if (!$this->courses->externalExamFeatureAvailable()) {
+                $this->error('Prova externa nao habilitada no banco. Execute a migracao correspondente.');
                 $this->redirect('courses/exams');
             }
 
-            if ($targetStudentId <= 0) {
-                $this->error('Selecione o aluno para o envio individual da prova interna.');
+            if ($externalUrl === '' || !$this->isHttpUrl($externalUrl)) {
+                $this->error('Informe uma URL valida (http/https) para a prova externa.');
                 $this->redirect('courses/exams');
             }
 
-            if (!$this->courses->isStudentEnrolledInCourse($targetStudentId, $data['course_id'])) {
-                $this->error('O aluno selecionado nao esta matriculado (ativo/concluido) no curso escolhido.');
+            if (!in_array($externalDeliveryScope, ['course', 'student'], true)) {
+                $externalDeliveryScope = 'course';
+            }
+
+            if ($externalDeliveryScope === 'student') {
+                if ($externalTargetStudentId <= 0) {
+                    $this->error('Selecione o aluno para o envio individual da prova externa.');
+                    $this->redirect('courses/exams');
+                }
+
+                if (!$this->courses->isStudentEnrolledInCourse($externalTargetStudentId, $data['course_id'])) {
+                    $this->error('O aluno selecionado nao esta matriculado (ativo/concluido) no curso escolhido.');
+                    $this->redirect('courses/exams');
+                }
+            }
+        } else {
+            if (!in_array($deliveryScope, ['course', 'student'], true)) {
+                $deliveryScope = 'course';
+            }
+
+            if ($deliveryScope === 'student') {
+                if (!$this->courses->internalExamAudienceFeatureAvailable()) {
+                    $this->error('Direcionamento individual de prova interna indisponivel nesta base. Execute a migracao de publico interno de provas.');
+                    $this->redirect('courses/exams');
+                }
+
+                if ($targetStudentId <= 0) {
+                    $this->error('Selecione o aluno para o envio individual da prova interna.');
+                    $this->redirect('courses/exams');
+                }
+
+                if (!$this->courses->isStudentEnrolledInCourse($targetStudentId, $data['course_id'])) {
+                    $this->error('O aluno selecionado nao esta matriculado (ativo/concluido) no curso escolhido.');
+                    $this->redirect('courses/exams');
+                }
+            }
+
+            if ($questionsPayload['rows'] === []) {
+                $this->error('Adicione pelo menos uma questao para criar a prova interna.');
                 $this->redirect('courses/exams');
             }
-        }
 
-        if ($questionsPayload['rows'] === []) {
-            $this->error('Adicione pelo menos uma questao para criar a prova interna.');
-            $this->redirect('courses/exams');
-        }
-
-        if ($questionsPayload['errors'] !== []) {
-            $this->error($questionsPayload['errors'][0]);
-            $this->redirect('courses/exams');
+            if ($questionsPayload['errors'] !== []) {
+                $this->error($questionsPayload['errors'][0]);
+                $this->redirect('courses/exams');
+            }
         }
 
         $examId = $this->courses->createExam($data, (int) current_user()['id']);
         if ($examId <= 0) {
             $this->error('Curso invalido para esta empresa.');
+            $this->redirect('courses/exams');
+        }
+
+        if ($examKind === 'external') {
+            $payload = [
+                'exam_id' => $examId,
+                'external_url' => $externalUrl,
+                'instructions' => $externalInstructions,
+                'due_at' => $externalDueAt,
+            ];
+
+            if ($externalDeliveryScope === 'student' && $externalTargetStudentId > 0) {
+                $ok = $this->courses->upsertExternalExamLink($payload + [
+                    'student_id' => $externalTargetStudentId,
+                ], (int) current_user()['id']);
+
+                if ($ok) {
+                    $this->notifyStudentsAboutPublishedExam($examId, [$externalTargetStudentId], true, $externalUrl);
+                    $this->success('Prova externa criada e vinculada para 1 aluno.');
+                } else {
+                    $this->error('Prova externa criada, mas nao foi possivel salvar o vinculo individual.');
+                }
+
+                $this->redirect('courses/exams');
+            }
+
+            $result = $this->courses->upsertExternalExamLinksForExamCourse($payload, (int) current_user()['id']);
+            $eligibleTotal = (int) ($result['eligible_total'] ?? 0);
+            $linkedTotal = (int) ($result['linked_total'] ?? 0);
+
+            if ($eligibleTotal > 0 && !empty($result['ok'])) {
+                $this->notifyStudentsAboutPublishedExam($examId, [], true, $externalUrl);
+                $this->success("Prova externa criada e vinculada para {$linkedTotal} aluno(s) do curso.");
+            } elseif ($eligibleTotal <= 0) {
+                $this->success('Prova externa criada. Ainda nao ha alunos ativos/concluidos matriculados neste curso.');
+            } else {
+                $this->error('Prova externa criada, mas houve falha ao gerar os vinculos dos alunos.');
+            }
+
             $this->redirect('courses/exams');
         }
 
@@ -740,15 +898,23 @@ class CourseController extends BaseController
             $audienceMessage = $linked
                 ? 'Prova interna criada e enviada para 1 aluno.'
                 : 'Prova interna criada. Nao foi possivel aplicar o direcionamento individual.';
+            if ($linked) {
+                $this->notifyStudentsAboutPublishedExam($examId, [$targetStudentId], false, null);
+            }
         } elseif ($this->courses->internalExamAudienceFeatureAvailable()) {
             $result = $this->courses->upsertInternalExamAudienceForExamCourse($examId, (int) current_user()['id']);
             $eligibleTotal = (int) ($result['eligible_total'] ?? 0);
             $linkedTotal = (int) ($result['linked_total'] ?? 0);
             if ($eligibleTotal > 0) {
+                if ($linkedTotal > 0) {
+                    $this->notifyStudentsAboutPublishedExam($examId, [], false, null);
+                }
                 $audienceMessage = "Prova interna criada e enviada para {$linkedTotal} aluno(s) matriculado(s) no curso.";
             } else {
                 $audienceMessage = 'Prova interna criada. Ainda nao ha alunos ativos/concluidos matriculados neste curso.';
             }
+        } else {
+            $this->notifyStudentsAboutPublishedExam($examId, [], false, null);
         }
 
         $this->success($audienceMessage);
@@ -775,6 +941,7 @@ class CourseController extends BaseController
         }
 
         $this->courses->registerExamResult($data, (int) current_user()['id']);
+        $this->notifyStudentAboutExamResult((int) $data['exam_id'], (int) $data['student_id'], (float) $data['score']);
         $this->success('Resultado registrado.');
         $this->redirect('courses/exams');
     }
@@ -881,7 +1048,10 @@ class CourseController extends BaseController
         require_auth();
         require_permission('courses.comment');
 
-        $rows = $this->courses->listComments(200);
+        $filters = [
+            'course_id' => (int) request('course_id', 0),
+        ];
+        $rows = $this->courses->listComments(200, $filters);
 
         $courses = $this->courses->listCourses([], 1000, 1);
 
@@ -889,6 +1059,7 @@ class CourseController extends BaseController
             'title' => 'Gerenciar Comentarios',
             'rows' => $rows,
             'courses' => $courses['rows'],
+            'filters' => $filters,
         ]);
     }
 
@@ -1258,5 +1429,151 @@ class CourseController extends BaseController
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }
+    }
+
+    private function notifyStudentsAboutPublishedExam(int $examId, array $studentIds, bool $isExternal, ?string $externalUrl): void
+    {
+        $exam = $this->courses->findExamNotificationContext($examId);
+        if (!$exam) {
+            return;
+        }
+
+        $recipients = $this->courses->listExamNotificationRecipients($examId, $studentIds);
+        if ($recipients === []) {
+            return;
+        }
+
+        $examTitle = trim((string) ($exam['title'] ?? 'Avaliacao'));
+        $courseName = trim((string) ($exam['course_name'] ?? 'Curso'));
+        $scheduledAt = trim((string) ($exam['scheduled_at'] ?? ''));
+        $dateLabel = $scheduledAt !== '' ? date('d/m/Y H:i', strtotime($scheduledAt)) : 'sem data definida';
+
+        foreach ($recipients as $recipient) {
+            $studentId = (int) ($recipient['student_id'] ?? 0);
+            $companyId = (int) ($recipient['company_id'] ?? 0);
+            $studentEmail = trim((string) ($recipient['student_email'] ?? ''));
+            $studentName = trim((string) ($recipient['student_name'] ?? 'Aluno'));
+            if ($studentId <= 0 || $companyId <= 0) {
+                continue;
+            }
+
+            $message = $isExternal
+                ? sprintf('A prova externa %s foi liberada. Abra o portal para acessar o link da avaliacao.', $examTitle)
+                : sprintf('A avaliacao %s foi publicada para o curso %s em %s.', $examTitle, $courseName, $dateLabel);
+
+            if ($this->portal->studentPortalNotificationsFeatureAvailable()) {
+                $this->portal->createPortalNotification([
+                    'company_id' => $companyId,
+                    'student_id' => $studentId,
+                    'notification_type' => 'exam_published',
+                    'title' => $isExternal ? 'Nova prova externa disponivel' : 'Nova avaliacao disponivel',
+                    'message' => $message,
+                    'link_url' => route('student/exams'),
+                    'meta' => [
+                        'exam_id' => $examId,
+                        'exam_title' => $examTitle,
+                        'course_name' => $courseName,
+                        'is_external' => $isExternal,
+                    ],
+                ]);
+            }
+
+            if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
+                $body = '<p>Ola ' . e($studentName) . ',</p>'
+                    . '<p>Uma nova avaliacao foi publicada para voce.</p>'
+                    . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
+                    . '<strong>Avaliacao:</strong> ' . e($examTitle) . '<br>'
+                    . '<strong>Data:</strong> ' . e($dateLabel) . '</p>'
+                    . ($isExternal && $externalUrl
+                        ? '<p>Esta prova possui link externo e deve ser aberta pelo portal do aluno.</p>'
+                        : '<p>Acesse o portal do aluno para responder sua avaliacao.</p>')
+                    . '<p><a href="' . e($this->absoluteUrl(route('student/exams'))) . '">Abrir portal do aluno</a></p>';
+
+                $this->emails->send($studentEmail, 'Nova avaliacao disponivel | ' . $courseName, $body, [
+                    'company_id' => $companyId,
+                    'is_html' => true,
+                ]);
+            }
+        }
+    }
+
+    private function notifyStudentAboutExamResult(int $examId, int $studentId, float $score): void
+    {
+        if ($examId <= 0 || $studentId <= 0) {
+            return;
+        }
+
+        $exam = $this->courses->findExamNotificationContext($examId);
+        $recipients = $this->courses->listExamNotificationRecipients($examId, [$studentId]);
+        if (!$exam || $recipients === []) {
+            return;
+        }
+
+        $recipient = $recipients[0];
+        $companyId = (int) ($recipient['company_id'] ?? 0);
+        $studentEmail = trim((string) ($recipient['student_email'] ?? ''));
+        $studentName = trim((string) ($recipient['student_name'] ?? 'Aluno'));
+        $examTitle = trim((string) ($exam['title'] ?? 'Avaliacao'));
+        $courseName = trim((string) ($exam['course_name'] ?? 'Curso'));
+        $passingScore = (float) ($exam['passing_score'] ?? 0);
+
+        if ($companyId > 0 && $this->portal->studentPortalNotificationsFeatureAvailable()) {
+            $this->portal->createPortalNotification([
+                'company_id' => $companyId,
+                'student_id' => $studentId,
+                'notification_type' => 'exam_result',
+                'title' => 'Resultado de avaliacao publicado',
+                'message' => sprintf(
+                    '%s: sua nota em %s foi %s de %s.',
+                    $courseName,
+                    $examTitle,
+                    number_format($score, 2, ',', '.'),
+                    number_format($passingScore, 2, ',', '.')
+                ),
+                'link_url' => route('student/exams'),
+                'meta' => [
+                    'exam_id' => $examId,
+                    'exam_title' => $examTitle,
+                    'course_name' => $courseName,
+                    'score' => $score,
+                    'passing_score' => $passingScore,
+                    'status' => $score >= $passingScore ? 'approved' : 'failed',
+                ],
+            ]);
+        }
+
+        if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
+            $body = '<p>Ola ' . e($studentName) . ',</p>'
+                . '<p>Seu resultado foi publicado no portal do aluno.</p>'
+                . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
+                . '<strong>Avaliacao:</strong> ' . e($examTitle) . '<br>'
+                . '<strong>Nota:</strong> ' . e(number_format($score, 2, ',', '.')) . '<br>'
+                . '<strong>Nota minima:</strong> ' . e(number_format($passingScore, 2, ',', '.')) . '</p>'
+                . '<p><a href="' . e($this->absoluteUrl(route('student/exams'))) . '">Abrir portal do aluno</a></p>';
+
+            $this->emails->send($studentEmail, 'Resultado de avaliacao publicado | ' . $courseName, $body, [
+                'company_id' => $companyId,
+                'is_html' => true,
+            ]);
+        }
+    }
+
+    private function absoluteUrl(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        $base = trim((string) config('app.public_url', ''));
+        if ($base === '') {
+            $base = trim((string) config('app.base_url', ''));
+        }
+
+        return rtrim($base, '/') . '/' . ltrim($path, '/');
     }
 }

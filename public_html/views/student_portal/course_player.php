@@ -146,11 +146,30 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                             <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
                                 <p class="font-medium text-slate-700">Progresso da aula: <span id="lesson-progress-label"><?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%</span></p>
                                 <p id="lesson-status-label" class="text-xs <?= !empty($selectedLesson['is_completed']) ? 'text-emerald-700' : 'text-slate-500'; ?>">
-                                    <?= !empty($selectedLesson['is_completed']) ? 'Aula concluida.' : 'Assista no minimo ' . (int) ($selectedLesson['min_progress_percent'] ?? 70) . '% para concluir.'; ?>
+                                    <?php if (!empty($selectedLesson['is_completed'])): ?>
+                                        Aula concluida.
+                                    <?php elseif (!empty($selectedLesson['ready_to_complete'])): ?>
+                                        Percentual minimo atingido. Confirme a conclusao da aula.
+                                    <?php else: ?>
+                                        Assista no minimo <?= (int) ($selectedLesson['min_progress_percent'] ?? 70); ?>% para concluir.
+                                    <?php endif; ?>
                                 </p>
                             </div>
                             <div class="mt-2 h-2 rounded-full bg-slate-200">
                                 <div id="lesson-progress-bar" class="h-2 rounded-full <?= !empty($selectedLesson['is_completed']) ? 'bg-emerald-600' : 'bg-cyan-600'; ?>" style="width: <?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%"></div>
+                            </div>
+                            <div class="mt-3 flex flex-wrap items-center gap-3">
+                                <button
+                                    type="button"
+                                    id="lesson-complete-button"
+                                    class="rounded-lg px-3 py-2 text-sm font-semibold <?= !empty($selectedLesson['is_completed']) ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : (!empty($selectedLesson['ready_to_complete']) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-slate-200 bg-white text-slate-400'); ?>"
+                                    <?= (!empty($selectedLesson['is_completed']) || !empty($selectedLesson['ready_to_complete'])) ? '' : 'disabled'; ?>
+                                >
+                                    <?= !empty($selectedLesson['is_completed']) ? 'Aula concluida' : 'Confirmar conclusao'; ?>
+                                </button>
+                                <p id="lesson-complete-help" class="text-xs text-slate-500">
+                                    <?= !empty($selectedLesson['is_completed']) ? 'A aula ja foi validada no seu progresso.' : 'O check sera liberado apos atingir o percentual minimo exigido.'; ?>
+                                </p>
                             </div>
                         </div>
 
@@ -211,10 +230,13 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
     }
 
     const endpoint = '<?= route('student/course/progress'); ?>';
+    const completeEndpoint = '<?= route('student/course/progress/complete'); ?>';
     const csrfToken = '<?= csrf_token(); ?>';
     const lessonProgressLabel = document.getElementById('lesson-progress-label');
     const lessonStatusLabel = document.getElementById('lesson-status-label');
     const lessonProgressBar = document.getElementById('lesson-progress-bar');
+    const completeButton = document.getElementById('lesson-complete-button');
+    const completeHelp = document.getElementById('lesson-complete-help');
     const courseProgressLabel = document.getElementById('course-progress-label');
     const courseProgressBar = document.getElementById('course-progress-bar');
 
@@ -232,6 +254,8 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         lastSyncedAt: 0,
         syncInFlight: false,
         completed: player.dataset.initialCompleted === '1',
+        readyToComplete: <?= !empty($selectedLesson['ready_to_complete']) ? 'true' : 'false'; ?>,
+        completeInFlight: false,
     };
 
     const toPositiveInt = (value, fallback = 1) => {
@@ -250,7 +274,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         return toPositiveInt(player.dataset.initialPosition || 0, 1);
     };
 
-    const refreshLessonUi = (progress, completed) => {
+    const refreshLessonUi = (progress, completed, readyToComplete = false) => {
         const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
         if (lessonProgressLabel) {
             lessonProgressLabel.textContent = safeProgress + '%';
@@ -263,9 +287,27 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         if (lessonStatusLabel) {
             lessonStatusLabel.textContent = completed
                 ? 'Aula concluida.'
-                : 'Assista no minimo ' + requiredPercent + '% para concluir.';
+                : (readyToComplete
+                    ? 'Percentual minimo atingido. Confirme a conclusao da aula.'
+                    : 'Assista no minimo ' + requiredPercent + '% para concluir.');
             lessonStatusLabel.classList.toggle('text-emerald-700', completed);
             lessonStatusLabel.classList.toggle('text-slate-500', !completed);
+        }
+        if (completeButton) {
+            completeButton.disabled = !completed && !readyToComplete;
+            completeButton.textContent = completed ? 'Aula concluida' : 'Confirmar conclusao';
+            completeButton.className = completed
+                ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700'
+                : (readyToComplete
+                    ? 'rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700'
+                    : 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-400');
+        }
+        if (completeHelp) {
+            completeHelp.textContent = completed
+                ? 'A aula ja foi validada no seu progresso.'
+                : (readyToComplete
+                    ? 'Clique no check para confirmar que assistiu a aula.'
+                    : 'O check sera liberado apos atingir o percentual minimo exigido.');
         }
     };
 
@@ -276,6 +318,55 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         }
         if (courseProgressBar) {
             courseProgressBar.style.width = safeProgress + '%';
+        }
+    };
+
+    const confirmCompletion = async () => {
+        if (state.completeInFlight || state.completed || !state.readyToComplete) {
+            return;
+        }
+        if (!window.confirm('Confirmar que voce assistiu a aula e deseja concluir este conteudo?')) {
+            return;
+        }
+
+        const payload = new URLSearchParams();
+        payload.append('_csrf', csrfToken);
+        payload.append('course_id', String(courseId));
+        payload.append('lesson_id', String(lessonId));
+
+        state.completeInFlight = true;
+        if (completeButton) {
+            completeButton.disabled = true;
+            completeButton.textContent = 'Concluindo...';
+        }
+
+        try {
+            const response = await fetch(completeEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: payload.toString(),
+            });
+            const data = await response.json();
+            if (!response.ok || !data || !data.ok) {
+                return;
+            }
+
+            state.completed = true;
+            state.readyToComplete = false;
+            refreshLessonUi(Number(data.progress_percent || 100), true, false);
+            refreshCourseUi(Number(data.course_progress_percent || 0));
+
+            window.setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        } catch (error) {
+            // Ignore transient errors and keep the player available.
+        } finally {
+            state.completeInFlight = false;
         }
     };
 
@@ -322,7 +413,9 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
 
             const lessonProgress = Number(data.progress_percent || 0);
             const lessonCompleted = !!data.lesson_completed;
-            refreshLessonUi(lessonProgress, lessonCompleted);
+            const readyToComplete = !!data.lesson_ready_to_complete;
+            state.readyToComplete = readyToComplete;
+            refreshLessonUi(lessonProgress, lessonCompleted, readyToComplete);
 
             const courseProgress = Number(data.course_progress_percent || 0);
             refreshCourseUi(courseProgress);
@@ -373,6 +466,10 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         syncProgress(true);
     });
 
+    if (completeButton) {
+        completeButton.addEventListener('click', confirmCompletion);
+    }
+
     window.addEventListener('beforeunload', () => {
         syncProgress(true);
     });
@@ -387,6 +484,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
     if (!wrap) { return; }
 
     const endpoint      = '<?= route('student/course/progress'); ?>';
+    const completeEndpoint = '<?= route('student/course/progress/complete'); ?>';
     const csrfToken     = '<?= csrf_token(); ?>';
     const courseId      = Number(wrap.dataset.courseId || '0');
     const lessonId      = Number(wrap.dataset.lessonId || '0');
@@ -396,6 +494,8 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
     const lessonProgressLabel = document.getElementById('lesson-progress-label');
     const lessonStatusLabel   = document.getElementById('lesson-status-label');
     const lessonProgressBar   = document.getElementById('lesson-progress-bar');
+    const completeButton      = document.getElementById('lesson-complete-button');
+    const completeHelp        = document.getElementById('lesson-complete-help');
     const courseProgressLabel = document.getElementById('course-progress-label');
     const courseProgressBar   = document.getElementById('course-progress-bar');
 
@@ -407,10 +507,12 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         lastSyncedAt: 0,
         syncInFlight: false,
         completed: wrap.dataset.initialCompleted === '1',
+        readyToComplete: <?= !empty($selectedLesson['ready_to_complete']) ? 'true' : 'false'; ?>,
+        completeInFlight: false,
         ticker: null,
     };
 
-    const refreshLessonUi = (progress, completed) => {
+    const refreshLessonUi = (progress, completed, readyToComplete = false) => {
         const p = Math.max(0, Math.min(100, Math.round(progress)));
         if (lessonProgressLabel) { lessonProgressLabel.textContent = p + '%'; }
         if (lessonProgressBar) {
@@ -421,9 +523,27 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         if (lessonStatusLabel) {
             lessonStatusLabel.textContent = completed
                 ? 'Aula concluida.'
-                : 'Assista no minimo ' + requiredPct + '% para concluir.';
+                : (readyToComplete
+                    ? 'Percentual minimo atingido. Confirme a conclusao da aula.'
+                    : 'Assista no minimo ' + requiredPct + '% para concluir.');
             lessonStatusLabel.classList.toggle('text-emerald-700', completed);
             lessonStatusLabel.classList.toggle('text-slate-500', !completed);
+        }
+        if (completeButton) {
+            completeButton.disabled = !completed && !readyToComplete;
+            completeButton.textContent = completed ? 'Aula concluida' : 'Confirmar conclusao';
+            completeButton.className = completed
+                ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700'
+                : (readyToComplete
+                    ? 'rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700'
+                    : 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-400');
+        }
+        if (completeHelp) {
+            completeHelp.textContent = completed
+                ? 'A aula ja foi validada no seu progresso.'
+                : (readyToComplete
+                    ? 'Clique no check para confirmar que assistiu a aula.'
+                    : 'O check sera liberado apos atingir o percentual minimo exigido.');
         }
     };
 
@@ -431,6 +551,44 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         const p = Math.max(0, Math.min(100, Math.round(progress)));
         if (courseProgressLabel) { courseProgressLabel.textContent = p + '%'; }
         if (courseProgressBar)   { courseProgressBar.style.width = p + '%'; }
+    };
+
+    const confirmCompletion = async () => {
+        if (state.completeInFlight || state.completed || !state.readyToComplete) { return; }
+        if (!window.confirm('Confirmar que voce assistiu a aula e deseja concluir este conteudo?')) {
+            return;
+        }
+
+        const payload = new URLSearchParams();
+        payload.append('_csrf', csrfToken);
+        payload.append('course_id', String(courseId));
+        payload.append('lesson_id', String(lessonId));
+
+        state.completeInFlight = true;
+        if (completeButton) {
+            completeButton.disabled = true;
+            completeButton.textContent = 'Concluindo...';
+        }
+
+        try {
+            const response = await fetch(completeEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+                body: payload.toString(),
+            });
+            const data = await response.json();
+            if (!response.ok || !data || !data.ok) { return; }
+
+            state.completed = true;
+            state.readyToComplete = false;
+            refreshLessonUi(Number(data.progress_percent || 100), true, false);
+            refreshCourseUi(Number(data.course_progress_percent || 0));
+            window.setTimeout(() => window.location.reload(), 800);
+        } catch (_) {
+        } finally {
+            state.completeInFlight = false;
+        }
     };
 
     const syncProgress = async (force = false) => {
@@ -467,7 +625,9 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
             const data = await res.json();
             if (!res.ok || !data || !data.ok) { return; }
 
-            refreshLessonUi(Number(data.progress_percent || 0), !!data.lesson_completed);
+            const readyToComplete = !!data.lesson_ready_to_complete;
+            state.readyToComplete = readyToComplete;
+            refreshLessonUi(Number(data.progress_percent || 0), !!data.lesson_completed, readyToComplete);
             refreshCourseUi(Number(data.course_progress_percent || 0));
 
             if (!state.completed && data.lesson_just_completed) {
@@ -516,6 +676,10 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
             },
         });
     };
+
+    if (completeButton) {
+        completeButton.addEventListener('click', confirmCompletion);
+    }
 
     window.addEventListener('beforeunload', () => syncProgress(true));
 

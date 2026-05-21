@@ -87,7 +87,7 @@ $minMonth = date('Y-m', strtotime('+1 month'));
             <!-- Unidade de destino -->
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="target_unit">
-                    Unidade onde deseja fazer o intercâmbio <span class="text-rose-500">*</span>
+                    Unidade <span class="text-rose-500">*</span>
                 </label>
                 <?php if ($companies !== []): ?>
                 <select id="target_unit" name="target_unit" required

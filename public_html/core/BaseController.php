@@ -6,9 +6,14 @@ abstract class BaseController
     {
         if ($layout === 'layouts/app' && current_user()) {
             try {
-                $tickets = new SupportTicketModel();
-                $data['mobileNegotiationAlerts'] = $tickets->latestMobileNegotiationAlerts(5);
-                $data['mobileNegotiationAlertCount'] = $tickets->countOpenMobileNegotiations();
+                if (!is_professor()) {
+                    $tickets = new SupportTicketModel();
+                    $data['mobileNegotiationAlerts'] = $tickets->latestMobileNegotiationAlerts(5);
+                    $data['mobileNegotiationAlertCount'] = $tickets->countOpenMobileNegotiations();
+                } else {
+                    $data['mobileNegotiationAlerts'] = [];
+                    $data['mobileNegotiationAlertCount'] = 0;
+                }
                 if (has_permission('students')) {
                     $exchange = new StudentExchangeModel();
                     $companyId = (int) (current_company_id() ?? 0);

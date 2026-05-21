@@ -67,25 +67,7 @@ class CourseModel extends BaseModel
 
     public function listCourses(array $filters, int $perPage, int $page): array
     {
-        $where = ['1=1'];
-        $params = [];
-
-        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
-            $where[] = 'c.company_id = :company_id';
-            $params[':company_id'] = $this->companyId();
-        }
-
-        if (!empty($filters['q'])) {
-            $where[] = '(c.name LIKE :q OR c.description LIKE :q)';
-            $params[':q'] = '%' . $filters['q'] . '%';
-        }
-
-        if (!empty($filters['status'])) {
-            $where[] = 'c.status = :status';
-            $params[':status'] = $filters['status'];
-        }
-
-        $whereSql = implode(' AND ', $where);
+        [$whereSql, $params] = $this->buildCourseCatalogFilters($filters);
 
         $countSql = "SELECT COUNT(*) FROM courses c WHERE {$whereSql}";
 
@@ -93,13 +75,198 @@ class CourseModel extends BaseModel
             ? 'LEFT JOIN course_categories cat ON cat.id = c.category_id AND cat.company_id = c.company_id'
             : 'LEFT JOIN course_categories cat ON cat.id = c.category_id';
 
-        $dataSql = "SELECT c.*, cat.name AS category_name
+        $modulesSelect = '0 AS modules_total';
+        $modulesJoin = '';
+        $lessonsSelect = '0 AS lessons_total';
+        $lessonsJoin = '';
+        if ($this->hasCourseModulesTable()) {
+            $modulesSelect = 'COALESCE(cm.modules_total, 0) AS modules_total';
+            $modulesJoin = "LEFT JOIN (
+                    SELECT course_id, COUNT(*) AS modules_total
+                    FROM course_modules
+                    GROUP BY course_id
+                ) cm ON cm.course_id = c.id";
+        }
+        if ($this->hasCourseLessonsTable()) {
+            $lessonsSelect = 'COALESCE(cl.lessons_total, 0) AS lessons_total';
+            $lessonsJoin = "LEFT JOIN (
+                    SELECT course_id, COUNT(*) AS lessons_total
+                    FROM course_lessons
+                    GROUP BY course_id
+                ) cl ON cl.course_id = c.id";
+        }
+        $enrollmentsJoin = "LEFT JOIN (
+                SELECT course_id, COUNT(*) AS enrollments_total
+                FROM enrollments
+                WHERE status IN ('active', 'completed')
+                GROUP BY course_id
+            ) enr ON enr.course_id = c.id";
+        $examsJoin = "LEFT JOIN (
+                SELECT course_id, COUNT(*) AS exams_total
+                FROM exams
+                GROUP BY course_id
+            ) exm ON exm.course_id = c.id";
+        $commentsJoin = "LEFT JOIN (
+                SELECT course_id, COUNT(*) AS comments_new_total
+                FROM course_comments
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                GROUP BY course_id
+            ) cmt ON cmt.course_id = c.id";
+
+        $dataSql = "SELECT
+                c.*,
+                cat.name AS category_name,
+                {$modulesSelect},
+                {$lessonsSelect},
+                COALESCE(enr.enrollments_total, 0) AS enrollments_total,
+                COALESCE(exm.exams_total, 0) AS exams_total,
+                COALESCE(cmt.comments_new_total, 0) AS comments_new_total
             FROM courses c
             {$categoryJoin}
+            {$modulesJoin}
+            {$lessonsJoin}
+            {$enrollmentsJoin}
+            {$examsJoin}
+            {$commentsJoin}
             WHERE {$whereSql}
             ORDER BY c.id DESC";
 
         return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+    }
+
+    public function courseCatalogStats(array $filters): array
+    {
+        [$whereSql, $params] = $this->buildCourseCatalogFilters($filters);
+
+        $sql = "SELECT
+                COUNT(*) AS total_courses,
+                SUM(CASE WHEN c.status = 'published' THEN 1 ELSE 0 END) AS published_courses,
+                COALESCE(SUM(enr.enrollments_total), 0) AS enrollments_total,
+                COALESCE(SUM(cmt.comments_new_total), 0) AS comments_new_total
+            FROM courses c
+            LEFT JOIN (
+                SELECT course_id, COUNT(*) AS enrollments_total
+                FROM enrollments
+                WHERE status IN ('active', 'completed')
+                GROUP BY course_id
+            ) enr ON enr.course_id = c.id
+            LEFT JOIN (
+                SELECT course_id, COUNT(*) AS comments_new_total
+                FROM course_comments
+                WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                GROUP BY course_id
+            ) cmt ON cmt.course_id = c.id
+            WHERE {$whereSql}";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'total_courses' => (int) ($row['total_courses'] ?? 0),
+            'published_courses' => (int) ($row['published_courses'] ?? 0),
+            'enrollments_total' => (int) ($row['enrollments_total'] ?? 0),
+            'comments_new_total' => (int) ($row['comments_new_total'] ?? 0),
+        ];
+    }
+
+    public function updateCourseStatus(int $courseId, string $status): bool
+    {
+        if (!in_array($status, ['draft', 'published', 'archived'], true)) {
+            return false;
+        }
+
+        $course = $this->findCourse($courseId);
+        if (!$course) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('UPDATE courses
+            SET status = :status,
+                updated_at = :updated_at
+            WHERE id = :id');
+
+        return $stmt->execute([
+            ':status' => $status,
+            ':updated_at' => now(),
+            ':id' => $courseId,
+        ]);
+    }
+
+    public function duplicateCourse(int $courseId, int $createdBy): int
+    {
+        $course = $this->findCourse($courseId);
+        if (!$course) {
+            return 0;
+        }
+
+        $categoryId = $this->normalizeCategoryId($course['category_id'] ?? null);
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('INSERT INTO courses (
+                company_id, name, description, category_id, cover_image, status, workload_hours,
+                curriculum, materials, live_link, live_password, live_meeting_id,
+                live_datetime, created_by, created_at, updated_at
+            ) VALUES (
+                :company_id, :name, :description, :category_id, :cover_image, :status, :workload_hours,
+                :curriculum, :materials, :live_link, :live_password, :live_meeting_id,
+                :live_datetime, :created_by, :created_at, :updated_at
+            )');
+
+            $stmt->execute([
+                ':company_id' => $this->companyId(),
+                ':name' => $this->buildDuplicateCourseName((string) ($course['name'] ?? 'Curso')),
+                ':description' => (string) ($course['description'] ?? ''),
+                ':category_id' => $categoryId,
+                ':cover_image' => (string) ($course['cover_image'] ?? ''),
+                ':status' => 'draft',
+                ':workload_hours' => $course['workload_hours'] !== null && $course['workload_hours'] !== '' ? (int) $course['workload_hours'] : null,
+                ':curriculum' => (string) ($course['curriculum'] ?? ''),
+                ':materials' => (string) ($course['materials'] ?? ''),
+                ':live_link' => (string) ($course['live_link'] ?? ''),
+                ':live_password' => (string) ($course['live_password'] ?? ''),
+                ':live_meeting_id' => (string) ($course['live_meeting_id'] ?? ''),
+                ':live_datetime' => $course['live_datetime'] ?: null,
+                ':created_by' => $createdBy,
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+        } else {
+            $stmt = $this->db->prepare('INSERT INTO courses (
+                name, description, category_id, cover_image, status, workload_hours,
+                curriculum, materials, live_link, live_password, live_meeting_id,
+                live_datetime, created_by, created_at, updated_at
+            ) VALUES (
+                :name, :description, :category_id, :cover_image, :status, :workload_hours,
+                :curriculum, :materials, :live_link, :live_password, :live_meeting_id,
+                :live_datetime, :created_by, :created_at, :updated_at
+            )');
+
+            $stmt->execute([
+                ':name' => $this->buildDuplicateCourseName((string) ($course['name'] ?? 'Curso')),
+                ':description' => (string) ($course['description'] ?? ''),
+                ':category_id' => $categoryId,
+                ':cover_image' => (string) ($course['cover_image'] ?? ''),
+                ':status' => 'draft',
+                ':workload_hours' => $course['workload_hours'] !== null && $course['workload_hours'] !== '' ? (int) $course['workload_hours'] : null,
+                ':curriculum' => (string) ($course['curriculum'] ?? ''),
+                ':materials' => (string) ($course['materials'] ?? ''),
+                ':live_link' => (string) ($course['live_link'] ?? ''),
+                ':live_password' => (string) ($course['live_password'] ?? ''),
+                ':live_meeting_id' => (string) ($course['live_meeting_id'] ?? ''),
+                ':live_datetime' => $course['live_datetime'] ?: null,
+                ':created_by' => $createdBy,
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+        }
+
+        $newCourseId = (int) $this->db->lastInsertId();
+        if ($newCourseId > 0) {
+            $this->duplicateCourseLearningPath($courseId, $newCourseId, $createdBy);
+        }
+
+        return $newCourseId;
     }
 
     public function findCourse(int $id): ?array
@@ -416,8 +583,8 @@ class CourseModel extends BaseModel
                 e.completed_at,
                 COUNT(cl.id) AS total_lessons,
                 SUM(CASE WHEN cl.is_required = 1 THEN 1 ELSE 0 END) AS required_lessons,
-                SUM(CASE WHEN COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS completed_lessons,
-                SUM(CASE WHEN cl.is_required = 1 AND COALESCE(slp.progress_percent, 0) >= cl.min_progress_percent THEN 1 ELSE 0 END) AS required_completed_lessons,
+                SUM(CASE WHEN slp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completed_lessons,
+                SUM(CASE WHEN cl.is_required = 1 AND slp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS required_completed_lessons,
                 AVG(COALESCE(slp.progress_percent, 0)) AS avg_progress_all,
                 AVG(CASE WHEN cl.is_required = 1 THEN COALESCE(slp.progress_percent, 0) END) AS avg_progress_required
             FROM enrollments e
@@ -866,6 +1033,11 @@ class CourseModel extends BaseModel
             $params[':status'] = $filters['status'];
         }
 
+        if (!empty($filters['course_id'])) {
+            $where[] = 'e.course_id = :course_id';
+            $params[':course_id'] = (int) $filters['course_id'];
+        }
+
         $whereSql = implode(' AND ', $where);
 
         $countSql = "SELECT COUNT(*)
@@ -1254,6 +1426,11 @@ class CourseModel extends BaseModel
             $params[':q'] = '%' . $filters['q'] . '%';
         }
 
+        if (!empty($filters['course_id'])) {
+            $where[] = 'e.course_id = :course_id';
+            $params[':course_id'] = (int) $filters['course_id'];
+        }
+
         $whereSql = implode(' AND ', $where);
         $scheduleSelect = $this->hasExamScheduleColumn() ? 'e.scheduled_at AS scheduled_at' : 'NULL AS scheduled_at';
         $externalLinksSelect = '0 AS external_links_total';
@@ -1278,6 +1455,12 @@ class CourseModel extends BaseModel
                     GROUP BY exam_id
                 ) il ON il.exam_id = e.id";
         }
+        $questionsSelect = 'COALESCE(eq.questions_total, 0) AS questions_total';
+        $questionsJoin = "LEFT JOIN (
+                SELECT exam_id, COUNT(*) AS questions_total
+                FROM exam_questions
+                GROUP BY exam_id
+            ) eq ON eq.exam_id = e.id";
         $orderSql = $this->hasExamScheduleColumn()
             ? 'ORDER BY (e.scheduled_at IS NULL) ASC, e.scheduled_at ASC, e.id DESC'
             : 'ORDER BY e.id DESC';
@@ -1293,11 +1476,13 @@ class CourseModel extends BaseModel
                 e.created_by,
                 e.created_at,
                 e.updated_at,
+                {$questionsSelect},
                 {$externalLinksSelect},
                 {$internalLinksSelect},
                 c.name AS course_name
             FROM exams e
             LEFT JOIN courses c ON c.id = e.course_id
+            {$questionsJoin}
             {$externalLinksJoin}
             {$internalLinksJoin}
             WHERE {$whereSql}
@@ -1441,23 +1626,43 @@ class CourseModel extends BaseModel
             return;
         }
 
-        $status = ((float) $data['score'] >= (float) $data['passing_score']) ? 'approved' : 'failed';
+        $passingScore = $this->resolveExamPassingScore($examId, (float) ($data['passing_score'] ?? 0));
+        $score = (float) ($data['score'] ?? 0);
+        $submittedAt = trim((string) ($data['submitted_at'] ?? '')) ?: now();
+        $status = $score >= $passingScore ? 'approved' : 'failed';
 
-        $stmt = $this->db->prepare('INSERT INTO exam_results (
-            exam_id, student_id, score, status, submitted_at, created_by, created_at
-        ) VALUES (
-            :exam_id, :student_id, :score, :status, :submitted_at, :created_by, :created_at
-        )');
+        $existingId = $this->findLatestExamResultId($examId, $studentId);
+        if ($existingId > 0) {
+            $stmt = $this->db->prepare('UPDATE exam_results SET
+                score = :score,
+                status = :status,
+                submitted_at = :submitted_at,
+                created_by = :created_by
+                WHERE id = :id');
+            $stmt->execute([
+                ':score' => $score,
+                ':status' => $status,
+                ':submitted_at' => $submittedAt,
+                ':created_by' => $createdBy,
+                ':id' => $existingId,
+            ]);
+        } else {
+            $stmt = $this->db->prepare('INSERT INTO exam_results (
+                exam_id, student_id, score, status, submitted_at, created_by, created_at
+            ) VALUES (
+                :exam_id, :student_id, :score, :status, :submitted_at, :created_by, :created_at
+            )');
 
-        $stmt->execute([
-            ':exam_id' => $examId,
-            ':student_id' => $studentId,
-            ':score' => (float) $data['score'],
-            ':status' => $status,
-            ':submitted_at' => $data['submitted_at'] ?: now(),
-            ':created_by' => $createdBy,
-            ':created_at' => now(),
-        ]);
+            $stmt->execute([
+                ':exam_id' => $examId,
+                ':student_id' => $studentId,
+                ':score' => $score,
+                ':status' => $status,
+                ':submitted_at' => $submittedAt,
+                ':created_by' => $createdBy,
+                ':created_at' => now(),
+            ]);
+        }
 
         if ($this->hasExamExternalLinksTable()) {
             $this->deactivateExternalExamLinkByExamStudent($examId, $studentId);
@@ -1814,9 +2019,149 @@ class CourseModel extends BaseModel
         return $stmt->fetchAll();
     }
 
-    public function listComments(int $limit = 200): array
+    public function listExamResultsFeed(int $limit = 250): array
+    {
+        $limit = max(1, min(1000, $limit));
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare("SELECT
+                    r.id,
+                    r.exam_id,
+                    r.student_id,
+                    r.score,
+                    r.status,
+                    r.submitted_at,
+                    ex.title AS exam_title,
+                    ex.passing_score,
+                    c.id AS course_id,
+                    c.name AS course_name,
+                    s.full_name AS student_name
+                FROM exam_results r
+                INNER JOIN exams ex ON ex.id = r.exam_id
+                INNER JOIN courses c ON c.id = ex.course_id
+                LEFT JOIN students s ON s.id = r.student_id
+                WHERE c.company_id = :company_id
+                ORDER BY r.submitted_at DESC, r.id DESC
+                LIMIT {$limit}");
+            $stmt->execute([':company_id' => $this->companyId()]);
+            return $stmt->fetchAll();
+        }
+
+        $stmt = $this->db->query("SELECT
+                r.id,
+                r.exam_id,
+                r.student_id,
+                r.score,
+                r.status,
+                r.submitted_at,
+                ex.title AS exam_title,
+                ex.passing_score,
+                c.id AS course_id,
+                c.name AS course_name,
+                s.full_name AS student_name
+            FROM exam_results r
+            INNER JOIN exams ex ON ex.id = r.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            LEFT JOIN students s ON s.id = r.student_id
+            ORDER BY r.submitted_at DESC, r.id DESC
+            LIMIT {$limit}");
+
+        return $stmt->fetchAll();
+    }
+
+    public function findExamNotificationContext(int $examId): ?array
+    {
+        if ($examId <= 0) {
+            return null;
+        }
+
+        $params = [':exam_id' => $examId];
+        $companyFilter = '';
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $companyFilter = ' AND c.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                ex.id,
+                ex.course_id,
+                ex.title,
+                ex.description,
+                ex.passing_score,
+                " . ($this->hasExamScheduleColumn() ? 'ex.scheduled_at' : 'NULL AS scheduled_at') . ",
+                c.company_id,
+                c.name AS course_name
+            FROM exams ex
+            INNER JOIN courses c ON c.id = ex.course_id
+            WHERE ex.id = :exam_id{$companyFilter}
+            LIMIT 1");
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function listExamNotificationRecipients(int $examId, array $studentIds = []): array
+    {
+        if ($examId <= 0) {
+            return [];
+        }
+
+        $params = [':exam_id' => $examId];
+        $companyFilter = '';
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $companyFilter = ' AND c.company_id = :company_id AND s.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        $studentFilter = '';
+        if ($studentIds !== []) {
+            $filteredIds = array_values(array_unique(array_filter(array_map('intval', $studentIds), fn (int $id): bool => $id > 0)));
+            if ($filteredIds === []) {
+                return [];
+            }
+
+            $placeholders = [];
+            foreach ($filteredIds as $index => $studentId) {
+                $key = ':student_id_' . $index;
+                $placeholders[] = $key;
+                $params[$key] = $studentId;
+            }
+            $studentFilter = ' AND s.id IN (' . implode(', ', $placeholders) . ')';
+        }
+
+        $stmt = $this->db->prepare("SELECT DISTINCT
+                s.id AS student_id,
+                s.full_name AS student_name,
+                s.email_primary AS student_email,
+                c.company_id,
+                c.name AS course_name,
+                ex.title AS exam_title,
+                ex.passing_score
+            FROM exams ex
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN enrollments e ON e.course_id = c.id
+            INNER JOIN students s ON s.id = e.student_id
+            WHERE ex.id = :exam_id
+              AND e.status IN ('active', 'completed')
+              {$companyFilter}
+              {$studentFilter}
+            ORDER BY s.full_name ASC, s.id ASC");
+        $stmt->execute($params);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function listComments(int $limit = 200, array $filters = []): array
     {
         $limit = max(1, $limit);
+        $courseFilterSql = '';
+        $params = [];
+
+        if (!empty($filters['course_id'])) {
+            $courseFilterSql = ' AND cm.course_id = :course_id';
+            $params[':course_id'] = (int) $filters['course_id'];
+        }
 
         if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
             $stmt = $this->db->prepare("SELECT cm.*, cr.name AS course_name, u.name AS author_name
@@ -1824,20 +2169,108 @@ class CourseModel extends BaseModel
                 INNER JOIN courses cr ON cr.id = cm.course_id
                 LEFT JOIN users u ON u.id = cm.created_by
                 WHERE cr.company_id = :company_id
+                  {$courseFilterSql}
                 ORDER BY cm.id DESC
                 LIMIT {$limit}");
-            $stmt->execute([':company_id' => $this->companyId()]);
+            $stmt->execute([':company_id' => $this->companyId()] + $params);
             return $stmt->fetchAll();
         }
 
-        $stmt = $this->db->query("SELECT cm.*, cr.name AS course_name, u.name AS author_name
+        $stmt = $this->db->prepare("SELECT cm.*, cr.name AS course_name, u.name AS author_name
             FROM course_comments cm
             LEFT JOIN courses cr ON cr.id = cm.course_id
             LEFT JOIN users u ON u.id = cm.created_by
+            WHERE 1=1 {$courseFilterSql}
             ORDER BY cm.id DESC
             LIMIT {$limit}");
-
+        $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    private function buildCourseCatalogFilters(array $filters): array
+    {
+        $where = ['1=1'];
+        $params = [];
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        if (!empty($filters['q'])) {
+            $where[] = '(c.name LIKE :q OR c.description LIKE :q)';
+            $params[':q'] = '%' . $filters['q'] . '%';
+        }
+
+        if (!empty($filters['status'])) {
+            $where[] = 'c.status = :status';
+            $params[':status'] = $filters['status'];
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
+    private function buildDuplicateCourseName(string $name): string
+    {
+        $trimmed = trim($name);
+        if ($trimmed === '') {
+            $trimmed = 'Curso';
+        }
+
+        return $trimmed . ' (Copia)';
+    }
+
+    private function duplicateCourseLearningPath(int $sourceCourseId, int $targetCourseId, int $createdBy): void
+    {
+        if (!$this->hasCourseModulesTable() || !$this->hasCourseLessonsTable()) {
+            return;
+        }
+
+        $moduleMap = [];
+        foreach ($this->listCourseModulesWithLessons($sourceCourseId) as $module) {
+            $moduleStmt = $this->db->prepare('INSERT INTO course_modules (
+                course_id, title, description, display_order, is_active, created_at, updated_at
+            ) VALUES (
+                :course_id, :title, :description, :display_order, :is_active, :created_at, :updated_at
+            )');
+            $moduleStmt->execute([
+                ':course_id' => $targetCourseId,
+                ':title' => (string) ($module['title'] ?? ''),
+                ':description' => (string) ($module['description'] ?? ''),
+                ':display_order' => (int) ($module['display_order'] ?? 0),
+                ':is_active' => (int) ($module['is_active'] ?? 1),
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+
+            $newModuleId = (int) $this->db->lastInsertId();
+            $moduleMap[(int) ($module['id'] ?? 0)] = $newModuleId;
+
+            foreach (($module['lessons'] ?? []) as $lesson) {
+                $lessonStmt = $this->db->prepare('INSERT INTO course_lessons (
+                    course_id, module_id, title, description, lesson_type, video_url, duration_seconds,
+                    min_progress_percent, is_required, is_active, display_order, created_at, updated_at
+                ) VALUES (
+                    :course_id, :module_id, :title, :description, :lesson_type, :video_url, :duration_seconds,
+                    :min_progress_percent, :is_required, :is_active, :display_order, :created_at, :updated_at
+                )');
+                $lessonStmt->execute([
+                    ':course_id' => $targetCourseId,
+                    ':module_id' => $newModuleId,
+                    ':title' => (string) ($lesson['title'] ?? ''),
+                    ':description' => (string) ($lesson['description'] ?? ''),
+                    ':lesson_type' => (string) ($lesson['lesson_type'] ?? 'video'),
+                    ':video_url' => (string) ($lesson['video_url'] ?? ''),
+                    ':duration_seconds' => (int) ($lesson['duration_seconds'] ?? 0),
+                    ':min_progress_percent' => (int) ($lesson['min_progress_percent'] ?? 70),
+                    ':is_required' => (int) ($lesson['is_required'] ?? 1),
+                    ':is_active' => (int) ($lesson['is_active'] ?? 1),
+                    ':display_order' => (int) ($lesson['display_order'] ?? 0),
+                    ':created_at' => now(),
+                    ':updated_at' => now(),
+                ]);
+            }
+        }
     }
 
     public function createComment(int $courseId, string $comment, int $createdBy): bool
@@ -1982,6 +2415,42 @@ class CourseModel extends BaseModel
         $stmt = $this->db->prepare('SELECT id FROM exams WHERE id = :exam_id LIMIT 1');
         $stmt->execute([':exam_id' => $examId]);
         return (bool) $stmt->fetchColumn();
+    }
+
+    private function findLatestExamResultId(int $examId, int $studentId): int
+    {
+        if ($examId <= 0 || $studentId <= 0) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare('SELECT id
+            FROM exam_results
+            WHERE exam_id = :exam_id
+              AND student_id = :student_id
+            ORDER BY submitted_at DESC, id DESC
+            LIMIT 1');
+        $stmt->execute([
+            ':exam_id' => $examId,
+            ':student_id' => $studentId,
+        ]);
+
+        return (int) ($stmt->fetchColumn() ?: 0);
+    }
+
+    private function resolveExamPassingScore(int $examId, float $fallback): float
+    {
+        if ($examId <= 0) {
+            return $fallback > 0 ? $fallback : 7.0;
+        }
+
+        $stmt = $this->db->prepare('SELECT passing_score FROM exams WHERE id = :exam_id LIMIT 1');
+        $stmt->execute([':exam_id' => $examId]);
+        $score = $stmt->fetchColumn();
+        if ($score !== false && $score !== null) {
+            return (float) $score;
+        }
+
+        return $fallback > 0 ? $fallback : 7.0;
     }
 
     private function studentBelongsCompany(int $studentId): bool

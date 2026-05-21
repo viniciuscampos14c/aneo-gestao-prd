@@ -125,6 +125,12 @@ function is_admin(): bool
     return is_array($user) && ((string) ($user['role'] ?? '')) === 'admin';
 }
 
+function is_professor(): bool
+{
+    $user = current_user();
+    return is_array($user) && ((string) ($user['role'] ?? '')) === 'professor';
+}
+
 function current_student(): ?array
 {
     return $_SESSION['student'] ?? null;
@@ -174,6 +180,11 @@ function has_permission(string $module): bool
 
     $customPermissions = $user['permission_keys'] ?? [];
 
+    // O perfil professor precisa sempre conseguir voltar para a home dedicada.
+    if (($user['role'] ?? '') === 'professor' && $module === 'dashboard') {
+        return true;
+    }
+
     if (($user['role'] ?? '') === 'suporte') {
         if ($customPermissions !== []) {
             return in_array($module, $customPermissions, true);
@@ -193,6 +204,10 @@ function default_admin_route(): string
 
     if (current_company_id() === null) {
         return 'select-company';
+    }
+
+    if (is_professor()) {
+        return 'students';
     }
 
     $priority = [

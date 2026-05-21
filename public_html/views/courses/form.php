@@ -5,6 +5,7 @@ $courseModules       = $courseModules       ?? [];
 $zoomConfigured      = $zoomConfigured      ?? false;
 $courseZoomSessions  = $courseZoomSessions  ?? [];
 $backToCourse        = $course ? 'courses/edit&id=' . (int) $course['id'] : 'courses';
+$focusedModuleId     = (int) request('lms_module', 0);
 $lmsTotalLessons = 0;
 $lmsRequiredLessons = 0;
 $lmsActiveModules = 0;
@@ -263,7 +264,7 @@ $formatLessonDuration = static function (int $seconds): string {
                         $moduleDurationSeconds += (int) ($lessonMetric['duration_seconds'] ?? 0);
                     }
                     ?>
-                    <details class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm" <?= $moduleIndex === 0 ? 'open' : ''; ?>>
+                    <details id="lms-module-<?= (int) $module['id']; ?>" class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm" <?= ($focusedModuleId > 0 ? $focusedModuleId === (int) $module['id'] : $moduleIndex === 0) ? 'open' : ''; ?>>
                         <summary class="cursor-pointer list-none rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-cyan-200 hover:bg-cyan-50/40">
                             <div class="flex flex-wrap items-center justify-between gap-3">
                                 <div class="flex items-center gap-3">
@@ -352,6 +353,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                         <form method="post" action="<?= route('courses/lessons/update'); ?>" class="grid gap-3 lg:grid-cols-12">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                                            <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
                                             <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
 
                                             <label class="block lg:col-span-3">
@@ -403,6 +405,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                         <form method="post" action="<?= route('courses/lessons/delete'); ?>" onsubmit="return confirm('Excluir esta aula?');" class="mt-2 flex justify-end">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
+                                            <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
                                             <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
                                             <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir aula</button>
                                         </form>
@@ -497,9 +500,12 @@ $formatLessonDuration = static function (int $seconds): string {
         <?php else: ?>
 
         <!-- Formulário de nova aula online -->
-        <details class="mb-4 rounded-xl border border-dashed border-sky-300 bg-sky-50/40">
-            <summary class="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-50 rounded-xl">
-                + Nova Aula Online (Zoom)
+        <details class="mb-4 rounded-xl border border-sky-300 bg-sky-100/80 shadow-sm">
+            <summary class="cursor-pointer select-none rounded-xl border border-sky-400 bg-sky-200 px-4 py-3 text-sm font-semibold text-sky-950 hover:bg-sky-300 transition">
+                <span class="inline-flex items-center gap-2">
+                    <span class="text-sky-700">+</span>
+                    <span>Nova Aula Online (Zoom)</span>
+                </span>
             </summary>
             <div class="border-t border-sky-200 p-4">
                 <form method="POST" action="index.php?route=courses/live-sessions/store" class="space-y-3">
@@ -604,3 +610,19 @@ $formatLessonDuration = static function (int $seconds): string {
     </div>
     <?php endif; // $course ?>
 </section>
+
+<?php if ($focusedModuleId > 0): ?>
+<script>
+(function () {
+    const details = document.getElementById('lms-module-<?= (int) $focusedModuleId; ?>');
+    if (!details) {
+        return;
+    }
+
+    details.open = true;
+    window.requestAnimationFrame(function () {
+        details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+})();
+</script>
+<?php endif; ?>

@@ -46,16 +46,14 @@ class StudentScheduleController extends BaseController
 
     public function create(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
 
         $this->renderForm('Nova Escala', null);
     }
 
     public function store(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $this->ensureFeatureAvailable('escala-aluno');
@@ -73,8 +71,7 @@ class StudentScheduleController extends BaseController
 
     public function edit(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
 
         $schedule = $this->findScheduleOrRedirect((int) request('id'));
         if (!$schedule) {
@@ -92,8 +89,7 @@ class StudentScheduleController extends BaseController
 
     public function update(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $schedule = $this->findScheduleOrRedirect((int) request('id'));
@@ -156,8 +152,7 @@ class StudentScheduleController extends BaseController
 
     public function publish(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $schedule = $this->findScheduleOrRedirect((int) post('id'));
@@ -184,8 +179,7 @@ class StudentScheduleController extends BaseController
 
     public function archive(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $schedule = $this->findScheduleOrRedirect((int) post('id'));
@@ -200,8 +194,7 @@ class StudentScheduleController extends BaseController
 
     public function unarchive(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $schedule = $this->findScheduleOrRedirect((int) post('id'));
@@ -216,8 +209,7 @@ class StudentScheduleController extends BaseController
 
     public function storeUnit(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $this->ensureFeatureAvailable('escala-aluno');
@@ -241,8 +233,7 @@ class StudentScheduleController extends BaseController
 
     public function toggleUnit(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $this->schedules->toggleUnit((int) post('id'), (int) post('active', 1));
@@ -252,8 +243,7 @@ class StudentScheduleController extends BaseController
 
     public function generateWeeks(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $schedule = $this->findScheduleOrRedirect((int) post('schedule_id'));
@@ -308,8 +298,7 @@ class StudentScheduleController extends BaseController
 
     public function updateWeek(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $weekId = (int) post('week_id');
@@ -338,8 +327,7 @@ class StudentScheduleController extends BaseController
 
     public function storeAssignment(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $weekId = (int) post('week_id');
@@ -377,8 +365,7 @@ class StudentScheduleController extends BaseController
 
     public function deleteAssignment(): void
     {
-        require_auth();
-        require_permission('student_schedule.manage');
+        $this->requireScheduleManageAccess();
         csrf_validate();
 
         $week = $this->schedules->findWeek((int) post('week_id'));
@@ -414,6 +401,17 @@ class StudentScheduleController extends BaseController
             'weeksByMonth' => $this->schedules->groupedWeeksForSchedule((int) $schedule['id']),
             'isPrintView' => true,
         ], 'layouts/print');
+    }
+
+    private function requireScheduleManageAccess(): void
+    {
+        require_auth();
+        require_permission('student_schedule.manage');
+
+        if (is_professor()) {
+            $this->error('Perfil professor possui acesso somente de visualizacao nesta area.');
+            $this->redirect('escala-aluno');
+        }
     }
 
     private function renderForm(string $title, ?array $schedule): void

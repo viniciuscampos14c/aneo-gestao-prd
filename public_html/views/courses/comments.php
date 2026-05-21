@@ -1,4 +1,5 @@
-﻿<section class="space-y-6">
+<?php $currentCourseFilter = (int) (($filters['course_id'] ?? 0)); ?>
+<section class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-semibold">Gerenciar Comentarios</h2>
@@ -13,7 +14,7 @@
         <select name="course_id" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="">Curso...</option>
             <?php foreach ($courses as $course): ?>
-                <option value="<?= (int) $course['id']; ?>"><?= e($course['name']); ?></option>
+                <option value="<?= (int) $course['id']; ?>" <?= $currentCourseFilter === (int) $course['id'] ? 'selected' : ''; ?>><?= e($course['name']); ?></option>
             <?php endforeach; ?>
         </select>
 
@@ -21,6 +22,12 @@
 
         <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Registrar Comentario</button>
     </form>
+
+    <?php if ($currentCourseFilter > 0): ?>
+        <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+            Exibindo comentarios do curso selecionado. <a href="<?= route('courses/comments'); ?>" class="font-semibold underline">Limpar filtro</a>
+        </div>
+    <?php endif; ?>
 
     <div class="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
         <?php foreach ($rows as $row): ?>

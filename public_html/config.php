@@ -140,9 +140,8 @@ return [
         'professor' => [
             'label' => 'Professor',
             'permissions' => [
+                'dashboard',
                 'students',
-                'students.create',
-                'students.edit',
                 'student_schedule',
                 'courses',
                 'courses.create',
@@ -151,8 +150,6 @@ return [
                 'courses.enrollment',
                 'courses.exam',
                 'courses.comment',
-                'student_schedule.manage',
-                'student_schedule.export',
             ],
         ],
     ],

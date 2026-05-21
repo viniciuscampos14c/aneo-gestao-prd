@@ -1,41 +1,48 @@
-﻿<section class="space-y-6">
+<?php $currentCourseFilter = (int) (($filters['course_id'] ?? 0)); ?>
+<section class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-semibold">Matriculas</h2>
-            <p class="text-sm text-slate-500">Vincule alunos aos cursos e acompanhe status/progresso.</p>
+            <h2 class="text-2xl font-semibold text-white">Matriculas</h2>
+            <p class="text-sm text-slate-300">Vincule alunos aos cursos e acompanhe status/progresso.</p>
         </div>
-        <a href="<?= route('courses'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar</a>
+        <a href="<?= route('courses'); ?>" class="rounded-lg border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 transition hover:border-cyan-400/50 hover:bg-slate-800">Voltar</a>
     </div>
 
-    <form method="post" action="<?= route('courses/enrollments/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
+    <form method="post" action="<?= route('courses/enrollments/store'); ?>" class="grid gap-3 rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-sm md:grid-cols-4">
         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
-        <select name="student_id" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+        <select name="student_id" required class="rounded-lg border border-slate-600 bg-slate-950/75 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20">
             <option value="">Aluno...</option>
             <?php foreach ($students as $student): ?>
                 <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?></option>
             <?php endforeach; ?>
         </select>
 
-        <select name="course_id" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+        <select name="course_id" required class="rounded-lg border border-slate-600 bg-slate-950/75 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20">
             <option value="">Curso...</option>
             <?php foreach ($courses as $course): ?>
-                <option value="<?= (int) $course['id']; ?>"><?= e($course['name']); ?></option>
+                <option value="<?= (int) $course['id']; ?>" <?= $currentCourseFilter === (int) $course['id'] ? 'selected' : ''; ?>><?= e($course['name']); ?></option>
             <?php endforeach; ?>
         </select>
 
-        <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+        <select name="status" class="rounded-lg border border-slate-600 bg-slate-950/75 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20">
             <option value="active">Ativa</option>
             <option value="cancelled">Cancelada</option>
         </select>
 
-        <input type="date" name="started_at" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-        <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Matricular</button>
+        <input type="date" name="started_at" class="rounded-lg border border-slate-600 bg-slate-950/75 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20">
+        <button class="rounded-lg border border-cyan-300/60 bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm shadow-cyan-950/25 transition hover:bg-cyan-200">Matricular</button>
 
-        <p class="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800 md:col-span-4">
+        <p class="rounded-lg border border-cyan-400/30 bg-cyan-400/8 px-3 py-2 text-xs text-cyan-100 md:col-span-4">
             O progresso e calculado automaticamente pelas aulas assistidas no portal do aluno.
         </p>
     </form>
+
+    <?php if ($currentCourseFilter > 0): ?>
+        <div class="rounded-xl border border-cyan-400/30 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
+            Listagem filtrada por curso. <a href="<?= route('courses/enrollments'); ?>" class="font-semibold underline">Limpar filtro</a>
+        </div>
+    <?php endif; ?>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table class="min-w-full text-sm">
@@ -82,7 +89,7 @@
         <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
-                <a href="index.php?<?= build_query(['route' => 'courses/enrollments', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
+                <a href="index.php?<?= build_query(['route' => 'courses/enrollments', 'page' => $p, 'course_id' => $currentCourseFilter]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
             <?php endfor; ?>
         </div>
     </div>
