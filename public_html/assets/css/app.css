@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 html, body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -7482,19 +7484,36 @@ html.admin-theme-light .admin-sidebar-popout-link svg {
 
 html.admin-theme-light,
 html:not(.dark) .portal-modern-theme {
-    --aneo-light-primary: #3B7BB8;
-    --aneo-light-primary-soft: #A8C8DD;
-    --aneo-light-neutral: #5A6C7D;
-    --aneo-light-white: #FFFFFF;
-    --aneo-light-page: #FFFFFF;
-    --aneo-light-card: #FFFFFF;
-    --aneo-light-line: rgba(168, 200, 221, 0.72);
-    --aneo-light-line-soft: rgba(168, 200, 221, 0.36);
-    --aneo-light-hover: rgba(168, 200, 221, 0.22);
-    --aneo-light-active: #3B7BB8;
-    --aneo-light-text: #2f4355;
-    --aneo-light-muted: #5A6C7D;
-    --aneo-light-shadow-soft: 0 12px 28px rgba(90, 108, 125, 0.10);
+    --aneo-light-primary: #1e3a8a;
+    --aneo-light-primary-soft: #e0e7ff;
+    --aneo-light-neutral: #6b6558;
+    --aneo-light-white: #ffffff;
+    --aneo-light-page: #f6f3ec;
+    --aneo-light-card: #ffffff;
+    --aneo-light-surface-alt: #fbf8f1;
+    --aneo-light-surface-sunk: #f1ece1;
+    --aneo-light-line: #e8e1d3;
+    --aneo-light-line-soft: rgba(212, 202, 181, 0.55);
+    --aneo-light-line-strong: #d4cab5;
+    --aneo-light-hover: rgba(30, 58, 138, 0.06);
+    --aneo-light-active: #1e40af;
+    --aneo-light-text: #1a1d2e;
+    --aneo-light-muted: #6b6558;
+    --aneo-light-dim: #9c947f;
+    --aneo-light-accent: #a16207;
+    --aneo-light-accent-soft: #fef3c7;
+    --aneo-light-success: #15803d;
+    --aneo-light-success-soft: #dcfce7;
+    --aneo-light-danger: #b91c1c;
+    --aneo-light-danger-soft: #fee2e2;
+    --aneo-light-warning: #b45309;
+    --aneo-light-warning-soft: #fef3c7;
+    --aneo-light-info: #1d4ed8;
+    --aneo-light-info-soft: #dbeafe;
+    --aneo-light-shadow-soft: 0 4px 12px -4px rgba(26, 29, 46, 0.10), 0 2px 4px -2px rgba(26, 29, 46, 0.06);
+    --aneo-light-shadow-pop: 0 14px 32px -14px rgba(26, 29, 46, 0.22), 0 4px 8px -4px rgba(26, 29, 46, 0.06);
+    --aneo-light-font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --aneo-light-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 
 html.admin-theme-light body.admin-modern-theme,
@@ -7502,24 +7521,25 @@ html.admin-theme-light .admin-modern-shell,
 html:not(.dark) body.portal-modern-theme,
 html:not(.dark) .portal-modern-shell {
     background:
-        radial-gradient(900px 420px at 12% -8%, rgba(168, 200, 221, 0.28), transparent 68%),
-        radial-gradient(720px 360px at 104% 4%, rgba(59, 123, 184, 0.10), transparent 62%),
-        linear-gradient(180deg, #FFFFFF 0%, rgba(168, 200, 221, 0.16) 100%) !important;
+        radial-gradient(920px 420px at 12% -8%, rgba(30, 58, 138, 0.08), transparent 68%),
+        radial-gradient(760px 360px at 104% 4%, rgba(161, 98, 7, 0.08), transparent 62%),
+        linear-gradient(180deg, #f6f3ec 0%, #fbf8f1 100%) !important;
     color: var(--aneo-light-text) !important;
+    font-family: var(--aneo-light-font-sans) !important;
 }
 
 html.admin-theme-light .admin-modern-header,
 html:not(.dark) .student-modern-header,
 html:not(.dark) .support-modern-header {
-    background: rgba(255, 255, 255, 0.96) !important;
+    background: rgba(255, 255, 255, 0.94) !important;
     border-color: var(--aneo-light-line) !important;
-    box-shadow: 0 1px 0 rgba(90, 108, 125, 0.08), 0 14px 32px rgba(90, 108, 125, 0.08) !important;
+    box-shadow: 0 1px 2px rgba(26, 29, 46, 0.06), 0 10px 24px rgba(26, 29, 46, 0.05) !important;
 }
 
 html.admin-theme-light .admin-modern-sidebar {
-    background: #FFFFFF !important;
+    background: var(--aneo-light-card) !important;
     border-right-color: var(--aneo-light-line) !important;
-    box-shadow: 16px 0 34px rgba(90, 108, 125, 0.08) !important;
+    box-shadow: 16px 0 34px rgba(26, 29, 46, 0.06) !important;
 }
 
 html.admin-theme-light .admin-sidebar-head,
@@ -7549,6 +7569,7 @@ html.admin-theme-light .admin-modern-main,
 html:not(.dark) .student-modern-main,
 html:not(.dark) .support-modern-main {
     color: var(--aneo-light-text) !important;
+    font-family: var(--aneo-light-font-sans) !important;
 }
 
 html.admin-theme-light .admin-modern-sidebar p[class*="text-cyan-400"],
@@ -7672,10 +7693,10 @@ html:not(.dark) .portal-modern-theme [class*="bg-cyan-50"],
 html:not(.dark) .portal-modern-theme [class*="bg-sky-50"],
 html:not(.dark) .portal-modern-theme [class*="bg-blue-50"],
 html:not(.dark) .portal-modern-theme [class*="bg-indigo-50"] {
-    background: #FFFFFF !important;
+    background: var(--aneo-light-card) !important;
     border-color: var(--aneo-light-line) !important;
     color: var(--aneo-light-text) !important;
-    box-shadow: none !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
 }
 
 html.admin-theme-light .admin-modern-main section,
@@ -7691,13 +7712,14 @@ html:not(.dark) .support-modern-main article,
 html:not(.dark) .support-modern-main form[class*="border"],
 html:not(.dark) .support-modern-main div[class*="rounded"][class*="border"] {
     border-color: var(--aneo-light-line) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
 }
 
 html.admin-theme-light .admin-modern-main table thead tr,
 html.admin-theme-light .admin-modern-main tr[class*="bg-slate-900"],
 html.admin-theme-light .admin-modern-main .finance-table thead tr,
 html.admin-theme-light .admin-modern-main .signatures-table thead tr {
-    background: rgba(168, 200, 221, 0.26) !important;
+    background: var(--aneo-light-surface-alt) !important;
     border-color: var(--aneo-light-line) !important;
     color: var(--aneo-light-neutral) !important;
 }
@@ -7712,14 +7734,14 @@ html.admin-theme-light .admin-modern-main .signatures-table thead th {
 html.admin-theme-light .admin-modern-main table tbody tr,
 html.admin-theme-light .admin-modern-main .finance-table tbody .finance-row,
 html.admin-theme-light .admin-modern-main .signatures-row {
-    background: #FFFFFF !important;
-    border-color: rgba(168, 200, 221, 0.38) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: var(--aneo-light-line-soft) !important;
 }
 
 html.admin-theme-light .admin-modern-main table tbody tr:hover,
 html.admin-theme-light .admin-modern-main .finance-table tbody .finance-row:hover,
 html.admin-theme-light .admin-modern-main .signatures-row:hover {
-    background: rgba(168, 200, 221, 0.16) !important;
+    background: var(--aneo-light-surface-alt) !important;
 }
 
 html.admin-theme-light .admin-modern-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
@@ -7728,17 +7750,18 @@ html.admin-theme-light .admin-modern-theme select,
 html:not(.dark) .portal-modern-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
 html:not(.dark) .portal-modern-theme textarea,
 html:not(.dark) .portal-modern-theme select {
-    background: #FFFFFF !important;
-    border-color: var(--aneo-light-line) !important;
+    background: var(--aneo-light-card) !important;
+    border-color: var(--aneo-light-line-strong) !important;
     color: var(--aneo-light-text) !important;
     box-shadow: none !important;
+    font-family: var(--aneo-light-font-sans) !important;
 }
 
 html.admin-theme-light .admin-modern-theme input::placeholder,
 html.admin-theme-light .admin-modern-theme textarea::placeholder,
 html:not(.dark) .portal-modern-theme input::placeholder,
 html:not(.dark) .portal-modern-theme textarea::placeholder {
-    color: var(--aneo-light-neutral) !important;
+    color: var(--aneo-light-dim) !important;
 }
 
 html.admin-theme-light .admin-modern-theme input:focus,
@@ -7748,7 +7771,7 @@ html:not(.dark) .portal-modern-theme input:focus,
 html:not(.dark) .portal-modern-theme textarea:focus,
 html:not(.dark) .portal-modern-theme select:focus {
     border-color: var(--aneo-light-primary) !important;
-    box-shadow: 0 0 0 3px rgba(59, 123, 184, 0.16) !important;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.18) !important;
 }
 
 html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"],
@@ -7768,7 +7791,7 @@ html:not(.dark) .portal-alert-btn-primary {
     background: var(--aneo-light-primary) !important;
     border-color: var(--aneo-light-primary) !important;
     color: #FFFFFF !important;
-    box-shadow: none !important;
+    box-shadow: 0 14px 24px -18px rgba(30, 58, 138, 0.32) !important;
 }
 
 html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"]:hover,
@@ -7783,8 +7806,8 @@ html.admin-theme-light .admin-modern-main button[class*="bg-sky"]:hover,
 html.admin-theme-light .admin-modern-main a[class*="bg-sky"]:hover,
 html.admin-theme-light .admin-modern-main button[class*="bg-blue"]:hover,
 html.admin-theme-light .admin-modern-main a[class*="bg-blue"]:hover {
-    background: #326fa8 !important;
-    border-color: #326fa8 !important;
+    background: var(--aneo-light-active) !important;
+    border-color: var(--aneo-light-active) !important;
     color: #FFFFFF !important;
     transform: none !important;
 }
@@ -7799,10 +7822,10 @@ html:not(.dark) .portal-alert-btn-close,
 html:not(.dark) .portal-alert-btn-schedule,
 html:not(.dark) .portal-alert-btn-live,
 html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]) {
-    background: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.92) !important;
     border-color: var(--aneo-light-line) !important;
     color: var(--aneo-light-neutral) !important;
-    box-shadow: none !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
 }
 
 html.admin-theme-light .admin-modern-main button[class*="border-slate"]:hover,
@@ -7816,7 +7839,7 @@ html:not(.dark) .portal-alert-btn-schedule:hover,
 html:not(.dark) .portal-alert-btn-live:hover,
 html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]):hover {
     background: var(--aneo-light-hover) !important;
-    border-color: var(--aneo-light-primary-soft) !important;
+    border-color: var(--aneo-light-line-strong) !important;
     color: var(--aneo-light-primary) !important;
 }
 
@@ -7827,7 +7850,7 @@ html.admin-theme-light .admin-modern-main .finance-btn-nfe,
 html.admin-theme-light .admin-modern-main .finance-btn-chatwoot,
 html.admin-theme-light .admin-modern-main .signatures-btn-send,
 html.admin-theme-light .admin-modern-main .signatures-btn-sync {
-    background: rgba(168, 200, 221, 0.18) !important;
+    background: rgba(224, 231, 255, 0.76) !important;
     border-color: var(--aneo-light-primary-soft) !important;
     color: var(--aneo-light-primary) !important;
 }
@@ -7837,7 +7860,7 @@ html.admin-theme-light .admin-modern-main .finance-boleto-pill,
 html.admin-theme-light .admin-modern-main .signatures-status-pill,
 html:not(.dark) .portal-alert-modal-panel [data-portal-alert-status] {
     border-color: var(--aneo-light-primary-soft) !important;
-    background: rgba(168, 200, 221, 0.24) !important;
+    background: rgba(224, 231, 255, 0.76) !important;
     color: var(--aneo-light-neutral) !important;
 }
 
