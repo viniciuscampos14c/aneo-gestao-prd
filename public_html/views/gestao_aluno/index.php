@@ -290,6 +290,7 @@ window.gdaConfig = {
     uploadAttUrl:      <?= json_encode(route('gestao-aluno/attachment/upload')) ?>,
     deleteAttUrl:      <?= json_encode(route('gestao-aluno/attachment/delete')) ?>,
     downloadAttUrl:    <?= json_encode(route('gestao-aluno/attachment/download')) ?>,
+    studentShowUrl:    <?= json_encode(route('students/show')) ?>,
     searchUrl:         <?= json_encode(route('gestao-aluno/search')) ?>,
     quickAddUrl:       <?= json_encode(route('gestao-aluno/quick-add')) ?>,
 };

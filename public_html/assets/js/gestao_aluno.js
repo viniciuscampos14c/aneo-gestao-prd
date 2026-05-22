@@ -348,7 +348,7 @@
         }
 
         if (student.id) {
-            modalLink.href = 'students/show?id=' + student.id;
+            modalLink.href = (cfg.studentShowUrl || 'index.php?route=students/show') + '&id=' + student.id;
             modalLink.style.display = '';
         }
 
