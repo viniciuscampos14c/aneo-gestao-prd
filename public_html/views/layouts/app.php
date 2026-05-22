@@ -182,26 +182,13 @@ $exchangeQueueRoute = route('exchange&status=pending');
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/>
                             </svg>
                         </button>
-
-                        <div class="admin-sidebar-hover-panel hidden lg:block rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
-                            <div class="admin-sidebar-popout-head px-3 py-2">
-                                <p class="text-[11px] uppercase tracking-[0.22em] text-cyan-400">Cadastro</p>
-                            </div>
-                            <?php foreach ($cadastroItemsVisible as $cadItem): ?>
-                                <?php $cadActive = str_starts_with($currentRoute, $cadItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white'; ?>
-                                <a href="<?= route($cadItem['route']); ?>" class="admin-sidebar-popout-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $cadActive; ?>">
-                                    <?= menu_icon_svg((string) ($cadItem['icon'] ?? 'squares-2x2'), 'h-4 w-4 flex-shrink-0'); ?>
-                                    <?= e($cadItem['label']); ?>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
                     </li>
                 <?php endif; ?>
             </ul>
         </nav>
 
         <?php if ($showCadastro): ?>
-            <div data-cadastro-panel class="hidden lg:hidden fixed z-[80] min-w-[240px] rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+            <div data-cadastro-panel class="hidden fixed z-[80] min-w-[240px] rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
                 <div class="admin-sidebar-popout-head px-3 py-2">
                     <p class="text-[11px] uppercase tracking-[0.22em] text-cyan-400">Cadastro</p>
                 </div>
