@@ -6469,12 +6469,6 @@ html.admin-theme-light .admin-sidebar-session-logout {
     overflow: hidden;
 }
 
-@media (min-width: 1024px) {
-    .admin-modern-sidebar {
-        overflow: visible;
-    }
-}
-
 .admin-sidebar-head {
     flex: 0 0 auto;
 }
