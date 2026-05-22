@@ -103,6 +103,31 @@ img {
   color: #cfe2ff;
 }
 
+.launch-badge-install {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  background: rgba(120, 200, 160, 0.12);
+  border-color: rgba(120, 200, 160, 0.26);
+  color: #aaf0c8;
+  transition: 160ms ease;
+}
+
+.launch-badge-install:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(120, 200, 160, 0.18);
+  border-color: rgba(120, 200, 160, 0.4);
+}
+
+.launch-badge-install:disabled {
+  cursor: default;
+  opacity: 0.78;
+}
+
+.launch-badge-install.is-installed {
+  cursor: default;
+}
+
 .brand-mark {
   border-radius: 24px;
   background: linear-gradient(135deg, rgba(15, 48, 82, 0.95), rgba(27, 56, 88, 0.92));

@@ -62,6 +62,28 @@ export function InstallCard({ compact = false }: InstallCardProps) {
     setPromptEvent(null);
   }
 
+  if (compact) {
+    if (installed) {
+      return <span className="launch-badge launch-badge-install is-installed">Adicionado ao celular</span>;
+    }
+
+    return (
+      <button
+        type="button"
+        className="launch-badge launch-badge-install"
+        onClick={() => {
+          if (promptEvent) {
+            void handleInstall();
+          }
+        }}
+        disabled={!promptEvent}
+        title={promptEvent ? 'Adicionar ao celular' : 'Instalacao disponivel no navegador'}
+      >
+        Adicionar ao celular
+      </button>
+    );
+  }
+
   return (
     <section className={`install-card${compact ? ' compact-card' : ''}`}>
       <p className="eyebrow">Instalacao</p>

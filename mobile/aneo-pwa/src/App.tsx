@@ -143,16 +143,12 @@ export default function App() {
             <div className="launch-badge-row">
               <span className="launch-badge">APP oficial</span>
               <span className="launch-badge launch-badge-soft">Acesso direto da diretoria</span>
+              <InstallCard compact />
             </div>
             <div className="brand-mark">
               <img src="/aneo-logo.png" alt="ANEO" className="brand-logo" />
             </div>
-            <p className="eyebrow">APP Executivo</p>
             <h1>ANEO Diretoria</h1>
-            <p className="lead">
-              Versao instalavel para celular e desktop, sem loja e sem alterar o ERP principal.
-            </p>
-            <InstallCard compact />
           </section>
 
           <section className="surface-card auth-panel">
