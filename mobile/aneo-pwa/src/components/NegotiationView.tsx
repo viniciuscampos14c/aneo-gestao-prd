@@ -20,6 +20,7 @@ function localIsoDateNow(): string {
 }
 
 export function NegotiationView({ apiConfig }: NegotiationViewProps) {
+  const [negotiationScope, setNegotiationScope] = useState<'total' | 'overdue'>('total');
   const [query, setQuery] = useState('');
   const [profiles, setProfiles] = useState<StudentDebtProfile[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -98,6 +99,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
       return;
     }
 
+    setNegotiationScope('total');
     setListCollapsed(true);
     window.setTimeout(() => {
       simulatorSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -126,7 +128,29 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     setVisibleCount(RESULTS_PAGE_SIZE);
   }, [query, profiles]);
 
-  const totalDebt = selected ? selected.openAmount + selected.overdueAmount : 0;
+  const scopedInvoices = useMemo(() => {
+    if (!selected) {
+      return [];
+    }
+
+    if (negotiationScope === 'overdue') {
+      return selected.overdueInvoices;
+    }
+
+    return [];
+  }, [negotiationScope, selected]);
+
+  const totalDebt = useMemo(() => {
+    if (!selected) {
+      return 0;
+    }
+
+    if (negotiationScope === 'overdue') {
+      return selected.overdueAmount;
+    }
+
+    return selected.openAmount + selected.overdueAmount;
+  }, [negotiationScope, selected]);
 
   const simulatedDeal = useMemo(() => {
     if (!selected) {
@@ -158,6 +182,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     try {
       const response = await sendNegotiationToCrm(apiConfig, {
         mode,
+        scope: negotiationScope,
         profile: selected,
         discountPercent: Number(discountPercent) || 0,
         installments: Math.max(1, Number(installments) || 1),
@@ -165,6 +190,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
         totalDebt,
         discountedTotal: simulatedDeal.withDiscount,
         installmentValue: simulatedDeal.installmentValue,
+        scopedInvoices,
       });
 
       const ticketId = (response.data as { id?: number })?.id;
@@ -188,6 +214,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
   }
 
   function handleChangeStudent() {
+    setNegotiationScope('total');
     setListCollapsed(false);
     setVisibleCount(RESULTS_PAGE_SIZE);
     window.setTimeout(() => {
@@ -325,7 +352,65 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
           <p className="muted">
             Ultimo pagamento: {formatDateIso(selected.lastPaymentDate)} | Titulos em aberto: {selected.invoicesOpen}
           </p>
-          <p className="muted">Divida total: {formatCurrency(totalDebt)}</p>
+          <p className="muted">
+            Saldo aberto: {formatCurrency(selected.openAmount)} | Saldo vencido: {formatCurrency(selected.overdueAmount)}
+          </p>
+
+          <div className="list-stack" style={{ marginTop: 16 }}>
+            <div className="field-wrap">
+              <label>Escopo da renegociacao</label>
+              <div className="install-actions compact-actions">
+                <button
+                  type="button"
+                  className={negotiationScope === 'total' ? 'primary-button' : 'secondary-button'}
+                  onClick={() => setNegotiationScope('total')}
+                >
+                  Saldo total
+                </button>
+                <button
+                  type="button"
+                  className={negotiationScope === 'overdue' ? 'primary-button' : 'secondary-button'}
+                  onClick={() => setNegotiationScope('overdue')}
+                  disabled={selected.overdueInvoices.length === 0}
+                >
+                  Parcelas vencidas
+                </button>
+              </div>
+            </div>
+
+            {negotiationScope === 'total' ? (
+              <div className="result-card">
+                <h4>Renegociando o saldo completo do aluno</h4>
+                <p className="muted">
+                  Base atual: {formatCurrency(totalDebt)} considerando valores abertos e vencidos.
+                </p>
+              </div>
+            ) : (
+              <div className="detail-card">
+                <h4>Parcelas vencidas para renegociar</h4>
+                <p className="muted">
+                  {selected.overdueInvoices.length} fatura(s) vencida(s) somando {formatCurrency(totalDebt)}.
+                </p>
+                <div className="list-stack" style={{ marginTop: 12 }}>
+                  {selected.overdueInvoices.map((invoice) => (
+                    <div key={invoice.id} className="list-row">
+                      <div className="list-row-header">
+                        <strong>{invoice.number}</strong>
+                        <span className="pill pill-danger">{formatCurrency(invoice.outstandingAmount)}</span>
+                      </div>
+                      <p className="muted">
+                        Vencimento: {formatDateIso(invoice.dueDate)} | Valor: {formatCurrency(invoice.amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selected.overdueInvoices.length === 0 ? (
+              <p className="muted">Este aluno nao possui parcelas vencidas no momento.</p>
+            ) : null}
+          </div>
 
           <div className="field-grid three-columns" style={{ marginTop: 16 }}>
             <div className="field-wrap">
@@ -367,6 +452,9 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
           <div className="result-card" style={{ marginTop: 16 }}>
             <h4>Total com desconto: {formatCurrency(simulatedDeal.withDiscount)}</h4>
             <p className="muted">Parcela estimada: {formatCurrency(simulatedDeal.installmentValue)}</p>
+            <p className="muted">
+              Base da simulacao: {negotiationScope === 'overdue' ? 'parcelas vencidas' : 'saldo total do aluno'}.
+            </p>
           </div>
 
           <div className="install-actions action-cluster">

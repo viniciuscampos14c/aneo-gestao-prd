@@ -1,8 +1,9 @@
-import type { ApiConfig, ApiEnvelope, StudentDebtProfile } from '../types';
+import type { ApiConfig, ApiEnvelope, StudentDebtInvoice, StudentDebtProfile } from '../types';
 import { apiPost } from './apiClient';
 import { formatCurrency } from '../utils/format';
 
 type NegotiationWriteMode = 'negociacao' | 'aditivo';
+type NegotiationScope = 'total' | 'overdue';
 
 type TicketResponse = {
   id: number;
@@ -12,6 +13,7 @@ type TicketResponse = {
 
 type SendNegotiationInput = {
   mode: NegotiationWriteMode;
+  scope: NegotiationScope;
   profile: StudentDebtProfile;
   discountPercent: number;
   installments: number;
@@ -19,6 +21,7 @@ type SendNegotiationInput = {
   totalDebt: number;
   discountedTotal: number;
   installmentValue: number;
+  scopedInvoices: StudentDebtInvoice[];
 };
 
 function ticketSubject(mode: NegotiationWriteMode, studentName: string): string {
@@ -38,11 +41,26 @@ function ticketDescription(input: SendNegotiationInput): string {
     totalDebt,
     discountedTotal,
     installmentValue,
+    scope,
+    scopedInvoices,
   } = input;
+
+  const scopeLabel = scope === 'overdue' ? 'Parcelas vencidas' : 'Saldo total do aluno';
+  const invoiceLines =
+    scope === 'overdue' && scopedInvoices.length > 0
+      ? [
+          'Faturas vencidas consideradas:',
+          ...scopedInvoices.map(
+            (invoice) =>
+              `- ${invoice.number} | vencimento ${invoice.dueDate || '-'} | pendente ${formatCurrency(invoice.outstandingAmount)}`
+          ),
+        ]
+      : [];
 
   const lines = [
     `Origem: App Mobile Diretoria`,
     `Tipo: ${mode === 'aditivo' ? 'Geracao de aditivo' : 'Negociacao financeira'}`,
+    `Escopo da renegociacao: ${scopeLabel}`,
     `Aluno: ${profile.name} (ID ${profile.id})`,
     `Documento: ${profile.document}`,
     `Titulos em aberto: ${profile.invoicesOpen}`,
@@ -53,6 +71,7 @@ function ticketDescription(input: SendNegotiationInput): string {
     `Primeiro vencimento: ${firstDueDate}`,
     `Saldo aberto atual: ${formatCurrency(profile.openAmount)}`,
     `Saldo vencido atual: ${formatCurrency(profile.overdueAmount)}`,
+    ...invoiceLines,
     `Observacao: registro criado automaticamente para fluxo financeiro.`,
   ];
 

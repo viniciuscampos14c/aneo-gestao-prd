@@ -1,4 +1,4 @@
-import type { ApiConfig, ApiInvoice, ApiStudent, StudentDebtProfile } from '../types';
+import type { ApiConfig, ApiInvoice, ApiStudent, StudentDebtInvoice, StudentDebtProfile } from '../types';
 import { fetchAllPages } from './apiClient';
 
 function asNumber(value: unknown): number {
@@ -56,6 +56,19 @@ export async function loadDebtProfilesFromApi(config: ApiConfig): Promise<Studen
       .filter((invoice) => invoice.status === 'overdue')
       .reduce((sum, invoice) => sum + outstandingAmount(invoice), 0);
 
+    const overdueInvoices: StudentDebtInvoice[] = studentInvoices
+      .filter((invoice) => invoice.status === 'overdue')
+      .map((invoice) => ({
+        id: asNumber(invoice.id),
+        number: String(invoice.invoice_number ?? '').trim() || `Titulo ${invoice.id}`,
+        dueDate: safeIsoDate(invoice.due_date),
+        amount: asNumber(invoice.amount),
+        paidAmount: asNumber(invoice.paid_amount),
+        outstandingAmount: outstandingAmount(invoice),
+        status: invoice.status,
+      }))
+      .sort((a, b) => compareIsoDesc(a.dueDate, b.dueDate));
+
     const paidDates = studentInvoices
       .map((invoice) => safeIsoDate(invoice.paid_at))
       .filter((date) => date !== '');
@@ -72,6 +85,7 @@ export async function loadDebtProfilesFromApi(config: ApiConfig): Promise<Studen
       openAmount,
       overdueAmount,
       lastPaymentDate: paidDates[0] ?? '',
+      overdueInvoices,
     };
   });
 

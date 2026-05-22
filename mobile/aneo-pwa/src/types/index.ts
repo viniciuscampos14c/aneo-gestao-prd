@@ -64,6 +64,17 @@ export type StudentDebtProfile = {
   openAmount: number;
   overdueAmount: number;
   lastPaymentDate: string;
+  overdueInvoices: StudentDebtInvoice[];
+};
+
+export type StudentDebtInvoice = {
+  id: number;
+  number: string;
+  dueDate: string;
+  amount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  status: string;
 };
 
 export type ApiConfig = {
