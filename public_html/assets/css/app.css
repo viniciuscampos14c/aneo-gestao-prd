@@ -5808,7 +5808,16 @@ html:not(.dark) .student-modern-main .student-module-badge-locked {
     margin-bottom: 0.35rem;
 }
 
+.admin-sidebar-group {
+    position: relative;
+}
+
 .admin-modern-sidebar [data-cadastro-panel] {
+    width: 18rem;
+    max-width: min(18rem, calc(100vw - 2rem));
+}
+
+.admin-sidebar-hover-panel {
     width: 18rem;
     max-width: min(18rem, calc(100vw - 2rem));
 }
@@ -5957,6 +5966,30 @@ html:not(.dark) .student-modern-main .student-module-badge-locked {
         width: 1.15rem;
         height: 1.15rem;
         flex: 0 0 1.15rem;
+    }
+
+    .admin-sidebar-nav {
+        overflow-x: visible;
+    }
+
+    .admin-sidebar-hover-panel {
+        position: absolute;
+        left: calc(100% + 14px);
+        top: 50%;
+        z-index: 260;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-50%) translateX(-8px);
+        transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+    }
+
+    .admin-sidebar-group:hover .admin-sidebar-hover-panel,
+    .admin-sidebar-group:focus-within .admin-sidebar-hover-panel {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(-50%) translateX(0);
     }
 }
 
