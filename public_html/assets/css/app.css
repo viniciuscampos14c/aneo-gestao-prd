@@ -759,6 +759,81 @@ html.dark .portal-alert-subtitle {
     border-color: rgba(99, 102, 241, 0.32) !important;
 }
 
+html.admin-theme-light .admin-alert-overlay {
+    background: rgba(113, 136, 161, 0.28) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.99), rgba(247,250,252,0.99)) !important;
+    border-color: rgba(188, 205, 223, 0.94) !important;
+    box-shadow:
+        0 28px 60px rgba(75, 102, 130, 0.18),
+        0 10px 24px rgba(118, 154, 188, 0.12) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-head {
+    background:
+        linear-gradient(135deg, rgba(241,246,252,0.98), rgba(233,241,250,0.98)) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-body {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.99)) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-foot {
+    background:
+        linear-gradient(180deg, rgba(248,250,252,0.99), rgba(241,245,249,0.99)) !important;
+}
+
+html.admin-theme-light .admin-alert-card {
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.72),
+        0 8px 16px rgba(148, 163, 184, 0.08) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .text-slate-800,
+html.admin-theme-light .admin-alert-modal-panel .text-slate-700 {
+    color: #243b53 !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .text-slate-600,
+html.admin-theme-light .admin-alert-modal-panel .text-slate-500 {
+    color: #6b7f93 !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .text-indigo-700 {
+    color: #4267b2 !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .border-slate-200,
+html.admin-theme-light .admin-alert-modal-panel .border-slate-300 {
+    border-color: rgba(203, 213, 225, 0.96) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .bg-white {
+    background: #ffffff !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .bg-indigo-50\/50 {
+    background:
+        linear-gradient(135deg, rgba(238, 242, 255, 0.96), rgba(229, 238, 250, 0.96)) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .border-indigo-100 {
+    border-color: rgba(165, 180, 252, 0.72) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .bg-amber-50\/60 {
+    background:
+        linear-gradient(135deg, rgba(255, 251, 235, 0.98), rgba(255, 245, 214, 0.98)) !important;
+}
+
+html.admin-theme-light .admin-alert-modal-panel .border-amber-100 {
+    border-color: rgba(253, 230, 138, 0.9) !important;
+}
+
 .users-preview-kpi-label {
     color: #a8c8e4;
 }
