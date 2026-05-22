@@ -5808,11 +5808,6 @@ html:not(.dark) .student-modern-main .student-module-badge-locked {
     margin-bottom: 0.35rem;
 }
 
-.admin-modern-sidebar [data-cadastro-panel] {
-    width: 18rem;
-    max-width: min(18rem, calc(100vw - 2rem));
-}
-
 .admin-sidebar-popout-link + .admin-sidebar-popout-link {
     margin-top: 0.15rem;
 }

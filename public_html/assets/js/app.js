@@ -107,19 +107,15 @@
         let top = 12;
 
         if (desktopSidebarMode && sidebarRect) {
-            const gap = 14;
-            left = Math.round(sidebarRect.right + gap);
+            const sidebarWidth = Math.max(210, Math.round(sidebarRect.width - 24));
+            left = Math.round(sidebarRect.left + 12);
+            top = Math.round(triggerRect.bottom + 6);
 
-            if (left + panelRect.width > viewportWidth - 12) {
-                left = Math.max(12, Math.round(viewportWidth - panelRect.width - 12));
-            }
-
-            top = Math.round(triggerRect.top + (triggerRect.height / 2) - (panelRect.height / 2));
             if (top + panelRect.height > viewportHeight - 12) {
-                top = Math.max(12, Math.round(viewportHeight - panelRect.height - 12));
+                top = Math.max(12, Math.round(triggerRect.top - panelRect.height - 6));
             }
 
-            panelEl.style.width = '';
+            panelEl.style.width = `${sidebarWidth}px`;
         } else {
             panelEl.style.width = '';
             left = sidebarRect ? Math.round(sidebarRect.right + 10) : Math.round(triggerRect.right + 12);
