@@ -32,3 +32,10 @@ wa_pricing*.html
 node_modules/
 test-results/
 playwright-report/
+
+# Evidencias operacionais locais
+audit/
+deploy/
+
+# Credenciais locais de carga / QA
+tests/load/credentials.local.json

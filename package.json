@@ -4,7 +4,13 @@
   "description": "Sistema MVC em PHP puro para operacao administrativa, portal do aluno e central tecnica.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx playwright test --config=playwright.config.ts",
+    "test:e2e": "npx playwright test --config=playwright.config.ts",
+    "test:e2e:list": "npx playwright test --config=playwright.config.ts --list",
+    "test:e2e:hml": "npx playwright test --config=playwright.hml.config.ts",
+    "test:e2e:hml:list": "npx playwright test --config=playwright.hml.config.ts --list",
+    "load:student:smoke": "node tests/load/smoke-student-portal.mjs",
+    "load:student:k6": "k6 run tests/load/k6-student-portal.js"
   },
   "repository": {
     "type": "git",

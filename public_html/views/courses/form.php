@@ -35,7 +35,7 @@ $formatLessonDuration = static function (int $seconds): string {
     return $hours . 'h' . ($remaining > 0 ? ' ' . $remaining . 'min' : '');
 };
 ?>
-<section class="space-y-6">
+<section class="course-form-shell space-y-6">
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-semibold"><?= e($course ? 'Editar Curso' : 'Criar Curso'); ?></h2>
@@ -44,7 +44,7 @@ $formatLessonDuration = static function (int $seconds): string {
         <a href="<?= route('courses'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar</a>
     </div>
 
-    <form method="post" action="<?= e($action); ?>" enctype="multipart/form-data" class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 lg:grid-cols-2">
+    <form method="post" action="<?= e($action); ?>" enctype="multipart/form-data" class="course-form-panel grid gap-4 rounded-xl border border-slate-200 bg-white p-5 lg:grid-cols-2">
         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
         <label class="block">
@@ -126,7 +126,7 @@ $formatLessonDuration = static function (int $seconds): string {
         </div>
     </form>
 
-    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div class="course-materials-panel rounded-xl border border-slate-200 bg-slate-50 p-4">
         <h3 class="text-sm font-semibold text-slate-800">Arquivos de Material</h3>
         <?php if (!$course): ?>
             <p class="mt-2 text-xs text-slate-500">Salve o curso primeiro para habilitar upload de arquivos (PDF, DOC, XLS, PPT, ZIP, MP4 etc.).</p>

@@ -2,13 +2,12 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: 'aneo-e2e.spec.ts',
+  testMatch: 'hml-validation.spec.ts',
   timeout: 120000,
   expect: {
     timeout: 15000,
   },
   use: {
-    baseURL: 'http://localhost/aneo-e2e',
     headless: true,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -16,6 +15,6 @@ export default defineConfig({
   },
   reporter: [
     ['list'],
-    ['json', { outputFile: 'test-results/aneo-e2e-local-results.json' }],
+    ['json', { outputFile: 'test-results/aneo-e2e-hml-results.json' }],
   ],
 });

@@ -2,7 +2,7 @@
 $coverImage = trim((string) ($course['cover_image'] ?? ''));
 $hasCover = $coverImage !== '' && media_path_available($coverImage);
 ?>
-<section class="space-y-6">
+<section class="course-preview-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Preview do Curso</h2>
@@ -14,7 +14,7 @@ $hasCover = $coverImage !== '' && media_path_available($coverImage);
         </div>
     </div>
 
-    <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <article class="course-preview-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="h-48 bg-slate-900">
             <?php if ($hasCover): ?>
                 <img src="<?= e($coverImage); ?>" alt="Capa do curso" class="h-full w-full object-cover">

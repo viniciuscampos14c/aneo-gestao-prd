@@ -17,7 +17,7 @@ $sourceLabels = [
     'webhook' => 'Webhook',
 ];
 ?>
-<section class="space-y-6">
+<section class="student-requests-shell space-y-6">
     <div class="rounded-2xl border border-sky-100 bg-white/80 p-5">
         <h2 class="text-2xl font-semibold">Meus Chamados Tecnicos</h2>
         <p class="text-sm text-slate-500">Abra chamados e acompanhe o atendimento pelo codigo (ex.: ANEO001).</p>

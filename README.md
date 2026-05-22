@@ -6,6 +6,18 @@ Documento detalhado: `DOCUMENTACAO_COMPLETA.md`.
 Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
 Checkpoint mais recente: `STATUS_IMPLEMENTACOES_2026-04-25.md`.
 
+## Saneamento do Repositorio (22/05/2026)
+
+1. A migration `migrations/20260316_company_licenses.sql` foi restaurada no repositório.
+2. A estrutura real do código-fonte foi padronizada nesta documentação:
+   - o app versionado vive em `public_html/`
+   - o script `setup_local_xampp.ps1` copia o conteúdo de `public_html/` para `C:\xampp\htdocs\aneo`
+   - em deploy manual, publique somente o conteúdo de `public_html/` na raiz web
+3. A automação Playwright foi separada:
+   - `playwright.config.ts` cobre apenas o E2E local (`tests/e2e/aneo-e2e.spec.ts`)
+   - `playwright.hml.config.ts` cobre apenas a validação de HML (`tests/e2e/hml-validation.spec.ts`)
+4. O comando `npm test` deixou de ser placeholder e agora executa a suíte E2E local.
+
 ## 1) Estado Atual
 
 ### 1.1) Base validada em 11/03/2026
@@ -202,8 +214,8 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    - Campo "URL do video" no admin agora aceita qualquer formato.
 
 2. **Deploy sem sobrescrever credenciais de producao:**
-   - `bootstrap.php` carrega `config.local.php` (se existir) e aplica `array_replace_recursive` sobre `config.php`.
-   - `config.local.php` reside apenas no servidor (nunca versionado, listado no `.gitignore`).
+   - `bootstrap.php` carrega `public_html/config.local.php` (se existir) e aplica `array_replace_recursive` sobre `config.php`.
+   - `public_html/config.local.php` reside apenas no servidor/ambiente local (nunca versionado, listado no `.gitignore`).
    - Deploys futuros via `pscp` podem sincronizar `config.php` livremente sem risco de sobrescrever as credenciais de producao.
 
 ### 1.12) Atualizacao complementar em 16/04/2026
@@ -219,7 +231,7 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
 ### 1.13) Atualizacao complementar em 17/04/2026
 
 1. **Sistema de Cron Jobs interno** implementado.
-2. Novo entry point `cron.php` — autenticado por token (`cron.secret_token` em `config.local.php`).
+2. Novo entry point `cron.php` — autenticado por token (`cron.secret_token` em `public_html/config.local.php`).
 3. Jobs disponíveis:
 
    | Job                              | Descricao                                                  |
@@ -246,7 +258,7 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    ```
    0 * * * *   curl -s "https://erp-hml.aneobrasil.com.br/cron.php?token=SEU_TOKEN&job=all" > /dev/null 2>&1
    ```
-   O token correto esta em `config.local.php` no servidor, chave `cron.secret_token`.
+   O token correto esta em `public_html/config.local.php` no servidor, chave `cron.secret_token`.
 
 ### 1.14) Atualizacao complementar em 22/04/2026
 
@@ -279,27 +291,33 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
 ## 2) Estrutura Real do Projeto
 
 ```txt
-aneo/
-|-- index.php
-|-- support.php
-|-- config.php
-|-- db.php
+aneo-gestao-prd/
 |-- database.sql
 |-- README.md
 |-- DOCUMENTACAO_COMPLETA.md
-|-- controllers/
-|-- core/
-|-- models/
-|-- views/
-|-- assets/
-|-- uploads/
-`-- migrations/
+|-- migrations/
+|-- tests/
+|-- mobile/
+`-- public_html/
+    |-- index.php
+    |-- support.php
+    |-- api.php
+    |-- cron.php
+    |-- config.php
+    |-- db.php
+    |-- controllers/
+    |-- core/
+    |-- models/
+    |-- views/
+    |-- assets/
+    `-- uploads/
 ```
 
 Importante:
 
-1. No ambiente local (XAMPP), o projeto em execucao esta em `C:\xampp\htdocs\aneo`.
-2. Na Hostinger, o conteudo desta pasta deve ser enviado para a raiz web do dominio/subdominio (normalmente `public_html`).
+1. No repositório Git, a aplicação web mora dentro de `public_html/`.
+2. No ambiente local (XAMPP), o script `setup_local_xampp.ps1` copia apenas o conteúdo de `public_html/` para `C:\xampp\htdocs\aneo`.
+3. Na Hostinger, publique apenas o conteúdo de `public_html/` na raiz web do domínio/subdomínio e mantenha a raiz do repositório fora da pasta pública sempre que possível.
 
 ## 3) URLs das 3 Aplicacoes
 
@@ -318,11 +336,14 @@ Exemplo local:
 
 ## 4) Instalacao Rapida (Local)
 
-1. Copie a pasta do projeto para `C:\xampp\htdocs\aneo`.
-2. Inicie Apache e MySQL no XAMPP.
-3. Crie o banco MySQL.
-4. Importe `database.sql`.
-5. Se o banco ja existia antes das ultimas versoes, execute tambem (em ordem):
+1. Recomendado: rode `powershell -ExecutionPolicy Bypass -File .\setup_local_xampp.ps1`.
+2. Alternativa manual:
+   - copie o conteúdo de `public_html/` para `C:\xampp\htdocs\aneo`
+   - mantenha `database.sql` e `migrations/` fora da pasta pública, se preferir
+3. Inicie Apache e MySQL no XAMPP.
+4. Crie o banco MySQL.
+5. Importe `database.sql`.
+6. Se o banco ja existia antes das ultimas versoes, execute tambem (em ordem):
    - `migrations/20260313_arsenal_digital.sql`
    - `migrations/20260315_finance_notification_logs.sql`
    - `migrations/20260315_system_audit_logs.sql`
@@ -333,8 +354,8 @@ Exemplo local:
    - `migrations/20260317_professor_external_exam_links.sql`
    - `migrations/20260416_api_tokens.sql`
    - `migrations/20260424_finance_payment_methods.sql`
-6. Ajuste credenciais em `config.php` (bloco `db`).
-7. Acesse `http://localhost/aneo/index.php?route=login`.
+7. Ajuste credenciais em `config.php` (bloco `db`) ou sobrescreva em `public_html/config.local.php`.
+8. Acesse `http://localhost/aneo/index.php?route=login`.
 
 Login admin padrao:
 
@@ -411,7 +432,7 @@ Status identificado em `config.php` (ambiente local atual):
 
 ### 7.1) Base unica de codigo
 
-Use uma unica instalacao do sistema e publique o conteudo desta pasta no `public_html` (ou raiz do subdominio).
+Use uma unica instalacao do sistema e publique somente o conteudo de `public_html/` no `public_html` remoto (ou raiz do subdominio).
 
 ### 7.2) Mapeamento recomendado
 
@@ -422,8 +443,8 @@ Use uma unica instalacao do sistema e publique o conteudo desta pasta no `public
 ### 7.3) Passos objetivos
 
 1. Criar banco MySQL na Hostinger e importar `database.sql`.
-2. Publicar arquivos do projeto no `public_html`.
-3. Editar `config.php` com banco de producao.
+2. Publicar os arquivos de `public_html/` no `public_html` remoto.
+3. Editar `config.php` com banco de producao ou, preferencialmente, criar `public_html/config.local.php` no servidor com as sobrescritas sensiveis.
 4. Se producao for incremental, executar migracoes pendentes (incluindo `20260313_arsenal_digital.sql` e `20260316_company_licenses.sql`).
    - incluir `migrations/20260316_courses_trial_access.sql` para liberar degustacao de curso
    - incluir `migrations/20260317_lms_learning_path.sql` para liberar trilha LMS modular no portal
@@ -588,16 +609,32 @@ Objetivo: permitir cursos sob demanda com controle de progressao.
    - atualiza `student_lesson_progress`
    - sincroniza `enrollments.progress_percent` automaticamente
 4. Observacao tecnica:
-   - o tracking automatico depende de video com URL direta (ex.: MP4/WebM)
+   - o tracking automatico funciona com URL direta (ex.: MP4/WebM) e tambem com links do YouTube suportados pelo player
 5. Como informar a URL do video:
    - o campo da aula aceita URL HTTP/HTTPS direta do arquivo
    - exemplo local no XAMPP: `http://localhost/aneo/uploads/videos/aula-01.mp4`
    - exemplo em producao: `https://seu-dominio.com/uploads/videos/aula-01.mp4`
 6. O que nao funciona no player atual:
    - caminho local de disco (`C:\...` ou `file:///...`)
-   - link de pagina do YouTube (`https://youtube.com/watch?...`)
+   - links fora dos formatos suportados pelo parser do player
+   - provedores de video diferentes de URL direta/YouTube sem adaptacao adicional
 7. Regra pratica de validacao:
    - se a URL abre o video direto no navegador, no curso tambem funciona
+
+## 17) Testes Automatizados
+
+1. E2E local:
+   - `npm test`
+   - `npm run test:e2e`
+   - `npm run test:e2e:list`
+2. Validacao HML:
+   - `npm run test:e2e:hml`
+   - `npm run test:e2e:hml:list`
+3. Carga portal do aluno:
+   - `npm run load:student:smoke`
+   - `npm run load:student:k6`
+4. Observacao operacional:
+   - a validacao HML continua separada de propósito para evitar execução acidental contra `https://erp-hml.aneobrasil.com.br`
 
 ## 15) Chamados com codigo ANEO + portal do aluno
 

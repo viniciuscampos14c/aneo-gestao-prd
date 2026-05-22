@@ -2,7 +2,7 @@
 $scheduleEnabled = $examScheduleEnabled ?? false;
 $calendarRows = $examCalendar ?? [];
 ?>
-<section class="space-y-6">
+<section class="student-exams-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Avaliacoes</h2>

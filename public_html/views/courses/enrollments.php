@@ -1,5 +1,5 @@
 <?php $currentCourseFilter = (int) (($filters['course_id'] ?? 0)); ?>
-<section class="space-y-6">
+<section class="courses-enrollments-shell space-y-6">
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-semibold text-white">Matriculas</h2>
@@ -8,7 +8,7 @@
         <a href="<?= route('courses'); ?>" class="rounded-lg border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 transition hover:border-cyan-400/50 hover:bg-slate-800">Voltar</a>
     </div>
 
-    <form method="post" action="<?= route('courses/enrollments/store'); ?>" class="grid gap-3 rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-sm md:grid-cols-4">
+    <form method="post" action="<?= route('courses/enrollments/store'); ?>" class="courses-enrollments-create-panel grid gap-3 rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-sm md:grid-cols-4">
         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
         <select name="student_id" required class="rounded-lg border border-slate-600 bg-slate-950/75 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/20">
@@ -39,7 +39,7 @@
     </form>
 
     <?php if ($currentCourseFilter > 0): ?>
-        <div class="rounded-xl border border-cyan-400/30 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
+        <div class="courses-enrollments-filter-alert rounded-xl border border-cyan-400/30 bg-cyan-400/8 px-4 py-3 text-sm text-cyan-100">
             Listagem filtrada por curso. <a href="<?= route('courses/enrollments'); ?>" class="font-semibold underline">Limpar filtro</a>
         </div>
     <?php endif; ?>

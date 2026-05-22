@@ -11,6 +11,20 @@ Este documento foi criado para uma pessoa nova no projeto conseguir:
 5. Operar os modulos no dia a dia.
 6. Fazer manutencao basica e diagnostico de problemas.
 
+## 1.0) Saneamento do repositorio (22/05/2026)
+
+Pontos consolidados nesta rodada:
+
+1. A migration `migrations/20260316_company_licenses.sql` foi restaurada no repositório.
+2. A estrutura versionada correta é:
+   - raiz do repositório com `database.sql`, `migrations/`, `tests/` e `public_html/`
+   - aplicação web dentro de `public_html/`
+3. O script `setup_local_xampp.ps1` copia somente o conteúdo de `public_html/` para `C:\xampp\htdocs\aneo`.
+4. O deploy correto em servidor publica somente o conteúdo de `public_html/` na raiz web.
+5. A automação Playwright foi separada em:
+   - `playwright.config.ts` para E2E local
+   - `playwright.hml.config.ts` para validação de HML
+
 ## 1.1) Atualizacao critica (11/03/2026)
 
 Atualizacoes aplicadas e validadas nesta data:
@@ -29,8 +43,9 @@ Atualizacoes aplicadas e validadas nesta data:
    - smoke test GET central tecnica: OK
    - banco conectado com sucesso (`43` tabelas)
 4. Estrutura real do projeto:
-   - o codigo local em `C:\xampp\htdocs\aneo` nao usa subpasta `public_html`
-   - na Hostinger, o conteudo da raiz local do projeto deve ir para a raiz web remota (normalmente `public_html`)
+   - no Git, o codigo-fonte web fica dentro de `public_html/`
+   - no XAMPP, o script de setup copia o conteúdo de `public_html/` para `C:\xampp\htdocs\aneo`
+   - na Hostinger, publique somente o conteúdo de `public_html/` na raiz web remota
 5. Publicacao das 3 aplicacoes (recomendado):
    - Administrativo: `index.php?route=login`
    - Portal do Aluno: `index.php?route=student/login`
@@ -182,9 +197,9 @@ Raiz do projeto:
 17. `migrations/20260317_support_ticket_codes_aneo.sql`
 18. `migrations/20260317_professor_external_exam_links.sql`
 19. `migrations/20260424_finance_payment_methods.sql`
-20. Raiz da aplicacao (`index.php`, `config.php`, `controllers/`, `models/`, `views/`, `assets/`, `uploads/`)
+20. `public_html/` (raiz da aplicacao web versionada)
 
-Dentro da raiz da aplicacao:
+Dentro de `public_html/`:
 
 1. `index.php`: roteador principal.
 2. `config.php`: configuracoes gerais, banco, perfis/permissoes.
@@ -203,7 +218,7 @@ Dentro da raiz da aplicacao:
 ### 4.1 MVC simplificado
 
 1. Requisicao entra em `index.php`.
-2. `core/bootstrap.php` carrega:
+2. `public_html/core/bootstrap.php` carrega:
    - configuracao
    - sessao
    - conexao PDO
@@ -213,7 +228,7 @@ Dentro da raiz da aplicacao:
    - valida autenticacao/permissao
    - chama model para ler/gravar dados
    - renderiza uma view
-5. View renderiza dentro do layout (`views/layouts/app.php` ou `guest.php`).
+5. View renderiza dentro do layout (`views/layouts/app.php` ou `views/layouts/guest.php`).
 
 ### 4.2 Seguranca implementada
 
@@ -634,7 +649,7 @@ Script criado:
 Ele faz:
 
 1. Inicia Apache e MySQL.
-2. Copia a pasta do projeto para `C:\xampp\htdocs\aneo`.
+2. Copia o conteudo de `public_html/` para `C:\xampp\htdocs\aneo`.
 3. Preserva `uploads` existentes da copia local (`capas`, `documentos`, `materiais`) para evitar perda de arquivos ao atualizar.
 4. Ajusta `config.php` para ambiente local:
    - host `localhost`
@@ -1666,11 +1681,17 @@ Aluno:
 
 ### 21.7) Observacao tecnica
 
-1. O tracking automatico de progresso depende de URL direta de video (exemplo: MP4/WebM).
+1. O tracking automatico de progresso funciona com URL direta de video (exemplo: MP4/WebM) e com links suportados do YouTube (`youtube.com/watch`, `youtu.be`, `youtube.com/shorts`).
 
 ### 21.8) Formato da URL de video (importante)
 
-1. A URL da aula deve ser HTTP/HTTPS e apontar para o arquivo de video diretamente.
+1. A URL da aula deve ser HTTP/HTTPS.
+2. Formatos suportados no player atual:
+   - arquivo direto de video (MP4/WebM)
+   - links do YouTube aceitos pelo parser do player
+3. Formatos nao suportados sem adaptacao adicional:
+   - caminho local de disco (`C:\...` ou `file:///...`)
+   - provedores de video diferentes de URL direta/YouTube
 2. Exemplo local (XAMPP):
    - `http://localhost/aneo/uploads/videos/aula-01.mp4`
 3. Exemplo em producao:
@@ -1678,8 +1699,9 @@ Aluno:
 4. Caminho local de disco nao e suportado no campo da aula:
    - `C:\...`
    - `file:///...`
-5. Link de pagina do YouTube nao e suportado no player atual:
+5. Links do YouTube suportados no player atual:
    - `https://youtube.com/watch?...`
+   - `https://youtu.be/...`
 6. Validacao rapida:
    - se a URL tocar o video diretamente em uma aba do navegador, ela e valida para o LMS.
 

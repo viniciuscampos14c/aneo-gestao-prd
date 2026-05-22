@@ -7894,3 +7894,458 @@ html:not(.dark) .portal-modern-theme ::-webkit-scrollbar-thumb {
     background: var(--aneo-light-primary-soft) !important;
     border-color: #FFFFFF !important;
 }
+
+/* =====================================================================
+   ANEO LIGHT THEME - REFINO GLOBAL
+   Consolidacao final do modo claro sem impactar o tema escuro.
+   ===================================================================== */
+
+html.admin-theme-light,
+html:not(.dark) .portal-modern-theme {
+    --aneo-light-primary: #21405f;
+    --aneo-light-primary-soft: #dbe6f1;
+    --aneo-light-neutral: #6f6657;
+    --aneo-light-white: #ffffff;
+    --aneo-light-page: #f7f2e8;
+    --aneo-light-page-2: #fcfaf5;
+    --aneo-light-card: #ffffff;
+    --aneo-light-surface-alt: #f6f1e6;
+    --aneo-light-surface-sunk: #efe8da;
+    --aneo-light-line: #e5ddcf;
+    --aneo-light-line-soft: rgba(209, 197, 178, 0.55);
+    --aneo-light-line-strong: #d0c2ae;
+    --aneo-light-hover: rgba(33, 64, 95, 0.06);
+    --aneo-light-active: #315b84;
+    --aneo-light-text: #1f2937;
+    --aneo-light-muted: #6f6657;
+    --aneo-light-dim: #9b8f7b;
+    --aneo-light-accent: #2a6f97;
+    --aneo-light-accent-2: #3b7bb8;
+    --aneo-light-accent-soft: #d9ebf7;
+    --aneo-light-success: #1d7a46;
+    --aneo-light-success-soft: #dff3e7;
+    --aneo-light-danger: #b93838;
+    --aneo-light-danger-soft: #fde5e5;
+    --aneo-light-warning: #a46a1f;
+    --aneo-light-warning-soft: #fdf1cf;
+    --aneo-light-info: #2b6cb0;
+    --aneo-light-info-soft: #deebfb;
+    --aneo-light-shadow-soft: 0 6px 18px -8px rgba(31, 41, 55, 0.12), 0 2px 6px -3px rgba(31, 41, 55, 0.06);
+    --aneo-light-shadow-pop: 0 18px 40px -22px rgba(31, 41, 55, 0.18), 0 10px 18px -10px rgba(31, 41, 55, 0.08);
+}
+
+html.admin-theme-light body.admin-modern-theme,
+html.admin-theme-light .admin-modern-shell,
+html:not(.dark) body.portal-modern-theme,
+html:not(.dark) .portal-modern-shell {
+    background:
+        radial-gradient(920px 420px at 12% -8%, rgba(59, 123, 184, 0.08), transparent 68%),
+        radial-gradient(760px 360px at 104% 4%, rgba(164, 106, 31, 0.08), transparent 62%),
+        linear-gradient(180deg, var(--aneo-light-page) 0%, var(--aneo-light-page-2) 100%) !important;
+}
+
+html.admin-theme-light .admin-modern-main [class*="bg-white"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-50"],
+html.admin-theme-light .admin-modern-main [class*="bg-slate-100"],
+html:not(.dark) .portal-modern-theme [class*="bg-white"],
+html:not(.dark) .portal-modern-theme [class*="bg-slate-50"],
+html:not(.dark) .portal-modern-theme [class*="bg-slate-100"] {
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"],
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"],
+html.admin-theme-light .admin-modern-main button[class*="bg-cyan"],
+html.admin-theme-light .admin-modern-main a[class*="bg-cyan"],
+html.admin-theme-light .admin-modern-main button[class*="bg-sky"],
+html.admin-theme-light .admin-modern-main a[class*="bg-sky"],
+html:not(.dark) .portal-modern-theme button[class*="bg-slate-900"],
+html:not(.dark) .portal-modern-theme a[class*="bg-slate-900"],
+html:not(.dark) .portal-modern-theme button[class*="bg-cyan"],
+html:not(.dark) .portal-modern-theme a[class*="bg-cyan"],
+html:not(.dark) .portal-modern-theme button[class*="bg-sky"],
+html:not(.dark) .portal-modern-theme a[class*="bg-sky"] {
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-900"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-slate-800"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-cyan"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-cyan"]:hover,
+html.admin-theme-light .admin-modern-main button[class*="bg-sky"]:hover,
+html.admin-theme-light .admin-modern-main a[class*="bg-sky"]:hover,
+html:not(.dark) .portal-modern-theme button[class*="bg-slate-900"]:hover,
+html:not(.dark) .portal-modern-theme a[class*="bg-slate-900"]:hover,
+html:not(.dark) .portal-modern-theme button[class*="bg-cyan"]:hover,
+html:not(.dark) .portal-modern-theme a[class*="bg-cyan"]:hover,
+html:not(.dark) .portal-modern-theme button[class*="bg-sky"]:hover,
+html:not(.dark) .portal-modern-theme a[class*="bg-sky"]:hover {
+    background: linear-gradient(135deg, var(--aneo-light-primary), var(--aneo-light-accent)) !important;
+}
+
+html.admin-theme-light .courses-enrollments-shell h2.text-white,
+html.admin-theme-light .courses-enrollments-shell p.text-slate-300,
+html.admin-theme-light .courses-exams-shell a[class*="bg-sky-950"] {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .courses-enrollments-shell a[class*="bg-slate-900"],
+html.admin-theme-light .courses-exams-shell a[class*="bg-sky-950"] {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-primary) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .courses-enrollments-shell a[class*="bg-slate-900"]:hover,
+html.admin-theme-light .courses-exams-shell a[class*="bg-sky-950"]:hover {
+    background: #ffffff !important;
+    border-color: var(--aneo-light-line-strong) !important;
+    color: var(--aneo-light-active) !important;
+}
+
+html.admin-theme-light .courses-enrollments-create-panel,
+html.admin-theme-light .courses-exams-calendar,
+html.admin-theme-light .courses-exams-external-panel {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 244, 236, 0.98)) !important;
+    border-color: var(--aneo-light-line) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .courses-enrollments-create-panel select,
+html.admin-theme-light .courses-enrollments-create-panel input,
+html.admin-theme-light .courses-exams-external-panel select,
+html.admin-theme-light .courses-exams-external-panel input,
+html.admin-theme-light .courses-exams-external-panel textarea {
+    background: #ffffff !important;
+    border-color: var(--aneo-light-line-strong) !important;
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .courses-enrollments-create-panel select option,
+html.admin-theme-light .courses-exams-external-panel select option {
+    color: var(--aneo-light-text);
+    background: #ffffff;
+}
+
+html.admin-theme-light .courses-enrollments-create-panel p.text-cyan-100,
+html.admin-theme-light .courses-enrollments-filter-alert,
+html.admin-theme-light .courses-exams-filter-alert {
+    background: var(--aneo-light-info-soft) !important;
+    border-color: rgba(43, 108, 176, 0.18) !important;
+    color: var(--aneo-light-info) !important;
+}
+
+html.admin-theme-light .courses-enrollments-filter-alert a,
+html.admin-theme-light .courses-exams-filter-alert a {
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article,
+html.admin-theme-light .courses-exams-calendar article {
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article:nth-child(1) {
+    background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+    border-color: rgba(59, 123, 184, 0.22) !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article:nth-child(2) {
+    background: linear-gradient(180deg, #ffffff 0%, #edf8f1 100%) !important;
+    border-color: rgba(29, 122, 70, 0.22) !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article:nth-child(3) {
+    background: linear-gradient(180deg, #ffffff 0%, #fdf0f0 100%) !important;
+    border-color: rgba(185, 56, 56, 0.22) !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article:nth-child(4) {
+    background: linear-gradient(180deg, #ffffff 0%, #f3f2fb 100%) !important;
+    border-color: rgba(43, 108, 176, 0.18) !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article p[class*="text-white"],
+html.admin-theme-light .courses-exams-kpis article p[class*="text-emerald-100"],
+html.admin-theme-light .courses-exams-kpis article p[class*="text-rose-100"],
+html.admin-theme-light .courses-exams-kpis article p[class*="text-cyan-100"] {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .courses-exams-kpis article p[class*="text-slate-300"],
+html.admin-theme-light .courses-exams-kpis article p[class*="text-emerald-200"],
+html.admin-theme-light .courses-exams-kpis article p[class*="text-rose-200"],
+html.admin-theme-light .courses-exams-kpis article p[class*="text-cyan-200"] {
+    color: var(--aneo-light-muted) !important;
+}
+
+html.admin-theme-light .courses-exams-calendar h3,
+html.admin-theme-light .courses-exams-calendar p.text-slate-300,
+html.admin-theme-light .courses-exams-external-panel h3.text-white,
+html.admin-theme-light .courses-exams-external-panel p.text-slate-300,
+html.admin-theme-light .courses-exams-external-panel p.text-slate-200 {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .courses-exams-calendar span[class*="bg-sky-950"],
+html.admin-theme-light .courses-exams-external-panel div[class*="bg-cyan-400/10"] {
+    background: var(--aneo-light-surface-alt) !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .courses-exams-calendar article {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html.admin-theme-light .courses-exams-calendar article p.text-white {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .courses-exams-external-panel form {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border-color: var(--aneo-light-line-soft) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8) !important;
+}
+
+html.admin-theme-light .courses-exams-external-panel .border-l-4 {
+    border-left-color: var(--aneo-light-accent) !important;
+}
+
+html.admin-theme-light .courses-exams-external-panel label[class*="text-cyan"],
+html.admin-theme-light .courses-exams-external-panel p[class*="text-cyan"] {
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .course-preview-card,
+html.admin-theme-light .course-form-panel,
+html.admin-theme-light .course-materials-panel {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 245, 238, 0.98)) !important;
+    border-color: var(--aneo-light-line) !important;
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html.admin-theme-light .course-preview-shell a[class*="bg-cyan"],
+html.admin-theme-light .course-form-shell button[class*="bg-cyan"],
+html.admin-theme-light .course-form-shell a[class*="bg-cyan"] {
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+
+html.admin-theme-light .course-preview-shell .h-48.bg-slate-900 {
+    background: linear-gradient(135deg, #dfe9f2 0%, #c8dae8 100%) !important;
+}
+
+html.admin-theme-light .course-preview-shell .from-slate-900,
+html.admin-theme-light .course-preview-shell .via-slate-800,
+html.admin-theme-light .course-preview-shell .to-cyan-900 {
+    background-image: linear-gradient(135deg, #d8e7f2 0%, #c7dceb 50%, #b5d2e7 100%) !important;
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .course-preview-shell .bg-cyan-50,
+html.admin-theme-light .course-preview-shell .bg-slate-50,
+html.admin-theme-light .course-form-shell .bg-slate-50,
+html.admin-theme-light .course-form-shell .bg-cyan-50\/70 {
+    background: var(--aneo-light-surface-alt) !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html.admin-theme-light .course-preview-shell .text-cyan-700,
+html.admin-theme-light .course-form-shell .text-cyan-700,
+html.admin-theme-light .course-form-shell .text-cyan-800,
+html.admin-theme-light .course-form-shell .text-cyan-100,
+html.admin-theme-light .course-form-shell .text-cyan-200 {
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .course-form-shell .admin-lms-builder-head {
+    background:
+        radial-gradient(circle at top right, rgba(59, 123, 184, 0.20), transparent 34%),
+        linear-gradient(135deg, #f4efe5 0%, #ecf3f9 52%, #e0ebf5 100%) !important;
+    border-bottom-color: var(--aneo-light-line) !important;
+}
+
+html.admin-theme-light .course-form-shell .admin-lms-kpi-card,
+html.admin-theme-light .course-form-shell .admin-lms-builder-pill {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border-color: rgba(59, 123, 184, 0.18) !important;
+    box-shadow: none !important;
+}
+
+html.admin-theme-light .course-form-shell .admin-lms-builder-title,
+html.admin-theme-light .course-form-shell .admin-lms-kpi-value,
+html.admin-theme-light .course-form-shell .admin-lms-section-title,
+html.admin-theme-light .course-form-shell .text-white {
+    color: var(--aneo-light-text) !important;
+}
+
+html.admin-theme-light .course-form-shell .admin-lms-builder-copy,
+html.admin-theme-light .course-form-shell .admin-lms-kpi-label,
+html.admin-theme-light .course-form-shell .admin-lms-section-copy,
+html.admin-theme-light .course-form-shell .text-slate-500 {
+    color: var(--aneo-light-muted) !important;
+}
+
+html.admin-theme-light .course-form-shell .admin-lms-builder-eyebrow,
+html.admin-theme-light .course-form-shell .admin-lms-help-strip,
+html.admin-theme-light .course-form-shell .admin-lms-status-pill {
+    color: var(--aneo-light-primary) !important;
+}
+
+html.admin-theme-light .course-form-shell span[class*="bg-slate-900"],
+html.admin-theme-light .course-form-shell button[class*="bg-slate-900"] {
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) .student-requests-shell > .rounded-2xl,
+html:not(.dark) .student-requests-shell article.rounded-xl,
+html:not(.dark) .student-requests-shell form.rounded-xl {
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html:not(.dark) .student-requests-shell .bg-white\/80,
+html:not(.dark) .student-requests-shell .bg-white\/90,
+html:not(.dark) .student-requests-shell .bg-white,
+html:not(.dark) .student-requests-shell .bg-slate-50 {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html:not(.dark) .student-requests-shell .bg-cyan-50\/80,
+html:not(.dark) .student-requests-shell .bg-amber-50\/80,
+html:not(.dark) .student-requests-shell .bg-emerald-50\/80 {
+    box-shadow: none !important;
+}
+
+html:not(.dark) .student-requests-shell button[class*="bg-sky-600"],
+html:not(.dark) .student-requests-shell button[class*="bg-slate-900"],
+html:not(.dark) .student-requests-shell a.bg-slate-900 {
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) .student-requests-shell button[class*="bg-sky-600"]:hover,
+html:not(.dark) .student-requests-shell button[class*="bg-slate-900"]:hover,
+html:not(.dark) .student-requests-shell a.bg-slate-900:hover {
+    background: linear-gradient(135deg, var(--aneo-light-primary), var(--aneo-light-accent)) !important;
+}
+
+html:not(.dark) .student-requests-shell .bg-violet-100 {
+    background: #efe9fb !important;
+    color: #6d4bc2 !important;
+}
+
+html:not(.dark) .student-modern-header,
+html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]),
+html:not(.dark) #student-avatar-menu {
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html:not(.dark) .student-modern-nav a:not([class*="bg-sky-600"]) {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-primary) !important;
+}
+
+html:not(.dark) .student-modern-nav a[class*="bg-sky-600"] {
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 22px rgba(59, 123, 184, 0.18) !important;
+}
+
+html:not(.dark) .student-exams-shell > section,
+html:not(.dark) .student-exams-shell > div > a,
+html:not(.dark) .student-courses-shell .student-courses-card,
+html:not(.dark) .student-courses-shell .student-courses-empty {
+    box-shadow: var(--aneo-light-shadow-soft) !important;
+}
+
+html:not(.dark) .student-exams-shell .rounded-xl.border-sky-100,
+html:not(.dark) .student-exams-shell .bg-sky-50\/70 {
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(237,245,251,0.92)) !important;
+    border-color: rgba(59, 123, 184, 0.18) !important;
+}
+
+html:not(.dark) .student-exams-shell .rounded-xl.border-slate-200,
+html:not(.dark) .student-exams-shell .bg-white,
+html:not(.dark) .student-exams-shell .bg-white\/90 {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html:not(.dark) .student-exams-shell span[class*="bg-sky-200"],
+html:not(.dark) .student-exams-shell span[class*="bg-cyan-200"] {
+    background: var(--aneo-light-info-soft) !important;
+    border-color: rgba(43, 108, 176, 0.22) !important;
+    color: var(--aneo-light-info) !important;
+}
+
+html:not(.dark) .student-exams-shell span[class*="bg-emerald-200"] {
+    background: var(--aneo-light-success-soft) !important;
+    border-color: rgba(29, 122, 70, 0.22) !important;
+    color: var(--aneo-light-success) !important;
+}
+
+html:not(.dark) .student-exams-shell span[class*="bg-amber-200"] {
+    background: var(--aneo-light-warning-soft) !important;
+    border-color: rgba(164, 106, 31, 0.22) !important;
+    color: var(--aneo-light-warning) !important;
+}
+
+html:not(.dark) .student-exams-shell span[class*="bg-rose-200"] {
+    background: var(--aneo-light-danger-soft) !important;
+    border-color: rgba(185, 56, 56, 0.22) !important;
+    color: var(--aneo-light-danger) !important;
+}
+
+html:not(.dark) .student-exams-shell a[class*="bg-cyan-200"],
+html:not(.dark) .student-exams-shell a[class*="bg-white"].font-semibold,
+html:not(.dark) .student-courses-shell .student-courses-cta,
+html:not(.dark) .student-courses-shell .student-courses-live-cta {
+    background: linear-gradient(135deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) .student-exams-shell a[class*="bg-cyan-200"]:hover,
+html:not(.dark) .student-exams-shell a[class*="bg-white"].font-semibold:hover,
+html:not(.dark) .student-courses-shell .student-courses-cta:hover,
+html:not(.dark) .student-courses-shell .student-courses-live-cta:hover {
+    background: linear-gradient(135deg, var(--aneo-light-primary), var(--aneo-light-accent)) !important;
+}
+
+html:not(.dark) .student-courses-shell .student-courses-card,
+html:not(.dark) .student-courses-shell .student-courses-empty {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,244,236,0.94)) !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html:not(.dark) .student-courses-shell .student-courses-cover-placeholder,
+html:not(.dark) .student-courses-shell .student-courses-progress-track {
+    background: var(--aneo-light-surface-alt) !important;
+    border-color: var(--aneo-light-line) !important;
+}
+
+html:not(.dark) .student-courses-shell .student-courses-progress-fill {
+    background: linear-gradient(120deg, var(--aneo-light-accent), var(--aneo-light-accent-2)) !important;
+}
+
+html:not(.dark) .student-courses-shell .student-courses-disabled {
+    background: var(--aneo-light-surface-alt) !important;
+    border-color: var(--aneo-light-line) !important;
+    color: var(--aneo-light-muted) !important;
+}

@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS company_licenses (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    license_key_hash CHAR(64) NOT NULL,
+    license_label VARCHAR(150) NOT NULL,
+    status ENUM('active', 'grace', 'expired') NOT NULL DEFAULT 'active',
+    activated_at DATETIME NOT NULL,
+    valid_from DATE NOT NULL,
+    valid_until DATE NOT NULL,
+    grace_until DATE NULL,
+    last_checked_at DATETIME NULL,
+    metadata_json LONGTEXT NULL,
+    created_by INT UNSIGNED NULL,
+    updated_by INT UNSIGNED NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY uk_company_licenses_company (company_id),
+    INDEX idx_company_licenses_status (status),
+    INDEX idx_company_licenses_valid_until (valid_until),
+    CONSTRAINT fk_company_licenses_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_company_licenses_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_company_licenses_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS company_license_history (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NULL,
+    action ENUM('activate', 'renew', 'expire', 'invalidate', 'check') NOT NULL DEFAULT 'activate',
+    license_key_hash CHAR(64) NOT NULL,
+    license_label VARCHAR(150) NOT NULL,
+    valid_from DATE NULL,
+    valid_until DATE NULL,
+    note VARCHAR(255) NULL,
+    metadata_json LONGTEXT NULL,
+    created_at DATETIME NOT NULL,
+    INDEX idx_company_license_history_company (company_id),
+    INDEX idx_company_license_history_action (action),
+    INDEX idx_company_license_history_created_at (created_at),
+    CONSTRAINT fk_company_license_history_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_company_license_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

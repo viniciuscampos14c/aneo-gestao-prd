@@ -66,7 +66,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     return strcmp((string) ($b['last_submitted_at'] ?? ''), (string) ($a['last_submitted_at'] ?? ''));
 });
 ?>
-<section class="space-y-6">
+<section class="courses-exams-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Exames / Avaliacoes</h2>
@@ -97,12 +97,12 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     <?php endif; ?>
 
     <?php if ($currentCourseFilter > 0): ?>
-        <div class="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+        <div class="courses-exams-filter-alert rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
             Painel filtrado pelo curso selecionado. <a href="<?= route('courses/exams'); ?>" class="font-semibold underline">Limpar filtro</a>
         </div>
     <?php endif; ?>
 
-    <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <section class="courses-exams-kpis grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-xl border border-sky-800 bg-slate-950/50 p-4 shadow-sm">
             <p class="text-xs font-semibold uppercase tracking-wide text-sky-300">Exames cadastrados</p>
             <p class="mt-2 text-3xl font-semibold text-white"><?= (int) ($meta['total'] ?? 0); ?></p>
@@ -125,7 +125,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
         </article>
     </section>
 
-    <section class="rounded-xl border border-sky-800 bg-slate-900/85 p-4 shadow-sm">
+    <section class="courses-exams-calendar rounded-xl border border-sky-800 bg-slate-900/85 p-4 shadow-sm">
         <div class="mb-3 flex items-center justify-between">
             <h3 class="text-lg font-semibold text-sky-100">Calendario de Provas (proximos 90 dias)</h3>
             <span class="rounded-full border border-sky-700 bg-sky-950/80 px-3 py-1 text-xs font-semibold text-sky-200"><?= count($upcomingExams); ?> agendada(s)</span>
@@ -223,7 +223,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     </section>
 
     <?php if ($externalFeatureAvailable): ?>
-        <section class="rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-sm ring-1 ring-slate-800/80">
+        <section class="courses-exams-external-panel rounded-xl border border-slate-700 bg-slate-900/90 p-4 shadow-sm ring-1 ring-slate-800/80">
             <div class="mb-4">
                 <div class="mb-3 inline-flex rounded-full border border-cyan-400/35 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-200">
                     Fluxo externo
