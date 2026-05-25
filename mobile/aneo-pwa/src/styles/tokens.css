@@ -1,0 +1,43 @@
+:root {
+  --aneo-bg: #0c1424;
+  --aneo-bg-soft: #0e182b;
+  --aneo-panel: rgba(255, 255, 255, 0.04);
+  --aneo-panel-strong: rgba(255, 255, 255, 0.06);
+  --aneo-border: rgba(255, 255, 255, 0.07);
+  --aneo-border-strong: rgba(255, 255, 255, 0.12);
+
+  --aneo-text: #f4f6fa;
+  --aneo-muted: rgba(244, 246, 250, 0.58);
+  --aneo-dim: rgba(244, 246, 250, 0.34);
+
+  --aneo-gold: #d4b25c;
+  --aneo-gold-soft: rgba(212, 178, 92, 0.14);
+  --aneo-gold-ink: #1a1305;
+
+  --aneo-red: #ec6a5c;
+  --aneo-red-soft: rgba(236, 106, 92, 0.13);
+  --aneo-green: #5fc28d;
+  --aneo-green-soft: rgba(95, 194, 141, 0.13);
+  --aneo-blue: #6b95f5;
+  --aneo-blue-soft: rgba(107, 149, 245, 0.18);
+
+  --aneo-radius-input: 10px;
+  --aneo-radius-button: 14px;
+  --aneo-radius-card: 18px;
+  --aneo-radius-hero: 22px;
+  --aneo-radius-pill: 9999px;
+
+  --aneo-font: "Inter", -apple-system, system-ui, sans-serif;
+  --aneo-mono: "Geist Mono", ui-monospace, monospace;
+
+  --aneo-shadow-cta: 0 8px 24px rgba(212, 178, 92, 0.18);
+  --aneo-shadow-elev: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+html,
+body {
+  background: var(--aneo-bg);
+  color: var(--aneo-text);
+  font-family: var(--aneo-font);
+  -webkit-font-smoothing: antialiased;
+}
