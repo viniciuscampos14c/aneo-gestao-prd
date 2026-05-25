@@ -438,18 +438,18 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                             $confirmedLabel = $confirmedAt !== '' && strtotime($confirmedAt) !== false ? date('d/m/Y H:i', strtotime($confirmedAt)) : $confirmedAt;
                             $emailSent = trim((string) ($alert['confirmation_email_sent_at'] ?? '')) !== '';
                             ?>
-                            <article class="admin-alert-card rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm">
+                            <article class="admin-alert-card admin-alert-card-reenrollment rounded-xl border px-4 py-3 text-sm">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
-                                    <p class="font-semibold text-slate-800"><?= e((string) ($alert['student_name'] ?? 'Aluno')); ?></p>
-                                    <span class="rounded-full <?= $emailSent ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'; ?> px-2 py-1 text-[11px] font-semibold">
+                                    <p class="admin-alert-card-title font-semibold"><?= e((string) ($alert['student_name'] ?? 'Aluno')); ?></p>
+                                    <span class="admin-alert-reenrollment-badge <?= $emailSent ? 'admin-alert-reenrollment-badge-sent' : 'admin-alert-reenrollment-badge-pending'; ?>">
                                         <?= $emailSent ? 'E-mail enviado' : 'E-mail pendente'; ?>
                                     </span>
                                 </div>
-                                <p class="mt-1 text-xs text-slate-600">
+                                <p class="admin-alert-card-copy mt-1 text-xs">
                                     Periodo: <?= e($periodLabel); ?>
                                     | Confirmado em: <?= e($confirmedLabel); ?>
                                 </p>
-                                <p class="mt-1 text-[11px] text-slate-500">Aluno: <?= e((string) ($alert['student_email'] ?? '-')); ?></p>
+                                <p class="admin-alert-card-meta mt-1 text-[11px]">Aluno: <?= e((string) ($alert['student_email'] ?? '-')); ?></p>
                             </article>
                         <?php endforeach; ?>
                     </div>
