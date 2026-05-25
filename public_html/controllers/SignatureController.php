@@ -136,15 +136,9 @@ class SignatureController extends BaseController
         $title = trim((string) post('title'));
         $description = trim((string) post('description'));
         $file = $_FILES['contract_file'] ?? null;
-        $billingPlan = $this->collectBillingPlanFromPost();
 
         if ($studentId <= 0 || $title === '') {
             $this->error('Aluno e titulo do contrato sao obrigatorios.');
-            $this->redirect('signatures');
-        }
-
-        if (!$billingPlan['ok']) {
-            $this->error((string) $billingPlan['message']);
             $this->redirect('signatures');
         }
 
@@ -173,7 +167,10 @@ class SignatureController extends BaseController
             'signer_phone' => (string) ($student['phone'] ?? ''),
             'file_original_path' => $uploadedPath,
             'd4sign_safe_uuid' => $this->d4sign->safeUuid(),
-            'metadata' => $billingPlan['metadata'],
+            'metadata' => [
+                'financial_snapshot' => $this->buildFinancialSnapshot($student),
+                'financial_origin' => 'student_record',
+            ],
         ], (int) current_user()['id'], (int) (current_company_id() ?? 0));
 
         if ($requestId <= 0) {
@@ -495,63 +492,6 @@ class SignatureController extends BaseController
         return $compact;
     }
 
-    private function collectBillingPlanFromPost(): array
-    {
-        $qtyRaw = trim((string) post('billing_installments_qty', ''));
-        $amountRaw = trim((string) post('billing_installment_amount', ''));
-        $firstDueDate = trim((string) post('billing_first_due_date', ''));
-        $billingDayRaw = trim((string) post('billing_day', ''));
-        $reminderRaw = trim((string) post('billing_reminder_days', '3'));
-
-        $qty = $qtyRaw !== '' ? (int) $qtyRaw : 0;
-        $amount = $amountRaw !== '' ? parse_decimal($amountRaw) : 0.0;
-        $filled = $qtyRaw !== '' || $amountRaw !== '' || $firstDueDate !== '';
-
-        if (!$filled) {
-            return ['ok' => true, 'metadata' => []];
-        }
-
-        if ($qty <= 0) {
-            return ['ok' => false, 'message' => 'Informe a quantidade de parcelas do contrato.'];
-        }
-
-        if ($amount <= 0) {
-            return ['ok' => false, 'message' => 'Informe o valor da parcela para gerar o financeiro do contrato.'];
-        }
-
-        if (!$this->isValidDate($firstDueDate)) {
-            return ['ok' => false, 'message' => 'Informe um primeiro vencimento valido para o plano financeiro do contrato.'];
-        }
-
-        $billingDay = $billingDayRaw !== '' ? (int) $billingDayRaw : (int) date('d', strtotime($firstDueDate));
-        $billingDay = max(1, min(31, $billingDay));
-
-        $reminderDays = $reminderRaw !== '' ? (int) $reminderRaw : 3;
-        $reminderDays = max(0, min(30, $reminderDays));
-
-        return [
-            'ok' => true,
-            'metadata' => [
-                'billing_plan' => [
-                    'enabled' => true,
-                    'installments_qty' => $qty,
-                    'installment_amount' => round($amount, 2),
-                    'first_due_date' => $firstDueDate,
-                    'billing_day' => $billingDay,
-                    'reminder_days_before' => $reminderDays,
-                    'created_at' => now(),
-                ],
-                'billing_generation' => [
-                    'status' => 'pending',
-                    'created' => 0,
-                    'existing' => 0,
-                    'failed' => 0,
-                    'updated_at' => now(),
-                ],
-            ],
-        ];
-    }
-
     private function decodeMetadata(string $metadataJson): array
     {
         $decoded = json_decode($metadataJson, true);
@@ -560,228 +500,35 @@ class SignatureController extends BaseController
 
     private function processBillingGenerationOnSignedRequest(array $request, array $metadata, ?int $companyId, int $createdBy): array
     {
-        $plan = $metadata['billing_plan'] ?? null;
-        if (!is_array($plan) || empty($plan['enabled'])) {
-            return ['metadata' => $metadata, 'created' => 0, 'existing' => 0, 'failed' => 0];
-        }
-
-        $qty = max(0, (int) ($plan['installments_qty'] ?? 0));
-        $amount = (float) ($plan['installment_amount'] ?? 0);
-        $firstDueDate = trim((string) ($plan['first_due_date'] ?? ''));
-        $billingDay = max(1, min(31, (int) ($plan['billing_day'] ?? 0)));
-
-        if ($qty <= 0 || $amount <= 0 || !$this->isValidDate($firstDueDate)) {
-            $metadata['billing_generation'] = [
-                'status' => 'invalid_plan',
-                'created' => 0,
-                'existing' => 0,
-                'failed' => 0,
-                'updated_at' => now(),
-            ];
-            return ['metadata' => $metadata, 'created' => 0, 'existing' => 0, 'failed' => 0];
-        }
-
-        if ($billingDay <= 0) {
-            $billingDay = (int) date('d', strtotime($firstDueDate));
-        }
-
-        $effectiveCompanyId = (int) ($companyId ?? 0);
-        if ($effectiveCompanyId <= 0) {
-            $effectiveCompanyId = (int) ($request['company_id'] ?? 0);
-        }
-
-        if ($effectiveCompanyId <= 0) {
-            $metadata['billing_generation'] = [
-                'status' => 'missing_company',
-                'created' => 0,
-                'existing' => 0,
-                'failed' => $qty,
-                'updated_at' => now(),
-            ];
-            return ['metadata' => $metadata, 'created' => 0, 'existing' => 0, 'failed' => $qty];
-        }
-
-        $requestId = (int) ($request['id'] ?? 0);
-        $studentId = (int) ($request['student_id'] ?? 0);
-        if ($requestId <= 0 || $studentId <= 0) {
-            $metadata['billing_generation'] = [
-                'status' => 'missing_student_or_request',
-                'created' => 0,
-                'existing' => 0,
-                'failed' => $qty,
-                'updated_at' => now(),
-            ];
-            return ['metadata' => $metadata, 'created' => 0, 'existing' => 0, 'failed' => $qty];
-        }
-
-        $projectName = 'Contrato #' . $requestId;
-        $created = 0;
-        $existing = 0;
-        $failed = 0;
-
-        for ($installment = 1; $installment <= $qty; $installment++) {
-            $dueDate = $this->buildInstallmentDueDate($firstDueDate, $billingDay, $installment - 1);
-            if ($dueDate === null) {
-                $failed++;
-                continue;
-            }
-
-            $marker = sprintf('Contrato#%d Parcela %02d/%02d', $requestId, $installment, $qty);
-            $existingInvoiceId = $this->findInstallmentInvoice($effectiveCompanyId, $studentId, $projectName, $marker);
-            if ($existingInvoiceId > 0) {
-                $existing++;
-                continue;
-            }
-
-            $invoiceId = $this->createInstallmentInvoice(
-                $effectiveCompanyId,
-                $studentId,
-                $dueDate,
-                $amount,
-                $projectName,
-                $marker,
-                $createdBy
-            );
-
-            if ($invoiceId > 0) {
-                $created++;
-            } else {
-                $failed++;
-            }
-        }
-
-        $status = $failed > 0 ? 'partial' : 'generated';
-        if ($created === 0 && $existing === $qty) {
-            $status = 'already_generated';
-        }
-
         $metadata['billing_generation'] = [
-            'status' => $status,
-            'created' => $created,
-            'existing' => $existing,
-            'failed' => $failed,
-            'requested_installments' => $qty,
-            'generated_at' => ($created > 0 || $existing === $qty) ? now() : null,
+            'status' => 'disabled_in_signatures',
+            'created' => 0,
+            'existing' => 0,
+            'failed' => 0,
+            'requested_installments' => 0,
+            'generated_at' => null,
             'updated_at' => now(),
+            'message' => 'A geracao financeira por assinaturas foi desativada. O plano deve ser controlado apenas no cadastro do aluno.',
         ];
 
         return [
             'metadata' => $metadata,
-            'created' => $created,
-            'existing' => $existing,
-            'failed' => $failed,
+            'created' => 0,
+            'existing' => 0,
+            'failed' => 0,
         ];
     }
 
-    private function buildInstallmentDueDate(string $firstDueDate, int $billingDay, int $monthOffset): ?string
+    private function buildFinancialSnapshot(array $student): array
     {
-        try {
-            $baseDate = new DateTime($firstDueDate);
-            $targetMonth = (clone $baseDate)->modify('first day of +' . $monthOffset . ' month');
-            $lastDay = (int) $targetMonth->format('t');
-            $day = max(1, min($billingDay, $lastDay));
-
-            return $targetMonth->format('Y-m-') . str_pad((string) $day, 2, '0', STR_PAD_LEFT);
-        } catch (Throwable $e) {
-            return null;
-        }
-    }
-
-    private function findInstallmentInvoice(int $companyId, int $studentId, string $projectName, string $marker): int
-    {
-        $stmt = $this->db->prepare('SELECT id
-            FROM invoices
-            WHERE company_id = :company_id
-              AND student_id = :student_id
-              AND project_name = :project_name
-              AND tags LIKE :marker
-            LIMIT 1');
-        $stmt->execute([
-            ':company_id' => $companyId,
-            ':student_id' => $studentId,
-            ':project_name' => $projectName,
-            ':marker' => '%' . $marker . '%',
-        ]);
-
-        $value = $stmt->fetchColumn();
-        return $value !== false ? (int) $value : 0;
-    }
-
-    private function createInstallmentInvoice(
-        int $companyId,
-        int $studentId,
-        string $dueDate,
-        float $amount,
-        string $projectName,
-        string $marker,
-        int $createdBy
-    ): int {
-        try {
-            $stmt = $this->db->prepare('INSERT INTO invoices (
-                invoice_number, company_id, student_id, due_date, amount, tax_amount, paid_amount,
-                paid_at, status, tags, project_name, boleto_url, is_recurring, recurrence_interval,
-                created_by, created_at, updated_at
-            ) VALUES (
-                :invoice_number, :company_id, :student_id, :due_date, :amount, 0, 0,
-                NULL, :status, :tags, :project_name, NULL, 0, :recurrence_interval,
-                :created_by, :created_at, :updated_at
-            )');
-
-            $now = now();
-            $stmt->execute([
-                ':invoice_number' => 'DRAFT',
-                ':company_id' => $companyId,
-                ':student_id' => $studentId,
-                ':due_date' => $dueDate,
-                ':amount' => $amount,
-                ':status' => 'open',
-                ':tags' => 'Mensalidade,' . $marker,
-                ':project_name' => $projectName,
-                ':recurrence_interval' => 'monthly',
-                ':created_by' => $createdBy > 0 ? $createdBy : null,
-                ':created_at' => $now,
-                ':updated_at' => $now,
-            ]);
-
-            $invoiceId = (int) $this->db->lastInsertId();
-            if ($invoiceId <= 0) {
-                return 0;
-            }
-
-            $update = $this->db->prepare('UPDATE invoices
-                SET invoice_number = :invoice_number
-                WHERE id = :id
-                  AND company_id = :company_id');
-            $update->execute([
-                ':invoice_number' => $this->generateInvoiceNumber($invoiceId),
-                ':id' => $invoiceId,
-                ':company_id' => $companyId,
-            ]);
-
-            return $invoiceId;
-        } catch (Throwable $e) {
-            return 0;
-        }
-    }
-
-    private function generateInvoiceNumber(int $id): string
-    {
-        return sprintf('FATURA-%06d-%s', $id, date('y'));
-    }
-
-    private function isValidDate(string $date): bool
-    {
-        $date = trim($date);
-        if ($date === '') {
-            return false;
-        }
-
-        $parsed = DateTime::createFromFormat('Y-m-d', $date);
-        if (!$parsed) {
-            return false;
-        }
-
-        return $parsed->format('Y-m-d') === $date;
+        return [
+            'monthly_fee' => round((float) ($student['monthly_fee'] ?? 0), 2),
+            'billing_day' => (int) ($student['billing_day'] ?? 0),
+            'financial_plan_installments' => (int) ($student['financial_plan_installments'] ?? 0),
+            'financial_plan_first_due_date' => trim((string) ($student['financial_plan_first_due_date'] ?? '')),
+            'financial_plan_generated_at' => trim((string) ($student['financial_plan_generated_at'] ?? '')),
+            'captured_at' => now(),
+        ];
     }
 
     private function handleOriginalContractUpload(int $studentId, $file): ?string

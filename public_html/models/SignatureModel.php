@@ -15,21 +15,34 @@ class SignatureModel extends BaseModel
     public function studentsForSelection(?int $companyId = null): array
     {
         $companyId = $this->normalizeCompanyId($companyId);
+        $select = 'id, full_name, email_primary, phone, rg';
+
+        foreach ([
+            'monthly_fee',
+            'billing_day',
+            'financial_plan_installments',
+            'financial_plan_first_due_date',
+            'financial_plan_generated_at',
+        ] as $column) {
+            if ($this->schemaColumnExists('students', $column)) {
+                $select .= ', ' . $column;
+            }
+        }
 
         if ($companyId > 0) {
-            $stmt = $this->db->prepare('SELECT id, full_name, email_primary, phone, rg
+            $stmt = $this->db->prepare("SELECT {$select}
                 FROM students
                 WHERE is_active = 1
                   AND company_id = :company_id
-                ORDER BY full_name ASC');
+                ORDER BY full_name ASC");
             $stmt->execute([':company_id' => $companyId]);
             return $stmt->fetchAll();
         }
 
-        $stmt = $this->db->query('SELECT id, full_name, email_primary, phone, rg
+        $stmt = $this->db->query("SELECT {$select}
             FROM students
             WHERE is_active = 1
-            ORDER BY full_name ASC');
+            ORDER BY full_name ASC");
         return $stmt->fetchAll();
     }
 

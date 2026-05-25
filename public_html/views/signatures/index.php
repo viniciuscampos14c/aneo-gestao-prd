@@ -87,16 +87,26 @@ $d4signStatusLabels = [
     <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900">
         A configuracao do D4Sign e do webhook agora fica em <strong>Cadastro &gt; Empresas</strong>, junto das demais credenciais da empresa ativa.
     </div>
+    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        O plano financeiro do contrato agora fica <strong>somente para consulta</strong> nesta tela. A geracao e manutencao das parcelas deve acontecer apenas no <strong>cadastro do aluno</strong>.
+    </div>
 
     <?php if ($canCreate): ?>
         <form method="post" action="<?= route('signatures/store'); ?>" enctype="multipart/form-data" class="signatures-create-form grid gap-3 rounded-xl border border-slate-200 bg-white p-4 lg:grid-cols-5">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <label class="block lg:col-span-2">
                 <span class="mb-1 block text-sm font-medium">Aluno *</span>
-                <select name="student_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <select id="signature-student-select" name="student_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecione</option>
                     <?php foreach ($students as $student): ?>
-                        <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?><?= !empty($student['email_primary']) ? ' - ' . e($student['email_primary']) : ''; ?></option>
+                        <option
+                            value="<?= (int) $student['id']; ?>"
+                            data-monthly-fee="<?= e(number_format((float) ($student['monthly_fee'] ?? 0), 2, ',', '.')); ?>"
+                            data-installments="<?= (int) ($student['financial_plan_installments'] ?? 0); ?>"
+                            data-first-due-date="<?= e((string) ($student['financial_plan_first_due_date'] ?? '')); ?>"
+                            data-billing-day="<?= e((string) ($student['billing_day'] ?? '')); ?>"
+                            data-generated-at="<?= e((string) ($student['financial_plan_generated_at'] ?? '')); ?>"
+                        ><?= e($student['full_name']); ?><?= !empty($student['email_primary']) ? ' - ' . e($student['email_primary']) : ''; ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -112,26 +122,34 @@ $d4signStatusLabels = [
                 <span class="mb-1 block text-sm font-medium">Descricao</span>
                 <input type="text" name="description" placeholder="Observacoes internas do contrato" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
-            <label class="block">
-                <span class="mb-1 block text-sm font-medium">Parcelas</span>
-                <input type="number" min="0" name="billing_installments_qty" placeholder="Ex: 20" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            </label>
-            <label class="block">
-                <span class="mb-1 block text-sm font-medium">Valor da parcela</span>
-                <input type="text" name="billing_installment_amount" placeholder="Ex: 350,00" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            </label>
-            <label class="block">
-                <span class="mb-1 block text-sm font-medium">Primeiro vencimento</span>
-                <input type="date" name="billing_first_due_date" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            </label>
-            <label class="block">
-                <span class="mb-1 block text-sm font-medium">Dia vencimento</span>
-                <input type="number" min="1" max="31" name="billing_day" placeholder="1-31" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            </label>
-            <label class="block">
-                <span class="mb-1 block text-sm font-medium">Lembrete (dias)</span>
-                <input type="number" min="0" max="30" name="billing_reminder_days" value="3" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            </label>
+            <div class="lg:col-span-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-900">Plano financeiro do aluno</h3>
+                        <p class="text-xs text-slate-500">Consulta rapida para conferencia antes do envio. Edicoes devem ser feitas no cadastro do aluno.</p>
+                    </div>
+                    <span id="signature-financial-status" class="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">Selecione um aluno</span>
+                </div>
+                <div class="grid gap-3 md:grid-cols-4">
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Parcelas</span>
+                        <input id="signature-financial-installments" type="text" value="-" readonly class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Valor da parcela</span>
+                        <input id="signature-financial-amount" type="text" value="-" readonly class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Primeiro vencimento</span>
+                        <input id="signature-financial-first-due-date" type="text" value="-" readonly class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium">Dia vencimento</span>
+                        <input id="signature-financial-billing-day" type="text" value="-" readonly class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                    </label>
+                </div>
+                <p id="signature-financial-generated-at" class="mt-3 text-xs text-slate-500">Geracao do financeiro: nao informada.</p>
+            </div>
             <div class="flex items-end">
                 <button class="signatures-create-btn w-full rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Criar solicitacao</button>
             </div>
@@ -291,3 +309,70 @@ $d4signStatusLabels = [
         </div>
     <?php endif; ?>
 </section>
+<?php if ($canCreate): ?>
+<script>
+(() => {
+    const select = document.getElementById('signature-student-select');
+    if (!select) return;
+
+    const fields = {
+        installments: document.getElementById('signature-financial-installments'),
+        amount: document.getElementById('signature-financial-amount'),
+        firstDueDate: document.getElementById('signature-financial-first-due-date'),
+        billingDay: document.getElementById('signature-financial-billing-day'),
+        generatedAt: document.getElementById('signature-financial-generated-at'),
+        status: document.getElementById('signature-financial-status')
+    };
+
+    const fallback = () => {
+        fields.installments.value = '-';
+        fields.amount.value = '-';
+        fields.firstDueDate.value = '-';
+        fields.billingDay.value = '-';
+        fields.generatedAt.textContent = 'Geracao do financeiro: nao informada.';
+        fields.status.textContent = 'Selecione um aluno';
+        fields.status.className = 'rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700';
+    };
+
+    const formatDate = (raw) => {
+        if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return '-';
+        const [year, month, day] = raw.split('-');
+        return `${day}/${month}/${year}`;
+    };
+
+    const update = () => {
+        const option = select.options[select.selectedIndex];
+        if (!option || !option.value) {
+            fallback();
+            return;
+        }
+
+        const installments = option.dataset.installments || '';
+        const amount = option.dataset.monthlyFee || '';
+        const firstDueDate = option.dataset.firstDueDate || '';
+        const billingDay = option.dataset.billingDay || '';
+        const generatedAt = option.dataset.generatedAt || '';
+        const hasPlan = installments !== '' && installments !== '0' && amount !== '' && amount !== '0,00';
+
+        fields.installments.value = hasPlan ? installments : '-';
+        fields.amount.value = hasPlan ? amount : '-';
+        fields.firstDueDate.value = firstDueDate !== '' ? formatDate(firstDueDate) : '-';
+        fields.billingDay.value = billingDay !== '' && billingDay !== '0' ? billingDay : '-';
+        fields.generatedAt.textContent = generatedAt !== ''
+            ? `Geracao do financeiro: ${generatedAt}`
+            : 'Geracao do financeiro: ainda nao registrada.';
+
+        if (hasPlan) {
+            fields.status.textContent = 'Plano financeiro encontrado';
+            fields.status.className = 'rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700';
+        } else {
+            fields.status.textContent = 'Aluno sem plano configurado';
+            fields.status.className = 'rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700';
+        }
+    };
+
+    fallback();
+    select.addEventListener('change', update);
+})();
+</script>
+<?php endif; ?>
