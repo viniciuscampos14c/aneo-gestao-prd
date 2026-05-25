@@ -131,7 +131,13 @@ $exportQuery = http_build_query([
         </div>
     </div>
 
-    <div class="finance-table-wrap overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div class="finance-scroll-shell space-y-2">
+        <div class="finance-scroll-proxy-wrap" data-horizontal-scroll-proxy-wrap>
+            <div class="finance-scroll-proxy" data-horizontal-scroll-proxy>
+                <div data-horizontal-scroll-proxy-content></div>
+            </div>
+        </div>
+        <div class="finance-table-wrap overflow-x-auto rounded-xl border border-slate-200 bg-white" data-horizontal-scroll-area>
         <table class="finance-table min-w-full text-sm">
             <thead>
                 <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -387,6 +393,7 @@ $exportQuery = http_build_query([
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">

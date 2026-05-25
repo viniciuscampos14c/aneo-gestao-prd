@@ -1711,6 +1711,23 @@ html.admin-theme-light .admin-alert-card-payable-upcoming .admin-alert-payable-b
     box-shadow: inset 0 1px 0 rgba(166, 213, 246, 0.08);
 }
 
+.admin-modern-main .finance-scroll-proxy-wrap {
+    border: 1px solid rgba(121, 168, 206, 0.24);
+    border-radius: 0.85rem;
+    background: rgba(9, 30, 49, 0.72);
+    padding: 0.35rem 0.5rem;
+}
+
+.admin-modern-main .finance-scroll-proxy {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 12px;
+}
+
+.admin-modern-main .finance-scroll-proxy > div {
+    height: 1px;
+}
+
 .admin-modern-main .finance-table thead tr {
     border-color: rgba(118, 164, 199, 0.34) !important;
     background: rgba(9, 30, 49, 0.68) !important;
@@ -3828,6 +3845,11 @@ html.admin-theme-light .admin-modern-main .finance-card-nfe p[class*="text-indig
 html.admin-theme-light .admin-modern-main .finance-table-wrap {
     border-color: rgba(125, 166, 202, 0.5) !important;
     background: rgba(238, 246, 254, 0.96) !important;
+}
+
+html.admin-theme-light .admin-modern-main .finance-scroll-proxy-wrap {
+    border-color: rgba(125, 166, 202, 0.44);
+    background: rgba(231, 241, 250, 0.92);
 }
 
 html.admin-theme-light .admin-modern-main .finance-table thead tr {

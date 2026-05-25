@@ -267,6 +267,52 @@
         chevronSelector: '[data-cadastro-chevron]',
     });
 
+    const wireHorizontalScrollProxy = () => {
+        const shells = document.querySelectorAll('.finance-scroll-shell');
+        shells.forEach((shell) => {
+            const scrollArea = shell.querySelector('[data-horizontal-scroll-area]');
+            const proxy = shell.querySelector('[data-horizontal-scroll-proxy]');
+            const proxyContent = shell.querySelector('[data-horizontal-scroll-proxy-content]');
+            if (!scrollArea || !proxy || !proxyContent) {
+                return;
+            }
+
+            const table = scrollArea.querySelector('table');
+            if (!table) {
+                proxy.style.display = 'none';
+                return;
+            }
+
+            let syncing = false;
+
+            const refresh = () => {
+                const contentWidth = Math.ceil(table.scrollWidth);
+                const viewportWidth = Math.ceil(scrollArea.clientWidth);
+                proxyContent.style.width = `${contentWidth}px`;
+                proxy.style.display = contentWidth > viewportWidth ? 'block' : 'none';
+            };
+
+            proxy.addEventListener('scroll', () => {
+                if (syncing) return;
+                syncing = true;
+                scrollArea.scrollLeft = proxy.scrollLeft;
+                syncing = false;
+            });
+
+            scrollArea.addEventListener('scroll', () => {
+                if (syncing) return;
+                syncing = true;
+                proxy.scrollLeft = scrollArea.scrollLeft;
+                syncing = false;
+            });
+
+            refresh();
+            window.addEventListener('resize', refresh);
+        });
+    };
+
+    wireHorizontalScrollProxy();
+
     const cards = document.querySelectorAll('[data-student-card]');
     const zones = document.querySelectorAll('[data-dropzone]');
 
