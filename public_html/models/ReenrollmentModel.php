@@ -12,10 +12,15 @@ class ReenrollmentModel extends BaseModel
 
     public function tableExists(): bool
     {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_schema = DATABASE() AND table_name = 'reenrollments'");
-        $stmt->execute();
-        return ((int) $stmt->fetchColumn()) > 0;
+        return $this->schemaTableExists('reenrollments');
+    }
+
+    public function adminControlAvailable(): bool
+    {
+        return $this->tableExists()
+            && $this->schemaColumnExists('reenrollments', 'admin_viewed_at')
+            && $this->schemaColumnExists('reenrollments', 'confirmation_email_sent_at')
+            && $this->schemaColumnExists('reenrollments', 'confirmation_email_error');
     }
 
     // -------------------------------------------------------------------------
@@ -126,10 +131,10 @@ class ReenrollmentModel extends BaseModel
     /**
      * Confirma a rematrícula do aluno e cria o próximo período.
      */
-    public function confirm(int $studentId, int $companyId, string $ip): bool
+    public function confirm(int $studentId, int $companyId, string $ip): int
     {
         if (!$this->tableExists()) {
-            return false;
+            return 0;
         }
 
         $now    = now();
@@ -137,7 +142,7 @@ class ReenrollmentModel extends BaseModel
         $period = $this->getPendingPeriod($studentId);
 
         if ($period === []) {
-            return false;
+            return 0;
         }
 
         $periodStart = $period['period_start'];
@@ -159,12 +164,13 @@ class ReenrollmentModel extends BaseModel
                  SET confirmed_at = :now, confirmed_ip = :ip, updated_at = :upd
                  WHERE id = :id"
             );
-            return $upd->execute([
+            $ok = $upd->execute([
                 ':now' => $now,
                 ':ip'  => $ip,
                 ':upd' => $now,
                 ':id'  => (int) $existing['id'],
             ]);
+            return $ok ? (int) $existing['id'] : 0;
         }
 
         // Cria novo registro já confirmado
@@ -174,7 +180,7 @@ class ReenrollmentModel extends BaseModel
              VALUES
                 (:sid, :cid, :pstart, :pend, :now, :ip, :cat, :uat)"
         );
-        return $ins->execute([
+        $ok = $ins->execute([
             ':sid'    => $studentId,
             ':cid'    => $companyId,
             ':pstart' => $periodStart,
@@ -183,6 +189,125 @@ class ReenrollmentModel extends BaseModel
             ':ip'     => $ip,
             ':cat'    => $now,
             ':uat'    => $now,
+        ]);
+        return $ok ? (int) $this->db->lastInsertId() : 0;
+    }
+
+    public function markConfirmationEmail(int $reenrollmentId, bool $sent, string $error = ''): void
+    {
+        if (!$this->adminControlAvailable() || $reenrollmentId <= 0) {
+            return;
+        }
+
+        $stmt = $this->db->prepare('UPDATE reenrollments
+            SET confirmation_email_sent_at = :sent_at,
+                confirmation_email_error = :error,
+                updated_at = :updated_at
+            WHERE id = :id');
+        $stmt->execute([
+            ':sent_at' => $sent ? now() : null,
+            ':error' => $error !== '' ? $error : null,
+            ':updated_at' => now(),
+            ':id' => $reenrollmentId,
+        ]);
+    }
+
+    public function latestConfirmedAlerts(int $companyId, int $limit = 5): array
+    {
+        if (!$this->adminControlAvailable() || $companyId <= 0) {
+            return [];
+        }
+
+        $limit = max(1, min(20, $limit));
+        $stmt = $this->db->prepare("SELECT
+                r.*,
+                s.full_name AS student_name,
+                s.email_primary AS student_email
+            FROM reenrollments r
+            INNER JOIN students s ON s.id = r.student_id
+            WHERE r.company_id = :company_id
+              AND r.confirmed_at IS NOT NULL
+              AND r.admin_viewed_at IS NULL
+            ORDER BY r.confirmed_at DESC, r.id DESC
+            LIMIT {$limit}");
+        $stmt->execute([':company_id' => $companyId]);
+        return $stmt->fetchAll();
+    }
+
+    public function countUnviewedConfirmed(int $companyId): int
+    {
+        if (!$this->adminControlAvailable() || $companyId <= 0) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare('SELECT COUNT(*)
+            FROM reenrollments
+            WHERE company_id = :company_id
+              AND confirmed_at IS NOT NULL
+              AND admin_viewed_at IS NULL');
+        $stmt->execute([':company_id' => $companyId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function confirmedList(int $companyId, array $filters, int $perPage, int $page): array
+    {
+        if (!$this->tableExists() || $companyId <= 0) {
+            return ['rows' => [], 'meta' => pagination_meta(0, $perPage, 1)];
+        }
+
+        $where = ['r.company_id = :company_id', 'r.confirmed_at IS NOT NULL'];
+        $params = [':company_id' => $companyId];
+
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(s.full_name LIKE :q OR s.email_primary LIKE :q)';
+            $params[':q'] = '%' . $q . '%';
+        }
+
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $where[] = 'DATE(r.confirmed_at) BETWEEN :start_date AND :end_date';
+            $params[':start_date'] = (string) $filters['start_date'];
+            $params[':end_date'] = (string) $filters['end_date'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+        $emailFields = $this->adminControlAvailable()
+            ? 'r.admin_viewed_at, r.confirmation_email_sent_at, r.confirmation_email_error'
+            : 'NULL AS admin_viewed_at, NULL AS confirmation_email_sent_at, NULL AS confirmation_email_error';
+
+        return $this->paginate(
+            "SELECT COUNT(*)
+                FROM reenrollments r
+                INNER JOIN students s ON s.id = r.student_id
+                WHERE {$whereSql}",
+            "SELECT r.id, r.student_id, r.company_id, r.period_start, r.period_end, r.confirmed_at, r.confirmed_ip, {$emailFields},
+                    s.full_name AS student_name, s.email_primary AS student_email
+                FROM reenrollments r
+                INNER JOIN students s ON s.id = r.student_id
+                WHERE {$whereSql}
+                ORDER BY r.confirmed_at DESC, r.id DESC",
+            $params,
+            $perPage,
+            $page
+        );
+    }
+
+    public function markConfirmedViewed(int $companyId): void
+    {
+        if (!$this->adminControlAvailable() || $companyId <= 0) {
+            return;
+        }
+
+        $stmt = $this->db->prepare('UPDATE reenrollments
+            SET admin_viewed_at = :viewed_at,
+                updated_at = :updated_at
+            WHERE company_id = :company_id
+              AND confirmed_at IS NOT NULL
+              AND admin_viewed_at IS NULL');
+        $stmt->execute([
+            ':viewed_at' => now(),
+            ':updated_at' => now(),
+            ':company_id' => $companyId,
         ]);
     }
 

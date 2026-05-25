@@ -38,6 +38,7 @@ $menu = [
     ['module' => $isProfessor ? 'students' : 'dashboard', 'label' => $isProfessor ? 'Inicio' : 'Dashboard', 'icon' => 'chart-bar', 'route' => $isProfessor ? 'students' : 'dashboard'],
     ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students', 'hide_for_professor' => true],
+    ['module' => 'students', 'label' => 'Rematrículas', 'icon' => 'document-check', 'route' => 'students/reenrollments', 'hide_for_professor' => true],
     ['module' => 'student_schedule', 'label' => 'Escala Aluno', 'icon' => 'calendar-days', 'route' => 'escala-aluno'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
     ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot'],
@@ -140,6 +141,8 @@ $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNe
 $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
 $exchangeAlerts = isset($exchangeAlerts) && is_array($exchangeAlerts) ? $exchangeAlerts : [];
 $exchangeAlertCount = (int) ($exchangeAlertCount ?? count($exchangeAlerts));
+$reenrollmentAlerts = isset($reenrollmentAlerts) && is_array($reenrollmentAlerts) ? $reenrollmentAlerts : [];
+$reenrollmentAlertCount = (int) ($reenrollmentAlertCount ?? count($reenrollmentAlerts));
 $payableDueAlerts = isset($payableDueAlerts) && is_array($payableDueAlerts) ? $payableDueAlerts : [];
 $payableDueAlertCount = (int) ($payableDueAlertCount ?? count($payableDueAlerts));
 
@@ -147,11 +150,13 @@ if ($isProfessor) {
     // Professor externo nao deve receber alertas financeiros/administrativos.
     $mobileNegotiationAlerts = [];
     $mobileNegotiationAlertCount = 0;
+    $reenrollmentAlerts = [];
+    $reenrollmentAlertCount = 0;
     $payableDueAlerts = [];
     $payableDueAlertCount = 0;
 }
 
-$adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount + $payableDueAlertCount;
+$adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount + $reenrollmentAlertCount + $payableDueAlertCount;
 $adminAlertKeys = [];
 foreach ($mobileNegotiationAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
@@ -165,6 +170,12 @@ foreach ($exchangeAlerts as $alert) {
         $adminAlertKeys[] = 'exchange-request-' . $id;
     }
 }
+foreach ($reenrollmentAlerts as $alert) {
+    $id = (int) ($alert['id'] ?? 0);
+    if ($id > 0) {
+        $adminAlertKeys[] = 'reenrollment-confirmed-' . $id;
+    }
+}
 foreach ($payableDueAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
     if ($id > 0) {
@@ -173,6 +184,7 @@ foreach ($payableDueAlerts as $alert) {
 }
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 $exchangeQueueRoute = route('exchange&status=pending');
+$reenrollmentQueueRoute = route('students/reenrollments');
 $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('Y-m-d') . '&end_date=' . date('Y-m-d', strtotime('+7 days')));
 ?>
 <div class="admin-modern-shell flex min-h-screen">
@@ -317,7 +329,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                 </a>
                 <button type="button"
                         data-mobile-neg-trigger
-                        data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : ($payableDueAlertCount > 0 ? $payableQueueRoute : $mobileQueueRoute)); ?>"
+                        data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : ($reenrollmentAlertCount > 0 ? $reenrollmentQueueRoute : ($payableDueAlertCount > 0 ? $payableQueueRoute : $mobileQueueRoute))); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
                         title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificacoes administrativas'; ?>">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
@@ -366,7 +378,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
     </div>
 </div>
 
-<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== [] || $payableDueAlerts !== []): ?>
+<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== [] || $reenrollmentAlerts !== [] || $payableDueAlerts !== []): ?>
     <div id="mobile-negotiation-modal" data-alert-keys="<?= e(json_encode($adminAlertKeys)); ?>" class="admin-alert-overlay fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
         <div class="admin-alert-modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-xl">
             <div class="admin-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -403,6 +415,41 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                                     <?php endif; ?>
                                 </p>
                                 <p class="admin-alert-card-meta mt-1 text-[11px]">Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?></p>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($reenrollmentAlerts !== []): ?>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-slate-800">Rematriculas confirmadas</h4>
+                            <span class="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700"><?= (int) $reenrollmentAlertCount; ?> nova(s)</span>
+                        </div>
+                        <?php foreach ($reenrollmentAlerts as $alert): ?>
+                            <?php
+                            $periodStart = trim((string) ($alert['period_start'] ?? ''));
+                            $periodEnd = trim((string) ($alert['period_end'] ?? ''));
+                            $periodLabel = '-';
+                            if ($periodStart !== '' && $periodEnd !== '' && strtotime($periodStart) !== false && strtotime($periodEnd) !== false) {
+                                $periodLabel = date('d/m/Y', strtotime($periodStart)) . ' ate ' . date('d/m/Y', strtotime($periodEnd));
+                            }
+                            $confirmedAt = trim((string) ($alert['confirmed_at'] ?? ''));
+                            $confirmedLabel = $confirmedAt !== '' && strtotime($confirmedAt) !== false ? date('d/m/Y H:i', strtotime($confirmedAt)) : $confirmedAt;
+                            $emailSent = trim((string) ($alert['confirmation_email_sent_at'] ?? '')) !== '';
+                            ?>
+                            <article class="admin-alert-card rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <p class="font-semibold text-slate-800"><?= e((string) ($alert['student_name'] ?? 'Aluno')); ?></p>
+                                    <span class="rounded-full <?= $emailSent ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'; ?> px-2 py-1 text-[11px] font-semibold">
+                                        <?= $emailSent ? 'E-mail enviado' : 'E-mail pendente'; ?>
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-xs text-slate-600">
+                                    Periodo: <?= e($periodLabel); ?>
+                                    | Confirmado em: <?= e($confirmedLabel); ?>
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-500">Aluno: <?= e((string) ($alert['student_email'] ?? '-')); ?></p>
                             </article>
                         <?php endforeach; ?>
                     </div>
@@ -477,6 +524,9 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                 <?php if ($exchangeAlerts !== []): ?>
                     <a href="<?= e($exchangeQueueRoute); ?>" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Abrir intercambios</a>
                 <?php endif; ?>
+                <?php if ($reenrollmentAlerts !== []): ?>
+                    <a href="<?= e($reenrollmentQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Abrir rematriculas</a>
+                <?php endif; ?>
                 <?php if ($payableDueAlerts !== []): ?>
                     <a href="<?= e($payableQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100">Abrir contas a pagar</a>
                 <?php endif; ?>
@@ -489,7 +539,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
 <?php endif; ?>
 
 <script src="assets/js/app.js?v=<?= e($appJsVersion); ?>"></script>
-<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== [] || $payableDueAlerts !== []): ?>
+<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== [] || $reenrollmentAlerts !== [] || $payableDueAlerts !== []): ?>
     <script>
         (function () {
             const modal = document.getElementById('mobile-negotiation-modal');
@@ -509,8 +559,9 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
             const currentRoute = params.get('route') || '';
             const isQueueRoute = currentRoute === 'requests' && params.get('mobile_flow') === '1';
             const isExchangeRoute = currentRoute === 'exchange';
+            const isReenrollmentRoute = currentRoute === 'students/reenrollments';
             const isDashboardRoute = currentRoute === 'dashboard' || currentRoute === '';
-            if (isQueueRoute || isExchangeRoute) return;
+            if (isQueueRoute || isExchangeRoute || isReenrollmentRoute) return;
 
             const seenKey = (key) => 'aneo_admin_alert_seen_' + key;
             const autoShownKey = (key) => 'aneo_admin_alert_autoshown_' + key;

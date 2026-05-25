@@ -130,6 +130,7 @@ $router->post('ai-chat/session', fn () => $adminAi->createSession());
 $router->post('ai-chat/ask', fn () => $adminAi->ask());
 
 $router->get('students', fn () => $students->index());
+$router->get('students/reenrollments', fn () => $students->reenrollments());
 $router->get('students/create', fn () => $students->create());
 $router->post('students/store', fn () => $students->store());
 $router->get('students/show', fn () => $students->show());

@@ -1231,14 +1231,88 @@ class StudentPortalController extends BaseController
         }
 
         $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-        $ok = $this->reenrollment->confirm($studentId, $companyId, $ip);
+        $period = $this->reenrollment->getPendingPeriod($studentId);
+        $reenrollmentId = $this->reenrollment->confirm($studentId, $companyId, $ip);
 
-        if ($ok) {
+        if ($reenrollmentId > 0) {
+            $this->sendReenrollmentConfirmationEmail($student, $reenrollmentId, $period);
             flash('success', 'Rematrícula confirmada com sucesso! Bem-vindo(a) ao novo período.');
         } else {
             flash('error', 'Não foi possível confirmar a rematrícula. Tente novamente ou contate o administrativo.');
         }
 
         $this->redirect('student/dashboard');
+    }
+
+    private function sendReenrollmentConfirmationEmail(array $student, int $reenrollmentId, array $period): void
+    {
+        $studentEmail = trim((string) ($student['email'] ?? ''));
+        if ($studentEmail === '' || !filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->reenrollment->markConfirmationEmail($reenrollmentId, false, 'Aluno sem e-mail valido.');
+            return;
+        }
+
+        $periodStart = trim((string) ($period['period_start'] ?? ''));
+        $periodEnd = trim((string) ($period['period_end'] ?? ''));
+
+        $body = $this->renderReenrollmentEmailTemplate([
+            'studentName' => trim((string) ($student['name'] ?? 'Aluno')),
+            'companyName' => $this->currentCompanyNameForStudent(),
+            'periodStartLabel' => $periodStart !== '' && strtotime($periodStart) !== false ? date('d/m/Y', strtotime($periodStart)) : '-',
+            'periodEndLabel' => $periodEnd !== '' && strtotime($periodEnd) !== false ? date('d/m/Y', strtotime($periodEnd)) : '-',
+            'confirmedAtLabel' => date('d/m/Y H:i'),
+            'portalUrl' => $this->absoluteUrl(route('student/dashboard')),
+        ]);
+
+        $result = $this->emails->send($studentEmail, 'Confirmacao de rematricula | ANEO', $body, [
+            'company_id' => (int) ($student['company_id'] ?? 0),
+            'is_html' => true,
+        ]);
+
+        $this->reenrollment->markConfirmationEmail(
+            $reenrollmentId,
+            !empty($result['ok']),
+            !empty($result['ok']) ? '' : (string) ($result['message'] ?? 'Falha ao enviar e-mail.')
+        );
+    }
+
+    private function renderReenrollmentEmailTemplate(array $vars): string
+    {
+        $publicUrl = rtrim((string) config('app.public_url', ''), '/');
+        if ($publicUrl === '') {
+            $publicUrl = rtrim((string) config('app.base_url', ''), '/');
+        }
+        if ($publicUrl === '') {
+            $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            if ($host !== '') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $publicUrl = $scheme . '://' . $host;
+            }
+        }
+
+        $vars['logoUrl'] = $publicUrl !== '' ? $publicUrl . '/assets/img/logo_aneo.png' : '';
+
+        ob_start();
+        extract($vars, EXTR_SKIP);
+        include __DIR__ . '/../views/email/reenrollment_confirmation.php';
+        return (string) ob_get_clean();
+    }
+
+    private function currentCompanyNameForStudent(): string
+    {
+        $company = current_company();
+        if (is_array($company)) {
+            $tradeName = trim((string) ($company['trade_name'] ?? ''));
+            if ($tradeName !== '') {
+                return $tradeName;
+            }
+
+            $legalName = trim((string) ($company['legal_name'] ?? ''));
+            if ($legalName !== '') {
+                return $legalName;
+            }
+        }
+
+        return (string) config('app.name', 'ANEO');
     }
 }

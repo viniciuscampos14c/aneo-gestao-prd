@@ -4,11 +4,13 @@ class StudentController extends BaseController
 {
     private StudentModel $students;
     private FinanceModel $finance;
+    private ReenrollmentModel $reenrollments;
 
     public function __construct()
     {
         $this->students = new StudentModel();
         $this->finance = new FinanceModel();
+        $this->reenrollments = new ReenrollmentModel();
     }
 
     public function index(): void
@@ -64,6 +66,36 @@ class StudentController extends BaseController
             'documents' => $this->students->documents($id),
             'financeHistory' => $this->students->financialHistory($id),
             'kanbanHistory' => $this->students->kanbanHistory($id),
+        ]);
+    }
+
+    public function reenrollments(): void
+    {
+        require_auth();
+        require_permission('students');
+
+        $companyId = (int) (current_company_id() ?? 0);
+        $filters = [
+            'q' => trim((string) request('q', '')),
+            'start_date' => trim((string) request('start_date', date('Y-m-01'))),
+            'end_date' => trim((string) request('end_date', date('Y-m-t'))),
+        ];
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+        $result = $this->reenrollments->confirmedList($companyId, $filters, $perPage, $page);
+        $this->reenrollments->markConfirmedViewed($companyId);
+
+        $this->render('students/reenrollments', [
+            'title' => 'Controle de Rematriculas',
+            'filters' => $filters,
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+            'adminControlAvailable' => $this->reenrollments->adminControlAvailable(),
         ]);
     }
 

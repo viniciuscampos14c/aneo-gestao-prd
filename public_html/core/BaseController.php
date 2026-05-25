@@ -26,12 +26,17 @@ abstract class BaseController
                 }
                 if (has_permission('students')) {
                     $exchange = new StudentExchangeModel();
+                    $reenrollment = new ReenrollmentModel();
                     $companyId = (int) (current_company_id() ?? 0);
                     $data['exchangeAlerts'] = $exchange->latestPendingAlerts($companyId, 5);
                     $data['exchangeAlertCount'] = $exchange->countPendingAlerts($companyId);
+                    $data['reenrollmentAlerts'] = $reenrollment->latestConfirmedAlerts($companyId, 5);
+                    $data['reenrollmentAlertCount'] = $reenrollment->countUnviewedConfirmed($companyId);
                 } else {
                     $data['exchangeAlerts'] = [];
                     $data['exchangeAlertCount'] = 0;
+                    $data['reenrollmentAlerts'] = [];
+                    $data['reenrollmentAlertCount'] = 0;
                 }
             } catch (Throwable $e) {
                 $data['mobileNegotiationAlerts'] = [];
@@ -40,6 +45,8 @@ abstract class BaseController
                 $data['payableDueAlertCount'] = 0;
                 $data['exchangeAlerts'] = [];
                 $data['exchangeAlertCount'] = 0;
+                $data['reenrollmentAlerts'] = [];
+                $data['reenrollmentAlertCount'] = 0;
             }
         }
 
