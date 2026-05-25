@@ -950,6 +950,15 @@ strong,
     display: inline;
   }
 
+  .main-panel {
+    gap: 14px;
+  }
+
+  .content-grid {
+    gap: 14px;
+    padding-bottom: 132px;
+  }
+
   .summary-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -996,6 +1005,10 @@ strong,
     padding: 12px 12px 106px;
   }
 
+  .content-grid {
+    padding-bottom: 148px;
+  }
+
   .surface-card,
   .brand-panel,
   .nav-list,
@@ -1029,6 +1042,14 @@ strong,
     padding: 16px;
   }
 
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-stat-card {
+    padding: 16px;
+  }
+
   .topbar-copy h1,
   .summary-copy h2,
   .metric-card h3,
@@ -1045,6 +1066,8 @@ strong,
   .metric-value,
   .snapshot-card strong,
   .priority-metric-card strong {
-    font-size: 28px;
+    font-size: 24px;
+    line-height: 1.15;
+    word-break: break-word;
   }
 }
