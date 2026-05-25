@@ -11,6 +11,32 @@ $statusOptions = [
     'cancelled' => 'Cancelado',
     'error' => 'Com erro',
 ];
+$statusLabels = [
+    'draft' => 'Rascunho',
+    'sent' => 'Enviado',
+    'signed' => 'Assinado',
+    'cancelled' => 'Cancelado',
+    'error' => 'Com erro',
+];
+$d4signStatusLabels = [
+    'draft' => 'Rascunho',
+    'sent' => 'Enviado',
+    'signed' => 'Assinado',
+    'cancelled' => 'Cancelado',
+    'canceled' => 'Cancelado',
+    'error' => 'Com erro',
+    'finalizado' => 'Finalizado',
+    'finished' => 'Finalizado',
+    'completed' => 'Finalizado',
+    'assinado' => 'Assinado',
+    'signed' => 'Assinado',
+    'running' => 'Em andamento',
+    'processing' => 'Processando',
+    'waiting' => 'Aguardando assinatura',
+    'pending' => 'Pendente',
+    'refused' => 'Recusado',
+    'rejected' => 'Recusado',
+];
 ?>
 <section class="signatures-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -167,6 +193,10 @@ $statusOptions = [
                         'error' => 'signatures-status-error',
                         default => 'signatures-status-draft',
                     };
+                    $statusLabel = $statusLabels[$status] ?? ucfirst($status);
+                    $d4signStatusRaw = trim((string) ($row['d4sign_status'] ?? ''));
+                    $d4signStatusKey = strtolower($d4signStatusRaw);
+                    $d4signStatusLabel = $d4signStatusRaw !== '' ? ($d4signStatusLabels[$d4signStatusKey] ?? $d4signStatusRaw) : '-';
                     ?>
                     <tr class="signatures-row border-b border-slate-100 hover:bg-slate-50">
                         <td class="px-3 py-3">
@@ -181,10 +211,10 @@ $statusOptions = [
                             <p class="text-xs text-slate-500"><?= e($row['signer_email']); ?></p>
                         </td>
                         <td class="px-3 py-3">
-                            <span class="signatures-status-pill rounded-full px-2 py-1 text-xs font-semibold <?= $badgeClass; ?> <?= $statusToneClass; ?>"><?= e($status); ?></span>
+                            <span class="signatures-status-pill rounded-full px-2 py-1 text-xs font-semibold <?= $badgeClass; ?> <?= $statusToneClass; ?>"><?= e($statusLabel); ?></span>
                         </td>
                         <td class="px-3 py-3">
-                            <p class="text-xs text-slate-600"><?= e($row['d4sign_status'] ?: '-'); ?></p>
+                            <p class="text-xs text-slate-600"><?= e($d4signStatusLabel); ?></p>
                             <p class="text-xs text-slate-500"><?= e($row['d4sign_document_uuid'] ?: '-'); ?></p>
                         </td>
                         <td class="px-3 py-3">

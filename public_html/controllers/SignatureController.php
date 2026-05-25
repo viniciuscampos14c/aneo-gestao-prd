@@ -227,59 +227,69 @@ class SignatureController extends BaseController
         $meta = $this->decodeMetadata((string) ($request['metadata_json'] ?? ''));
         $meta['send_started_at'] = now();
 
-        if ($documentUuid === '') {
-            $upload = $this->d4sign->uploadDocument(
-                (string) ($request['d4sign_safe_uuid'] ?: $this->d4sign->safeUuid()),
-                (string) $request['file_original_path'],
-                (string) $request['title']
+        try {
+            if ($documentUuid === '') {
+                $upload = $this->d4sign->uploadDocument(
+                    (string) ($request['d4sign_safe_uuid'] ?: $this->d4sign->safeUuid()),
+                    (string) $request['file_original_path'],
+                    (string) $request['title']
+                );
+                $meta['upload'] = $this->compactD4SignResult($upload);
+
+                if (!$upload['ok'] || empty($upload['document_uuid'])) {
+                    $message = (string) ($upload['message'] ?? 'Falha no upload para o D4Sign.');
+                    $this->signatures->markError($id, $message, $meta, $companyId);
+                    $this->error($message);
+                    $this->redirect('signatures');
+                }
+
+                $documentUuid = (string) $upload['document_uuid'];
+
+                $signer = $this->d4sign->createSigner($documentUuid, [
+                    'email' => (string) $request['signer_email'],
+                    'name' => (string) $request['signer_name'],
+                    'document' => (string) ($request['student_document'] ?? ''),
+                    'whatsapp' => (string) ($request['signer_phone'] ?? ''),
+                ]);
+                $meta['create_signer'] = $this->compactD4SignResult($signer);
+
+                if (!$signer['ok']) {
+                    $message = (string) ($signer['message'] ?? 'Falha ao cadastrar signatario no D4Sign.');
+                    $this->signatures->markError($id, $message, $meta, $companyId);
+                    $this->error($message);
+                    $this->redirect('signatures');
+                }
+
+                $signerKey = (string) ($signer['signer_key'] ?? '');
+            }
+
+            $webhookRegistration = $this->d4sign->registerWebhook($documentUuid, $this->buildWebhookUrl());
+            $meta['webhook'] = $this->compactD4SignResult($webhookRegistration);
+
+            $sendResult = $this->d4sign->sendToSigner(
+                $documentUuid,
+                'Ola! Seu contrato ANEO esta pronto para assinatura eletronicamente.'
             );
-            $meta['upload'] = $upload;
+            $meta['sendtosigner'] = $this->compactD4SignResult($sendResult);
 
-            if (!$upload['ok'] || empty($upload['document_uuid'])) {
-                $message = (string) ($upload['message'] ?? 'Falha no upload para o D4Sign.');
+            if (!$sendResult['ok']) {
+                $message = (string) ($sendResult['message'] ?? 'Falha ao enviar documento para assinatura.');
                 $this->signatures->markError($id, $message, $meta, $companyId);
                 $this->error($message);
                 $this->redirect('signatures');
             }
 
-            $documentUuid = (string) $upload['document_uuid'];
-
-            $signer = $this->d4sign->createSigner($documentUuid, [
-                'email' => (string) $request['signer_email'],
-                'name' => (string) $request['signer_name'],
-                'document' => (string) ($request['student_document'] ?? ''),
-                'whatsapp' => (string) ($request['signer_phone'] ?? ''),
-            ]);
-            $meta['create_signer'] = $signer;
-
-            if (!$signer['ok']) {
-                $message = (string) ($signer['message'] ?? 'Falha ao cadastrar signatario no D4Sign.');
-                $this->signatures->markError($id, $message, $meta, $companyId);
-                $this->error($message);
-                $this->redirect('signatures');
-            }
-
-            $signerKey = (string) ($signer['signer_key'] ?? '');
-        }
-
-        $webhookRegistration = $this->d4sign->registerWebhook($documentUuid, $this->buildWebhookUrl());
-        $meta['webhook'] = $webhookRegistration;
-
-        $sendResult = $this->d4sign->sendToSigner(
-            $documentUuid,
-            'Ola! Seu contrato ANEO esta pronto para assinatura eletronicamente.'
-        );
-        $meta['sendtosigner'] = $sendResult;
-
-        if (!$sendResult['ok']) {
-            $message = (string) ($sendResult['message'] ?? 'Falha ao enviar documento para assinatura.');
-            $this->signatures->markError($id, $message, $meta, $companyId);
+            $this->signatures->markSent($id, $documentUuid, $signerKey !== '' ? $signerKey : null, $meta, $companyId);
+            $this->success('Contrato enviado para assinatura via D4Sign.');
+        } catch (Throwable $e) {
+            $meta['send_exception'] = [
+                'message' => $e->getMessage(),
+                'caught_at' => now(),
+            ];
+            $message = 'O D4Sign recebeu o envio, mas o sistema nao conseguiu finalizar o retorno da tela. Sincronize o contrato para confirmar o status.';
+            $this->signatures->markError($id, $message . ' Detalhe tecnico: ' . $e->getMessage(), $meta, $companyId);
             $this->error($message);
-            $this->redirect('signatures');
         }
-
-        $this->signatures->markSent($id, $documentUuid, $signerKey !== '' ? $signerKey : null, $meta, $companyId);
-        $this->success('Contrato enviado para assinatura via D4Sign.');
         $this->redirect('signatures');
     }
 
@@ -458,6 +468,31 @@ class SignatureController extends BaseController
         }
 
         $this->json(['ok' => true, 'message' => 'Webhook processado com sucesso.']);
+    }
+
+    private function compactD4SignResult(array $result): array
+    {
+        $compact = [
+            'ok' => !empty($result['ok']),
+            'message' => (string) ($result['message'] ?? ''),
+        ];
+
+        foreach (['document_uuid', 'signer_key', 'status', 'url'] as $key) {
+            if (isset($result[$key]) && is_scalar($result[$key])) {
+                $compact[$key] = (string) $result[$key];
+            }
+        }
+
+        $response = $result['response'] ?? null;
+        if (is_array($response)) {
+            foreach (['message', 'uuid', 'uuid_document', 'key_signer', 'status', 'statusName'] as $key) {
+                if (isset($response[$key]) && is_scalar($response[$key])) {
+                    $compact['response_' . $key] = (string) $response[$key];
+                }
+            }
+        }
+
+        return $compact;
     }
 
     private function collectBillingPlanFromPost(): array
