@@ -195,7 +195,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h3 class="ai-jully-title text-lg font-semibold">Chat IA Jully</h3>
-                    <p class="ai-jully-subtitle text-sm">Interaja com a IA sem sair da aba Chat IA Jully. Cada pergunta consulta o banco interno da empresa ativa.</p>
+                    <p class="ai-jully-subtitle text-sm">Assistente operacional da ANEO para financeiro, renegociacao, comercial e acompanhamento do negocio.</p>
                 </div>
                 <div class="ai-jully-status rounded-xl px-3 py-2 text-xs">
                     <p><strong>Status IA:</strong> <?= $helpAiEnabled ? ($helpAiConfigured ? 'Ativo e configurado' : 'Ativo sem credenciais') : 'Desativado'; ?></p>
@@ -275,9 +275,9 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
                         <?php if ($helpAiMessages === []): ?>
                             <div id="help-ai-empty" class="ai-jully-empty-state rounded-xl px-4 py-6 text-sm">
                                 Pergunte algo como:
-                                <br>- Quantos alunos ativos temos hoje?
-                                <br>- Quais faturas estao vencidas?
-                                <br>- Quais leads precisam de contato?
+                                <br>- Qual e o saldo vencido hoje e quantos alunos estao em atraso?
+                                <br>- Temos negociacoes ou aditivos mobile pendentes?
+                                <br>- Quais leads o comercial precisa atacar primeiro?
                             </div>
                         <?php endif; ?>
                     </div>
@@ -286,9 +286,15 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
                         <form id="help-ai-form" method="post" action="<?= route('ai-chat/ask'); ?>" class="space-y-3">
                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                             <input type="hidden" name="session_id" id="help-ai-session-id" value="<?= $helpAiSessionId; ?>">
-                            <textarea name="message" id="help-ai-input" rows="3" maxlength="2000" required placeholder="Digite sua pergunta para a IA..." class="ai-jully-textarea w-full rounded-xl px-3 py-2 text-sm outline-none"></textarea>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" class="help-ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="Qual e o saldo vencido hoje e quem precisa de acao imediata?">Financeiro critico</button>
+                                <button type="button" class="help-ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="Temos negociacoes ou aditivos mobile pendentes agora?">Renegociacoes pendentes</button>
+                                <button type="button" class="help-ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="Quais leads o comercial precisa priorizar hoje?">Prioridade comercial</button>
+                                <button type="button" class="help-ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="O que eu devo priorizar agora na operacao?">O que priorizar</button>
+                            </div>
+                            <textarea name="message" id="help-ai-input" rows="3" maxlength="2000" required placeholder="Pergunte sobre financeiro, renegociacao, comercial ou prioridades da operacao..." class="ai-jully-textarea w-full rounded-xl px-3 py-2 text-sm outline-none"></textarea>
                             <div class="flex items-center justify-between gap-2">
-                                <p class="ai-jully-helper text-xs">A resposta usa os dados internos da empresa ativa.</p>
+                                <p class="ai-jully-helper text-xs">A resposta usa os dados internos da empresa ativa com foco operacional.</p>
                                 <button id="help-ai-submit" class="ai-jully-submit rounded-xl px-4 py-2 text-sm font-semibold">Enviar</button>
                             </div>
                         </form>
@@ -417,6 +423,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
     const submitBtn = document.getElementById('help-ai-submit');
     const messagesEl = document.getElementById('help-ai-messages');
     const sessionEl = document.getElementById('help-ai-session-id');
+    const suggestionButtons = Array.from(document.querySelectorAll('.help-ai-suggestion'));
     const historyAvailable = <?= $helpAiHistoryAvailable ? 'true' : 'false'; ?>;
 
     if (!form || !input || !submitBtn || !messagesEl || !sessionEl) {
@@ -474,6 +481,18 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
     };
 
     scrollBottom();
+
+    suggestionButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const prompt = button.getAttribute('data-prompt') || '';
+            if (!prompt) {
+                return;
+            }
+
+            input.value = prompt;
+            input.focus();
+        });
+    });
 
     input.addEventListener('keydown', (event) => {
         if (event.isComposing) {

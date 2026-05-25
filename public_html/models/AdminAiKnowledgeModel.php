@@ -44,6 +44,15 @@ class AdminAiKnowledgeModel extends BaseModel
         if ($intent['leads_sem_contato']) {
             $matches['leads_sem_contato_recente'] = $this->searchLeadsWithoutRecentContact(10);
         }
+        if ($intent['renegociacoes_pendentes']) {
+            $matches['renegociacoes_mobile_pendentes'] = $this->searchMobileNegotiationTickets(10);
+        }
+        if ($intent['financeiro_critico']) {
+            $matches['maiores_faturas_em_aberto'] = $this->searchLargestOpenInvoices(10);
+        }
+        if ($intent['pipeline_comercial']) {
+            $matches['leads_comerciais_prioritarios'] = $this->searchCommercialPriorityLeads(10);
+        }
 
         if ($this->hasTable('support_tickets')) {
             $matches['support_tickets'] = $this->searchSupportTickets($searchTerms, 6);
@@ -76,6 +85,7 @@ class AdminAiKnowledgeModel extends BaseModel
             ],
             'gerado_em' => now(),
             'resumo' => $summary,
+            'alertas_operacionais' => $this->operationalHighlights($summary),
             'intencoes_detectadas' => $intencoesAtivas,
             'lead_status' => $incluirLeadStatus ? $this->leadStatusBreakdown() : [],
             'invoice_status' => $incluirInvoiceStatus ? $this->invoiceStatusBreakdown() : [],
@@ -172,6 +182,30 @@ class AdminAiKnowledgeModel extends BaseModel
             WHERE company_id = :company_id
               AND paid_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')", $params));
 
+        $overdueBalance = $this->decimal($this->scalar("SELECT COALESCE(SUM(
+                CASE WHEN amount > paid_amount THEN amount - paid_amount ELSE 0 END
+            ), 0)
+            FROM invoices
+            WHERE company_id = :company_id
+              AND status = 'overdue'", $params));
+
+        $studentsWithOverdue = (int) $this->scalar("SELECT COUNT(DISTINCT student_id)
+            FROM invoices
+            WHERE company_id = :company_id
+              AND status = 'overdue'
+              AND student_id IS NOT NULL", $params);
+
+        $leadsWithoutRecentContact = (int) $this->scalar("SELECT COUNT(*)
+            FROM leads
+            WHERE company_id = :company_id
+              AND converted_student_id IS NULL
+              AND (last_contact_at IS NULL OR last_contact_at < DATE_SUB(NOW(), INTERVAL 7 DAY))", $params);
+
+        $openLeadValue = $this->decimal($this->scalar("SELECT COALESCE(SUM(lead_value), 0)
+            FROM leads
+            WHERE company_id = :company_id
+              AND converted_student_id IS NULL", $params));
+
         $summary = [
             'total_students' => $totalStudents,
             'active_students' => $activeStudents,
@@ -186,7 +220,11 @@ class AdminAiKnowledgeModel extends BaseModel
             'open_invoices' => $invoicesOpenCount,
             'overdue_invoices' => $invoicesOverdueCount,
             'open_balance' => $openBalance,
+            'overdue_balance' => $overdueBalance,
+            'students_with_overdue' => $studentsWithOverdue,
             'received_this_month' => $receivedThisMonth,
+            'leads_without_recent_contact' => $leadsWithoutRecentContact,
+            'open_lead_value' => $openLeadValue,
         ];
 
         if ($this->hasTable('support_tickets')) {
@@ -212,12 +250,35 @@ class AdminAiKnowledgeModel extends BaseModel
             $summary['support_in_progress_tickets'] = $supportInProgress;
             $summary['support_resolved_tickets'] = $supportResolved;
             $summary['support_closed_tickets'] = $supportClosed;
+
+            $mobileCondition = "(subject LIKE 'Aditivo financeiro - %' OR subject LIKE 'Negociacao financeira - %')";
+            $summary['pending_mobile_negotiations'] = (int) $this->scalar("SELECT COUNT(*)
+                FROM support_tickets
+                WHERE company_id = :company_id
+                  AND source = 'api'
+                  AND status IN ('open', 'in_progress')
+                  AND {$mobileCondition}", $params);
+            $summary['pending_mobile_aditivos'] = (int) $this->scalar("SELECT COUNT(*)
+                FROM support_tickets
+                WHERE company_id = :company_id
+                  AND source = 'api'
+                  AND status IN ('open', 'in_progress')
+                  AND subject LIKE 'Aditivo financeiro - %'", $params);
+            $summary['pending_mobile_negociacoes'] = (int) $this->scalar("SELECT COUNT(*)
+                FROM support_tickets
+                WHERE company_id = :company_id
+                  AND source = 'api'
+                  AND status IN ('open', 'in_progress')
+                  AND subject LIKE 'Negociacao financeira - %'", $params);
         } else {
             $summary['open_support_tickets'] = 0;
             $summary['support_open_tickets'] = 0;
             $summary['support_in_progress_tickets'] = 0;
             $summary['support_resolved_tickets'] = 0;
             $summary['support_closed_tickets'] = 0;
+            $summary['pending_mobile_negotiations'] = 0;
+            $summary['pending_mobile_aditivos'] = 0;
+            $summary['pending_mobile_negociacoes'] = 0;
         }
 
         return $summary;
@@ -598,6 +659,9 @@ class AdminAiKnowledgeModel extends BaseModel
         $ehMes = str_contains($n, 'mes') || str_contains($n, 'hoje') || str_contains($n, 'semana') || str_contains($n, 'period') || str_contains($n, 'atual');
         $ehLead = str_contains($n, 'lead');
         $ehContato = str_contains($n, 'contat') || str_contains($n, 'aguardando') || str_contains($n, 'sem retorno');
+        $ehNegociacao = str_contains($n, 'negoci') || str_contains($n, 'renegoci') || str_contains($n, 'acordo') || str_contains($n, 'aditivo');
+        $ehPipeline = str_contains($n, 'pipeline') || str_contains($n, 'funil') || str_contains($n, 'comercial');
+        $ehPrioridade = str_contains($n, 'prior') || str_contains($n, 'urg') || str_contains($n, 'critic') || str_contains($n, 'maior');
 
         return [
             // Ex: "quais alunos estão inadimplentes?", "alunos devendo", "em atraso nos pagamentos"
@@ -622,6 +686,18 @@ class AdminAiKnowledgeModel extends BaseModel
 
             // Ex: "leads sem contato", "leads aguardando retorno", "quem ainda não contactamos"
             'leads_sem_contato' => $ehLead && ($ehContato || str_contains($n, 'sem retorno') || str_contains($n, 'nao contact') || str_contains($n, 'precis')),
+
+            // Ex: "negociacoes pendentes", "aditivos em aberto", "renegociacao mobile"
+            'renegociacoes_pendentes' => $ehNegociacao
+                && (str_contains($n, 'pendent') || str_contains($n, 'abert') || str_contains($n, 'andamento') || str_contains($n, 'mobile') || str_contains($n, 'app')),
+
+            // Ex: "pipeline comercial", "leads prioritarios", "o que o comercial precisa atacar"
+            'pipeline_comercial' => ($ehPipeline || $ehLead)
+                && ($ehPrioridade || $ehContato || str_contains($n, 'quente') || str_contains($n, 'valor')),
+
+            // Ex: "financeiro critico", "maiores faturas", "o que priorizar no financeiro"
+            'financeiro_critico' => ($ehFatura || $ehPagamento || str_contains($n, 'financeir'))
+                && ($ehPrioridade || $ehAtraso || str_contains($n, 'saldo') || str_contains($n, 'receber')),
         ];
     }
 
@@ -779,6 +855,155 @@ class AdminAiKnowledgeModel extends BaseModel
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    private function searchMobileNegotiationTickets(int $limit): array
+    {
+        if (!$this->hasTable('support_tickets')) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                id,
+                ticket_code,
+                subject,
+                status,
+                priority,
+                requester_name,
+                requester_email,
+                created_at,
+                updated_at
+            FROM support_tickets
+            WHERE company_id = :company_id
+              AND source = 'api'
+              AND status IN ('open', 'in_progress')
+              AND (
+                    subject LIKE 'Aditivo financeiro - %'
+                    OR subject LIKE 'Negociacao financeira - %'
+                  )
+            ORDER BY created_at DESC, id DESC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function searchLargestOpenInvoices(int $limit): array
+    {
+        $stmt = $this->db->prepare("SELECT
+                i.id,
+                i.invoice_number,
+                i.status,
+                i.due_date,
+                i.amount,
+                COALESCE(i.paid_amount, 0) AS paid_amount,
+                (i.amount - COALESCE(i.paid_amount, 0)) AS saldo_devedor,
+                i.project_name,
+                s.full_name AS student_name
+            FROM invoices i
+            INNER JOIN students s ON s.id = i.student_id
+            WHERE i.company_id = :company_id
+              AND i.status IN ('open', 'partial', 'overdue')
+              AND i.amount > COALESCE(i.paid_amount, 0)
+            ORDER BY saldo_devedor DESC, i.due_date ASC, i.id DESC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll() ?: [];
+        foreach ($rows as &$row) {
+            $row['amount'] = $this->decimal($row['amount'] ?? 0);
+            $row['paid_amount'] = $this->decimal($row['paid_amount'] ?? 0);
+            $row['saldo_devedor'] = $this->decimal($row['saldo_devedor'] ?? 0);
+        }
+
+        return $rows;
+    }
+
+    private function searchCommercialPriorityLeads(int $limit): array
+    {
+        $stmt = $this->db->prepare("SELECT
+                l.id,
+                l.full_name,
+                l.email,
+                l.phone,
+                l.source,
+                l.unit_name,
+                l.lead_value,
+                l.last_contact_at,
+                ls.name AS status_name
+            FROM leads l
+            LEFT JOIN lead_status ls ON ls.id = l.lead_status_id
+            WHERE l.company_id = :company_id
+              AND l.converted_student_id IS NULL
+            ORDER BY
+                CASE
+                    WHEN l.last_contact_at IS NULL THEN 0
+                    WHEN l.last_contact_at < DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1
+                    ELSE 2
+                END ASC,
+                l.lead_value DESC,
+                l.updated_at DESC
+            LIMIT :limit");
+        $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
+        $stmt->bindValue(':limit', max(1, min(20, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll() ?: [];
+        foreach ($rows as &$row) {
+            $row['lead_value'] = $this->decimal($row['lead_value'] ?? 0);
+        }
+
+        return $rows;
+    }
+
+    private function operationalHighlights(array $summary): array
+    {
+        $alerts = [];
+
+        $overdueInvoices = (int) ($summary['overdue_invoices'] ?? 0);
+        $overdueBalance = (float) ($summary['overdue_balance'] ?? 0);
+        if ($overdueInvoices > 0 || $overdueBalance > 0) {
+            $alerts[] = [
+                'area' => 'financeiro',
+                'title' => 'Recebiveis vencidos exigem acao',
+                'detail' => $overdueInvoices . ' fatura(s) vencida(s) somando R$ ' . number_format($overdueBalance, 2, ',', '.'),
+            ];
+        }
+
+        $pendingNegotiations = (int) ($summary['pending_mobile_negotiations'] ?? 0);
+        if ($pendingNegotiations > 0) {
+            $alerts[] = [
+                'area' => 'renegociacao',
+                'title' => 'Fluxos mobile aguardando tratativa',
+                'detail' => $pendingNegotiations . ' ticket(s) pendente(s), sendo '
+                    . (int) ($summary['pending_mobile_negociacoes'] ?? 0) . ' negociacao(oes) e '
+                    . (int) ($summary['pending_mobile_aditivos'] ?? 0) . ' aditivo(s).',
+            ];
+        }
+
+        $leadsWithoutContact = (int) ($summary['leads_without_recent_contact'] ?? 0);
+        if ($leadsWithoutContact > 0) {
+            $alerts[] = [
+                'area' => 'comercial',
+                'title' => 'Leads sem contato recente',
+                'detail' => $leadsWithoutContact . ' lead(s) sem contato ha mais de 7 dias.',
+            ];
+        }
+
+        $openLeadValue = (float) ($summary['open_lead_value'] ?? 0);
+        if ($openLeadValue > 0) {
+            $alerts[] = [
+                'area' => 'comercial',
+                'title' => 'Valor potencial ainda em negociacao',
+                'detail' => 'Pipeline aberto estimado em R$ ' . number_format($openLeadValue, 2, ',', '.'),
+            ];
+        }
+
+        return array_slice($alerts, 0, 4);
     }
 
     /**

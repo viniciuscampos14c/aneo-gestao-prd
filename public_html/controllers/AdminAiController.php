@@ -233,13 +233,16 @@ class AdminAiController extends BaseController
                     'alunos_inadimplentes'       => 'Alunos inadimplentes',
                     'leads'                      => 'Leads',
                     'leads_sem_contato_recente'  => 'Leads sem contato recente',
+                    'leads_comerciais_prioritarios' => 'Leads prioritarios do comercial',
                     'invoices'                   => 'Faturas',
                     'faturas_vencidas_detalhe'   => 'Faturas vencidas',
+                    'maiores_faturas_em_aberto'  => 'Maiores faturas em aberto',
                     'courses'                    => 'Cursos',
                     'course_enrollments'         => 'Matrículas',
                     'payments'                   => 'Pagamentos',
                     'recebimentos_mes_atual'     => 'Recebimentos do mês',
                     'support_tickets'            => 'Chamados',
+                    'renegociacoes_mobile_pendentes' => 'Renegociacoes mobile pendentes',
                     default                      => ucfirst((string) $section),
                 };
 
@@ -374,6 +377,8 @@ class AdminAiController extends BaseController
 
         $summary = is_array($context['summary'] ?? null) ? $context['summary'] : [];
         $matches = is_array($context['matches'] ?? null) ? $context['matches'] : [];
+        $payload = is_array($context['payload'] ?? null) ? $context['payload'] : [];
+        $alerts = is_array($payload['alertas_operacionais'] ?? null) ? $payload['alertas_operacionais'] : [];
 
         // Resumo geral / panorama
         $asksOverview = str_contains($normalized, 'resumo')
@@ -437,6 +442,15 @@ class AdminAiController extends BaseController
                 . number_format($openBalance, 2, ',', '.') . '.';
         }
 
+        $asksOverdueBalance = (str_contains($normalized, 'saldo') || str_contains($normalized, 'valor') || str_contains($normalized, 'montante'))
+            && (str_contains($normalized, 'vencid') || str_contains($normalized, 'atras') || str_contains($normalized, 'inadimpl'));
+        if ($asksOverdueBalance) {
+            $overdueBalance = (float) ($summary['overdue_balance'] ?? 0);
+            $studentsWithOverdue = (int) ($summary['students_with_overdue'] ?? 0);
+            return 'O saldo vencido atual e de R$ ' . number_format($overdueBalance, 2, ',', '.')
+                . ', distribuido em ' . $studentsWithOverdue . ' aluno(s) com atraso.';
+        }
+
         $asksOverdue = (str_contains($normalized, 'vencid') || str_contains($normalized, 'atras'))
             && (str_contains($normalized, 'conta') || str_contains($normalized, 'fatura') || str_contains($normalized, 'receb'));
         if ($asksOverdue) {
@@ -473,6 +487,63 @@ class AdminAiController extends BaseController
             }
 
             return 'Existe(m) ' . count($leads) . ' lead(s) que precisa(m) de contato: ' . $preview . '.';
+        }
+
+        $asksNegotiation = str_contains($normalized, 'negoci')
+            || str_contains($normalized, 'renegoci')
+            || str_contains($normalized, 'aditivo')
+            || str_contains($normalized, 'acordo');
+        $asksPending = str_contains($normalized, 'pendent')
+            || str_contains($normalized, 'abert')
+            || str_contains($normalized, 'andamento')
+            || str_contains($normalized, 'fila');
+        if ($asksNegotiation && ($asksPending || str_contains($normalized, 'quant') || str_contains($normalized, 'tem') || str_contains($normalized, 'ha'))) {
+            $pendingTotal = (int) ($summary['pending_mobile_negotiations'] ?? 0);
+            $pendingNegociacoes = (int) ($summary['pending_mobile_negociacoes'] ?? 0);
+            $pendingAditivos = (int) ($summary['pending_mobile_aditivos'] ?? 0);
+
+            if ($pendingTotal <= 0) {
+                return 'No momento nao ha fluxos mobile de negociacao ou aditivo pendentes.';
+            }
+
+            return 'Temos ' . $pendingTotal . ' fluxo(s) mobile pendente(s): '
+                . $pendingNegociacoes . ' negociacao(oes) e '
+                . $pendingAditivos . ' aditivo(s).';
+        }
+
+        $asksCommercial = str_contains($normalized, 'lead')
+            || str_contains($normalized, 'comercial')
+            || str_contains($normalized, 'pipeline')
+            || str_contains($normalized, 'funil');
+        $asksPriority = str_contains($normalized, 'prior')
+            || str_contains($normalized, 'urg')
+            || str_contains($normalized, 'atacar')
+            || str_contains($normalized, 'trabalhar');
+        if ($asksCommercial && $asksPriority) {
+            $leadsWithoutContact = (int) ($summary['leads_without_recent_contact'] ?? 0);
+            $openLeadValue = (float) ($summary['open_lead_value'] ?? 0);
+            return 'No comercial, o foco imediato sao ' . $leadsWithoutContact . ' lead(s) sem contato recente, com pipeline em aberto de R$ '
+                . number_format($openLeadValue, 2, ',', '.') . '.';
+        }
+
+        $asksPriorityToday = str_contains($normalized, 'priorizar')
+            || str_contains($normalized, 'prioridade')
+            || str_contains($normalized, 'decidir primeiro')
+            || str_contains($normalized, 'o que fazer primeiro');
+        if ($asksPriorityToday && $alerts !== []) {
+            $topAlerts = [];
+            foreach (array_slice($alerts, 0, 3) as $alert) {
+                $title = trim((string) ($alert['title'] ?? ''));
+                $detail = trim((string) ($alert['detail'] ?? ''));
+                if ($title === '') {
+                    continue;
+                }
+                $topAlerts[] = '• ' . $title . ($detail !== '' ? ': ' . $detail : '');
+            }
+
+            if ($topAlerts !== []) {
+                return "Prioridades recomendadas agora:\n" . implode("\n", $topAlerts);
+            }
         }
 
         $asksSupport = str_contains($normalized, 'solicit')
@@ -724,12 +795,22 @@ class AdminAiController extends BaseController
                    . ' | status: ' . trim((string) ($row['status_name'] ?? '-'))
                    . ' | último contato: ' . (trim((string) ($row['last_contact_at'] ?? '')) ?: 'nunca'),
 
+            'leads_comerciais_prioritarios'
+                => trim((string) ($row['full_name'] ?? 'Lead'))
+                   . ' | status: ' . trim((string) ($row['status_name'] ?? '-'))
+                   . ' | potencial: R$ ' . number_format((float) ($row['lead_value'] ?? 0), 2, ',', '.'),
+
             'invoices',
             'faturas_vencidas_detalhe'
                 => trim((string) ($row['invoice_number'] ?? 'Fatura'))
                    . ' | aluno: ' . trim((string) ($row['student_name'] ?? '-'))
                    . ' | venc: ' . trim((string) ($row['due_date'] ?? '-'))
                    . ' | R$ ' . number_format((float) ($row['amount'] ?? 0), 2, ',', '.'),
+
+            'maiores_faturas_em_aberto'
+                => trim((string) ($row['invoice_number'] ?? 'Fatura'))
+                   . ' | aluno: ' . trim((string) ($row['student_name'] ?? '-'))
+                   . ' | saldo: R$ ' . number_format((float) ($row['saldo_devedor'] ?? 0), 2, ',', '.'),
 
             'courses'
                 => trim((string) ($row['name'] ?? 'Curso'))
@@ -745,6 +826,11 @@ class AdminAiController extends BaseController
                 => trim((string) ($row['ticket_code'] ?? 'Chamado'))
                    . ' | ' . trim((string) ($row['subject'] ?? '-'))
                    . ' | status: ' . trim((string) ($row['status'] ?? '-')),
+
+            'renegociacoes_mobile_pendentes'
+                => trim((string) ($row['ticket_code'] ?? 'Chamado'))
+                   . ' | ' . trim((string) ($row['subject'] ?? '-'))
+                   . ' | prioridade: ' . trim((string) ($row['priority'] ?? '-')),
 
             default => trim((string) ($row['full_name'] ?? $row['name'] ?? $row['id'] ?? '-')),
         };

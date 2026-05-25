@@ -11,8 +11,8 @@ $aiModel = trim((string) ($aiModel ?? ''));
 <section class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-2xl font-semibold text-slate-900">Assistente IA (Admin)</h2>
-            <p class="text-sm text-slate-500">Perguntas do negocio com consulta ao banco interno da escola antes de responder.</p>
+            <h2 class="text-2xl font-semibold text-slate-900">Chat IA Jully</h2>
+            <p class="text-sm text-slate-500">Assistente operacional da ANEO para financeiro, renegociacao, comercial e acompanhamento do negocio.</p>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
             <p><strong>Status IA:</strong> <?= $aiEnabled ? ($aiConfigured ? 'Ativo e configurado' : 'Ativo sem credenciais') : 'Desativado'; ?></p>
@@ -101,10 +101,10 @@ $aiModel = trim((string) ($aiModel ?? ''));
 
                 <?php if ($messages === []): ?>
                     <div id="ai-empty-state" class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                        Inicie o chat perguntando algo como:
-                        <br>- Quantos alunos ativos temos hoje?
-                        <br>- Quais faturas estao vencidas neste mes?
-                        <br>- Quais leads aguardam contato?
+                        Pergunte algo como:
+                        <br>- Qual e o saldo vencido hoje e quantos alunos estao em atraso?
+                        <br>- Temos negociacoes ou aditivos mobile pendentes?
+                        <br>- Quais leads o comercial precisa atacar primeiro?
                     </div>
                 <?php endif; ?>
             </div>
@@ -113,17 +113,23 @@ $aiModel = trim((string) ($aiModel ?? ''));
                 <form id="ai-chat-form" method="post" action="<?= route('ai-chat/ask'); ?>" class="space-y-3">
                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                     <input type="hidden" name="session_id" id="ai-session-id" value="<?= $sessionId; ?>">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="Qual e o saldo vencido hoje e quem precisa de acao imediata?">Financeiro critico</button>
+                        <button type="button" class="ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="Temos negociacoes ou aditivos mobile pendentes agora?">Renegociacoes pendentes</button>
+                        <button type="button" class="ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="Quais leads o comercial precisa priorizar hoje?">Prioridade comercial</button>
+                        <button type="button" class="ai-suggestion rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-50" data-prompt="O que eu devo priorizar agora na operacao?">O que priorizar</button>
+                    </div>
                     <textarea
                         name="message"
                         id="ai-message-input"
                         rows="3"
                         required
                         maxlength="2000"
-                        placeholder="Digite sua pergunta para o Assistente IA..."
+                        placeholder="Pergunte sobre financeiro, renegociacao, comercial ou prioridades da operacao..."
                         class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-cyan-500"
                     ></textarea>
                     <div class="flex items-center justify-between gap-2">
-                        <p class="text-xs text-slate-500">Cada pergunta consulta o banco interno da empresa ativa antes da resposta.</p>
+                        <p class="text-xs text-slate-500">Cada pergunta consulta o banco interno da empresa ativa e a Jully responde com foco operacional.</p>
                         <button id="ai-submit-btn" class="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">
                             Enviar
                         </button>
@@ -141,6 +147,7 @@ $aiModel = trim((string) ($aiModel ?? ''));
     const submitBtn = document.getElementById('ai-submit-btn');
     const messagesEl = document.getElementById('ai-chat-messages');
     const sessionEl = document.getElementById('ai-session-id');
+    const suggestionButtons = Array.from(document.querySelectorAll('.ai-suggestion'));
     const historyAvailable = <?= $historyAvailable ? 'true' : 'false'; ?>;
 
     if (!form || !input || !submitBtn || !messagesEl || !sessionEl) {
@@ -200,6 +207,18 @@ $aiModel = trim((string) ($aiModel ?? ''));
     };
 
     scrollBottom();
+
+    suggestionButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const prompt = button.getAttribute('data-prompt') || '';
+            if (!prompt) {
+                return;
+            }
+
+            input.value = prompt;
+            input.focus();
+        });
+    });
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
