@@ -1479,15 +1479,16 @@ class CourseController extends BaseController
             }
 
             if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
-                $body = '<p>Ola ' . e($studentName) . ',</p>'
-                    . '<p>Uma nova avaliacao foi publicada para voce.</p>'
-                    . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
-                    . '<strong>Avaliacao:</strong> ' . e($examTitle) . '<br>'
-                    . '<strong>Data:</strong> ' . e($dateLabel) . '</p>'
-                    . ($isExternal && $externalUrl
-                        ? '<p>Esta prova possui link externo e deve ser aberta pelo portal do aluno.</p>'
-                        : '<p>Acesse o portal do aluno para responder sua avaliacao.</p>')
-                    . '<p><a href="' . e($this->absoluteUrl(route('student/exams'))) . '">Abrir portal do aluno</a></p>';
+                $body = $this->renderExamEmailTemplate([
+                    'notificationType' => 'published',
+                    'studentName' => $studentName,
+                    'companyName' => $this->currentCompanyName(),
+                    'courseName' => $courseName,
+                    'examTitle' => $examTitle,
+                    'dateLabel' => $dateLabel,
+                    'isExternal' => $isExternal,
+                    'portalUrl' => $this->absoluteUrl(route('student/exams')),
+                ]);
 
                 $this->emails->send($studentEmail, 'Nova avaliacao disponivel | ' . $courseName, $body, [
                     'company_id' => $companyId,
@@ -1543,19 +1544,63 @@ class CourseController extends BaseController
         }
 
         if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
-            $body = '<p>Ola ' . e($studentName) . ',</p>'
-                . '<p>Seu resultado foi publicado no portal do aluno.</p>'
-                . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
-                . '<strong>Avaliacao:</strong> ' . e($examTitle) . '<br>'
-                . '<strong>Nota:</strong> ' . e(number_format($score, 2, ',', '.')) . '<br>'
-                . '<strong>Nota minima:</strong> ' . e(number_format($passingScore, 2, ',', '.')) . '</p>'
-                . '<p><a href="' . e($this->absoluteUrl(route('student/exams'))) . '">Abrir portal do aluno</a></p>';
+            $body = $this->renderExamEmailTemplate([
+                'notificationType' => 'result',
+                'studentName' => $studentName,
+                'companyName' => $this->currentCompanyName(),
+                'courseName' => $courseName,
+                'examTitle' => $examTitle,
+                'portalUrl' => $this->absoluteUrl(route('student/exams')),
+                'scoreLabel' => number_format($score, 2, ',', '.'),
+                'passingScoreLabel' => number_format($passingScore, 2, ',', '.'),
+                'resultStatus' => $score >= $passingScore ? 'approved' : 'failed',
+            ]);
 
             $this->emails->send($studentEmail, 'Resultado de avaliacao publicado | ' . $courseName, $body, [
                 'company_id' => $companyId,
                 'is_html' => true,
             ]);
         }
+    }
+
+    private function renderExamEmailTemplate(array $vars): string
+    {
+        $publicUrl = rtrim((string) config('app.public_url', ''), '/');
+        if ($publicUrl === '') {
+            $publicUrl = rtrim((string) config('app.base_url', ''), '/');
+        }
+        if ($publicUrl === '') {
+            $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            if ($host !== '') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $publicUrl = $scheme . '://' . $host;
+            }
+        }
+
+        $vars['logoUrl'] = $publicUrl !== '' ? $publicUrl . '/assets/img/logo_aneo.png' : '';
+
+        ob_start();
+        extract($vars, EXTR_SKIP);
+        include __DIR__ . '/../views/email/exam_notification.php';
+        return (string) ob_get_clean();
+    }
+
+    private function currentCompanyName(): string
+    {
+        $company = current_company();
+        if (is_array($company)) {
+            $tradeName = trim((string) ($company['trade_name'] ?? ''));
+            if ($tradeName !== '') {
+                return $tradeName;
+            }
+
+            $legalName = trim((string) ($company['legal_name'] ?? ''));
+            if ($legalName !== '') {
+                return $legalName;
+            }
+        }
+
+        return (string) config('app.name', 'ANEO');
     }
 
     private function absoluteUrl(string $path): string

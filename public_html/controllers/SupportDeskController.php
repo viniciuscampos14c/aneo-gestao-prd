@@ -4,11 +4,13 @@ class SupportDeskController extends BaseController
 {
     private SupportTicketModel $tickets;
     private UserModel $users;
+    private StudentPortalModel $portal;
 
     public function __construct()
     {
         $this->tickets = new SupportTicketModel();
         $this->users = new UserModel();
+        $this->portal = new StudentPortalModel();
     }
 
     public function showLogin(): void
@@ -207,8 +209,101 @@ class SupportDeskController extends BaseController
             $this->tickets->addCommentAny($ticketId, '[Suporte ' . $author . '][Status ' . $status . '] ' . $statusNote, (int) ($auth['id'] ?? 0));
         }
 
+        if ($status === 'resolved') {
+            $this->notifyStudentAboutResolvedTicket($ticket, $statusNote);
+        }
+
         flash('success', 'Status atualizado pela central tecnica.');
         $this->redirectTo('support');
+    }
+
+    private function notifyStudentAboutResolvedTicket(array $ticket, string $statusNote = ''): void
+    {
+        if (!$this->portal->studentPortalNotificationsFeatureAvailable()) {
+            return;
+        }
+
+        $student = $this->resolveStudentFromTicket($ticket);
+        if (!$student) {
+            return;
+        }
+
+        $ticketId = (int) ($ticket['id'] ?? 0);
+        $ticketCode = trim((string) ($ticket['ticket_code'] ?? ''));
+        if ($ticketCode === '' && $ticketId > 0) {
+            $ticketCode = 'ANEO' . str_pad((string) $ticketId, 3, '0', STR_PAD_LEFT);
+        }
+
+        $subject = trim((string) ($ticket['subject'] ?? 'seu chamado'));
+        $message = $ticketCode !== ''
+            ? 'Seu chamado ' . $ticketCode . ' foi resolvido pela Central Tecnica.'
+            : 'Seu chamado foi resolvido pela Central Tecnica.';
+
+        $statusNote = trim(preg_replace('/\s+/', ' ', $statusNote) ?? $statusNote);
+        if ($statusNote !== '') {
+            $message .= ' Observacao da equipe: ' . mb_strimwidth($statusNote, 0, 180, '...');
+        }
+
+        $this->portal->createPortalNotification([
+            'company_id' => (int) ($student['company_id'] ?? 0),
+            'student_id' => (int) ($student['id'] ?? 0),
+            'notification_type' => 'support_ticket_resolved',
+            'title' => 'Chamado resolvido: ' . ($ticketCode !== '' ? $ticketCode : $subject),
+            'message' => $message,
+            'link_url' => route('student/requests'),
+            'meta' => [
+                'ticket_id' => $ticketId,
+                'ticket_code' => $ticketCode,
+                'subject' => $subject,
+                'status' => 'resolved',
+            ],
+        ]);
+    }
+
+    private function resolveStudentFromTicket(array $ticket): ?array
+    {
+        $companyId = (int) ($ticket['company_id'] ?? 0);
+        if ($companyId <= 0) {
+            return null;
+        }
+
+        $externalReference = trim((string) ($ticket['external_reference'] ?? ''));
+        if (preg_match('/^student:(\d+)$/', $externalReference, $matches)) {
+            $studentId = (int) ($matches[1] ?? 0);
+            if ($studentId > 0) {
+                $stmt = db()->prepare('SELECT id, company_id, full_name, email_primary
+                    FROM students
+                    WHERE id = :id
+                      AND company_id = :company_id
+                    LIMIT 1');
+                $stmt->execute([
+                    ':id' => $studentId,
+                    ':company_id' => $companyId,
+                ]);
+                $student = $stmt->fetch();
+                if ($student) {
+                    return $student;
+                }
+            }
+        }
+
+        $requesterEmail = trim((string) ($ticket['requester_email'] ?? ''));
+        if ($requesterEmail === '') {
+            return null;
+        }
+
+        $stmt = db()->prepare('SELECT id, company_id, full_name, email_primary
+            FROM students
+            WHERE company_id = :company_id
+              AND email_primary = :email
+            LIMIT 1');
+        $stmt->execute([
+            ':company_id' => $companyId,
+            ':email' => $requesterEmail,
+        ]);
+        $student = $stmt->fetch();
+
+        return $student ?: null;
     }
 
     private function activeCompanies(array $allowedCompanyIds): array

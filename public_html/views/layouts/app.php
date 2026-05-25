@@ -40,7 +40,6 @@ $menu = [
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students', 'hide_for_professor' => true],
     ['module' => 'student_schedule', 'label' => 'Escala Aluno', 'icon' => 'calendar-days', 'route' => 'escala-aluno'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
-    ['module' => 'finance', 'label' => 'Financeiro', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
     ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot'],
     ['module' => 'courses', 'label' => 'Cursos EAD', 'icon' => 'academic-cap', 'route' => 'courses'],
     ['module' => 'signatures', 'label' => 'Assinaturas', 'icon' => 'document-check', 'route' => 'signatures'],
@@ -58,6 +57,25 @@ try {
     }
 } catch (Throwable $e) {
     // Se o banco ainda nao tem as tabelas de modulos, apenas nao exibe menus dinamicos.
+}
+
+$financeMenu = [
+    ['module' => 'finance', 'label' => 'Contas a Receber', 'icon' => 'currency-dollar', 'route' => 'finance/invoices'],
+    ['module' => 'finance', 'label' => 'Contas a Pagar', 'icon' => 'banknotes', 'route' => 'finance/payables'],
+];
+$financeItemsVisible = [];
+foreach ($financeMenu as $financeItem) {
+    if (has_permission($financeItem['module'])) {
+        $financeItemsVisible[] = $financeItem;
+    }
+}
+$showFinance = $financeItemsVisible !== [];
+$financeActive = false;
+foreach ($financeItemsVisible as $financeItem) {
+    if (str_starts_with($currentRoute, $financeItem['route'])) {
+        $financeActive = true;
+        break;
+    }
 }
 
 $cadastroMenu = [
@@ -122,14 +140,18 @@ $mobileNegotiationAlerts = isset($mobileNegotiationAlerts) && is_array($mobileNe
 $mobileNegotiationAlertCount = (int) ($mobileNegotiationAlertCount ?? count($mobileNegotiationAlerts));
 $exchangeAlerts = isset($exchangeAlerts) && is_array($exchangeAlerts) ? $exchangeAlerts : [];
 $exchangeAlertCount = (int) ($exchangeAlertCount ?? count($exchangeAlerts));
+$payableDueAlerts = isset($payableDueAlerts) && is_array($payableDueAlerts) ? $payableDueAlerts : [];
+$payableDueAlertCount = (int) ($payableDueAlertCount ?? count($payableDueAlerts));
 
 if ($isProfessor) {
     // Professor externo nao deve receber alertas financeiros/administrativos.
     $mobileNegotiationAlerts = [];
     $mobileNegotiationAlertCount = 0;
+    $payableDueAlerts = [];
+    $payableDueAlertCount = 0;
 }
 
-$adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount;
+$adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount + $payableDueAlertCount;
 $adminAlertKeys = [];
 foreach ($mobileNegotiationAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
@@ -143,8 +165,15 @@ foreach ($exchangeAlerts as $alert) {
         $adminAlertKeys[] = 'exchange-request-' . $id;
     }
 }
+foreach ($payableDueAlerts as $alert) {
+    $id = (int) ($alert['id'] ?? 0);
+    if ($id > 0) {
+        $adminAlertKeys[] = 'payable-due-' . $id . '-' . (string) ($alert['due_date'] ?? '');
+    }
+}
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
 $exchangeQueueRoute = route('exchange&status=pending');
+$payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('Y-m-d') . '&end_date=' . date('Y-m-d', strtotime('+7 days')));
 ?>
 <div class="admin-modern-shell flex min-h-screen">
     <aside id="sidebar" class="admin-modern-sidebar fixed inset-y-0 left-0 z-40 flex flex-col transform bg-slate-900 text-slate-100 shadow-xl transition-transform lg:translate-x-0 -translate-x-full">
@@ -171,6 +200,20 @@ $exchangeQueueRoute = route('exchange&status=pending');
                     </li>
                 <?php endforeach; ?>
 
+                <?php if ($showFinance): ?>
+                    <li class="pt-1 admin-sidebar-group" data-admin-group="financeiro">
+                        <button type="button" data-finance-trigger aria-haspopup="true" aria-expanded="false" class="admin-sidebar-group-trigger flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $financeActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>" title="Financeiro">
+                            <span class="flex items-center gap-3 min-w-0">
+                                <?= menu_icon_svg('currency-dollar', 'h-4 w-4 flex-shrink-0'); ?>
+                                <span class="admin-sidebar-link-label">Financeiro</span>
+                            </span>
+                            <svg data-finance-chevron class="admin-sidebar-group-chevron h-4 w-4 text-slate-400 transition-transform duration-150" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 6l6 6-6 6"/>
+                            </svg>
+                        </button>
+                    </li>
+                <?php endif; ?>
+
                 <?php if ($showCadastro): ?>
                     <li class="pt-1 admin-sidebar-group" data-admin-group="cadastro">
                         <button type="button" data-cadastro-trigger aria-haspopup="true" aria-expanded="false" class="admin-sidebar-group-trigger flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition <?= $cadastroActive ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>" title="Cadastro">
@@ -186,6 +229,21 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 <?php endif; ?>
             </ul>
         </nav>
+
+        <?php if ($showFinance): ?>
+            <div data-finance-panel class="hidden fixed z-[80] min-w-[240px] rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+                <div class="admin-sidebar-popout-head px-3 py-2">
+                    <p class="text-[11px] uppercase tracking-[0.22em] text-cyan-400">Financeiro</p>
+                </div>
+                <?php foreach ($financeItemsVisible as $financeItem): ?>
+                    <?php $financeItemActive = str_starts_with($currentRoute, $financeItem['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-200 hover:bg-slate-800 hover:text-white'; ?>
+                    <a href="<?= route($financeItem['route']); ?>" class="admin-sidebar-popout-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition <?= $financeItemActive; ?>">
+                        <?= menu_icon_svg((string) ($financeItem['icon'] ?? 'currency-dollar'), 'h-4 w-4 flex-shrink-0'); ?>
+                        <?= e($financeItem['label']); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($showCadastro): ?>
             <div data-cadastro-panel class="hidden fixed z-[80] min-w-[240px] rounded-2xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
@@ -259,7 +317,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 </a>
                 <button type="button"
                         data-mobile-neg-trigger
-                        data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : $mobileQueueRoute); ?>"
+                        data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : ($payableDueAlertCount > 0 ? $payableQueueRoute : $mobileQueueRoute)); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
                         title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificacoes administrativas'; ?>">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
@@ -308,7 +366,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
     </div>
 </div>
 
-<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== []): ?>
+<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== [] || $payableDueAlerts !== []): ?>
     <div id="mobile-negotiation-modal" data-alert-keys="<?= e(json_encode($adminAlertKeys)); ?>" class="admin-alert-overlay fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4">
         <div class="admin-alert-modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-xl">
             <div class="admin-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -333,9 +391,9 @@ $exchangeQueueRoute = route('exchange&status=pending');
                                 $desiredMonthLabel = $matches[2] . '/' . $matches[1];
                             }
                             ?>
-                            <article class="admin-alert-card rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3 text-sm">
-                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['student_name'] ?? 'Solicitacao de intercambio')); ?></p>
-                                <p class="mt-1 text-xs text-slate-600">
+                            <article class="admin-alert-card admin-alert-card-exchange rounded-xl border px-4 py-3 text-sm">
+                                <p class="admin-alert-card-title font-semibold"><?= e((string) ($alert['student_name'] ?? 'Solicitacao de intercambio')); ?></p>
+                                <p class="admin-alert-card-copy mt-1 text-xs">
                                     Destino: <?= e((string) ($alert['target_unit'] ?? '-')); ?>
                                     <?php if (trim((string) ($alert['current_unit'] ?? '')) !== ''): ?>
                                         | Atual: <?= e((string) $alert['current_unit']); ?>
@@ -344,7 +402,45 @@ $exchangeQueueRoute = route('exchange&status=pending');
                                         | Mes desejado: <?= e($desiredMonthLabel); ?>
                                     <?php endif; ?>
                                 </p>
-                                <p class="mt-1 text-[11px] text-slate-500">Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?></p>
+                                <p class="admin-alert-card-meta mt-1 text-[11px]">Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?></p>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($payableDueAlerts !== []): ?>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-slate-800">Contas a pagar</h4>
+                            <span class="rounded-full bg-rose-100 px-2 py-1 text-[11px] font-semibold text-rose-700"><?= (int) $payableDueAlertCount; ?> vencimento(s)</span>
+                        </div>
+                        <?php foreach ($payableDueAlerts as $alert): ?>
+                            <?php
+                            $daysUntilDue = (int) ($alert['days_until_due'] ?? 0);
+                            $dueDateRaw = (string) ($alert['due_date'] ?? '');
+                            $dueDateLabel = $dueDateRaw !== '' && strtotime($dueDateRaw) !== false ? date('d/m/Y', strtotime($dueDateRaw)) : '-';
+                            if ($daysUntilDue < 0) {
+                                $payableTone = 'overdue';
+                                $payableStatusLabel = 'Vencido ha ' . abs($daysUntilDue) . ' dia(s)';
+                            } elseif ($daysUntilDue === 0) {
+                                $payableTone = 'today';
+                                $payableStatusLabel = 'Vence hoje';
+                            } else {
+                                $payableTone = 'upcoming';
+                                $payableStatusLabel = 'Vence em ' . $daysUntilDue . ' dia(s)';
+                            }
+                            ?>
+                            <article class="admin-alert-card admin-alert-card-payable admin-alert-card-payable-<?= e($payableTone); ?> rounded-xl border px-4 py-3 text-sm">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <p class="admin-alert-card-title font-semibold"><?= e((string) ($alert['description'] ?? 'Conta a pagar')); ?></p>
+                                    <span class="admin-alert-payable-badge"><?= e($payableStatusLabel); ?></span>
+                                </div>
+                                <p class="admin-alert-card-copy mt-1 text-xs">
+                                    Fornecedor: <?= e((string) ($alert['supplier_name'] ?? '-')); ?>
+                                    | Vencimento: <?= e($dueDateLabel); ?>
+                                    | Saldo: <?= e(format_currency((float) ($alert['outstanding_amount'] ?? 0))); ?>
+                                </p>
+                                <p class="admin-alert-card-meta mt-1 text-[11px]">Codigo: <?= e((string) ($alert['payable_number'] ?? ('#' . (int) ($alert['id'] ?? 0)))); ?></p>
                             </article>
                         <?php endforeach; ?>
                     </div>
@@ -381,6 +477,9 @@ $exchangeQueueRoute = route('exchange&status=pending');
                 <?php if ($exchangeAlerts !== []): ?>
                     <a href="<?= e($exchangeQueueRoute); ?>" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Abrir intercambios</a>
                 <?php endif; ?>
+                <?php if ($payableDueAlerts !== []): ?>
+                    <a href="<?= e($payableQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100">Abrir contas a pagar</a>
+                <?php endif; ?>
                 <?php if ($mobileNegotiationAlerts !== []): ?>
                     <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociacoes</a>
                 <?php endif; ?>
@@ -390,7 +489,7 @@ $exchangeQueueRoute = route('exchange&status=pending');
 <?php endif; ?>
 
 <script src="assets/js/app.js?v=<?= e($appJsVersion); ?>"></script>
-<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== []): ?>
+<?php if ($mobileNegotiationAlerts !== [] || $exchangeAlerts !== [] || $payableDueAlerts !== []): ?>
     <script>
         (function () {
             const modal = document.getElementById('mobile-negotiation-modal');

@@ -521,17 +521,57 @@ class FinanceModel extends BaseModel
             return ['ok' => false, 'message' => 'Aluno da negociacao nao encontrado nesta empresa.'];
         }
 
-        $openStmt = $this->db->prepare("SELECT id, invoice_number, due_date, amount, paid_amount
-            FROM invoices
-            WHERE company_id = :company_id
-              AND student_id = :student_id
-              AND status IN ('open', 'partial', 'overdue')
-            ORDER BY due_date ASC, id ASC");
-        $openStmt->execute([
+        $scope = trim((string) ($context['scope'] ?? 'total'));
+        $scope = in_array($scope, ['total', 'overdue'], true) ? $scope : 'total';
+        $selectedInvoiceNumbers = array_values(array_unique(array_filter(array_map(
+            static fn ($number): string => strtoupper(trim((string) $number)),
+            (array) ($context['selected_invoice_numbers'] ?? [])
+        ), static fn (string $number): bool => $number !== '')));
+
+        $where = [
+            'company_id = :company_id',
+            'student_id = :student_id',
+            "status IN ('open', 'partial', 'overdue')",
+        ];
+        $params = [
             ':company_id' => $this->companyId(),
             ':student_id' => $studentId,
-        ]);
+        ];
+
+        if ($scope === 'overdue') {
+            if ($selectedInvoiceNumbers !== []) {
+                $numberPlaceholders = [];
+                foreach ($selectedInvoiceNumbers as $idx => $invoiceNumber) {
+                    $key = ':invoice_number_' . $idx;
+                    $numberPlaceholders[] = $key;
+                    $params[$key] = $invoiceNumber;
+                }
+                $where[] = 'invoice_number IN (' . implode(', ', $numberPlaceholders) . ')';
+            } else {
+                $where[] = "(status = 'overdue' OR due_date < CURDATE())";
+            }
+        }
+
+        $openStmt = $this->db->prepare("SELECT id, invoice_number, due_date, amount, paid_amount
+            FROM invoices
+            WHERE " . implode(' AND ', $where) . "
+            ORDER BY due_date ASC, id ASC");
+        $openStmt->execute($params);
         $openRows = $openStmt->fetchAll();
+
+        if ($scope === 'overdue' && $selectedInvoiceNumbers !== []) {
+            $foundNumbers = array_values(array_unique(array_map(
+                static fn (array $row): string => strtoupper(trim((string) ($row['invoice_number'] ?? ''))),
+                $openRows
+            )));
+            $missingNumbers = array_values(array_diff($selectedInvoiceNumbers, $foundNumbers));
+            if ($missingNumbers !== []) {
+                return [
+                    'ok' => false,
+                    'message' => 'Nao foi possivel localizar todas as faturas selecionadas para a negociacao: ' . implode(', ', $missingNumbers) . '.',
+                ];
+            }
+        }
 
         $openInvoiceIds = [];
         $outstandingTotal = 0.0;
@@ -546,7 +586,7 @@ class FinanceModel extends BaseModel
         $outstandingTotal = round($outstandingTotal, 2);
 
         if ($openInvoiceIds === [] || $outstandingTotal <= 0) {
-            return ['ok' => false, 'message' => 'Nao existem titulos em aberto para aplicar esta negociacao.'];
+            return ['ok' => false, 'message' => 'Nao existem titulos elegiveis para aplicar esta negociacao.'];
         }
 
         if ($negotiatedTotal > ($outstandingTotal + 0.01)) {
@@ -565,6 +605,7 @@ class FinanceModel extends BaseModel
             'Compensacao automatica de titulos por aprovacao de fluxo mobile',
             $ticketCode !== '' ? ('Ticket ' . $ticketCode) : ($ticketId > 0 ? ('Ticket #' . $ticketId) : ''),
             'Aluno: ' . (string) ($student['full_name'] ?? ('ID ' . $studentId)),
+            $scope === 'overdue' ? 'Escopo: parcelas selecionadas/vencidas' : 'Escopo: saldo total',
         ])));
 
         $newInvoiceIds = [];
@@ -974,6 +1015,7 @@ class FinanceModel extends BaseModel
         $startDate = $filters['start_date'];
         $endDate = $filters['end_date'];
         $companyId = $this->companyId();
+        $hasPayables = $this->schemaTableExists('payables') && $this->schemaTableExists('payable_payments');
 
         $invoiceWhere = [
             'i.company_id = :invoice_company_id',
@@ -1163,6 +1205,79 @@ class FinanceModel extends BaseModel
         }
 
         $inadimplenciaPercent = $totalInvoiced > 0 ? (($overdueValue / $totalInvoiced) * 100) : 0.0;
+        $totalOutgoing = 0.0;
+        $payablesOpenValue = 0.0;
+        $payablesOverdueValue = 0.0;
+
+        if ($hasPayables) {
+            $outgoingWhere = [
+                'pp.company_id = :pp_company_id',
+                'pp.paid_at BETWEEN :pp_start_date AND :pp_end_date',
+            ];
+            $outgoingParams = [
+                ':pp_company_id' => $companyId,
+                ':pp_start_date' => $startDate,
+                ':pp_end_date' => $endDate,
+            ];
+
+            if (!empty($filters['method'])) {
+                $outgoingWhere[] = 'COALESCE(pm.name, "") = :pp_method';
+                $outgoingParams[':pp_method'] = $filters['method'];
+            }
+
+            if (!empty($filters['status'])) {
+                $outgoingWhere[] = 'p.status = :pp_status';
+                $outgoingParams[':pp_status'] = $filters['status'];
+            }
+
+            if (!empty($filters['supplier_id'])) {
+                $outgoingWhere[] = 'p.supplier_id = :pp_supplier_id';
+                $outgoingParams[':pp_supplier_id'] = (int) $filters['supplier_id'];
+            }
+
+            $totalOutgoing = (float) $this->scalar(
+                "SELECT COALESCE(SUM(pp.amount), 0)
+                 FROM payable_payments pp
+                 INNER JOIN payables p ON p.id = pp.payable_id
+                 LEFT JOIN payment_methods pm ON pm.id = pp.payment_method_id
+                 WHERE " . implode(' AND ', $outgoingWhere),
+                $outgoingParams
+            );
+
+            $payableWhere = [
+                'p.company_id = :pay_company_id',
+                'p.due_date BETWEEN :pay_start_date AND :pay_end_date',
+            ];
+            $payableParams = [
+                ':pay_company_id' => $companyId,
+                ':pay_start_date' => $startDate,
+                ':pay_end_date' => $endDate,
+            ];
+
+            if (!empty($filters['status'])) {
+                $payableWhere[] = 'p.status = :pay_status';
+                $payableParams[':pay_status'] = $filters['status'];
+            }
+
+            if (!empty($filters['supplier_id'])) {
+                $payableWhere[] = 'p.supplier_id = :pay_supplier_id';
+                $payableParams[':pay_supplier_id'] = (int) $filters['supplier_id'];
+            }
+
+            $payablesOpenValue = (float) $this->scalar(
+                "SELECT COALESCE(SUM(p.amount - p.paid_amount), 0)
+                 FROM payables p
+                 WHERE " . implode(' AND ', array_merge($payableWhere, ["p.status IN ('open','partial')"])),
+                $payableParams
+            );
+
+            $payablesOverdueValue = (float) $this->scalar(
+                "SELECT COALESCE(SUM(p.amount - p.paid_amount), 0)
+                 FROM payables p
+                 WHERE " . implode(' AND ', array_merge($payableWhere, ["p.status = 'overdue'"])),
+                $payableParams
+            );
+        }
 
         return [
             'cards' => [
@@ -1172,6 +1287,10 @@ class FinanceModel extends BaseModel
                 'overdue_value' => $overdueValue,
                 'settled_count' => $settledCount,
                 'inadimplencia_percent' => $inadimplenciaPercent,
+                'total_outgoing' => $totalOutgoing,
+                'net_cash' => $totalReceived - $totalOutgoing,
+                'payables_open_value' => $payablesOpenValue,
+                'payables_overdue_value' => $payablesOverdueValue,
             ],
             'nfe' => $nfe,
             'chart' => [
@@ -1262,8 +1381,6 @@ class FinanceModel extends BaseModel
         if (!empty($filters['status'])) {
             $where[] = 'i.status = :invoice_status';
             $params[':invoice_status'] = $filters['status'];
-        } else {
-            $where[] = "i.status IN ('open','partial','overdue')";
         }
 
         $whereSql = implode(' AND ', $where);
@@ -1377,6 +1494,184 @@ class FinanceModel extends BaseModel
                 '90_plus' => ['amount' => (float) ($buckets['bucket_90_plus'] ?? 0), 'qty' => (int) ($buckets['qty_90_plus'] ?? 0)],
             ],
             'top_debtors' => $topDebtors,
+        ];
+    }
+
+    public function reportPayables(array $filters, int $perPage, int $page): array
+    {
+        if (!$this->schemaTableExists('payables')) {
+            return [
+                'rows' => [],
+                'meta' => pagination_meta(0, $perPage, $page),
+            ];
+        }
+
+        $where = [
+            'p.company_id = :company_id',
+            'p.due_date BETWEEN :start_date AND :end_date',
+        ];
+        $params = [
+            ':company_id' => $this->companyId(),
+            ':start_date' => $filters['start_date'],
+            ':end_date' => $filters['end_date'],
+        ];
+
+        if (!empty($filters['status'])) {
+            $where[] = 'p.status = :payable_status';
+            $params[':payable_status'] = $filters['status'];
+        }
+
+        if (!empty($filters['method'])) {
+            $where[] = 'COALESCE(pm.name, "") = :payable_method';
+            $params[':payable_method'] = $filters['method'];
+        }
+
+        if (!empty($filters['supplier_id'])) {
+            $where[] = 'p.supplier_id = :supplier_id';
+            $params[':supplier_id'] = (int) $filters['supplier_id'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+        $countSql = "SELECT COUNT(*)
+            FROM payables p
+            INNER JOIN suppliers s ON s.id = p.supplier_id
+            LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+            WHERE {$whereSql}";
+
+        $dataSql = "SELECT
+                p.id,
+                p.payable_number,
+                p.description,
+                p.category,
+                p.competence_date,
+                p.due_date,
+                p.amount,
+                p.paid_amount,
+                p.paid_at,
+                p.status,
+                p.notes,
+                (p.amount - p.paid_amount) AS outstanding_amount,
+                GREATEST(DATEDIFF(CURDATE(), p.due_date), 0) AS days_overdue,
+                s.name AS supplier_name,
+                COALESCE(pm.name, '-') AS payment_method_name
+            FROM payables p
+            INNER JOIN suppliers s ON s.id = p.supplier_id
+            LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+            WHERE {$whereSql}
+            ORDER BY p.due_date ASC, p.id DESC";
+
+        return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+    }
+
+    public function reportCashflow(array $filters): array
+    {
+        $companyId = $this->companyId();
+        $startDate = (string) $filters['start_date'];
+        $endDate = (string) $filters['end_date'];
+        $labels = $this->buildDateLabels($startDate, $endDate);
+        $incomingByDate = array_fill_keys($labels, 0.0);
+        $outgoingByDate = array_fill_keys($labels, 0.0);
+
+        $incomingWhere = [
+            'i.company_id = :in_company_id',
+            'p.paid_at BETWEEN :in_start_date AND :in_end_date',
+        ];
+        $incomingParams = [
+            ':in_company_id' => $companyId,
+            ':in_start_date' => $startDate,
+            ':in_end_date' => $endDate,
+        ];
+
+        if (!empty($filters['method'])) {
+            $incomingWhere[] = 'p.method = :in_method';
+            $incomingParams[':in_method'] = $filters['method'];
+        }
+
+        if (!empty($filters['student_id'])) {
+            $incomingWhere[] = 'i.student_id = :in_student_id';
+            $incomingParams[':in_student_id'] = (int) $filters['student_id'];
+        }
+
+        $incomingStmt = $this->db->prepare(
+            "SELECT p.paid_at AS ref_date, COALESCE(SUM(pi.amount), 0) AS total
+             FROM payments p
+             INNER JOIN payment_items pi ON pi.payment_id = p.id
+             INNER JOIN invoices i ON i.id = pi.invoice_id
+             WHERE " . implode(' AND ', $incomingWhere) . "
+             GROUP BY p.paid_at
+             ORDER BY p.paid_at ASC"
+        );
+        $incomingStmt->execute($incomingParams);
+        foreach ($incomingStmt->fetchAll() as $row) {
+            $date = (string) $row['ref_date'];
+            if (isset($incomingByDate[$date])) {
+                $incomingByDate[$date] = (float) $row['total'];
+            }
+        }
+
+        if ($this->schemaTableExists('payable_payments')) {
+            $outgoingWhere = [
+                'pp.company_id = :out_company_id',
+                'pp.paid_at BETWEEN :out_start_date AND :out_end_date',
+            ];
+            $outgoingParams = [
+                ':out_company_id' => $companyId,
+                ':out_start_date' => $startDate,
+                ':out_end_date' => $endDate,
+            ];
+
+            if (!empty($filters['method'])) {
+                $outgoingWhere[] = 'COALESCE(pm.name, "") = :out_method';
+                $outgoingParams[':out_method'] = $filters['method'];
+            }
+
+            if (!empty($filters['status'])) {
+                $outgoingWhere[] = 'p.status = :out_status';
+                $outgoingParams[':out_status'] = $filters['status'];
+            }
+
+            if (!empty($filters['supplier_id'])) {
+                $outgoingWhere[] = 'p.supplier_id = :out_supplier_id';
+                $outgoingParams[':out_supplier_id'] = (int) $filters['supplier_id'];
+            }
+
+            $outgoingStmt = $this->db->prepare(
+                "SELECT pp.paid_at AS ref_date, COALESCE(SUM(pp.amount), 0) AS total
+                 FROM payable_payments pp
+                 INNER JOIN payables p ON p.id = pp.payable_id
+                 LEFT JOIN payment_methods pm ON pm.id = pp.payment_method_id
+                 WHERE " . implode(' AND ', $outgoingWhere) . "
+                 GROUP BY pp.paid_at
+                 ORDER BY pp.paid_at ASC"
+            );
+            $outgoingStmt->execute($outgoingParams);
+            foreach ($outgoingStmt->fetchAll() as $row) {
+                $date = (string) $row['ref_date'];
+                if (isset($outgoingByDate[$date])) {
+                    $outgoingByDate[$date] = (float) $row['total'];
+                }
+            }
+        }
+
+        $rows = [];
+        foreach ($labels as $date) {
+            $incoming = (float) ($incomingByDate[$date] ?? 0);
+            $outgoing = (float) ($outgoingByDate[$date] ?? 0);
+            $rows[] = [
+                'date' => $date,
+                'incoming' => $incoming,
+                'outgoing' => $outgoing,
+                'net' => $incoming - $outgoing,
+            ];
+        }
+
+        return [
+            'summary' => [
+                'incoming_total' => array_sum($incomingByDate),
+                'outgoing_total' => array_sum($outgoingByDate),
+                'net_total' => array_sum($incomingByDate) - array_sum($outgoingByDate),
+            ],
+            'rows' => $rows,
         ];
     }
 

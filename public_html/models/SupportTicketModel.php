@@ -310,11 +310,15 @@ class SupportTicketModel extends BaseModel
                 c.legal_name AS company_legal_name,
                 c.trade_name AS company_trade_name,
                 u.name AS created_by_name,
+                s.id AS student_id,
+                s.full_name AS student_name,
+                s.phone AS student_phone,
                 (SELECT COUNT(*) FROM support_ticket_attachments ta WHERE ta.ticket_id = st.id) AS attachments_count,
                 (SELECT COUNT(*) FROM support_ticket_comments tc WHERE tc.ticket_id = st.id) AS comments_count
             FROM support_tickets st
             LEFT JOIN companies c ON c.id = st.company_id
             LEFT JOIN users u ON u.id = st.created_by
+            LEFT JOIN students s ON st.external_reference = CONCAT('student:', s.id) AND s.company_id = st.company_id
             WHERE {$whereSql}
             ORDER BY st.updated_at DESC, st.id DESC";
 

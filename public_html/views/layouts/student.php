@@ -250,18 +250,27 @@ $studentCsrfToken = csrf_token();
                             $alertSectionLabel = match ($alertType) {
                                 'exam_published' => 'Avaliacao',
                                 'exam_result' => 'Resultado',
+                                'live_class' => 'Aula ao vivo',
+                                'support_ticket_pending' => 'Chamado',
+                                'support_ticket_resolved' => 'Chamado',
                                 'duty_schedule' => 'Escala',
                                 default => 'Portal',
                             };
                             $alertButtonLabel = match ($alertType) {
                                 'exam_published' => 'Abrir Avaliacoes',
                                 'exam_result' => 'Ver Resultado',
+                                'live_class' => 'Abrir Aulas ao Vivo',
+                                'support_ticket_pending' => 'Abrir Chamados',
+                                'support_ticket_resolved' => 'Abrir Chamados',
                                 'duty_schedule' => 'Abrir Minha Escala',
                                 default => 'Abrir Notificacao',
                             };
                             $alertCardClass = match ($alertType) {
                                 'exam_published' => 'border-sky-100 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/30',
                                 'exam_result' => 'border-indigo-100 bg-indigo-50/70 dark:border-indigo-900/60 dark:bg-indigo-950/30',
+                                'live_class' => 'border-cyan-100 bg-cyan-50/70 dark:border-cyan-900/60 dark:bg-cyan-950/30',
+                                'support_ticket_pending' => 'border-amber-100 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/30',
+                                'support_ticket_resolved' => 'border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/30',
                                 default => 'border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/30',
                             };
                             ?>

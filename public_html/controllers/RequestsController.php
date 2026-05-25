@@ -258,6 +258,8 @@ class RequestsController extends BaseController
                     'ticket_id' => $ticketId,
                     'ticket_code' => (string) ($ticket['ticket_code'] ?? ''),
                     'mode' => (string) ($data['mode'] ?? 'negociacao'),
+                    'scope' => (string) ($data['scope'] ?? 'total'),
+                    'selected_invoice_numbers' => (array) ($data['selected_invoice_numbers'] ?? []),
                 ]
             );
 
@@ -566,6 +568,24 @@ class RequestsController extends BaseController
         }
 
         $mode = str_starts_with($subject, 'aditivo financeiro -') ? 'aditivo' : 'negociacao';
+        $scope = 'total';
+        if (preg_match('/Escopo da renegociacao:\s*(.+)/iu', $description, $matchScope)) {
+            $scopeText = strtolower(trim((string) ($matchScope[1] ?? '')));
+            if (str_contains($scopeText, 'vencid')) {
+                $scope = 'overdue';
+            }
+        }
+
+        $selectedInvoiceNumbers = [];
+        if (preg_match('/Faturas vencidas consideradas:\s*(.*?)(?:\n[A-ZÁÂÃÉÊÍÓÔÕÚÇ][^\n]*:|\z)/isu', $description, $matchInvoicesBlock)) {
+            $block = (string) ($matchInvoicesBlock[1] ?? '');
+            if (preg_match_all('/FATURA-\d{6}-\d{2}/iu', $block, $matchesInvoices)) {
+                $selectedInvoiceNumbers = array_values(array_unique(array_map(
+                    static fn (string $number): string => strtoupper(trim($number)),
+                    $matchesInvoices[0]
+                )));
+            }
+        }
 
         return [
             'ok' => true,
@@ -575,6 +595,8 @@ class RequestsController extends BaseController
                 'first_due_date' => $firstDueDate,
                 'negotiated_total' => round($negotiatedTotal, 2),
                 'mode' => $mode,
+                'scope' => $scope,
+                'selected_invoice_numbers' => $selectedInvoiceNumbers,
             ],
         ];
     }

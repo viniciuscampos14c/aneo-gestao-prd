@@ -21,7 +21,7 @@ $statusBadge = [
 // Mês mínimo = próximo mês
 $minMonth = date('Y-m', strtotime('+1 month'));
 ?>
-<section class="space-y-8 max-w-2xl mx-auto">
+<section class="student-exchange-shell space-y-8 max-w-2xl mx-auto">
 
     <!-- Título -->
     <div>
@@ -176,19 +176,19 @@ $minMonth = date('Y-m', strtotime('+1 month'));
                         $createdAt = (string) ($req['created_at'] ?? '');
                         $dateFmt   = $createdAt !== '' ? date('d/m/Y', strtotime($createdAt)) : '—';
                         ?>
-                        <tr class="hover:bg-slate-50 transition">
+                        <tr class="student-exchange-row hover:bg-slate-50 transition">
                             <td class="px-4 py-3 text-slate-500 text-xs"><?= e($dateFmt); ?></td>
                             <td class="px-4 py-3 font-medium text-slate-800"><?= e($req['target_unit'] ?? '—'); ?></td>
                             <td class="px-4 py-3 text-slate-600"><?= e($dmFmt ?: $dm); ?></td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-block rounded-full px-3 py-0.5 text-xs font-semibold <?= $badge; ?>">
+                                <span class="student-exchange-status student-exchange-status-<?= e($st); ?> inline-block rounded-full px-3 py-0.5 text-xs font-semibold <?= $badge; ?>">
                                     <?= e($slabel); ?>
                                 </span>
                             </td>
                         </tr>
                         <?php if (!empty($req['admin_notes'])): ?>
-                        <tr>
-                            <td colspan="4" class="px-4 pb-3 text-xs text-slate-500 italic">
+                        <tr class="student-exchange-note-row">
+                            <td colspan="4" class="student-exchange-note px-4 pb-3 text-xs italic">
                                 Observação da equipe: <?= e($req['admin_notes']); ?>
                             </td>
                         </tr>

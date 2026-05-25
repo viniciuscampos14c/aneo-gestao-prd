@@ -5,6 +5,7 @@ $baseParams = [
     'start_date' => $filters['start_date'],
     'end_date' => $filters['end_date'],
     'student_id' => $filters['student_id'],
+    'supplier_id' => $filters['supplier_id'],
     'status' => $filters['status'],
     'method' => $filters['method'],
     'per_page' => request('per_page', $paginationOptions[0]),
@@ -14,10 +15,13 @@ $tabs = [
     'overview' => 'Visao Geral',
     'receipts' => 'Recebimentos',
     'receivables' => 'Contas a Receber',
+    'payables' => 'Contas a Pagar',
     'aging' => 'Inadimplencia',
+    'cashflow' => 'Fluxo de Caixa',
     'fiscal' => 'NF-e',
 ];
 $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethodOptions : ['PIX', 'Boleto', 'Cartao de credito', 'Transferencia', 'Dinheiro'];
+$suppliers = is_array($suppliers ?? null) ? $suppliers : [];
 ?>
 
 <section class="finance-reports-shell space-y-6">
@@ -35,7 +39,7 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
         </div>
     </div>
 
-    <form method="get" action="index.php" class="finance-reports-filter grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4 xl:grid-cols-8">
+    <form method="get" action="index.php" class="finance-reports-filter grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4 xl:grid-cols-9">
         <input type="hidden" name="route" value="finance/reports">
         <input type="hidden" name="tab" value="<?= e($tab); ?>">
 
@@ -60,6 +64,15 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
             <?php endforeach; ?>
         </select>
 
+        <select name="supplier_id" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <option value="">Todos os fornecedores</option>
+            <?php foreach ($suppliers as $supplier): ?>
+                <option value="<?= (int) $supplier['id']; ?>" <?= (string) $filters['supplier_id'] === (string) $supplier['id'] ? 'selected' : ''; ?>>
+                    <?= e($supplier['name']); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+
         <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="">Todos os status</option>
             <option value="draft" <?= $filters['status'] === 'draft' ? 'selected' : ''; ?>>Rascunho</option>
@@ -67,6 +80,7 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
             <option value="partial" <?= $filters['status'] === 'partial' ? 'selected' : ''; ?>>Parcial</option>
             <option value="paid" <?= $filters['status'] === 'paid' ? 'selected' : ''; ?>>Pago</option>
             <option value="overdue" <?= $filters['status'] === 'overdue' ? 'selected' : ''; ?>>Vencido</option>
+            <option value="cancelled" <?= $filters['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelado</option>
         </select>
 
         <select name="method" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -84,7 +98,7 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
             <?php endforeach; ?>
         </select>
 
-        <div class="flex gap-2 xl:col-span-8">
+        <div class="flex gap-2 xl:col-span-9">
             <button class="finance-reports-apply-btn rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Aplicar</button>
             <a href="index.php?<?= http_build_query(['route' => 'finance/reports', 'tab' => $tab]); ?>" class="finance-reports-clear-btn rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Limpar</a>
         </div>
@@ -107,6 +121,13 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
             <article class="finance-reports-kpi finance-reports-kpi-overdue rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Vencido</p><p class="mt-2 text-xl font-semibold"><?= e(format_currency($overview['cards']['overdue_value'])); ?></p></article>
             <article class="finance-reports-kpi finance-reports-kpi-settled rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Baixas no periodo</p><p class="mt-2 text-xl font-semibold"><?= (int) $overview['cards']['settled_count']; ?></p></article>
             <article class="finance-reports-kpi finance-reports-kpi-default rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Inadimplencia</p><p class="mt-2 text-xl font-semibold"><?= number_format((float) $overview['cards']['inadimplencia_percent'], 2, ',', '.'); ?>%</p></article>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><p class="text-xs uppercase text-rose-700">Saidas pagas</p><p class="mt-2 text-xl font-semibold text-rose-700"><?= e(format_currency($overview['cards']['total_outgoing'] ?? 0)); ?></p></article>
+            <article class="rounded-xl border border-cyan-200 bg-cyan-50 p-4"><p class="text-xs uppercase text-cyan-700">Saldo liquido</p><p class="mt-2 text-xl font-semibold text-cyan-700"><?= e(format_currency($overview['cards']['net_cash'] ?? 0)); ?></p></article>
+            <article class="rounded-xl border border-amber-200 bg-amber-50 p-4"><p class="text-xs uppercase text-amber-700">Contas a pagar em aberto</p><p class="mt-2 text-xl font-semibold text-amber-700"><?= e(format_currency($overview['cards']['payables_open_value'] ?? 0)); ?></p></article>
+            <article class="rounded-xl border border-red-200 bg-red-50 p-4"><p class="text-xs uppercase text-red-700">Contas a pagar vencidas</p><p class="mt-2 text-xl font-semibold text-red-700"><?= e(format_currency($overview['cards']['payables_overdue_value'] ?? 0)); ?></p></article>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-3">
@@ -276,6 +297,82 @@ $paymentMethodOptions = is_array($paymentMethodOptions ?? null) ? $paymentMethod
                 </table>
             </div>
         </section>
+    <?php endif; ?>
+
+    <?php if ($tab === 'payables'): ?>
+        <?php $rows = $payablesReport['rows']; $meta = $payablesReport['meta']; ?>
+        <div class="finance-reports-table-wrap overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table class="finance-reports-table min-w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th class="px-3 py-3">Numero</th>
+                        <th class="px-3 py-3">Fornecedor</th>
+                        <th class="px-3 py-3">Descricao</th>
+                        <th class="px-3 py-3">Competencia</th>
+                        <th class="px-3 py-3">Vencimento</th>
+                        <th class="px-3 py-3">Valor</th>
+                        <th class="px-3 py-3">Pago</th>
+                        <th class="px-3 py-3">Saldo</th>
+                        <th class="px-3 py-3">Status</th>
+                        <th class="px-3 py-3">Metodo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($rows as $row): ?>
+                        <tr class="finance-reports-row border-b border-slate-100 hover:bg-slate-50">
+                            <td class="px-3 py-3 font-medium"><?= e($row['payable_number']); ?></td>
+                            <td class="px-3 py-3"><?= e($row['supplier_name']); ?></td>
+                            <td class="px-3 py-3"><?= e($row['description']); ?></td>
+                            <td class="px-3 py-3"><?= e($row['competence_date'] ?: '-'); ?></td>
+                            <td class="px-3 py-3"><?= e($row['due_date']); ?></td>
+                            <td class="px-3 py-3"><?= e(format_currency($row['amount'])); ?></td>
+                            <td class="px-3 py-3"><?= e(format_currency($row['paid_amount'])); ?></td>
+                            <td class="px-3 py-3"><?= e(format_currency($row['outstanding_amount'])); ?></td>
+                            <td class="px-3 py-3"><?= e(invoice_status_label((string) $row['status'])); ?></td>
+                            <td class="px-3 py-3"><?= e($row['payment_method_name'] ?: '-'); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($rows === []): ?>
+                        <tr><td colspan="10" class="px-3 py-6 text-center text-slate-500">Nenhuma conta a pagar encontrada.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php include __DIR__ . '/reports_pagination.php'; ?>
+    <?php endif; ?>
+
+    <?php if ($tab === 'cashflow' && $cashflow): ?>
+        <div class="grid gap-4 sm:grid-cols-3">
+            <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p class="text-xs uppercase text-emerald-700">Entradas</p><p class="mt-2 text-xl font-semibold text-emerald-700"><?= e(format_currency($cashflow['summary']['incoming_total'] ?? 0)); ?></p></article>
+            <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><p class="text-xs uppercase text-rose-700">Saidas</p><p class="mt-2 text-xl font-semibold text-rose-700"><?= e(format_currency($cashflow['summary']['outgoing_total'] ?? 0)); ?></p></article>
+            <article class="rounded-xl border border-cyan-200 bg-cyan-50 p-4"><p class="text-xs uppercase text-cyan-700">Saldo liquido</p><p class="mt-2 text-xl font-semibold text-cyan-700"><?= e(format_currency($cashflow['summary']['net_total'] ?? 0)); ?></p></article>
+        </div>
+
+        <div class="finance-reports-table-wrap overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table class="finance-reports-table min-w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <th class="px-3 py-3">Data</th>
+                        <th class="px-3 py-3">Entradas</th>
+                        <th class="px-3 py-3">Saidas</th>
+                        <th class="px-3 py-3">Saldo liquido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($cashflow['rows'] as $row): ?>
+                        <tr class="finance-reports-row border-b border-slate-100 hover:bg-slate-50">
+                            <td class="px-3 py-3 font-medium"><?= e($row['date']); ?></td>
+                            <td class="px-3 py-3"><?= e(format_currency($row['incoming'])); ?></td>
+                            <td class="px-3 py-3"><?= e(format_currency($row['outgoing'])); ?></td>
+                            <td class="px-3 py-3"><?= e(format_currency($row['net'])); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (($cashflow['rows'] ?? []) === []): ?>
+                        <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">Nenhum movimento financeiro encontrado no periodo.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 
     <?php if ($tab === 'fiscal'): ?>

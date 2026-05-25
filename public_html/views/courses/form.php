@@ -500,14 +500,14 @@ $formatLessonDuration = static function (int $seconds): string {
         <?php else: ?>
 
         <!-- Formulário de nova aula online -->
-        <details class="mb-4 rounded-xl border border-sky-300 bg-sky-100/80 shadow-sm">
-            <summary class="cursor-pointer select-none rounded-xl border border-sky-400 bg-sky-200 px-4 py-3 text-sm font-semibold text-sky-950 hover:bg-sky-300 transition">
+        <details class="course-zoom-builder mb-4 rounded-xl border border-sky-300 bg-sky-100/80 shadow-sm">
+            <summary class="course-zoom-builder-summary cursor-pointer select-none rounded-xl border border-sky-400 bg-sky-200 px-4 py-3 text-sm font-semibold text-sky-950 hover:bg-sky-300 transition">
                 <span class="inline-flex items-center gap-2">
-                    <span class="text-sky-700">+</span>
+                    <span class="course-zoom-builder-plus text-sky-700">+</span>
                     <span>Nova Aula Online (Zoom)</span>
                 </span>
             </summary>
-            <div class="border-t border-sky-200 p-4">
+            <div class="course-zoom-builder-body border-t border-sky-200 p-4">
                 <form method="POST" action="index.php?route=courses/live-sessions/store" class="space-y-3">
                     <input type="hidden" name="route" value="courses/live-sessions/store">
                     <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
@@ -515,36 +515,36 @@ $formatLessonDuration = static function (int $seconds): string {
                     <input type="hidden" name="redirect_to" value="<?= e($backToCourse); ?>">
 
                     <div class="grid gap-3 sm:grid-cols-2">
-                        <label class="block sm:col-span-2">
+                        <label class="course-zoom-builder-field block sm:col-span-2">
                             <span class="mb-1 block text-xs font-medium text-slate-700">Título da aula <span class="text-rose-500">*</span></span>
                             <input type="text" name="title" required maxlength="180"
                                    placeholder="Ex: Aula 01 — Introdução ao módulo"
-                                   class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                   class="course-zoom-builder-input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
                         </label>
 
-                        <label class="block">
+                        <label class="course-zoom-builder-field block">
                             <span class="mb-1 block text-xs font-medium text-slate-700">Data e horário <span class="text-rose-500">*</span></span>
                             <input type="datetime-local" name="scheduled_at" required
-                                   class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                   class="course-zoom-builder-input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
                             <span class="mt-0.5 block text-xs text-slate-400">Horário de Brasília (GMT-3)</span>
                         </label>
 
-                        <label class="block">
+                        <label class="course-zoom-builder-field block">
                             <span class="mb-1 block text-xs font-medium text-slate-700">Duração (minutos)</span>
                             <input type="number" name="duration_minutes" min="15" max="480" value="60"
-                                   class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                   class="course-zoom-builder-input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
                         </label>
 
-                        <label class="block sm:col-span-2">
+                        <label class="course-zoom-builder-field block sm:col-span-2">
                             <span class="mb-1 block text-xs font-medium text-slate-700">Observações (opcional)</span>
                             <textarea name="notes" rows="2"
-                                      class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"></textarea>
+                                      class="course-zoom-builder-input course-zoom-builder-textarea w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"></textarea>
                         </label>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="course-zoom-builder-actions flex items-center gap-3">
                         <button type="submit"
-                                class="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700 transition">
+                                class="course-zoom-builder-submit rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700 transition">
                             Criar Reunião Zoom
                         </button>
                         <span class="text-xs text-slate-400">A reunião será criada automaticamente no Zoom.</span>

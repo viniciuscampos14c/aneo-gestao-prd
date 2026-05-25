@@ -188,14 +188,8 @@ class StudentPortalController extends BaseController
         $studentEmail = trim((string) ($student['email'] ?? ''));
 
         $this->portal->markAllPortalNotificationsAsRead($studentId);
-
         $ticketCount = 0;
-        if ($this->tickets->featureAvailable() && $studentId > 0 && $companyId > 0) {
-            $stats = $this->tickets->studentStats($companyId, $studentId, $studentEmail);
-            $ticketCount = (int) ($stats['open'] ?? 0) + (int) ($stats['in_progress'] ?? 0);
-        }
-
-        $liveCount = $studentId > 0 ? count($this->portal->upcomingLiveClasses($studentId)) : 0;
+        $liveCount = 0;
         $portalCount = $this->portal->countUnreadPortalNotifications($studentId);
 
         $this->json([

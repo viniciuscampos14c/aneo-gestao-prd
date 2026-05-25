@@ -154,11 +154,15 @@
         });
     }
 
-    const cadastroTrigger = document.querySelector('[data-cadastro-trigger]');
-    const cadastroPanel = document.querySelector('[data-cadastro-panel]');
-    const cadastroChevron = document.querySelector('[data-cadastro-chevron]');
+    const wireSidebarGroup = ({ triggerSelector, panelSelector, chevronSelector }) => {
+        const trigger = document.querySelector(triggerSelector);
+        const panel = document.querySelector(panelSelector);
+        const chevron = document.querySelector(chevronSelector);
 
-    if (cadastroTrigger && cadastroPanel) {
+        if (!trigger || !panel) {
+            return;
+        }
+
         let closeTimer = null;
 
         const clearCloseTimer = () => {
@@ -169,32 +173,32 @@
         };
 
         const setExpanded = (expanded) => {
-            cadastroTrigger.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-            if (cadastroChevron) {
+            trigger.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            if (chevron) {
                 if (expanded) {
-                    cadastroChevron.classList.add('rotate-90');
+                    chevron.classList.add('rotate-90');
                 } else {
-                    cadastroChevron.classList.remove('rotate-90');
+                    chevron.classList.remove('rotate-90');
                 }
             }
         };
 
-        const isOpen = () => !cadastroPanel.classList.contains('hidden');
+        const isOpen = () => !panel.classList.contains('hidden');
 
         const positionPanel = () => {
-            positionFloatingPanel(cadastroTrigger, cadastroPanel);
+            positionFloatingPanel(trigger, panel);
         };
 
         const openPanel = () => {
             clearCloseTimer();
-            cadastroPanel.classList.remove('hidden');
+            panel.classList.remove('hidden');
             positionPanel();
             setExpanded(true);
         };
 
         const closePanel = () => {
             clearCloseTimer();
-            cadastroPanel.classList.add('hidden');
+            panel.classList.add('hidden');
             setExpanded(false);
         };
 
@@ -203,15 +207,15 @@
             closeTimer = window.setTimeout(closePanel, 220);
         };
 
-        cadastroTrigger.addEventListener('mouseenter', openPanel);
-        cadastroTrigger.addEventListener('mouseleave', scheduleClose);
-        cadastroTrigger.addEventListener('focus', openPanel);
-        cadastroTrigger.addEventListener('blur', scheduleClose);
+        trigger.addEventListener('mouseenter', openPanel);
+        trigger.addEventListener('mouseleave', scheduleClose);
+        trigger.addEventListener('focus', openPanel);
+        trigger.addEventListener('blur', scheduleClose);
 
-        cadastroPanel.addEventListener('mouseenter', clearCloseTimer);
-        cadastroPanel.addEventListener('mouseleave', scheduleClose);
+        panel.addEventListener('mouseenter', clearCloseTimer);
+        panel.addEventListener('mouseleave', scheduleClose);
 
-        cadastroTrigger.addEventListener('click', (event) => {
+        trigger.addEventListener('click', (event) => {
             event.preventDefault();
             if (isOpen()) {
                 closePanel();
@@ -225,7 +229,7 @@
                 return;
             }
 
-            if (cadastroTrigger.contains(event.target) || cadastroPanel.contains(event.target)) {
+            if (trigger.contains(event.target) || panel.contains(event.target)) {
                 return;
             }
 
@@ -249,7 +253,19 @@
                 positionPanel();
             }
         }, true);
-    }
+    };
+
+    wireSidebarGroup({
+        triggerSelector: '[data-finance-trigger]',
+        panelSelector: '[data-finance-panel]',
+        chevronSelector: '[data-finance-chevron]',
+    });
+
+    wireSidebarGroup({
+        triggerSelector: '[data-cadastro-trigger]',
+        panelSelector: '[data-cadastro-panel]',
+        chevronSelector: '[data-cadastro-chevron]',
+    });
 
     const cards = document.querySelectorAll('[data-student-card]');
     const zones = document.querySelectorAll('[data-dropzone]');

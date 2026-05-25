@@ -16,6 +16,8 @@ class DashboardModel extends BaseModel
                 'receivable' => 0.0,
                 'due_today_count' => 0,
                 'due_today_alerts' => [],
+                'payable_due_alerts' => [],
+                'payable_due_count' => 0,
                 'lead_pipeline' => [],
                 'kanban' => [],
                 'bi' => $this->emptyBi(),
@@ -58,6 +60,14 @@ class DashboardModel extends BaseModel
         $dueTodayStmt->execute([':company_id' => $companyId]);
         $metrics['due_today_alerts'] = $dueTodayStmt->fetchAll();
         $metrics['due_today_count'] = count($metrics['due_today_alerts']);
+
+        $metrics['payable_due_alerts'] = [];
+        $metrics['payable_due_count'] = 0;
+        if (class_exists('PayableModel')) {
+            $payables = new PayableModel();
+            $metrics['payable_due_alerts'] = $payables->dueAlerts(7, 8);
+            $metrics['payable_due_count'] = $payables->dueAlertCount(7);
+        }
 
         $pipelineStmt = $this->db->prepare('SELECT
                 s.name,

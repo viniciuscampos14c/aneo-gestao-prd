@@ -191,8 +191,9 @@ class ReenrollmentModel extends BaseModel
     // -------------------------------------------------------------------------
 
     /**
-     * Retorna faturas em aberto/vencidas/parciais do aluno.
-     * Array vazio = aluno em dia.
+     * Retorna faturas inadimplentes do aluno.
+     * Faturas futuras renegociadas ficam em aberto, mas nao devem travar rematricula.
+     * Array vazio = aluno regular para rematricula.
      */
     public function openInvoices(int $studentId, int $companyId): array
     {
@@ -202,6 +203,7 @@ class ReenrollmentModel extends BaseModel
              WHERE student_id = :sid
                AND company_id = :cid
                AND status IN ('open', 'overdue', 'partial')
+               AND (status = 'overdue' OR due_date < CURDATE())
              ORDER BY due_date ASC"
         );
         $stmt->execute([':sid' => $studentId, ':cid' => $companyId]);

@@ -493,6 +493,7 @@ function invoice_status_label(?string $status): string
         'partial' => 'Parcial',
         'paid' => 'Pago',
         'overdue' => 'Vencido',
+        'cancelled' => 'Cancelado',
         default => $status !== '' ? ucfirst($status) : '-',
     };
 }

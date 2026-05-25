@@ -105,20 +105,23 @@ $sourceLabels = [
             $priority = (string) ($row['priority'] ?? 'medium');
             $source = (string) ($row['source'] ?? 'student_portal');
             $statusBadge = match ($status) {
-                'resolved' => 'bg-emerald-100 text-emerald-700',
-                'in_progress' => 'bg-amber-100 text-amber-700',
-                'closed' => 'bg-slate-200 text-slate-700',
-                default => 'bg-cyan-100 text-cyan-700',
+                'resolved' => 'student-request-pill-status-resolved',
+                'in_progress' => 'student-request-pill-status-progress',
+                'closed' => 'student-request-pill-status-closed',
+                default => 'student-request-pill-status-open',
             };
             $priorityBadge = match ($priority) {
-                'urgent' => 'bg-rose-100 text-rose-700',
-                'high' => 'bg-orange-100 text-orange-700',
-                'low' => 'bg-slate-100 text-slate-700',
-                default => 'bg-sky-100 text-sky-700',
+                'urgent' => 'student-request-pill-priority-urgent',
+                'high' => 'student-request-pill-priority-high',
+                'low' => 'student-request-pill-priority-low',
+                default => 'student-request-pill-priority-medium',
             };
-            $sourceBadge = $source === 'student_portal'
-                ? 'bg-violet-100 text-violet-700'
-                : 'bg-slate-100 text-slate-700';
+            $sourceBadge = match ($source) {
+                'webhook' => 'student-request-pill-source-webhook',
+                'internal' => 'student-request-pill-source-internal',
+                'api' => 'student-request-pill-source-api',
+                default => 'student-request-pill-source-student',
+            };
             ?>
             <article class="rounded-xl border border-slate-200 bg-white p-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -130,9 +133,9 @@ $sourceLabels = [
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $statusBadge; ?>"><?= e($statusLabels[$status] ?? $status); ?></span>
-                        <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $priorityBadge; ?>"><?= e($priorityLabels[$priority] ?? $priority); ?></span>
-                        <span class="rounded-full px-2 py-1 text-xs font-semibold <?= $sourceBadge; ?>"><?= e($sourceLabels[$source] ?? $source); ?></span>
+                        <span class="student-request-pill rounded-full px-2 py-1 text-xs font-semibold <?= $statusBadge; ?>"><?= e($statusLabels[$status] ?? $status); ?></span>
+                        <span class="student-request-pill rounded-full px-2 py-1 text-xs font-semibold <?= $priorityBadge; ?>"><?= e($priorityLabels[$priority] ?? $priority); ?></span>
+                        <span class="student-request-pill rounded-full px-2 py-1 text-xs font-semibold <?= $sourceBadge; ?>"><?= e($sourceLabels[$source] ?? $source); ?></span>
                     </div>
                 </div>
 

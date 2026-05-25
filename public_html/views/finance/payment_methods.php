@@ -8,7 +8,11 @@ $rows = is_array($rows ?? null) ? $rows : [];
             <h2 class="text-2xl font-semibold">Formas de Pagamento</h2>
             <p class="text-sm text-slate-500">Cadastre formas avulsas (manual) e acompanhe as formas integradas por contrato.</p>
         </div>
-        <a href="<?= route('finance/invoices'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar para Faturas</a>
+        <div class="flex gap-2">
+            <a href="<?= route('finance/invoices'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Faturas</a>
+            <a href="<?= route('finance/payments'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Pagamentos</a>
+            <a href="<?= route('finance/reports'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Relatorios</a>
+        </div>
     </div>
 
     <?php if (!$available): ?>

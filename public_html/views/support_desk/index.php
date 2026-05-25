@@ -14,6 +14,7 @@ $priorityLabels = [
 $sourceLabels = [
     'internal' => 'Interno',
     'webhook' => 'Webhook',
+    'api' => 'App Mobile',
     'student_portal' => 'Portal Aluno',
 ];
 ?>
@@ -122,23 +123,29 @@ $sourceLabels = [
             $emailSent = (int) ($row['email_sent'] ?? 0) === 1;
             $webhookForwarded = (int) ($row['webhook_forwarded'] ?? 0) === 1;
             $statusBadge = match ($status) {
-                'resolved' => 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-                'in_progress' => 'bg-amber-100 text-amber-700 border border-amber-200',
-                'closed' => 'bg-slate-200 text-slate-700 border border-slate-300',
-                default => 'bg-cyan-100 text-cyan-700 border border-cyan-200',
+                'resolved' => 'support-ticket-pill-status-resolved',
+                'in_progress' => 'support-ticket-pill-status-progress',
+                'closed' => 'support-ticket-pill-status-closed',
+                default => 'support-ticket-pill-status-open',
             };
             $priorityBadge = match ($priority) {
-                'urgent' => 'bg-rose-100 text-rose-700 border border-rose-200',
-                'high' => 'bg-orange-100 text-orange-700 border border-orange-200',
-                'low' => 'bg-slate-100 text-slate-700 border border-slate-200',
-                default => 'bg-sky-100 text-sky-700 border border-sky-200',
+                'urgent' => 'support-ticket-pill-priority-urgent',
+                'high' => 'support-ticket-pill-priority-high',
+                'low' => 'support-ticket-pill-priority-low',
+                default => 'support-ticket-pill-priority-medium',
             };
             $sourceBadge = match ($source) {
-                'webhook' => 'bg-violet-100 text-violet-700 border border-violet-200',
-                'student_portal' => 'bg-indigo-100 text-indigo-700 border border-indigo-200',
-                default => 'bg-slate-100 text-slate-700 border border-slate-200',
+                'webhook' => 'support-ticket-pill-source-webhook',
+                'api' => 'support-ticket-pill-source-api',
+                'student_portal' => 'support-ticket-pill-source-student',
+                default => 'support-ticket-pill-source-internal',
             };
             $companyName = trim((string) ($row['company_trade_name'] ?? '')) !== '' ? (string) $row['company_trade_name'] : (string) ($row['company_legal_name'] ?? 'Empresa');
+            $studentPhone = trim((string) ($row['student_phone'] ?? ''));
+            $requesterName = trim((string) (($row['requester_name'] ?? '') !== '' ? $row['requester_name'] : ($row['student_name'] ?? '')));
+            $studentWhatsappLink = $studentPhone !== ''
+                ? whatsapp_link($studentPhone, 'Ola ' . ($requesterName !== '' ? $requesterName : 'aluno') . ', aqui e da Central Tecnica da ANEO. Estamos entrando em contato sobre o chamado ' . $ticketCode . '.')
+                : null;
             ?>
             <article class="support-ticket-card rounded-2xl border border-white/70 bg-white/65 p-4 shadow-sm backdrop-blur-md">
                 <div class="flex flex-wrap items-start justify-between gap-3">
@@ -157,11 +164,25 @@ $sourceLabels = [
                     </div>
                 </div>
 
-                <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                     <div class="support-ticket-meta rounded-xl border border-white/75 bg-white/55 p-3 backdrop-blur-sm">
                         <p class="text-[11px] uppercase tracking-wide text-slate-500">Solicitante</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800"><?= e((string) (($row['requester_name'] ?? '') !== '' ? $row['requester_name'] : '-')); ?></p>
+                        <p class="mt-1 text-sm font-semibold text-slate-800"><?= e($requesterName !== '' ? $requesterName : '-'); ?></p>
                         <p class="text-xs text-slate-500"><?= e((string) (($row['requester_email'] ?? '') !== '' ? $row['requester_email'] : '-')); ?></p>
+                    </div>
+                    <div class="support-ticket-meta rounded-xl border border-white/75 bg-white/55 p-3 backdrop-blur-sm">
+                        <p class="text-[11px] uppercase tracking-wide text-slate-500">Telefone do aluno</p>
+                        <?php if ($studentPhone !== ''): ?>
+                            <p class="mt-1 text-sm font-semibold text-slate-800"><?= e($studentPhone); ?></p>
+                            <?php if ($studentWhatsappLink): ?>
+                                <a href="<?= e($studentWhatsappLink); ?>" target="_blank" rel="noopener" class="support-whatsapp-link mt-2 inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold">
+                                    WhatsApp do aluno
+                                </a>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <p class="mt-1 text-sm font-semibold text-slate-800">-</p>
+                            <p class="text-xs text-slate-500">Disponivel para chamados do Portal do Aluno com telefone cadastrado.</p>
+                        <?php endif; ?>
                     </div>
                     <div class="support-ticket-meta rounded-xl border border-white/75 bg-white/55 p-3 backdrop-blur-sm">
                         <p class="text-[11px] uppercase tracking-wide text-slate-500">Email notificacao</p>

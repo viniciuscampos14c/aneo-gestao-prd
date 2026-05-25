@@ -265,7 +265,7 @@ class StudentPortalModel extends BaseModel
             return [];
         }
 
-        $limit = max(1, min(20, $limit));
+        $limit = max(1, min(50, $limit));
         $stmt = $this->db->prepare("SELECT *
             FROM student_portal_notifications
             WHERE student_id = :student_id
@@ -2164,15 +2164,13 @@ class StudentPortalModel extends BaseModel
                 c.id AS course_id,
                 c.name AS course_name
             FROM exam_results r
+            INNER JOIN (
+                SELECT r2.exam_id, r2.student_id, MAX(r2.id) AS max_id
+                FROM exam_results r2
+                GROUP BY r2.exam_id, r2.student_id
+            ) latest ON latest.max_id = r.id
             INNER JOIN exams ex ON ex.id = r.exam_id
             INNER JOIN courses c ON c.id = ex.course_id
-            INNER JOIN (
-                SELECT ex2.course_id, r2.student_id, MAX(r2.id) AS max_id
-                FROM exam_results r2
-                INNER JOIN exams ex2 ON ex2.id = r2.exam_id
-                WHERE r2.status = 'approved'
-                GROUP BY ex2.course_id, r2.student_id
-            ) latest ON latest.max_id = r.id
             WHERE r.student_id = :student_id";
         $params = [':student_id' => $studentId];
         if ($this->hasCourseCompanyColumn() && $companyId !== null && $companyId > 0) {

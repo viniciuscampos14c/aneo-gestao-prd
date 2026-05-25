@@ -212,7 +212,7 @@ $birthDateLabel = $studentBirthDate !== '' ? date('d/m/Y', strtotime($studentBir
         </section>
 
         <footer class="mt-5 border-t-2 border-slate-900 pt-3 text-[11px]">
-            <p><strong>Descricao:</strong> Historico escolar consolidado para comprovacao academica interna da ANEO, com os resultados finais aprovados registrados no sistema.</p>
+            <p><strong>Descricao:</strong> Historico escolar consolidado para comprovacao academica interna da ANEO, com os resultados finais registrados no sistema.</p>
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                 <div class="border border-dashed border-slate-900 p-5 text-center uppercase tracking-wide">Assinatura Responsavel ANEO</div>
                 <div class="border border-dashed border-slate-900 p-5 text-center uppercase tracking-wide">Carimbo Oficial ANEO</div>
