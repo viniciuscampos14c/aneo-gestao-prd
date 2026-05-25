@@ -31,6 +31,7 @@ $adminAi = new AdminAiController();
 $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
 $arsenal = new ArsenalController();
+$practiceUnits = class_exists('PracticeUnitController') ? new PracticeUnitController() : null;
 $banks = class_exists('BanksController') ? new BanksController() : null;
 $apiMgmt = new ApiManagementController();
 $cron     = new CronController();
@@ -352,6 +353,13 @@ if ($studentSchedule !== null) {
     $router->post('escala-aluno/assignments/store', fn () => $studentSchedule->storeAssignment());
     $router->post('escala-aluno/assignments/delete', fn () => $studentSchedule->deleteAssignment());
     $router->get('escala-aluno/export', fn () => $studentSchedule->export());
+}
+
+if ($practiceUnits !== null) {
+    $router->get('practice-units', fn () => $practiceUnits->index());
+    $router->post('practice-units/store', fn () => $practiceUnits->store());
+    $router->post('practice-units/update', fn () => $practiceUnits->update());
+    $router->post('practice-units/toggle', fn () => $practiceUnits->toggle());
 }
 
 // Modulos desativados por regra de negocio atual (nao aparecem no menu e nao devem abrir por URL direta).

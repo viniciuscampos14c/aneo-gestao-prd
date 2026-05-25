@@ -83,6 +83,7 @@ $cadastroMenu = [
     ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'users', 'route' => 'users'],
     ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office', 'route' => 'companies'],
     ['module' => 'companies', 'label' => 'SMTP Email', 'icon' => 'envelope', 'route' => 'companies/smtp'],
+    ['module' => 'student_schedule.manage', 'label' => 'Unidades / Hospitais', 'icon' => 'building-library', 'route' => 'practice-units'],
     ['module' => 'data_imports', 'label' => 'Importação de Dados', 'icon' => 'inbox-arrow-down', 'route' => 'data-imports'],
     ['module' => 'system_modules', 'label' => 'Modulos do Sistema', 'icon' => 'archive-box', 'route' => 'system-modules'],
 ];

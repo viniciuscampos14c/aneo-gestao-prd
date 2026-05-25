@@ -2,9 +2,14 @@
 
 class StudentScheduleModel extends BaseModel
 {
+    public function unitsFeatureAvailable(): bool
+    {
+        return $this->schemaTableExists('student_practice_units');
+    }
+
     public function featureAvailable(): bool
     {
-        return $this->schemaTableExists('student_practice_units')
+        return $this->unitsFeatureAvailable()
             && $this->schemaTableExists('student_duty_schedules')
             && $this->schemaTableExists('student_duty_schedule_weeks')
             && $this->schemaTableExists('student_duty_assignments')
@@ -14,7 +19,7 @@ class StudentScheduleModel extends BaseModel
 
     public function listUnits(): array
     {
-        if (!$this->schemaTableExists('student_practice_units')) {
+        if (!$this->unitsFeatureAvailable()) {
             return [];
         }
 
@@ -30,6 +35,32 @@ class StudentScheduleModel extends BaseModel
             ORDER BY u.is_active DESC, u.name ASC');
         $stmt->execute([':company_id' => $this->companyId()]);
         return $stmt->fetchAll();
+    }
+
+    public function findUnit(int $id): ?array
+    {
+        if (!$this->unitsFeatureAvailable()) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare('SELECT u.*,
+                (
+                    SELECT COUNT(*)
+                    FROM students s
+                    WHERE s.company_id = u.company_id
+                      AND s.practice_unit_id = u.id
+                ) AS linked_students
+            FROM student_practice_units u
+            WHERE u.id = :id
+              AND u.company_id = :company_id
+            LIMIT 1');
+        $stmt->execute([
+            ':id' => $id,
+            ':company_id' => $this->companyId(),
+        ]);
+
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 
     public function createUnit(array $data, int $createdBy): int
@@ -51,6 +82,25 @@ class StudentScheduleModel extends BaseModel
         ]);
 
         return (int) $this->db->lastInsertId();
+    }
+
+    public function updateUnit(int $id, array $data): void
+    {
+        $stmt = $this->db->prepare('UPDATE student_practice_units
+            SET name = :name,
+                city = :city,
+                state = :state,
+                updated_at = :updated_at
+            WHERE id = :id
+              AND company_id = :company_id');
+        $stmt->execute([
+            ':name' => $data['name'],
+            ':city' => $data['city'] !== '' ? $data['city'] : null,
+            ':state' => $data['state'] !== '' ? strtoupper($data['state']) : null,
+            ':updated_at' => now(),
+            ':id' => $id,
+            ':company_id' => $this->companyId(),
+        ]);
     }
 
     public function toggleUnit(int $id, int $active): void

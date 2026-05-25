@@ -6,11 +6,14 @@ $canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorV
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Escala Aluno</h2>
-            <p class="text-sm text-slate-500"><?= $canManageSchedule ? 'Organize os plantoes praticos por unidade, semana e nivel de residencia.' : 'Consulte a grade de escalas e as unidades ja cadastradas.'; ?></p>
+            <p class="text-sm text-slate-500"><?= $canManageSchedule ? 'Organize os plantoes praticos por unidade, semana e nivel de residencia. O cadastro das unidades agora fica centralizado em Cadastro.' : 'Consulte a grade de escalas e as unidades ja cadastradas.'; ?></p>
         </div>
-        <?php if ($featureAvailable && $canManageSchedule): ?>
-            <a href="<?= route('escala-aluno/create'); ?>" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Nova escala</a>
-        <?php endif; ?>
+        <div class="flex flex-wrap gap-2">
+            <?php if ($featureAvailable && $canManageSchedule): ?>
+                <a href="<?= route('practice-units'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Gerenciar unidades</a>
+                <a href="<?= route('escala-aluno/create'); ?>" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Nova escala</a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <?php if (!$featureAvailable): ?>
@@ -20,23 +23,9 @@ $canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorV
     <?php else: ?>
         <div class="grid gap-6 xl:grid-cols-[1.1fr_1.9fr]">
             <div class="space-y-4">
-                <?php if ($canManageSchedule): ?>
-                    <form method="post" action="<?= route('escala-aluno/unit/store'); ?>" class="rounded-xl border border-slate-200 bg-white p-4">
-                        <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                        <div class="mb-3">
-                            <h3 class="text-lg font-semibold">Unidades / Hospitais</h3>
-                            <p class="text-xs text-slate-500">Cadastre a unidade onde o aluno realiza os plantoes.</p>
-                        </div>
-                        <div class="grid gap-3">
-                            <input type="text" name="name" required placeholder="Nome da unidade" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                            <div class="grid gap-3 md:grid-cols-2">
-                                <input type="text" name="city" placeholder="Cidade" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                                <input type="text" name="state" placeholder="UF" maxlength="10" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                            </div>
-                            <button class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Salvar unidade</button>
-                        </div>
-                    </form>
-                <?php endif; ?>
+                <div class="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+                    <strong>Unidades / Hospitais:</strong> o cadastro e a manutencao agora ficam em <strong>Cadastro &gt; Unidades / Hospitais</strong>. Nesta tela, a lista abaixo permanece para consulta e uso operacional das escalas.
+                </div>
 
                 <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
                     <table class="min-w-full text-sm">
@@ -46,7 +35,7 @@ $canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorV
                                 <th class="px-3 py-3">Alunos</th>
                                 <th class="px-3 py-3">Status</th>
                                 <?php if ($canManageSchedule): ?>
-                                    <th class="px-3 py-3">Acao</th>
+                                    <th class="px-3 py-3">Cadastro</th>
                                 <?php endif; ?>
                             </tr>
                         </thead>
@@ -65,12 +54,7 @@ $canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorV
                                     </td>
                                     <?php if ($canManageSchedule): ?>
                                         <td class="px-3 py-3">
-                                            <form method="post" action="<?= route('escala-aluno/unit/toggle'); ?>">
-                                                <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                                                <input type="hidden" name="id" value="<?= (int) $unit['id']; ?>">
-                                                <input type="hidden" name="active" value="<?= (int) ($unit['is_active'] ?? 0) === 1 ? 0 : 1; ?>">
-                                                <button class="rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50"><?= (int) ($unit['is_active'] ?? 0) === 1 ? 'Inativar' : 'Ativar'; ?></button>
-                                            </form>
+                                            <a href="<?= route('practice-units&edit=' . (int) $unit['id']); ?>" class="rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50">Abrir cadastro</a>
                                         </td>
                                     <?php endif; ?>
                                 </tr>
