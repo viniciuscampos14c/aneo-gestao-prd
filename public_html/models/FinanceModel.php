@@ -2228,6 +2228,10 @@ class FinanceModel extends BaseModel
     {
         try {
             $baseDate = new DateTimeImmutable($firstDueDate);
+            if ($monthOffset <= 0) {
+                return $baseDate->format('Y-m-d');
+            }
+
             $targetMonth = $baseDate->modify('first day of +' . $monthOffset . ' month');
             $lastDay = (int) $targetMonth->format('t');
             $day = max(1, min($billingDay, $lastDay));
