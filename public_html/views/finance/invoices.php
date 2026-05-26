@@ -89,7 +89,7 @@ $exportQuery = http_build_query([
 
             <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <option value="">Todos os status</option>
-                <?php foreach (['draft' => 'Rascunho', 'open' => 'Em aberto', 'partial' => 'Parcial', 'paid' => 'Pago', 'overdue' => 'Vencido'] as $k => $v): ?>
+                <?php foreach (['draft' => 'Rascunho', 'open' => 'Em aberto', 'partial' => 'Parcial', 'paid' => 'Pago', 'overdue' => 'Vencido', 'renegotiated' => 'Renegociada'] as $k => $v): ?>
                     <option value="<?= $k; ?>" <?= $filters['status'] === $k ? 'selected' : ''; ?>><?= $v; ?></option>
                 <?php endforeach; ?>
             </select>
@@ -226,6 +226,7 @@ $exportQuery = http_build_query([
                                 'paid' => 'bg-emerald-100 text-emerald-700',
                                 'partial' => 'bg-amber-100 text-amber-700',
                                 'overdue' => 'bg-rose-100 text-rose-700',
+                                'renegotiated' => 'bg-violet-100 text-violet-700',
                                 'draft' => 'bg-slate-100 text-slate-700',
                                 default => 'bg-blue-100 text-blue-700',
                             };
@@ -233,6 +234,7 @@ $exportQuery = http_build_query([
                                 'paid' => 'finance-status-paid',
                                 'partial' => 'finance-status-partial',
                                 'overdue' => 'finance-status-overdue',
+                                'renegotiated' => 'finance-status-open',
                                 'draft' => 'finance-status-draft',
                                 default => 'finance-status-open',
                             };

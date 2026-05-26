@@ -600,9 +600,12 @@ class FinanceModel extends BaseModel
         $ticketId = (int) ($context['ticket_id'] ?? 0);
         $mode = trim((string) ($context['mode'] ?? 'negociacao'));
         $modeLabel = $mode === 'aditivo' ? 'Aditivo' : 'Negociacao';
+        $paymentMethodId = $this->invoicePaymentMethodsAvailable()
+            ? max(0, (int) ($context['payment_method_id'] ?? 0))
+            : 0;
 
-        $paymentNotes = trim(implode(' | ', array_filter([
-            'Compensacao automatica de titulos por aprovacao de fluxo mobile',
+        $renegotiationNotes = trim(implode(' | ', array_filter([
+            'Titulos substituidos por renegociacao aprovada no fluxo mobile',
             $ticketCode !== '' ? ('Ticket ' . $ticketCode) : ($ticketId > 0 ? ('Ticket #' . $ticketId) : ''),
             'Aluno: ' . (string) ($student['full_name'] ?? ('ID ' . $studentId)),
             $scope === 'overdue' ? 'Escopo: parcelas selecionadas/vencidas' : 'Escopo: saldo total',
@@ -611,28 +614,25 @@ class FinanceModel extends BaseModel
         $newInvoiceIds = [];
         $newInvoiceNumbers = [];
         $amounts = $this->splitAmount($negotiatedTotal, $installments);
-        $paidAt = date('Y-m-d');
 
         try {
             $this->db->beginTransaction();
 
-            $paymentId = $this->recordBatchPayment(
+            $renegotiatedCount = $this->markInvoicesAsRenegotiated(
                 $openInvoiceIds,
-                $outstandingTotal,
-                'NEGOCIACAO_APP',
-                $paidAt,
-                $paymentNotes,
+                $renegotiationNotes,
                 $createdBy
             );
 
-            if ($paymentId <= 0) {
-                throw new RuntimeException('Falha ao registrar pagamento de compensacao dos titulos antigos.');
+            if ($renegotiatedCount !== count($openInvoiceIds)) {
+                throw new RuntimeException('Falha ao marcar os titulos antigos como renegociados.');
             }
 
             foreach ($amounts as $idx => $amount) {
                 $due = $dueDate->modify('+' . $idx . ' month')->format('Y-m-d');
                 $newId = $this->createInvoice([
                     'student_id' => $studentId,
+                    'payment_method_id' => $paymentMethodId > 0 ? $paymentMethodId : null,
                     'due_date' => $due,
                     'amount' => $amount,
                     'tax_amount' => 0,
@@ -660,9 +660,8 @@ class FinanceModel extends BaseModel
 
             return [
                 'ok' => true,
-                'payment_id' => $paymentId,
-                'closed_invoices_count' => count($openInvoiceIds),
-                'closed_total' => $outstandingTotal,
+                'renegotiated_invoices_count' => count($openInvoiceIds),
+                'renegotiated_total' => $outstandingTotal,
                 'new_invoice_ids' => $newInvoiceIds,
                 'new_invoice_numbers' => $newInvoiceNumbers,
                 'new_total' => $negotiatedTotal,
@@ -2498,6 +2497,80 @@ class FinanceModel extends BaseModel
             ':id' => $invoiceId,
             ':company_id' => $this->companyId(),
         ]);
+    }
+
+    private function markInvoicesAsRenegotiated(array $invoiceIds, string $notes, int $changedBy): int
+    {
+        $invoiceIds = array_values(array_filter(array_map('intval', $invoiceIds), fn ($id) => $id > 0));
+        if ($invoiceIds === []) {
+            return 0;
+        }
+
+        $companyId = $this->companyId();
+        $placeholders = implode(',', array_fill(0, count($invoiceIds), '?'));
+        $stmt = $this->db->prepare("SELECT id, student_id, tags, project_name
+            FROM invoices
+            WHERE id IN ({$placeholders}) AND company_id = ?");
+        $stmt->execute(array_merge($invoiceIds, [$companyId]));
+        $rows = $stmt->fetchAll() ?: [];
+
+        if ($rows === []) {
+            return 0;
+        }
+
+        $updated = 0;
+        $studentsToSync = [];
+        $stamp = 'Renegociada via app em ' . date('d/m/Y');
+
+        foreach ($rows as $row) {
+            $existingTags = trim((string) ($row['tags'] ?? ''));
+            $existingProject = trim((string) ($row['project_name'] ?? ''));
+
+            $tags = $existingTags;
+            if (!str_contains(strtolower($existingTags), 'renegociad')) {
+                $tags = trim(implode(' | ', array_filter([$existingTags, 'Renegociada'])));
+            }
+
+            $project = $existingProject;
+            if (!str_contains(strtolower($existingProject), 'renegociad')) {
+                $project = trim(implode(' | ', array_filter([$existingProject, $stamp])));
+            }
+
+            if ($notes !== '' && !str_contains($project, $notes)) {
+                $project = trim(implode(' | ', array_filter([$project, $notes])));
+            }
+
+            $update = $this->db->prepare('UPDATE invoices
+                SET status = :status,
+                    paid_at = NULL,
+                    tags = :tags,
+                    project_name = :project_name,
+                    updated_at = :updated_at
+                WHERE id = :id
+                  AND company_id = :company_id');
+            $update->execute([
+                ':status' => 'renegotiated',
+                ':tags' => $tags !== '' ? $tags : null,
+                ':project_name' => $project !== '' ? $project : null,
+                ':updated_at' => now(),
+                ':id' => (int) $row['id'],
+                ':company_id' => $companyId,
+            ]);
+
+            if ($update->rowCount() > 0) {
+                $updated++;
+            }
+
+            $studentsToSync[(int) ($row['student_id'] ?? 0)] = true;
+        }
+
+        foreach (array_keys($studentsToSync) as $studentId) {
+            if ($studentId > 0) {
+                $this->syncStudentFinanceKanban($studentId, $changedBy);
+            }
+        }
+
+        return $updated;
     }
 
     private function fiscalRecordByInvoice(int $invoiceId): ?array

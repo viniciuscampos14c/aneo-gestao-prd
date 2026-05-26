@@ -22,6 +22,9 @@ type SendNegotiationInput = {
   discountedTotal: number;
   installmentValue: number;
   scopedInvoices: StudentDebtInvoice[];
+  paymentChannel: string;
+  paymentMethodId?: number | null;
+  paymentMethodName?: string;
 };
 
 function ticketSubject(mode: NegotiationWriteMode, studentName: string): string {
@@ -43,6 +46,9 @@ function ticketDescription(input: SendNegotiationInput): string {
     installmentValue,
     scope,
     scopedInvoices,
+    paymentChannel,
+    paymentMethodId,
+    paymentMethodName,
   } = input;
 
   const scopeLabel = scope === 'overdue' ? 'Parcelas vencidas' : 'Saldo total do aluno';
@@ -69,11 +75,16 @@ function ticketDescription(input: SendNegotiationInput): string {
     `Novo valor total: ${formatCurrency(discountedTotal)}`,
     `Parcelamento: ${installments}x de ${formatCurrency(installmentValue)}`,
     `Primeiro vencimento: ${firstDueDate}`,
+    `Canal de pagamento: ${paymentChannel || 'nao informado'}`,
     `Saldo aberto atual: ${formatCurrency(profile.openAmount)}`,
     `Saldo vencido atual: ${formatCurrency(profile.overdueAmount)}`,
     ...invoiceLines,
     `Observacao: registro criado automaticamente para fluxo financeiro.`,
   ];
+
+  if (paymentMethodId && paymentMethodName) {
+    lines.splice(11, 0, `Forma de pagamento selecionada: ${paymentMethodName} (ID ${paymentMethodId})`);
+  }
 
   return lines.join('\n');
 }

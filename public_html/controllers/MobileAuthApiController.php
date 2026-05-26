@@ -181,6 +181,7 @@ class MobileAuthApiController extends BaseController
             'courses' => ['search', 'get'],
             'trial_accesses' => ['search', 'get', 'create'],
             'tickets' => ['create', 'search', 'get'],
+            'payment_methods' => ['search'],
         ];
     }
 

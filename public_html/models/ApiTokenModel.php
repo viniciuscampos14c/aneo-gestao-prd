@@ -11,6 +11,7 @@ class ApiTokenModel extends BaseModel
         'trial_accesses' => ['get', 'search', 'create'],
         'users'    => ['get', 'search'],
         'tickets'  => ['get', 'search', 'create'],
+        'payment_methods' => ['search'],
     ];
 
     public const RESOURCE_LABELS = [
@@ -21,6 +22,7 @@ class ApiTokenModel extends BaseModel
         'trial_accesses' => 'Degustacao Cursos',
         'users'    => 'Usuários',
         'tickets'  => 'Chamados',
+        'payment_methods' => 'Formas de Pagamento',
     ];
 
     public const CAP_LABELS = [

@@ -10,6 +10,7 @@ $statusLabels = [
     'partial' => 'Parcial',
     'overdue' => 'Vencida',
     'paid'    => 'Pago',
+    'renegotiated' => 'Renegociada',
     'draft'   => 'Rascunho',
 ];
 
@@ -18,6 +19,7 @@ $statusBadge = [
     'partial' => 'bg-amber-100 text-amber-700',
     'overdue' => 'bg-rose-100 text-rose-700',
     'paid'    => 'bg-emerald-100 text-emerald-700',
+    'renegotiated' => 'bg-violet-100 text-violet-700',
     'draft'   => 'bg-slate-100 text-slate-600',
 ];
 

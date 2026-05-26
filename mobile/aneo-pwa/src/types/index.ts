@@ -118,6 +118,15 @@ export type ApiInvoice = {
   paid_at?: string | null;
 };
 
+export type ApiPaymentMethod = {
+  id: number;
+  name: string;
+  mode?: string | null;
+  channel?: string | null;
+  provider_key?: string | null;
+  is_active?: number | string | boolean;
+};
+
 export type ApiCourse = {
   id: number;
   name: string;

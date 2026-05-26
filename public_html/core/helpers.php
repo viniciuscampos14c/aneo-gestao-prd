@@ -512,6 +512,7 @@ function invoice_status_label(?string $status): string
         'open' => 'Em aberto',
         'partial' => 'Parcial',
         'paid' => 'Pago',
+        'renegotiated' => 'Renegociada',
         'overdue' => 'Vencido',
         'cancelled' => 'Cancelado',
         default => $status !== '' ? ucfirst($status) : '-',

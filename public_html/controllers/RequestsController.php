@@ -283,6 +283,7 @@ class RequestsController extends BaseController
                     'mode' => (string) ($data['mode'] ?? 'negociacao'),
                     'scope' => (string) ($data['scope'] ?? 'total'),
                     'selected_invoice_numbers' => (array) ($data['selected_invoice_numbers'] ?? []),
+                    'payment_method_id' => (int) ($data['payment_method_id'] ?? 0),
                 ]
             );
 
@@ -294,12 +295,14 @@ class RequestsController extends BaseController
             $this->tickets->updateStatus($ticketId, 'resolved');
             $numbers = array_values(array_filter(array_map('trim', (array) ($result['new_invoice_numbers'] ?? [])), fn ($v) => $v !== ''));
             $comment = '[Fluxo Mobile] Negociacao aprovada e aplicada no financeiro.'
-                . "\nPagamento de compensacao: #" . (int) ($result['payment_id'] ?? 0)
-                . "\nTitulos liquidados: " . (int) ($result['closed_invoices_count'] ?? 0)
-                . "\nValor compensado: " . format_currency((float) ($result['closed_total'] ?? 0))
+                . "\nTitulos renegociados: " . (int) ($result['renegotiated_invoices_count'] ?? 0)
+                . "\nValor renegociado de origem: " . format_currency((float) ($result['renegotiated_total'] ?? 0))
                 . "\nParcelamento gerado: " . (int) ($result['installments'] ?? 1) . 'x'
                 . "\nValor renegociado: " . format_currency((float) ($result['new_total'] ?? 0))
                 . "\nPrimeiro vencimento: " . (string) ($result['first_due_date'] ?? '');
+            if (!empty($data['payment_method_name'])) {
+                $comment .= "\nForma de pagamento: " . (string) $data['payment_method_name'];
+            }
             if ($numbers !== []) {
                 $comment .= "\nNovas faturas: " . implode(', ', $numbers);
             }
@@ -310,8 +313,8 @@ class RequestsController extends BaseController
             $this->tickets->addComment($ticketId, $comment, (int) (current_user()['id'] ?? 0));
             $this->success(
                 'Negociacao aprovada com sucesso. '
-                . (int) ($result['closed_invoices_count'] ?? 0)
-                . ' titulo(s) liquidado(s) e '
+                . (int) ($result['renegotiated_invoices_count'] ?? 0)
+                . ' titulo(s) renegociado(s) e '
                 . count((array) ($result['new_invoice_ids'] ?? []))
                 . ' fatura(s) nova(s) criada(s).'
             );
@@ -610,6 +613,13 @@ class RequestsController extends BaseController
             }
         }
 
+        $paymentMethodId = 0;
+        $paymentMethodName = '';
+        if (preg_match('/Forma de pagamento selecionada:\s*(.+?)\s*\(ID\s*(\d+)\)/iu', $description, $matchPayment)) {
+            $paymentMethodName = trim((string) ($matchPayment[1] ?? ''));
+            $paymentMethodId = (int) ($matchPayment[2] ?? 0);
+        }
+
         return [
             'ok' => true,
             'data' => [
@@ -620,6 +630,8 @@ class RequestsController extends BaseController
                 'mode' => $mode,
                 'scope' => $scope,
                 'selected_invoice_numbers' => $selectedInvoiceNumbers,
+                'payment_method_id' => $paymentMethodId,
+                'payment_method_name' => $paymentMethodName,
             ],
         ];
     }

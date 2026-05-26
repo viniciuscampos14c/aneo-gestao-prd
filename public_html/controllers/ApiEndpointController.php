@@ -14,6 +14,7 @@ class ApiEndpointController extends BaseController
     private CourseModel       $courses;
     private UserModel         $users;
     private SupportTicketModel $tickets;
+    private PaymentMethodModel $paymentMethods;
 
     public function __construct(array $token)
     {
@@ -24,6 +25,7 @@ class ApiEndpointController extends BaseController
         $this->courses  = new CourseModel();
         $this->users    = new UserModel();
         $this->tickets  = new SupportTicketModel();
+        $this->paymentMethods = new PaymentMethodModel();
     }
 
     // =========================================================================
@@ -397,6 +399,36 @@ class ApiEndpointController extends BaseController
             ApiAuth::abort(404, 'Usuario nao encontrado.');
         }
         $this->ok($user);
+    }
+
+    // =========================================================================
+    // PAYMENT METHODS
+    // =========================================================================
+
+    public function listPaymentMethods(): void
+    {
+        ApiAuth::requirePermission($this->token, 'payment_methods', 'search');
+
+        $companyId = (int) ($this->token['company_id'] ?? 0);
+        $channel = strtolower(trim((string) ($_GET['channel'] ?? '')));
+        $activeOnly = !isset($_GET['is_active']) || (string) ($_GET['is_active'] ?? '1') !== '0';
+        $rows = $activeOnly
+            ? $this->paymentMethods->activeByCompany($companyId)
+            : $this->paymentMethods->allByCompany($companyId);
+
+        if ($channel !== '') {
+            $rows = array_values(array_filter($rows, static function (array $row) use ($channel): bool {
+                return strtolower(trim((string) ($row['channel'] ?? ''))) === $channel;
+            }));
+        }
+
+        $total = count($rows);
+        $this->ok($rows, [
+            'total' => $total,
+            'per_page' => $total,
+            'page' => 1,
+            'pages' => 1,
+        ]);
     }
 
     // =========================================================================
