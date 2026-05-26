@@ -531,6 +531,14 @@ html:not(.dark) #student-avatar-menu a[href*="logout"]:hover {
     box-shadow: inset 0 0 0 1px rgba(245, 197, 207, 0.9);
 }
 
+html:not(.dark) #student-avatar-btn:hover,
+html:not(.dark) #student-avatar-btn:focus-visible {
+    background: linear-gradient(135deg, rgba(241, 248, 254, 0.98), rgba(233, 244, 251, 0.98)) !important;
+    box-shadow:
+        0 10px 22px rgba(106, 145, 179, 0.18),
+        inset 0 0 0 1px rgba(194, 216, 234, 0.92) !important;
+}
+
 html:not(.dark) .portal-alert-modal-panel {
     border-color: rgba(181, 214, 223, 0.95) !important;
     background:
@@ -8120,6 +8128,14 @@ html.admin-theme-light .admin-sidebar-group-trigger[data-cadastro-trigger]:hover
     border-color: var(--aneo-light-line-soft) !important;
     color: var(--aneo-light-primary) !important;
     box-shadow: none !important;
+}
+
+html.admin-theme-light .admin-sidebar-group-trigger[data-finance-trigger]:hover,
+html.admin-theme-light .admin-sidebar-group-trigger[data-finance-trigger]:focus-visible {
+    background: linear-gradient(135deg, rgba(232, 243, 252, 0.98), rgba(221, 236, 248, 0.98)) !important;
+    border-color: rgba(179, 208, 231, 0.94) !important;
+    color: #2f6ea6 !important;
+    box-shadow: inset 0 0 0 1px rgba(191, 216, 235, 0.76) !important;
 }
 
 html.admin-theme-light .admin-sidebar-link[class*="bg-slate-800"],
