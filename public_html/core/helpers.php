@@ -427,7 +427,27 @@ function route(string $path = ''): string
 
 function redirect(string $path): void
 {
-    header('Location: ' . route($path));
+    $target = route($path);
+
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    if (!headers_sent()) {
+        header('Location: ' . $target);
+        exit;
+    }
+
+    http_response_code(200);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!DOCTYPE html><html lang="pt-BR"><head>';
+    echo '<meta charset="UTF-8">';
+    echo '<meta http-equiv="refresh" content="0;url=' . e($target) . '">';
+    echo '<title>Redirecionando...</title>';
+    echo '</head><body>';
+    echo '<script>window.location.replace(' . json_encode($target, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . ');</script>';
+    echo '<p>Redirecionando... <a href="' . e($target) . '">Clique aqui se a pagina nao abrir automaticamente</a>.</p>';
+    echo '</body></html>';
     exit;
 }
 
