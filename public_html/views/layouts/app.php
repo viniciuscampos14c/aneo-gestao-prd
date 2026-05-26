@@ -330,12 +330,14 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                 </a>
                 <button type="button"
                         data-mobile-neg-trigger
+                        data-mobile-neg-endpoint="<?= e(route('requests/mobile-alerts')); ?>"
+                        data-static-alert-count="<?= (int) ($exchangeAlertCount + $reenrollmentAlertCount + $payableDueAlertCount); ?>"
                         data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : ($reenrollmentAlertCount > 0 ? $reenrollmentQueueRoute : ($payableDueAlertCount > 0 ? $payableQueueRoute : $mobileQueueRoute))); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
                         title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificacoes administrativas'; ?>">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
                     <?php if ($adminAlertCount > 0): ?>
-                        <span class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $adminAlertCount); ?></span>
+                        <span data-admin-alert-badge class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $adminAlertCount); ?></span>
                     <?php endif; ?>
                 </button>
                 <button type="button" data-admin-theme-toggle class="theme-toggle admin-theme-toggle" aria-label="Alternar tema claro e escuro" title="Alternar tema">

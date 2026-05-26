@@ -54,6 +54,29 @@ class RequestsController extends BaseController
         ]);
     }
 
+    public function mobileAlerts(): void
+    {
+        require_auth();
+
+        if (is_professor()) {
+            $this->json([
+                'ok' => true,
+                'data' => [
+                    'mobile_negotiation_alert_count' => 0,
+                    'mobile_negotiation_alerts' => [],
+                ],
+            ]);
+        }
+
+        $this->json([
+            'ok' => true,
+            'data' => [
+                'mobile_negotiation_alert_count' => $this->tickets->countOpenMobileNegotiations(),
+                'mobile_negotiation_alerts' => $this->tickets->latestMobileNegotiationAlerts(5),
+            ],
+        ]);
+    }
+
     public function store(): void
     {
         require_auth();

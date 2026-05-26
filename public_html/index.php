@@ -374,6 +374,7 @@ if ($practiceUnits !== null) {
 // $router->post('tasks/delete', fn () => $generic->delete('tasks', 'tasks'));
 
 $router->get('requests', fn () => $requests->index());
+$router->get('requests/mobile-alerts', fn () => $requests->mobileAlerts());
 $router->post('requests/store', fn () => $requests->store());
 $router->post('requests/comment', fn () => $requests->addComment());
 $router->post('requests/status', fn () => $requests->updateStatus());

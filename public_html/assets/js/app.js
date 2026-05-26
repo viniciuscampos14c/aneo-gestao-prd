@@ -313,6 +313,79 @@
 
     wireHorizontalScrollProxy();
 
+    const wireAdminAlertBadgeRefresh = () => {
+        const trigger = document.querySelector('[data-mobile-neg-trigger]');
+        if (!trigger) {
+            return;
+        }
+
+        const endpoint = String(trigger.getAttribute('data-mobile-neg-endpoint') || '').trim();
+        if (!endpoint) {
+            return;
+        }
+
+        const staticAlertCount = Number(trigger.getAttribute('data-static-alert-count') || '0') || 0;
+        let refreshInFlight = false;
+
+        const renderBadge = (total) => {
+            let badge = trigger.querySelector('[data-admin-alert-badge]');
+            if (total <= 0) {
+                if (badge) {
+                    badge.remove();
+                }
+                return;
+            }
+
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.setAttribute('data-admin-alert-badge', '');
+                badge.className = 'absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white';
+                trigger.appendChild(badge);
+            }
+
+            badge.textContent = String(Math.min(99, total));
+        };
+
+        const refresh = async () => {
+            if (refreshInFlight) {
+                return;
+            }
+
+            refreshInFlight = true;
+            try {
+                const response = await fetch(endpoint, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        Accept: 'application/json',
+                    },
+                });
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+                const mobileCount = Number(payload?.data?.mobile_negotiation_alert_count || 0) || 0;
+                renderBadge(staticAlertCount + mobileCount);
+            } catch (error) {
+                // Ignora falhas silenciosas no refresh do badge.
+            } finally {
+                refreshInFlight = false;
+            }
+        };
+
+        refresh();
+        window.setInterval(refresh, 30000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                refresh();
+            }
+        });
+        window.addEventListener('focus', refresh);
+    };
+
+    wireAdminAlertBadgeRefresh();
+
     const cards = document.querySelectorAll('[data-student-card]');
     const zones = document.querySelectorAll('[data-dropzone]');
 
