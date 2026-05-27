@@ -3050,6 +3050,7 @@ class StudentPortalModel extends BaseModel
     {
         $base = 'FROM invoices WHERE student_id = :sid AND company_id = :cid';
         $p    = [':sid' => $studentId, ':cid' => $companyId];
+        $activeStatuses = "('open','partial','overdue','paid')";
 
         $scalar = function (string $sql) use ($p): mixed {
             $stmt = $this->db->prepare($sql);
@@ -3064,6 +3065,8 @@ class StudentPortalModel extends BaseModel
         $totalPaid    = (float) ($scalar("SELECT COALESCE(SUM(paid_amount),0) $base AND status = 'paid'") ?: 0);
         $countPaid    = (int)   ($scalar("SELECT COUNT(*) $base AND status = 'paid'") ?: 0);
         $nextDue      = $scalar("SELECT MIN(due_date) $base AND status IN ('open','partial') AND due_date >= CURDATE()") ?: null;
+        $remainingInstallments = (int) ($scalar("SELECT COUNT(*) $base AND status IN ('open','partial','overdue')") ?: 0);
+        $totalInstallments = (int) ($scalar("SELECT COUNT(*) $base AND status IN {$activeStatuses}") ?: 0);
 
         return [
             'total_open'    => $totalOpen,
@@ -3073,21 +3076,25 @@ class StudentPortalModel extends BaseModel
             'total_paid'    => $totalPaid,
             'count_paid'    => $countPaid,
             'next_due_date' => $nextDue,
+            'remaining_installments' => $remainingInstallments,
+            'total_installments' => $totalInstallments,
         ];
     }
 
     /**
-     * Retorna lista paginada de faturas do aluno.
+     * Retorna lista paginada de faturas do aluno no portal.
      *
-     * @param string $statusFilter '' = todas | 'open' | 'overdue' | 'paid' | 'pending' (open+partial+overdue)
+     * @param string $statusFilter '' = todas | 'upcoming' | 'overdue' | 'paid'
      */
     public function myInvoices(int $studentId, int $companyId, string $statusFilter, int $limit, int $offset): array
     {
-        $where  = 'i.student_id = :sid AND i.company_id = :cid';
+        $where  = "i.student_id = :sid
+            AND i.company_id = :cid
+            AND i.status IN ('open','partial','overdue','paid')";
         $params = [':sid' => $studentId, ':cid' => $companyId];
 
         switch ($statusFilter) {
-            case 'open':
+            case 'upcoming':
                 $where .= " AND i.status IN ('open','partial')";
                 break;
             case 'overdue':
@@ -3095,9 +3102,6 @@ class StudentPortalModel extends BaseModel
                 break;
             case 'paid':
                 $where .= " AND i.status = 'paid'";
-                break;
-            case 'pending':
-                $where .= " AND i.status IN ('open','partial','overdue')";
                 break;
         }
 
@@ -3120,15 +3124,7 @@ class StudentPortalModel extends BaseModel
                     ON bs.invoice_id = i.id
                    AND bs.status NOT IN ('cancelled','failed')
                 WHERE {$where}
-                ORDER BY
-                    CASE i.status
-                        WHEN 'overdue'  THEN 1
-                        WHEN 'open'     THEN 2
-                        WHEN 'partial'  THEN 3
-                        WHEN 'paid'     THEN 4
-                        ELSE 5
-                    END,
-                    i.due_date ASC
+                ORDER BY i.due_date DESC, i.id DESC
                 LIMIT :lim OFFSET :off";
 
         $stmt = $this->db->prepare($sql);

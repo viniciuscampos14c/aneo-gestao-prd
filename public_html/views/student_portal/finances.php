@@ -6,7 +6,7 @@
 /** @var bool   $hasNextPage  existe próxima página */
 
 $statusLabels = [
-    'open'    => 'Em aberto',
+    'open'    => 'A vencer',
     'partial' => 'Parcial',
     'overdue' => 'Vencida',
     'paid'    => 'Pago',
@@ -25,7 +25,7 @@ $statusBadge = [
 
 $filterTabs = [
     ''        => 'Todas',
-    'pending' => 'Em aberto',
+    'upcoming' => 'A vencer',
     'overdue' => 'Vencidas',
     'paid'    => 'Pagas',
 ];
@@ -57,10 +57,10 @@ function finance_url(string $status, int $page = 1): string {
 
         <!-- Em aberto -->
         <article class="rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Em aberto</p>
-            <p class="mt-2 text-2xl font-bold text-amber-700"><?= format_currency((float) ($summary['total_open'] ?? 0)); ?></p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Parcelas restantes</p>
+            <p class="mt-2 text-2xl font-bold text-amber-700"><?= (int) ($summary['remaining_installments'] ?? 0); ?>/<?= (int) ($summary['total_installments'] ?? 0); ?></p>
             <p class="mt-1 text-xs text-amber-500">
-                <?= (int) ($summary['count_open'] ?? 0); ?> fatura(s)
+                <?= (int) ($summary['count_open'] ?? 0); ?> parcela(s) a vencer
                 <?php if (!empty($summary['next_due_date'])): ?>
                     &mdash; próx. <?= date('d/m/Y', strtotime($summary['next_due_date'])); ?>
                 <?php endif; ?>
@@ -126,7 +126,7 @@ function finance_url(string $status, int $page = 1): string {
                             <tr class="hover:bg-slate-50 transition">
                                 <td class="px-4 py-3">
                                     <p class="font-semibold text-slate-800"><?= e($inv['invoice_number'] ?? '—'); ?></p>
-                                    <?php if ($subtitle !== ''): ?>
+                                    <?php if ($subtitle !== '' && $status !== 'open' && $status !== 'partial'): ?>
                                         <p class="text-xs text-slate-400"><?= e($subtitle); ?></p>
                                     <?php endif; ?>
                                 </td>
