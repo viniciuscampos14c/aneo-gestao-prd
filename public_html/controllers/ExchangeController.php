@@ -3,10 +3,12 @@
 class ExchangeController extends BaseController
 {
     private StudentExchangeModel $exchange;
+    private StudentPortalModel $portal;
 
     public function __construct()
     {
         $this->exchange = new StudentExchangeModel();
+        $this->portal = new StudentPortalModel();
     }
 
     public function index(): void
@@ -26,12 +28,12 @@ class ExchangeController extends BaseController
         $counts = $this->exchange->countByStatus((int) current_company_id());
 
         $this->render('exchange/index', [
-            'title'             => 'Intercâmbio Aluno',
-            'rows'              => $result['rows'],
-            'meta'              => $result['meta'],
-            'filters'           => $filters,
-            'counts'            => $counts,
-            'featureAvailable'  => $this->exchange->featureAvailable(),
+            'title'            => 'Intercambio Aluno',
+            'rows'             => $result['rows'],
+            'meta'             => $result['meta'],
+            'filters'          => $filters,
+            'counts'           => $counts,
+            'featureAvailable' => $this->exchange->featureAvailable(),
         ]);
     }
 
@@ -46,7 +48,7 @@ class ExchangeController extends BaseController
         $request = $this->exchange->findById($id, $companyId);
 
         if ($request === null) {
-            flash('error', 'Solicitação não encontrada.');
+            flash('error', 'Solicitacao nao encontrada.');
             $this->redirect('exchange');
         }
 
@@ -54,7 +56,7 @@ class ExchangeController extends BaseController
         $this->exchange->markViewed($id);
 
         $this->render('exchange/show', [
-            'title'   => 'Intercâmbio — Solicitação #' . $id,
+            'title'   => 'Intercambio - Solicitacao #' . $id,
             'request' => $request,
         ]);
     }
@@ -69,15 +71,71 @@ class ExchangeController extends BaseController
         $status    = trim((string) post('status', ''));
         $notes     = trim((string) post('admin_notes', ''));
         $companyId = (int) current_company_id();
+        $request   = $this->exchange->findById($id, $companyId);
 
         $ok = $this->exchange->updateStatus($id, $status, $notes, $companyId);
 
         if ($ok) {
+            if (is_array($request)) {
+                $this->notifyStudentAboutExchangeStatus($request, $status, $notes);
+            }
             flash('success', 'Status atualizado com sucesso.');
         } else {
-            flash('error', 'Não foi possível atualizar o status.');
+            flash('error', 'Nao foi possivel atualizar o status.');
         }
 
         $this->redirect('exchange/show?id=' . $id);
+    }
+
+    private function notifyStudentAboutExchangeStatus(array $request, string $status, string $notes): void
+    {
+        $studentId = (int) ($request['student_id'] ?? 0);
+        $companyId = (int) ($request['company_id'] ?? 0);
+        if ($studentId <= 0 || $companyId <= 0 || !$this->portal->studentPortalNotificationsFeatureAvailable()) {
+            return;
+        }
+
+        $normalizedStatus = trim($status);
+        if (!in_array($normalizedStatus, ['viewed', 'approved', 'rejected'], true)) {
+            return;
+        }
+
+        $targetUnit = trim((string) ($request['target_unit'] ?? ''));
+
+        $title = match ($normalizedStatus) {
+            'approved' => 'Intercambio aprovado',
+            'rejected' => 'Intercambio recusado',
+            'viewed' => 'Intercambio em analise',
+            default => 'Atualizacao da solicitacao de intercambio',
+        };
+
+        $message = match ($normalizedStatus) {
+            'approved' => 'Sua solicitacao de intercambio'
+                . ($targetUnit !== '' ? ' para ' . $targetUnit : '')
+                . ' foi aprovada pela equipe administrativa.',
+            'rejected' => 'Sua solicitacao de intercambio'
+                . ($targetUnit !== '' ? ' para ' . $targetUnit : '')
+                . ' foi recusada pela equipe administrativa.',
+            'viewed' => 'Sua solicitacao de intercambio foi aberta e esta em analise pela equipe administrativa.',
+            default => 'Sua solicitacao de intercambio recebeu uma atualizacao no painel administrativo.',
+        };
+
+        if ($notes !== '') {
+            $message .= ' Observacao da equipe: ' . $notes;
+        }
+
+        $this->portal->createPortalNotification([
+            'company_id' => $companyId,
+            'student_id' => $studentId,
+            'notification_type' => 'exchange_request',
+            'title' => $title,
+            'message' => $message,
+            'link_url' => route('student/exchange'),
+            'meta' => [
+                'exchange_request_id' => (int) ($request['id'] ?? 0),
+                'status' => $normalizedStatus,
+                'target_unit' => $targetUnit,
+            ],
+        ]);
     }
 }
