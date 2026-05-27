@@ -114,6 +114,7 @@ function finance_url(string $status, int $page = 1): string {
                             <?php
                             $status     = (string) ($inv['status'] ?? 'open');
                             $badge      = $statusBadge[$status] ?? 'bg-slate-100 text-slate-600';
+                            $badgeTone  = 'student-finance-status student-finance-status-' . preg_replace('/[^a-z0-9_-]+/i', '-', $status);
                             $label      = $statusLabels[$status] ?? $status;
                             $isOverdue  = $status === 'overdue';
                             $dueDate    = (string) ($inv['due_date'] ?? '');
@@ -132,7 +133,7 @@ function finance_url(string $status, int $page = 1): string {
                                 <td class="px-4 py-3 <?= $isOverdue ? 'font-semibold text-rose-600' : 'text-slate-600'; ?>">
                                     <?= e($dueFmt); ?>
                                     <?php if ($isOverdue): ?>
-                                        <span class="ml-1 inline-block rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-600">VENCIDA</span>
+                                        <span class="student-finance-overdue-chip ml-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold">VENCIDA</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-4 py-3 text-right font-medium text-slate-800">
@@ -142,7 +143,7 @@ function finance_url(string $status, int $page = 1): string {
                                     <?= format_currency((float) ($inv['paid_amount'] ?? 0)); ?>
                                 </td>
                                 <td class="px-4 py-3 text-center">
-                                    <span class="inline-block rounded-full px-3 py-0.5 text-xs font-semibold <?= $badge; ?>">
+                                    <span class="inline-block rounded-full px-3 py-0.5 text-xs font-semibold <?= $badge; ?> <?= $badgeTone; ?>">
                                         <?= e($label); ?>
                                     </span>
                                 </td>
