@@ -753,8 +753,16 @@ class CourseController extends BaseController
         $examKind = trim((string) post('exam_kind', 'internal'));
         $deliveryScope = trim((string) post('delivery_scope_internal', 'course'));
         $targetStudentId = (int) post('target_student_id');
+        $targetStudentIds = $this->normalizeSelectedStudentIds(post('target_student_ids'));
+        if ($targetStudentId > 0 && $targetStudentIds === []) {
+            $targetStudentIds = [$targetStudentId];
+        }
         $externalDeliveryScope = trim((string) post('delivery_scope_external', 'course'));
         $externalTargetStudentId = (int) post('target_student_id_external');
+        $externalTargetStudentIds = $this->normalizeSelectedStudentIds(post('target_student_ids_external'));
+        if ($externalTargetStudentId > 0 && $externalTargetStudentIds === []) {
+            $externalTargetStudentIds = [$externalTargetStudentId];
+        }
         $externalUrl = trim((string) post('external_url'));
         $externalDueAt = $this->normalizeDateTime((string) post('external_due_at'));
         $externalInstructions = trim((string) post('external_instructions'));
@@ -790,14 +798,16 @@ class CourseController extends BaseController
             }
 
             if ($externalDeliveryScope === 'student') {
-                if ($externalTargetStudentId <= 0) {
-                    $this->error('Selecione o aluno para o envio individual da prova externa.');
+                if ($externalTargetStudentIds === []) {
+                    $this->error('Selecione ao menos um aluno para o envio individual da prova externa.');
                     $this->redirect('courses/exams');
                 }
 
-                if (!$this->courses->isStudentEnrolledInCourse($externalTargetStudentId, $data['course_id'])) {
-                    $this->error('O aluno selecionado nao esta matriculado (ativo/concluido) no curso escolhido.');
-                    $this->redirect('courses/exams');
+                foreach ($externalTargetStudentIds as $studentId) {
+                    if (!$this->courses->isStudentEnrolledInCourse($studentId, $data['course_id'])) {
+                        $this->error('Um dos alunos selecionados nao esta matriculado (ativo/concluido) no curso escolhido.');
+                        $this->redirect('courses/exams');
+                    }
                 }
             }
         } else {
@@ -811,14 +821,16 @@ class CourseController extends BaseController
                     $this->redirect('courses/exams');
                 }
 
-                if ($targetStudentId <= 0) {
-                    $this->error('Selecione o aluno para o envio individual da prova interna.');
+                if ($targetStudentIds === []) {
+                    $this->error('Selecione ao menos um aluno para o envio individual da prova interna.');
                     $this->redirect('courses/exams');
                 }
 
-                if (!$this->courses->isStudentEnrolledInCourse($targetStudentId, $data['course_id'])) {
-                    $this->error('O aluno selecionado nao esta matriculado (ativo/concluido) no curso escolhido.');
-                    $this->redirect('courses/exams');
+                foreach ($targetStudentIds as $studentId) {
+                    if (!$this->courses->isStudentEnrolledInCourse($studentId, $data['course_id'])) {
+                        $this->error('Um dos alunos selecionados nao esta matriculado (ativo/concluido) no curso escolhido.');
+                        $this->redirect('courses/exams');
+                    }
                 }
             }
 
@@ -847,16 +859,22 @@ class CourseController extends BaseController
                 'due_at' => $externalDueAt,
             ];
 
-            if ($externalDeliveryScope === 'student' && $externalTargetStudentId > 0) {
-                $ok = $this->courses->upsertExternalExamLink($payload + [
-                    'student_id' => $externalTargetStudentId,
-                ], (int) current_user()['id']);
+            if ($externalDeliveryScope === 'student' && $externalTargetStudentIds !== []) {
+                $linkedCount = 0;
+                foreach ($externalTargetStudentIds as $studentId) {
+                    $ok = $this->courses->upsertExternalExamLink($payload + [
+                        'student_id' => $studentId,
+                    ], (int) current_user()['id']);
+                    if ($ok) {
+                        $linkedCount++;
+                    }
+                }
 
-                if ($ok) {
-                    $this->notifyStudentsAboutPublishedExam($examId, [$externalTargetStudentId], true, $externalUrl);
-                    $this->success('Prova externa criada e vinculada para 1 aluno.');
+                if ($linkedCount > 0) {
+                    $this->notifyStudentsAboutPublishedExam($examId, $externalTargetStudentIds, true, $externalUrl);
+                    $this->success("Prova externa criada e vinculada para {$linkedCount} aluno(s).");
                 } else {
-                    $this->error('Prova externa criada, mas nao foi possivel salvar o vinculo individual.');
+                    $this->error('Prova externa criada, mas nao foi possivel salvar os vinculos individuais.');
                 }
 
                 $this->redirect('courses/exams');
@@ -890,16 +908,23 @@ class CourseController extends BaseController
         }
 
         $audienceMessage = 'Prova interna criada.';
-        if ($deliveryScope === 'student' && $targetStudentId > 0) {
-            $linked = $this->courses->upsertInternalExamAudienceLink([
-                'exam_id' => $examId,
-                'student_id' => $targetStudentId,
-            ], (int) current_user()['id']);
-            $audienceMessage = $linked
-                ? 'Prova interna criada e enviada para 1 aluno.'
+        if ($deliveryScope === 'student' && $targetStudentIds !== []) {
+            $linkedCount = 0;
+            foreach ($targetStudentIds as $studentId) {
+                $linked = $this->courses->upsertInternalExamAudienceLink([
+                    'exam_id' => $examId,
+                    'student_id' => $studentId,
+                ], (int) current_user()['id']);
+                if ($linked) {
+                    $linkedCount++;
+                }
+            }
+
+            $audienceMessage = $linkedCount > 0
+                ? "Prova interna criada e enviada para {$linkedCount} aluno(s)."
                 : 'Prova interna criada. Nao foi possivel aplicar o direcionamento individual.';
-            if ($linked) {
-                $this->notifyStudentsAboutPublishedExam($examId, [$targetStudentId], false, null);
+            if ($linkedCount > 0) {
+                $this->notifyStudentsAboutPublishedExam($examId, $targetStudentIds, false, null);
             }
         } elseif ($this->courses->internalExamAudienceFeatureAvailable()) {
             $result = $this->courses->upsertInternalExamAudienceForExamCourse($examId, (int) current_user()['id']);
@@ -919,6 +944,23 @@ class CourseController extends BaseController
 
         $this->success($audienceMessage);
         $this->redirect('courses/exams');
+    }
+
+    private function normalizeSelectedStudentIds($raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($raw as $value) {
+            $id = (int) $value;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
     }
 
     public function storeExamResult(): void

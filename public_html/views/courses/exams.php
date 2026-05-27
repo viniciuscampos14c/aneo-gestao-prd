@@ -192,12 +192,17 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                             <option value="course">Todos os alunos matriculados no curso</option>
                             <option value="student">Apenas um aluno especifico</option>
                         </select>
-                        <select name="target_student_id" id="internal-target-student" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                            <option value="">Selecione o aluno...</option>
-                            <?php foreach ($students as $student): ?>
-                                <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div id="internal-target-student-list" class="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                            <div class="mb-2 text-xs font-medium text-slate-500">Selecione um ou mais alunos</div>
+                            <div class="space-y-2">
+                                <?php foreach ($students as $student): ?>
+                                    <label class="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                        <input type="checkbox" name="target_student_ids[]" value="<?= (int) $student['id']; ?>" class="internal-target-student-checkbox h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400">
+                                        <span><?= e($student['full_name']); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                     <p id="internal-audience-hint" class="mt-1 text-xs text-slate-500">A prova sera liberada para todos os alunos ativos/concluidos matriculados no curso.</p>
                 </div>
@@ -282,12 +287,17 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
                     <div class="lg:col-span-2">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Aluno especifico</label>
-                        <select name="target_student_id_external" id="external-target-student" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/20">
-                            <option value="">Selecione o aluno...</option>
-                            <?php foreach ($students as $student): ?>
-                                <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div id="external-target-student-list" class="max-h-52 overflow-y-auto rounded-lg border border-slate-600 bg-slate-950/80 p-2">
+                            <div class="mb-2 text-xs font-medium text-slate-400">Selecione um ou mais alunos</div>
+                            <div class="space-y-2">
+                                <?php foreach ($students as $student): ?>
+                                    <label class="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-950/35 px-3 py-2 text-sm text-slate-100 hover:bg-slate-900/70">
+                                        <input type="checkbox" name="target_student_ids_external[]" value="<?= (int) $student['id']; ?>" class="external-target-student-checkbox h-4 w-4 rounded border-slate-500 bg-slate-900 text-cyan-300 focus:ring-cyan-400">
+                                        <span><?= e($student['full_name']); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="lg:col-span-2">
@@ -622,10 +632,12 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             const questionsWrap = document.getElementById('exam-questions-wrap');
             const addQuestionButton = document.getElementById('add-exam-question');
             const audienceScopeField = document.getElementById('internal-delivery-scope');
-            const targetStudentField = document.getElementById('internal-target-student');
+            const targetStudentField = document.getElementById('internal-target-student-list');
+            const targetStudentCheckboxes = Array.from(document.querySelectorAll('.internal-target-student-checkbox'));
             const audienceHintField = document.getElementById('internal-audience-hint');
             const externalScopeField = document.getElementById('external-delivery-scope');
-            const externalStudentField = document.getElementById('external-target-student');
+            const externalStudentField = document.getElementById('external-target-student-list');
+            const externalStudentCheckboxes = Array.from(document.querySelectorAll('.external-target-student-checkbox'));
             const externalHintField = document.getElementById('external-audience-hint');
 
             if (questionsWrap && addQuestionButton && audienceScopeField && targetStudentField) {
@@ -694,16 +706,24 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
                 const syncAudienceScope = () => {
                     const byStudent = audienceScopeField.value === 'student';
-                    targetStudentField.disabled = !byStudent;
-                    targetStudentField.required = byStudent;
+                    if (targetStudentField) {
+                        targetStudentField.classList.toggle('opacity-50', !byStudent);
+                    }
+                    targetStudentCheckboxes.forEach((checkbox) => {
+                        checkbox.disabled = !byStudent;
+                        checkbox.required = false;
+                        if (!byStudent) {
+                            checkbox.checked = false;
+                        }
+                    });
 
-                    if (!byStudent) {
-                        targetStudentField.value = '';
+                    if (byStudent && targetStudentCheckboxes.length > 0) {
+                        targetStudentCheckboxes[0].required = !targetStudentCheckboxes.some((checkbox) => checkbox.checked);
                     }
 
                     if (audienceHintField) {
                         audienceHintField.textContent = byStudent
-                            ? 'A prova sera enviada somente para o aluno selecionado.'
+                            ? 'A prova sera enviada somente para os alunos selecionados.'
                             : 'A prova sera liberada para todos os alunos ativos/concluidos matriculados no curso.';
                     }
                 };
@@ -720,23 +740,32 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             if (externalScopeField && externalStudentField) {
                 const syncExternalScope = () => {
                     const byStudent = externalScopeField.value === 'student';
-                    externalStudentField.disabled = !byStudent;
-                    externalStudentField.required = byStudent;
+                    externalStudentField.classList.toggle('opacity-50', !byStudent);
+                    externalStudentCheckboxes.forEach((checkbox) => {
+                        checkbox.disabled = !byStudent;
+                        checkbox.required = false;
+                        if (!byStudent) {
+                            checkbox.checked = false;
+                        }
+                    });
 
-                    if (!byStudent) {
-                        externalStudentField.value = '';
+                    if (byStudent && externalStudentCheckboxes.length > 0) {
+                        externalStudentCheckboxes[0].required = !externalStudentCheckboxes.some((checkbox) => checkbox.checked);
                     }
 
                     if (externalHintField) {
                         externalHintField.textContent = byStudent
-                            ? 'A prova externa sera vinculada somente para o aluno selecionado.'
+                            ? 'A prova externa sera vinculada somente para os alunos selecionados.'
                             : 'A prova externa sera vinculada automaticamente para todos os alunos ativos/concluidos do curso.';
                     }
                 };
 
                 externalScopeField.addEventListener('change', syncExternalScope);
+                externalStudentCheckboxes.forEach((checkbox) => checkbox.addEventListener('change', syncExternalScope));
                 syncExternalScope();
             }
+
+            targetStudentCheckboxes.forEach((checkbox) => checkbox.addEventListener('change', syncAudienceScope));
         })();
     </script>
 </section>
