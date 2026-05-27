@@ -327,7 +327,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             <p class="text-sm text-slate-500">Use este formulario para registrar ou atualizar a nota final de um aluno em uma avaliacao. Se a nota ja existir, o sistema atualiza o resultado mais recente.</p>
         </div>
 
-        <form method="post" action="<?= route('courses/exams/result'); ?>" class="grid gap-3 lg:grid-cols-6">
+        <form method="post" action="<?= route('courses/exams/result'); ?>" id="exam-result-form" class="grid gap-3 lg:grid-cols-6">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <input type="hidden" name="result_id" id="exam-result-id" value="">
 
@@ -692,6 +692,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             const resultSubmitButton = document.getElementById('exam-result-submit');
             const resultCancelButton = document.getElementById('exam-result-cancel');
             const resultEditButtons = Array.from(document.querySelectorAll('.exam-result-edit'));
+            const resultForm = document.getElementById('exam-result-form');
             const resultEditSummary = document.getElementById('exam-result-edit-summary');
             const resultEditCourse = document.getElementById('exam-result-edit-course');
             const resultEditExam = document.getElementById('exam-result-edit-exam');
@@ -871,6 +872,14 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 });
 
                 resultCancelButton.addEventListener('click', resetResultForm);
+
+                if (resultForm) {
+                    resultForm.addEventListener('submit', () => {
+                        // Campos disabled nao sao enviados no POST; reabilitamos no submit sem abrir a UX para troca manual.
+                        resultExamField.disabled = false;
+                        resultStudentField.disabled = false;
+                    });
+                }
             }
         })();
     </script>
