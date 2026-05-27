@@ -375,7 +375,8 @@
         };
 
         refresh();
-        window.setInterval(refresh, 30000);
+        window.setTimeout(refresh, 1500);
+        window.setInterval(refresh, 10000);
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 refresh();
