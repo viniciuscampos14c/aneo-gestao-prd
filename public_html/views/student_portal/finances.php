@@ -57,7 +57,7 @@ function finance_url(string $status, int $page = 1): string {
 
         <!-- Em aberto -->
         <article class="rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Parcelas restantes</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Andamento do plano</p>
             <p class="mt-2 text-2xl font-bold text-amber-700"><?= (int) ($summary['remaining_installments'] ?? 0); ?>/<?= (int) ($summary['total_installments'] ?? 0); ?></p>
             <p class="mt-1 text-xs text-amber-500">
                 <?= (int) ($summary['count_open'] ?? 0); ?> parcela(s) a vencer
