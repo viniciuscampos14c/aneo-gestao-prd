@@ -208,12 +208,25 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     return channels.length > 0 ? channels : ['pix', 'boleto', 'transfer', 'card', 'cash', 'other'];
   }, [paymentMethods]);
 
-  const boletoMethods = useMemo(
-    () =>
-      paymentMethods.filter(
-        (method) => String(method.channel ?? '').trim().toLowerCase() === 'boleto'
-      ),
-    [paymentMethods]
+  const paymentMethodsByChannel = useMemo(() => {
+    return paymentMethods.reduce<Record<string, ApiPaymentMethod[]>>((accumulator, method) => {
+      const channel = String(method.channel ?? '').trim().toLowerCase();
+      if (!channel) {
+        return accumulator;
+      }
+
+      if (!accumulator[channel]) {
+        accumulator[channel] = [];
+      }
+
+      accumulator[channel].push(method);
+      return accumulator;
+    }, {});
+  }, [paymentMethods]);
+
+  const channelPaymentMethods = useMemo(
+    () => paymentMethodsByChannel[paymentChannel] ?? [],
+    [paymentMethodsByChannel, paymentChannel]
   );
 
   useEffect(() => {
@@ -223,25 +236,25 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
   }, [availableChannels, paymentChannel]);
 
   useEffect(() => {
-    if (paymentChannel !== 'boleto') {
+    if (paymentMethods.length === 0) {
       if (paymentMethodId !== '') {
         setPaymentMethodId('');
       }
       return;
     }
 
-    if (boletoMethods.length === 0) {
+    if (channelPaymentMethods.length === 0) {
       if (paymentMethodId !== '') {
         setPaymentMethodId('');
       }
       return;
     }
 
-    const exists = boletoMethods.some((method) => String(method.id) === paymentMethodId);
+    const exists = channelPaymentMethods.some((method) => String(method.id) === paymentMethodId);
     if (!exists) {
-      setPaymentMethodId(String(boletoMethods[0]?.id ?? ''));
+      setPaymentMethodId(String(channelPaymentMethods[0]?.id ?? ''));
     }
-  }, [boletoMethods, paymentChannel, paymentMethodId]);
+  }, [channelPaymentMethods, paymentMethodId, paymentMethods.length]);
 
   async function handleSend(mode: 'aditivo' | 'negociacao') {
     if (!apiConfig || !selected) {
@@ -253,22 +266,22 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     setError('');
     setLastAction('');
 
-    if (paymentChannel === 'boleto' && boletoMethods.length === 0) {
-      setError('Nao ha formas de pagamento de boleto ativas no painel administrativo.');
+    if (paymentMethods.length > 0 && channelPaymentMethods.length === 0) {
+      setError('Nao ha formas de pagamento ativas no painel administrativo para o canal selecionado.');
       setSending('none');
       return;
     }
 
-    if (paymentChannel === 'boleto' && !paymentMethodId) {
-      setError('Selecione a forma de pagamento de boleto cadastrada no administrativo.');
+    if (paymentMethods.length > 0 && !paymentMethodId) {
+      setError('Selecione a forma de pagamento cadastrada no painel administrativo.');
       setSending('none');
       return;
     }
 
     try {
       const selectedPaymentMethod =
-        paymentChannel === 'boleto'
-          ? boletoMethods.find((method) => String(method.id) === paymentMethodId) ?? null
+        paymentMethods.length > 0
+          ? channelPaymentMethods.find((method) => String(method.id) === paymentMethodId) ?? null
           : null;
       const response = await sendNegotiationToCrm(apiConfig, {
         mode,
@@ -569,17 +582,17 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
               </select>
             </div>
 
-            {paymentChannel === 'boleto' ? (
+            {paymentMethods.length > 0 ? (
               <div className="field-wrap">
-                <label htmlFor="paymentMethodId">Forma de pagamento do boleto</label>
+                <label htmlFor="paymentMethodId">Forma de pagamento</label>
                 <select
                   id="paymentMethodId"
                   className="text-input"
                   value={paymentMethodId}
                   onChange={(event) => setPaymentMethodId(event.target.value)}
                 >
-                  {boletoMethods.length === 0 ? <option value="">Nenhuma forma de boleto ativa</option> : null}
-                  {boletoMethods.map((method) => (
+                  {channelPaymentMethods.length === 0 ? <option value="">Nenhuma forma ativa para este canal</option> : null}
+                  {channelPaymentMethods.map((method) => (
                     <option key={method.id} value={String(method.id)}>
                       {method.name}
                     </option>
@@ -589,7 +602,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
             ) : null}
           </div>
 
-          {paymentChannel === 'boleto' && paymentMethodsError ? (
+          {paymentMethodsError ? (
             <p className="alert-text">{paymentMethodsError}</p>
           ) : null}
 
