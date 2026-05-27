@@ -202,6 +202,16 @@ $exportQuery = http_build_query([
                             $automaticIssueDate = null;
                         }
                     }
+                    $tagsRaw = trim((string) ($row['tags'] ?? ''));
+                    $tagsList = $tagsRaw !== ''
+                        ? preg_split('/\s*(?:\||,|;)\s*/', $tagsRaw, -1, PREG_SPLIT_NO_EMPTY)
+                        : [];
+                    $tagsList = is_array($tagsList) ? array_values(array_unique(array_map('trim', $tagsList))) : [];
+                    if ($tagsList === [] && $tagsRaw !== '') {
+                        $tagsList = [$tagsRaw];
+                    }
+                    $visibleTags = array_slice($tagsList, 0, 2);
+                    $hiddenTagsCount = max(0, count($tagsList) - count($visibleTags));
                     ?>
                     <tr class="finance-row border-b border-slate-100 hover:bg-slate-50 align-top">
                         <td class="px-3 py-3 font-medium"><?= e($row['invoice_number']); ?></td>
@@ -356,7 +366,33 @@ $exportQuery = http_build_query([
 
                         <td class="px-3 py-3"><?= e($row['created_at']); ?></td>
                         <td class="px-3 py-3"><?= e(format_currency($row['tax_amount'])); ?></td>
-                        <td class="px-3 py-3"><?= e($row['tags']); ?></td>
+                        <td class="px-3 py-3">
+                            <?php if ($visibleTags === []): ?>
+                                <span class="text-xs text-slate-300">-</span>
+                            <?php else: ?>
+                                <div class="max-w-[220px] space-y-1" title="<?= e($tagsRaw); ?>">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <?php foreach ($visibleTags as $tag): ?>
+                                            <?php
+                                            $tag = trim((string) $tag);
+                                            $tagLabel = mb_strimwidth($tag, 0, 24, '...');
+                                            ?>
+                                            <span class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600">
+                                                <?= e($tagLabel); ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                        <?php if ($hiddenTagsCount > 0): ?>
+                                            <span class="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[11px] font-semibold text-cyan-700">
+                                                +<?= $hiddenTagsCount; ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if (count($tagsList) === 1 && mb_strlen((string) $tagsList[0]) > 24): ?>
+                                        <p class="text-[11px] text-slate-400">Passe o mouse para ver completo.</p>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                        </td>
                         <td class="px-3 py-3"><?= e($row['project_name']); ?></td>
                         <td class="px-3 py-3">
                             <?php
