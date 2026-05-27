@@ -1290,7 +1290,10 @@ class StudentPortalController extends BaseController
             }
         }
 
-        $vars['logoUrl'] = $publicUrl !== '' ? $publicUrl . '/assets/img/logo_aneo.png' : '';
+        $logoBuild = '20260512-brand-kit-v1';
+        $vars['logoUrl'] = $publicUrl !== ''
+            ? $publicUrl . '/assets/brand/aneo-wordmark-transparente-branco.png?v=' . rawurlencode($logoBuild)
+            : '';
 
         ob_start();
         extract($vars, EXTR_SKIP);
