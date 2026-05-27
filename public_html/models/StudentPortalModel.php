@@ -3116,7 +3116,7 @@ class StudentPortalModel extends BaseModel
                     i.tags,
                     i.project_name,
                     i.paid_at,
-                    bs.boleto_url,
+                    COALESCE(NULLIF(bs.boleto_url, ''), NULLIF(i.boleto_url, '')) AS boleto_url,
                     bs.digitable_line,
                     bs.status AS boleto_status
                 FROM invoices i
@@ -3124,6 +3124,11 @@ class StudentPortalModel extends BaseModel
                     ON bs.invoice_id = i.id
                    AND bs.status NOT IN ('cancelled','failed')
                 WHERE {$where}
+                  AND (
+                        i.status = 'paid'
+                        OR COALESCE(NULLIF(bs.boleto_url, ''), NULLIF(i.boleto_url, '')) IS NOT NULL
+                        OR NULLIF(bs.digitable_line, '') IS NOT NULL
+                      )
                 ORDER BY i.due_date DESC, i.id DESC
                 LIMIT :lim OFFSET :off";
 
