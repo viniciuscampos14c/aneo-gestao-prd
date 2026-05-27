@@ -325,7 +325,41 @@
         }
 
         const staticAlertCount = Number(trigger.getAttribute('data-static-alert-count') || '0') || 0;
+        let staticAlertKeys = [];
+        try {
+            staticAlertKeys = JSON.parse(String(trigger.getAttribute('data-static-alert-keys') || '[]'));
+        } catch (error) {
+            staticAlertKeys = [];
+        }
+        staticAlertKeys = Array.isArray(staticAlertKeys)
+            ? staticAlertKeys.map((key) => String(key || '').trim()).filter((key) => key !== '')
+            : [];
         let refreshInFlight = false;
+
+        const seenKey = (key) => 'aneo_admin_alert_seen_' + key;
+        const isSeen = (key) => {
+            try {
+                if (localStorage.getItem(seenKey(key))) {
+                    return true;
+                }
+            } catch (error) {
+            }
+            try {
+                if (sessionStorage.getItem(seenKey(key))) {
+                    return true;
+                }
+            } catch (error) {
+            }
+            return false;
+        };
+
+        const currentStaticCount = () => {
+            if (staticAlertKeys.length === 0) {
+                return staticAlertCount;
+            }
+
+            return staticAlertKeys.filter((key) => !isSeen(key)).length;
+        };
 
         const renderBadge = (total) => {
             let badge = trigger.querySelector('[data-admin-alert-badge]');
@@ -366,7 +400,16 @@
 
                 const payload = await response.json();
                 const mobileCount = Number(payload?.data?.mobile_negotiation_alert_count || 0) || 0;
-                renderBadge(staticAlertCount + mobileCount);
+                const mobileAlerts = Array.isArray(payload?.data?.mobile_negotiation_alerts)
+                    ? payload.data.mobile_negotiation_alerts
+                    : [];
+                const visibleMobileKeys = mobileAlerts
+                    .map((alert) => 'mobile-negotiation-' + String(alert?.id || '').trim())
+                    .filter((key) => key !== 'mobile-negotiation-');
+                const unseenVisibleMobileCount = visibleMobileKeys.filter((key) => !isSeen(key)).length;
+                const unseenHiddenMobileCount = Math.max(0, mobileCount - visibleMobileKeys.length);
+
+                renderBadge(currentStaticCount() + unseenVisibleMobileCount + unseenHiddenMobileCount);
             } catch (error) {
                 // Ignora falhas silenciosas no refresh do badge.
             } finally {
@@ -374,6 +417,7 @@
             }
         };
 
+        renderBadge(currentStaticCount());
         refresh();
         window.setTimeout(refresh, 1500);
         window.setInterval(refresh, 10000);
@@ -383,6 +427,7 @@
             }
         });
         window.addEventListener('focus', refresh);
+        document.addEventListener('aneo-admin-alerts-updated', refresh);
     };
 
     wireAdminAlertBadgeRefresh();

@@ -159,6 +159,7 @@ if ($isProfessor) {
 
 $adminAlertCount = $mobileNegotiationAlertCount + $exchangeAlertCount + $reenrollmentAlertCount + $payableDueAlertCount;
 $adminAlertKeys = [];
+$staticAdminAlertKeys = [];
 foreach ($mobileNegotiationAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
     if ($id > 0) {
@@ -168,19 +169,25 @@ foreach ($mobileNegotiationAlerts as $alert) {
 foreach ($exchangeAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
     if ($id > 0) {
-        $adminAlertKeys[] = 'exchange-request-' . $id;
+        $key = 'exchange-request-' . $id;
+        $adminAlertKeys[] = $key;
+        $staticAdminAlertKeys[] = $key;
     }
 }
 foreach ($reenrollmentAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
     if ($id > 0) {
-        $adminAlertKeys[] = 'reenrollment-confirmed-' . $id;
+        $key = 'reenrollment-confirmed-' . $id;
+        $adminAlertKeys[] = $key;
+        $staticAdminAlertKeys[] = $key;
     }
 }
 foreach ($payableDueAlerts as $alert) {
     $id = (int) ($alert['id'] ?? 0);
     if ($id > 0) {
-        $adminAlertKeys[] = 'payable-due-' . $id . '-' . (string) ($alert['due_date'] ?? '');
+        $key = 'payable-due-' . $id . '-' . (string) ($alert['due_date'] ?? '');
+        $adminAlertKeys[] = $key;
+        $staticAdminAlertKeys[] = $key;
     }
 }
 $mobileQueueRoute = route('requests&source=api&mobile_flow=1&status=pending');
@@ -332,6 +339,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                         data-mobile-neg-trigger
                         data-mobile-neg-endpoint="<?= e(route('requests/mobile-alerts')); ?>"
                         data-static-alert-count="<?= (int) ($exchangeAlertCount + $reenrollmentAlertCount + $payableDueAlertCount); ?>"
+                        data-static-alert-keys="<?= e(json_encode($staticAdminAlertKeys)); ?>"
                         data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : ($reenrollmentAlertCount > 0 ? $reenrollmentQueueRoute : ($payableDueAlertCount > 0 ? $payableQueueRoute : $mobileQueueRoute))); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
                         title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificacoes administrativas'; ?>">
@@ -611,6 +619,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                     } catch (error) {
                     }
                 });
+                document.dispatchEvent(new CustomEvent('aneo-admin-alerts-updated'));
             };
             const markAutoShown = function () {
                 unseen.forEach((key) => {
