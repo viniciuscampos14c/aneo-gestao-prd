@@ -3,10 +3,12 @@
 class GestaoAlunoController extends BaseController
 {
     private GestaoAlunoModel $gda;
+    private FinanceModel $finance;
 
     public function __construct()
     {
         $this->gda = new GestaoAlunoModel();
+        $this->finance = new FinanceModel();
     }
 
     // -------------------------------------------------------------------------
@@ -20,6 +22,10 @@ class GestaoAlunoController extends BaseController
 
         $search   = trim((string) request('q', ''));
         $archived = request('archived') === '1';
+
+        if (!$archived) {
+            $this->finance->syncFinanceBoardStatuses((int) current_user()['id']);
+        }
 
         $this->render('gestao_aluno/index', [
             'title'    => 'Gestão do Aluno',

@@ -2152,6 +2152,8 @@ class FinanceModel extends BaseModel
             return;
         }
 
+        $this->refreshOverdueInvoices();
+
         $stmt = $this->db->prepare("SELECT COUNT(*)
             FROM invoices
             WHERE company_id = :company_id
@@ -2174,8 +2176,12 @@ class FinanceModel extends BaseModel
         ]);
         $openCount = (int) $openStmt->fetchColumn();
 
+        $hasActiveAgreement = $this->studentHasActiveAgreementInvoices($studentId, $companyId);
+
         $targetStatusId = null;
-        if ($overdueCount > 0) {
+        if ($hasActiveAgreement) {
+            $targetStatusId = $this->statusIdBySlug('acordo-ativo');
+        } elseif ($overdueCount >= 2) {
             $targetStatusId = $this->statusIdBySlug('inadimplente');
         } elseif ($openCount === 0) {
             $targetStatusId = $this->statusIdBySlug('sem-pendencias') ?: $this->students->defaultKanbanStatusId();
@@ -2195,8 +2201,64 @@ class FinanceModel extends BaseModel
             ':company_id' => $companyId,
         ]);
 
-        $reason = $overdueCount > 0 ? 'Atualizacao automatica por inadimplencia' : 'Atualizacao automatica por regularizacao';
+        if ($hasActiveAgreement) {
+            $reason = 'Atualizacao automatica por acordo ativo';
+        } elseif ($overdueCount >= 2) {
+            $reason = 'Atualizacao automatica por inadimplencia';
+        } else {
+            $reason = 'Atualizacao automatica por regularizacao';
+        }
+
         $this->students->registerKanbanHistory($studentId, (int) $student['kanban_status_id'], (int) $targetStatusId, $changedBy, $reason);
+    }
+
+    public function syncFinanceBoardStatuses(int $changedBy): void
+    {
+        $companyId = $this->companyId();
+        $this->refreshOverdueInvoices();
+
+        $stmt = $this->db->prepare("SELECT DISTINCT s.id
+            FROM students s
+            LEFT JOIN invoices i
+                ON i.company_id = s.company_id
+               AND i.student_id = s.id
+            WHERE s.company_id = :company_id
+              AND (
+                    i.id IS NOT NULL
+                    OR s.kanban_status_id IN (
+                        SELECT id
+                        FROM kanban_status
+                        WHERE slug IN ('sem-pendencias', 'inadimplente', 'acordo-ativo')
+                    )
+                  )");
+        $stmt->execute([':company_id' => $companyId]);
+
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $studentId) {
+            $this->syncStudentFinanceKanban((int) $studentId, $changedBy);
+        }
+    }
+
+    private function studentHasActiveAgreementInvoices(int $studentId, int $companyId): bool
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM invoices
+            WHERE company_id = :company_id
+              AND student_id = :student_id
+              AND status IN ('open', 'partial', 'overdue')
+              AND (
+                    tags LIKE :agreement_tag
+                    OR project_name LIKE :negotiation_project
+                    OR project_name LIKE :addendum_project
+                  )");
+        $stmt->execute([
+            ':company_id' => $companyId,
+            ':student_id' => $studentId,
+            ':agreement_tag' => '%Acordo mobile%',
+            ':negotiation_project' => 'Negociacao financeiro (App Diretoria)%',
+            ':addendum_project' => 'Aditivo financeiro (App Diretoria)%',
+        ]);
+
+        return (int) $stmt->fetchColumn() > 0;
     }
 
     private function resolveInvoicePaymentMethod(array $invoice): ?array
