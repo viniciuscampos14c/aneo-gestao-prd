@@ -5,6 +5,7 @@ $externalFeatureAvailable = $externalExamFeatureAvailable ?? false;
 $internalAudienceFeatureAvailable = $internalExamAudienceFeatureAvailable ?? false;
 $externalLinksRows = $externalLinks ?? [];
 $recentResults = $recentExamResults ?? [];
+$isAdminResultEditor = is_admin();
 
 $approvedResults = 0;
 $failedResults = 0;
@@ -328,10 +329,11 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
         <form method="post" action="<?= route('courses/exams/result'); ?>" class="grid gap-3 lg:grid-cols-6">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+            <input type="hidden" name="result_id" id="exam-result-id" value="">
 
             <div class="lg:col-span-2">
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Avaliacao *</label>
-                <select name="exam_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <select name="exam_id" id="exam-result-exam" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecione a avaliacao...</option>
                     <?php foreach ($rows as $exam): ?>
                         <?php $dateLabel = !empty($exam['scheduled_at']) ? date('d/m/Y H:i', strtotime((string) $exam['scheduled_at'])) : 'sem data'; ?>
@@ -342,7 +344,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
             <div class="lg:col-span-2">
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Aluno *</label>
-                <select name="student_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <select name="student_id" id="exam-result-student" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecione o aluno...</option>
                     <?php foreach ($students as $student): ?>
                         <option value="<?= (int) $student['id']; ?>"><?= e($student['full_name']); ?></option>
@@ -352,21 +354,22 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nota do aluno *</label>
-                <input type="text" name="score" required placeholder="Ex.: 8,5" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <input type="text" name="score" id="exam-result-score" required placeholder="Ex.: 8,5" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Nota minima</label>
-                <input type="text" name="passing_score" value="7,0" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <input type="text" name="passing_score" id="exam-result-passing-score" value="7,0" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Data da nota</label>
-                <input type="datetime-local" name="submitted_at" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <input type="datetime-local" name="submitted_at" id="exam-result-submitted-at" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </div>
 
-            <div class="flex items-end">
-                <button class="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Salvar nota</button>
+            <div class="flex items-end gap-2">
+                <button id="exam-result-submit" class="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Salvar nota</button>
+                <button type="button" id="exam-result-cancel" class="hidden rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
             </div>
         </form>
     </section>
@@ -387,6 +390,9 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                             <th class="px-3 py-2">Avaliacao</th>
                             <th class="px-3 py-2">Nota</th>
                             <th class="px-3 py-2">Status</th>
+                            <?php if ($isAdminResultEditor): ?>
+                                <th class="px-3 py-2 text-right">Acao</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -403,11 +409,27 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                                         <?= $approved ? 'Aprovado' : 'Reprovado'; ?>
                                     </span>
                                 </td>
+                                <?php if ($isAdminResultEditor): ?>
+                                    <td class="px-3 py-2 text-right">
+                                        <button
+                                            type="button"
+                                            class="exam-result-edit rounded border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                            data-result-id="<?= (int) ($result['id'] ?? 0); ?>"
+                                            data-exam-id="<?= (int) ($result['exam_id'] ?? 0); ?>"
+                                            data-student-id="<?= (int) ($result['student_id'] ?? 0); ?>"
+                                            data-score="<?= e(number_format((float) ($result['score'] ?? 0), 2, '.', '')); ?>"
+                                            data-passing-score="<?= e(number_format((float) ($result['passing_score'] ?? 0), 2, '.', '')); ?>"
+                                            data-submitted-at="<?= !empty($result['submitted_at']) ? e(date('Y-m-d\TH:i', strtotime((string) $result['submitted_at']))) : ''; ?>"
+                                        >
+                                            Editar
+                                        </button>
+                                    </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                         <?php if ($recentResults === []): ?>
                             <tr>
-                                <td colspan="6" class="px-3 py-6 text-center text-slate-500">Nenhum resultado de avaliacao registrado ate o momento.</td>
+                                <td colspan="<?= $isAdminResultEditor ? '7' : '6'; ?>" class="px-3 py-6 text-center text-slate-500">Nenhum resultado de avaliacao registrado ate o momento.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -639,6 +661,15 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             const externalStudentField = document.getElementById('external-target-student-list');
             const externalStudentCheckboxes = Array.from(document.querySelectorAll('.external-target-student-checkbox'));
             const externalHintField = document.getElementById('external-audience-hint');
+            const resultIdField = document.getElementById('exam-result-id');
+            const resultExamField = document.getElementById('exam-result-exam');
+            const resultStudentField = document.getElementById('exam-result-student');
+            const resultScoreField = document.getElementById('exam-result-score');
+            const resultPassingScoreField = document.getElementById('exam-result-passing-score');
+            const resultSubmittedAtField = document.getElementById('exam-result-submitted-at');
+            const resultSubmitButton = document.getElementById('exam-result-submit');
+            const resultCancelButton = document.getElementById('exam-result-cancel');
+            const resultEditButtons = Array.from(document.querySelectorAll('.exam-result-edit'));
 
             if (questionsWrap && addQuestionButton && audienceScopeField && targetStudentField) {
                 let questionIndex = 0;
@@ -729,6 +760,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 });
 
                 audienceScopeField.addEventListener('change', syncAudienceScope);
+                targetStudentCheckboxes.forEach((checkbox) => checkbox.addEventListener('change', syncAudienceScope));
                 syncAudienceScope();
                 questionsWrap.appendChild(buildQuestionCard());
             }
@@ -757,7 +789,35 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 syncExternalScope();
             }
 
-            targetStudentCheckboxes.forEach((checkbox) => checkbox.addEventListener('change', syncAudienceScope));
+            if (resultIdField && resultExamField && resultStudentField && resultScoreField && resultPassingScoreField && resultSubmittedAtField && resultSubmitButton && resultCancelButton) {
+                const resetResultForm = () => {
+                    resultIdField.value = '';
+                    resultExamField.value = '';
+                    resultStudentField.value = '';
+                    resultScoreField.value = '';
+                    resultPassingScoreField.value = '7,0';
+                    resultSubmittedAtField.value = '';
+                    resultSubmitButton.textContent = 'Salvar nota';
+                    resultCancelButton.classList.add('hidden');
+                };
+
+                resultEditButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        resultIdField.value = button.dataset.resultId || '';
+                        resultExamField.value = button.dataset.examId || '';
+                        resultStudentField.value = button.dataset.studentId || '';
+                        resultScoreField.value = button.dataset.score || '';
+                        resultPassingScoreField.value = button.dataset.passingScore || '7.0';
+                        resultSubmittedAtField.value = button.dataset.submittedAt || '';
+                        resultSubmitButton.textContent = 'Atualizar nota';
+                        resultCancelButton.classList.remove('hidden');
+                        resultScoreField.focus();
+                        resultScoreField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                });
+
+                resultCancelButton.addEventListener('click', resetResultForm);
+            }
         })();
     </script>
 </section>

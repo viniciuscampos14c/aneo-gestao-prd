@@ -1616,8 +1616,12 @@ class CourseModel extends BaseModel
 
     public function registerExamResult(array $data, int $createdBy): void
     {
-        $examId = (int) ($data['exam_id'] ?? 0);
-        $studentId = (int) ($data['student_id'] ?? 0);
+        $requestedExamId = (int) ($data['exam_id'] ?? 0);
+        $requestedStudentId = (int) ($data['student_id'] ?? 0);
+        $resultId = (int) ($data['result_id'] ?? 0);
+        $currentResult = $resultId > 0 ? $this->findExamResultForCompany($resultId) : null;
+        $examId = $currentResult !== null ? (int) ($currentResult['exam_id'] ?? 0) : $requestedExamId;
+        $studentId = $currentResult !== null ? (int) ($currentResult['student_id'] ?? 0) : $requestedStudentId;
         if (
             !$this->canAccessExam($examId)
             || !$this->studentBelongsCompany($studentId)
@@ -1631,7 +1635,7 @@ class CourseModel extends BaseModel
         $submittedAt = trim((string) ($data['submitted_at'] ?? '')) ?: now();
         $status = $score >= $passingScore ? 'approved' : 'failed';
 
-        $existingId = $this->findLatestExamResultId($examId, $studentId);
+        $existingId = $currentResult !== null ? $resultId : $this->findLatestExamResultId($examId, $studentId);
         if ($existingId > 0) {
             $stmt = $this->db->prepare('UPDATE exam_results SET
                 score = :score,
@@ -2435,6 +2439,36 @@ class CourseModel extends BaseModel
         ]);
 
         return (int) ($stmt->fetchColumn() ?: 0);
+    }
+
+    private function findExamResultForCompany(int $resultId): ?array
+    {
+        if ($resultId <= 0) {
+            return null;
+        }
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $stmt = $this->db->prepare('SELECT r.id, r.exam_id, r.student_id
+                FROM exam_results r
+                INNER JOIN exams ex ON ex.id = r.exam_id
+                INNER JOIN courses c ON c.id = ex.course_id
+                WHERE r.id = :id
+                  AND c.company_id = :company_id
+                LIMIT 1');
+            $stmt->execute([
+                ':id' => $resultId,
+                ':company_id' => $this->companyId(),
+            ]);
+        } else {
+            $stmt = $this->db->prepare('SELECT id, exam_id, student_id
+                FROM exam_results
+                WHERE id = :id
+                LIMIT 1');
+            $stmt->execute([':id' => $resultId]);
+        }
+
+        $row = $stmt->fetch();
+        return is_array($row) ? $row : null;
     }
 
     private function resolveExamPassingScore(int $examId, float $fallback): float

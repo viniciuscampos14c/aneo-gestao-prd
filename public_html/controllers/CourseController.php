@@ -970,6 +970,7 @@ class CourseController extends BaseController
         csrf_validate();
 
         $data = [
+            'result_id' => (int) post('result_id'),
             'exam_id' => (int) post('exam_id'),
             'student_id' => (int) post('student_id'),
             'score' => parse_decimal((string) post('score', '0')),
@@ -984,7 +985,7 @@ class CourseController extends BaseController
 
         $this->courses->registerExamResult($data, (int) current_user()['id']);
         $this->notifyStudentAboutExamResult((int) $data['exam_id'], (int) $data['student_id'], (float) $data['score']);
-        $this->success('Resultado registrado.');
+        $this->success($data['result_id'] > 0 ? 'Resultado atualizado.' : 'Resultado registrado.');
         $this->redirect('courses/exams');
     }
 
