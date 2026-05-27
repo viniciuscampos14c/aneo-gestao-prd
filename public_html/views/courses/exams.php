@@ -717,10 +717,6 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                         }
                     });
 
-                    if (byStudent && targetStudentCheckboxes.length > 0) {
-                        targetStudentCheckboxes[0].required = !targetStudentCheckboxes.some((checkbox) => checkbox.checked);
-                    }
-
                     if (audienceHintField) {
                         audienceHintField.textContent = byStudent
                             ? 'A prova sera enviada somente para os alunos selecionados.'
@@ -748,10 +744,6 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                             checkbox.checked = false;
                         }
                     });
-
-                    if (byStudent && externalStudentCheckboxes.length > 0) {
-                        externalStudentCheckboxes[0].required = !externalStudentCheckboxes.some((checkbox) => checkbox.checked);
-                    }
 
                     if (externalHintField) {
                         externalHintField.textContent = byStudent
