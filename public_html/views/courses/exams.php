@@ -331,6 +331,25 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <input type="hidden" name="result_id" id="exam-result-id" value="">
 
+            <div id="exam-result-edit-summary" class="hidden lg:col-span-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p class="font-semibold">Modo edicao protegido</p>
+                <p class="mt-1 text-xs text-amber-800">Curso, avaliacao e aluno ficam travados durante a edicao para evitar alteracao no registro errado.</p>
+                <div class="mt-3 grid gap-3 md:grid-cols-3">
+                    <div>
+                        <span class="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">Curso</span>
+                        <span id="exam-result-edit-course" class="block text-sm font-medium text-amber-950">-</span>
+                    </div>
+                    <div>
+                        <span class="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">Avaliacao</span>
+                        <span id="exam-result-edit-exam" class="block text-sm font-medium text-amber-950">-</span>
+                    </div>
+                    <div>
+                        <span class="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">Aluno</span>
+                        <span id="exam-result-edit-student" class="block text-sm font-medium text-amber-950">-</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="lg:col-span-2">
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Avaliacao *</label>
                 <select name="exam_id" id="exam-result-exam" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -417,6 +436,9 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                                             data-result-id="<?= (int) ($result['id'] ?? 0); ?>"
                                             data-exam-id="<?= (int) ($result['exam_id'] ?? 0); ?>"
                                             data-student-id="<?= (int) ($result['student_id'] ?? 0); ?>"
+                                            data-course-name="<?= e((string) ($result['course_name'] ?? '')); ?>"
+                                            data-exam-title="<?= e((string) ($result['exam_title'] ?? '')); ?>"
+                                            data-student-name="<?= e((string) ($result['student_name'] ?? '')); ?>"
                                             data-score="<?= e(number_format((float) ($result['score'] ?? 0), 2, '.', '')); ?>"
                                             data-passing-score="<?= e(number_format((float) ($result['passing_score'] ?? 0), 2, '.', '')); ?>"
                                             data-submitted-at="<?= !empty($result['submitted_at']) ? e(date('Y-m-d\TH:i', strtotime((string) $result['submitted_at']))) : ''; ?>"
@@ -670,6 +692,10 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             const resultSubmitButton = document.getElementById('exam-result-submit');
             const resultCancelButton = document.getElementById('exam-result-cancel');
             const resultEditButtons = Array.from(document.querySelectorAll('.exam-result-edit'));
+            const resultEditSummary = document.getElementById('exam-result-edit-summary');
+            const resultEditCourse = document.getElementById('exam-result-edit-course');
+            const resultEditExam = document.getElementById('exam-result-edit-exam');
+            const resultEditStudent = document.getElementById('exam-result-edit-student');
 
             if (questionsWrap && addQuestionButton && audienceScopeField && targetStudentField) {
                 let questionIndex = 0;
@@ -794,11 +820,25 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     resultIdField.value = '';
                     resultExamField.value = '';
                     resultStudentField.value = '';
+                    resultExamField.disabled = false;
+                    resultStudentField.disabled = false;
                     resultScoreField.value = '';
                     resultPassingScoreField.value = '7,0';
                     resultSubmittedAtField.value = '';
                     resultSubmitButton.textContent = 'Salvar nota';
                     resultCancelButton.classList.add('hidden');
+                    if (resultEditSummary) {
+                        resultEditSummary.classList.add('hidden');
+                    }
+                    if (resultEditCourse) {
+                        resultEditCourse.textContent = '-';
+                    }
+                    if (resultEditExam) {
+                        resultEditExam.textContent = '-';
+                    }
+                    if (resultEditStudent) {
+                        resultEditStudent.textContent = '-';
+                    }
                 };
 
                 resultEditButtons.forEach((button) => {
@@ -806,11 +846,25 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                         resultIdField.value = button.dataset.resultId || '';
                         resultExamField.value = button.dataset.examId || '';
                         resultStudentField.value = button.dataset.studentId || '';
+                        resultExamField.disabled = true;
+                        resultStudentField.disabled = true;
                         resultScoreField.value = button.dataset.score || '';
                         resultPassingScoreField.value = button.dataset.passingScore || '7.0';
                         resultSubmittedAtField.value = button.dataset.submittedAt || '';
                         resultSubmitButton.textContent = 'Atualizar nota';
                         resultCancelButton.classList.remove('hidden');
+                        if (resultEditSummary) {
+                            resultEditSummary.classList.remove('hidden');
+                        }
+                        if (resultEditCourse) {
+                            resultEditCourse.textContent = button.dataset.courseName || '-';
+                        }
+                        if (resultEditExam) {
+                            resultEditExam.textContent = button.dataset.examTitle || '-';
+                        }
+                        if (resultEditStudent) {
+                            resultEditStudent.textContent = button.dataset.studentName || '-';
+                        }
                         resultScoreField.focus();
                         resultScoreField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     });
