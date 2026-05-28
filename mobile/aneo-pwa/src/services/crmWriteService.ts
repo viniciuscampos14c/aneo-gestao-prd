@@ -101,6 +101,7 @@ export async function sendNegotiationToCrm(
     requester_phone: '',
     priority: input.mode === 'aditivo' ? 'high' : 'normal',
     category: 'financeiro',
+    external_reference: `student:${input.profile.id}`,
   };
 
   return apiPost<TicketResponse, typeof payload>(config, 'tickets', payload);

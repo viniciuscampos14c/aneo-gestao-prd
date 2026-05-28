@@ -58,7 +58,7 @@ export default function App() {
     if (activeTab === 'negotiation') return 'Negociacao financeira';
     if (activeTab === 'trial-access') return 'Degustacao de cursos';
     if (activeTab === 'students') return 'Base de alunos';
-    if (activeTab === 'tickets') return 'Central de chamados';
+    if (activeTab === 'tickets') return 'Acompanhamento de aditivos';
     return 'Conexao e sessao';
   }, [activeTab]);
 

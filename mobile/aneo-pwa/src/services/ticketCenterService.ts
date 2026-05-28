@@ -2,7 +2,7 @@ import type { ApiConfig, ApiTicket } from '../types';
 import { fetchAllPages } from './apiClient';
 
 export async function loadTicketsFromApi(config: ApiConfig): Promise<ApiTicket[]> {
-  const response = await fetchAllPages<ApiTicket>(config, 'tickets');
+  const response = await fetchAllPages<ApiTicket>(config, 'tickets', { mobile_flow: 1 });
 
   return response.rows.sort((left, right) => {
     const leftDate = String(left.updated_at ?? left.created_at ?? '');

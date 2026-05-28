@@ -440,9 +440,11 @@ class ApiEndpointController extends BaseController
         ApiAuth::requirePermission($this->token, 'tickets', 'search');
 
         $filters = [
-            'q'        => trim((string) ($_GET['q'] ?? '')),
-            'status'   => $_GET['status'] ?? '',
-            'priority' => $_GET['priority'] ?? '',
+            'q'           => trim((string) ($_GET['q'] ?? '')),
+            'status'      => $_GET['status'] ?? '',
+            'priority'    => $_GET['priority'] ?? '',
+            'source'      => trim((string) ($_GET['source'] ?? '')),
+            'mobile_flow' => (int) ($_GET['mobile_flow'] ?? 0) > 0 ? 1 : 0,
         ];
         $perPage = min(200, max(1, (int) ($_GET['per_page'] ?? 50)));
         $page    = max(1, (int) ($_GET['page'] ?? 1));

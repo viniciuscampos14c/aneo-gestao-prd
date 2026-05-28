@@ -152,11 +152,13 @@ export type ApiTicket = {
   id: number;
   ticket_code?: string | null;
   subject?: string | null;
+  description?: string | null;
   status?: string | null;
   priority?: string | null;
   requester_name?: string | null;
   requester_email?: string | null;
   source?: string | null;
+  external_reference?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
