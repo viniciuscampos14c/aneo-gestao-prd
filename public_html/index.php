@@ -10,6 +10,7 @@ $router = new Router();
 
 $auth = new AuthController();
 $dashboard = new DashboardController();
+$certification = new CertificationController();
 $students = new StudentController();
 $kanban = new KanbanController();
 $leads = new LeadController();
@@ -78,6 +79,7 @@ $router->get('student/reenrollment',          fn () => $studentPortal->reenrollm
 $router->post('student/reenrollment/confirm', fn () => $studentPortal->reenrollmentConfirm());
 
 $router->get('dashboard', fn () => $dashboard->index());
+$router->get('certification', fn () => $certification->index());
 $router->get('search', fn () => $search->index());
 
 $router->get('users', fn () => $users->index());

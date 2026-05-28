@@ -33,9 +33,11 @@ $currentRoute = parse_route();
 $user = current_user();
 $company = current_company();
 $isProfessor = is_professor();
+$isCertificador = is_certificador();
 $homeRoute = route($isProfessor ? 'students' : default_admin_route());
 $menu = [
     ['module' => $isProfessor ? 'students' : 'dashboard', 'label' => $isProfessor ? 'Inicio' : 'Dashboard', 'icon' => 'chart-bar', 'route' => $isProfessor ? 'students' : 'dashboard'],
+    ['module' => 'certification', 'label' => 'Certificacao', 'icon' => 'clipboard-document-list', 'route' => 'certification'],
     ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students', 'hide_for_professor' => true],
     ['module' => 'students', 'label' => 'Rematrículas', 'icon' => 'document-check', 'route' => 'students/reenrollments', 'hide_for_professor' => true],
@@ -147,8 +149,8 @@ $reenrollmentAlertCount = (int) ($reenrollmentAlertCount ?? count($reenrollmentA
 $payableDueAlerts = isset($payableDueAlerts) && is_array($payableDueAlerts) ? $payableDueAlerts : [];
 $payableDueAlertCount = (int) ($payableDueAlertCount ?? count($payableDueAlerts));
 
-if ($isProfessor) {
-    // Professor externo nao deve receber alertas financeiros/administrativos.
+if ($isProfessor || $isCertificador) {
+    // Perfis dedicados nao devem receber alertas financeiros/administrativos.
     $mobileNegotiationAlerts = [];
     $mobileNegotiationAlertCount = 0;
     $reenrollmentAlerts = [];

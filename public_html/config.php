@@ -152,10 +152,17 @@ return [
                 'courses.comment',
             ],
         ],
+        'certificador' => [
+            'label' => 'Certificador',
+            'permissions' => [
+                'certification',
+            ],
+        ],
     ],
     'permissions_catalog' => [
         'modules' => [
             'dashboard' => 'Dashboard',
+            'certification' => 'Certificacao',
             'gda' => 'Gestao do Aluno',
             'kanban' => 'Kanban Cliente',
             'students' => 'Alunos',

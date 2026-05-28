@@ -291,7 +291,7 @@ class UserController extends BaseController
             $permissions = array_keys($this->permissionCatalog()['all']);
         }
 
-        if (in_array($payload['role'], ['admin', 'professor'], true)) {
+        if (in_array($payload['role'], ['admin', 'professor', 'certificador'], true)) {
             $permissions = [];
         }
 
@@ -330,6 +330,7 @@ class UserController extends BaseController
             'admin' => 'Administrador',
             'suporte' => 'Suporte',
             'professor' => 'Professor',
+            'certificador' => 'Certificador',
         ];
     }
 

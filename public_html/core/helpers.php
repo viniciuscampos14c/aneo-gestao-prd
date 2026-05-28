@@ -131,6 +131,12 @@ function is_professor(): bool
     return is_array($user) && ((string) ($user['role'] ?? '')) === 'professor';
 }
 
+function is_certificador(): bool
+{
+    $user = current_user();
+    return is_array($user) && ((string) ($user['role'] ?? '')) === 'certificador';
+}
+
 function current_student(): ?array
 {
     return $_SESSION['student'] ?? null;
@@ -210,8 +216,13 @@ function default_admin_route(): string
         return 'students';
     }
 
+    if (is_certificador()) {
+        return 'certification';
+    }
+
     $priority = [
         'dashboard' => 'dashboard',
+        'certification' => 'certification',
         'gda' => 'gestao-aluno',
         'students' => 'students',
         'courses' => 'courses',
