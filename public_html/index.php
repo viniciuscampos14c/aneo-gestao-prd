@@ -80,6 +80,7 @@ $router->post('student/reenrollment/confirm', fn () => $studentPortal->reenrollm
 
 $router->get('dashboard', fn () => $dashboard->index());
 $router->get('certification', fn () => $certification->index());
+$router->get('certification/academic-history', fn () => $certification->academicHistory());
 $router->get('search', fn () => $search->index());
 
 $router->get('users', fn () => $users->index());

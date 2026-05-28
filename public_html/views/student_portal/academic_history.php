@@ -15,6 +15,9 @@ $companyCnpj = trim((string) ($profileData['company_cnpj'] ?? ''));
 $issuedAtValue = trim((string) ($issuedAt ?? now()));
 $issuedAtLabel = date('d/m/Y H:i', strtotime($issuedAtValue));
 $birthDateLabel = $studentBirthDate !== '' ? date('d/m/Y', strtotime($studentBirthDate)) : '-';
+$backRoute = (string) ($backRoute ?? route('student/exams'));
+$backLabel = (string) ($backLabel ?? 'Voltar para Avaliacoes');
+$issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticamente pelo Portal do Aluno em '));
 ?>
 <style>
 .transcript-paper {
@@ -89,7 +92,7 @@ $birthDateLabel = $studentBirthDate !== '' ? date('d/m/Y', strtotime($studentBir
             <p class="text-sm text-slate-500">Resumo academico consolidado por curso, pronto para impressao em A4.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="<?= route('student/exams'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Voltar para Avaliacoes</a>
+            <a href="<?= e($backRoute); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"><?= e($backLabel); ?></a>
             <button type="button" onclick="window.print()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Imprimir A4</button>
         </div>
     </div>
@@ -99,7 +102,7 @@ $birthDateLabel = $studentBirthDate !== '' ? date('d/m/Y', strtotime($studentBir
             <p class="text-xs font-semibold uppercase tracking-[0.12em]">ANEO - Gestao Integrada</p>
             <p class="text-sm font-semibold uppercase"><?= e($companyName !== '' ? $companyName : 'Instituicao de Ensino'); ?></p>
             <h1 class="text-3xl font-bold uppercase tracking-wide">Historico Escolar</h1>
-            <p class="mt-1 text-[11px]">Documento emitido automaticamente pelo Portal do Aluno em <?= e($issuedAtLabel); ?>.</p>
+            <p class="mt-1 text-[11px]"><?= e($issuedByLabel); ?><?= e($issuedAtLabel); ?>.</p>
         </header>
 
         <table class="transcript-table mt-3">

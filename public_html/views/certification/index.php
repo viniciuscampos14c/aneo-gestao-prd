@@ -67,6 +67,9 @@ $studentRa = trim((string) ($summary['ra'] ?? ''));
                             <h3 class="text-2xl font-semibold text-slate-900"><?= e($studentName !== '' ? $studentName : 'Aluno'); ?></h3>
                             <p class="mt-1 text-sm text-slate-500">RA <?= e($studentRa !== '' ? $studentRa : '-'); ?> | Status <?= e($studentStatus !== '' ? $studentStatus : '-'); ?></p>
                         </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <a href="<?= route('certification/academic-history&student_id=' . $selectedStudentId); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Historico academico</a>
+                        </div>
                         <div class="grid min-w-[220px] grid-cols-2 gap-3 text-sm">
                             <div class="rounded-xl bg-slate-50 p-3">
                                 <p class="text-slate-500">Resultados</p>
@@ -144,62 +147,10 @@ $studentRa = trim((string) ($summary['ra'] ?? ''));
                     </div>
                 </section>
 
-                <section class="rounded-xl border border-slate-200 bg-white p-5">
-                    <h3 class="text-lg font-semibold">Historico academico</h3>
-                    <div class="mt-4 space-y-5">
-                        <?php foreach ($terms as $term): ?>
-                            <article class="rounded-xl border border-slate-200">
-                                <div class="border-b border-slate-200 bg-slate-50 px-4 py-3">
-                                    <h4 class="font-semibold text-slate-900"><?= e((string) ($term['term_label'] ?? 'Periodo')); ?></h4>
-                                </div>
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full text-sm">
-                                        <thead class="bg-white text-left text-slate-500">
-                                            <tr>
-                                                <th class="px-4 py-3 font-medium">Curso / avaliacao</th>
-                                                <th class="px-4 py-3 font-medium">Data</th>
-                                                <th class="px-4 py-3 font-medium">Carga horaria</th>
-                                                <th class="px-4 py-3 font-medium">Nota</th>
-                                                <th class="px-4 py-3 font-medium">Situacao</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach (($term['rows'] ?? []) as $row): ?>
-                                                <?php
-                                                $label = trim((string) ($row['course_name'] ?? ''));
-                                                $examTitle = trim((string) ($row['exam_title'] ?? ''));
-                                                if ($examTitle !== '') {
-                                                    $label .= ($label !== '' ? ' - ' : '') . $examTitle;
-                                                }
-                                                $approved = (string) ($row['status'] ?? '') === 'approved';
-                                                ?>
-                                                <tr class="border-t border-slate-100">
-                                                    <td class="px-4 py-3 font-medium text-slate-800"><?= e($label !== '' ? $label : '-'); ?></td>
-                                                    <td class="px-4 py-3 text-slate-500"><?= e(!empty($row['date']) ? date('d/m/Y H:i', strtotime((string) $row['date'])) : '-'); ?></td>
-                                                    <td class="px-4 py-3 text-slate-500"><?= e(number_format((float) ($row['workload'] ?? 0), 0, ',', '.')); ?>h</td>
-                                                    <td class="px-4 py-3 text-slate-800"><?= e(number_format((float) ($row['score'] ?? 0), 2, ',', '.')); ?></td>
-                                                    <td class="px-4 py-3">
-                                                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold <?= $approved ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'; ?>">
-                                                            <?= $approved ? 'Aprovado' : 'Reprovado'; ?>
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </article>
-                        <?php endforeach; ?>
-
-                        <?php if ($terms === []): ?>
-                            <p class="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-slate-500">Nenhuma nota registrada para este aluno ate o momento.</p>
-                        <?php endif; ?>
-                    </div>
-                </section>
             <?php else: ?>
                 <section class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
                     <h3 class="text-xl font-semibold text-slate-900">Selecione um aluno</h3>
-                    <p class="mt-2 text-sm text-slate-500">Assim que voce escolher um aluno, esta area mostrara documentos, curriculo e historico academico.</p>
+                    <p class="mt-2 text-sm text-slate-500">Assim que voce escolher um aluno, esta area mostrara documentos, curriculo e acesso ao historico academico.</p>
                 </section>
             <?php endif; ?>
         </div>

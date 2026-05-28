@@ -4,6 +4,7 @@ class CertificationController extends BaseController
 {
     private StudentModel $students;
     private StudentPortalModel $portal;
+    private ?bool $trialAccessTableExists = null;
 
     public function __construct()
     {
@@ -25,7 +26,7 @@ class CertificationController extends BaseController
         $perPage = 25;
         $page = max(1, (int) request('page', 1));
         $result = $this->students->list($filters, $perPage, $page);
-        $rows = $result['rows'] ?? [];
+        $rows = $this->filterCertificationStudents($result['rows'] ?? []);
 
         $selectedStudentId = (int) request('student_id', 0);
         if ($selectedStudentId <= 0 && $rows !== []) {
@@ -48,6 +49,11 @@ class CertificationController extends BaseController
         ];
 
         if ($selectedStudentId > 0) {
+            if ($this->isTrialStudent($selectedStudentId)) {
+                $this->error('Alunos provenientes de degustacao nao aparecem no perfil certificador.');
+                $this->redirect('certification');
+            }
+
             $selectedStudent = $this->students->find($selectedStudentId);
 
             if (!$selectedStudent) {
@@ -75,6 +81,51 @@ class CertificationController extends BaseController
             'history' => $history,
             'terms' => $terms,
             'summary' => $summary,
+        ]);
+    }
+
+    public function academicHistory(): void
+    {
+        require_auth();
+        require_permission('certification');
+
+        $studentId = (int) request('student_id', 0);
+        if ($studentId <= 0) {
+            $this->error('Aluno invalido para emitir historico academico.');
+            $this->redirect('certification');
+        }
+
+        if ($this->isTrialStudent($studentId)) {
+            $this->error('Alunos provenientes de degustacao nao possuem historico disponivel neste perfil.');
+            $this->redirect('certification');
+        }
+
+        $student = $this->students->find($studentId);
+        if (!$student) {
+            $this->error('Aluno nao encontrado para certificacao.');
+            $this->redirect('certification');
+        }
+
+        $profile = $this->portal->studentAcademicProfile($studentId) ?? [];
+        $history = $this->portal->academicHistoryRecords($studentId);
+        $courses = $this->portal->myCourses($studentId);
+        [$terms, $summary] = $this->buildAcademicHistoryPayload($studentId, $profile, $courses, $history);
+
+        $this->render('student_portal/academic_history', [
+            'title' => 'Historico Academico',
+            'student' => $student,
+            'profile' => $profile,
+            'ra' => (string) ($summary['ra'] ?? ''),
+            'terms' => $terms,
+            'totalResults' => (int) ($summary['total_results'] ?? 0),
+            'approvedCount' => (int) ($summary['approved_count'] ?? 0),
+            'failedCount' => (int) ($summary['failed_count'] ?? 0),
+            'averageScore' => (float) ($summary['average_score'] ?? 0),
+            'totalWorkload' => (float) ($summary['total_workload'] ?? 0),
+            'issuedAt' => now(),
+            'backRoute' => route('certification&student_id=' . $studentId),
+            'backLabel' => 'Voltar para Certificacao',
+            'issuedByLabel' => 'Documento emitido automaticamente pela area de Certificacao em ',
         ]);
     }
 
@@ -148,5 +199,65 @@ class CertificationController extends BaseController
                 'total_workload' => $totalWorkload,
             ],
         ];
+    }
+
+    private function filterCertificationStudents(array $rows): array
+    {
+        if ($rows === [] || !$this->trialAccessFeatureAvailable()) {
+            return $rows;
+        }
+
+        $studentIds = [];
+        foreach ($rows as $row) {
+            $studentId = (int) ($row['id'] ?? 0);
+            if ($studentId > 0) {
+                $studentIds[] = $studentId;
+            }
+        }
+
+        if ($studentIds === []) {
+            return $rows;
+        }
+
+        $studentIds = array_values(array_unique($studentIds));
+        $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
+        $stmt = db()->prepare("SELECT DISTINCT student_id
+            FROM course_trial_accesses
+            WHERE student_id IN ({$placeholders})");
+        $stmt->execute($studentIds);
+        $trialIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+        $trialMap = array_fill_keys($trialIds, true);
+
+        return array_values(array_filter($rows, static function (array $row) use ($trialMap): bool {
+            $studentId = (int) ($row['id'] ?? 0);
+            return $studentId > 0 && !isset($trialMap[$studentId]);
+        }));
+    }
+
+    private function isTrialStudent(int $studentId): bool
+    {
+        if ($studentId <= 0 || !$this->trialAccessFeatureAvailable()) {
+            return false;
+        }
+
+        $stmt = db()->prepare('SELECT 1 FROM course_trial_accesses WHERE student_id = :student_id LIMIT 1');
+        $stmt->execute([':student_id' => $studentId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    private function trialAccessFeatureAvailable(): bool
+    {
+        if ($this->trialAccessTableExists !== null) {
+            return $this->trialAccessTableExists;
+        }
+
+        $stmt = db()->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'course_trial_accesses'");
+        $stmt->execute();
+        $this->trialAccessTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->trialAccessTableExists;
     }
 }
