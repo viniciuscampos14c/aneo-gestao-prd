@@ -136,6 +136,30 @@ Atualizacoes aplicadas e validadas nesta data:
 5. Migracao criada:
    - `migrations/20260317_professor_external_exam_links.sql`
 
+## 1.7) Atualizacao complementar (28/05/2026) - Perfil Certificador + Historico Academico no Administrativo
+
+Atualizacoes aplicadas e validadas nesta data:
+
+1. Novo perfil administrativo `Certificador` adicionado no cadastro de usuarios.
+2. Nova permissao de modulo:
+   - `certification`
+3. Nova area administrativa de certificacao:
+   - rota `certification`
+   - rota `certification/academic-history`
+4. Escopo do perfil certificador:
+   - consultar alunos no contexto administrativo
+   - visualizar dados basicos, documentos e curriculo/cursos
+   - abrir o `Historico academico` com o mesmo layout formal do portal do aluno
+5. Regra funcional de exclusao:
+   - alunos provenientes de `degustacao` (`course_trial_accesses`) nao aparecem na lista do certificador
+   - mesmo por URL direta, o historico desses alunos e bloqueado nesse perfil
+6. Ajuste de banco obrigatorio:
+   - migration `migrations/20260528_add_certificador_role.sql`
+   - amplia o `ENUM` da coluna `users.role` para incluir `certificador`
+7. Ajuste visual do historico no administrativo:
+   - o documento passou a forcar fundo branco e texto escuro no bloco `#academic-history-paper`
+   - comportamento validado para tema escuro e tema claro do painel administrativo
+
 ---
 
 ## 2) O que foi entregue
@@ -151,7 +175,7 @@ Foram entregues os seguintes artefatos principais:
 4. Modulos:
    - Login e controle por perfil/permissao
    - Selecao de empresa/CNPJ no login administrativo (multiempresa fase 1)
-   - Administracao de usuarios (admin/suporte/professor + permissoes por tela/funcao)
+   - Administracao de usuarios (admin/suporte/professor/certificador + permissoes por tela/funcao)
    - Empresas (cadastro de CNPJs e status ativo/inativo)
    - Dashboard (operacional + BI Gerencial)
    - Alunos
@@ -166,6 +190,7 @@ Foram entregues os seguintes artefatos principais:
    - Portal do Aluno separado (login proprio + cursos + agenda + aulas + materiais + progresso + avaliacoes)
    - Portal do Aluno com abertura de chamados tecnicos
    - Portal do Aluno com Historico Academico em aba separada e impressao A4
+   - Certificacao administrativa com consulta de alunos, documentos e historico academico
    - Licenciamento anual por empresa (Cadastro > Licenca)
    - Solicitacoes, Automacoes e Chat IA Jully (CRUD basico)
    - Projetos e Tarefas desativados por regra de negocio atual
@@ -197,7 +222,8 @@ Raiz do projeto:
 17. `migrations/20260317_support_ticket_codes_aneo.sql`
 18. `migrations/20260317_professor_external_exam_links.sql`
 19. `migrations/20260424_finance_payment_methods.sql`
-20. `public_html/` (raiz da aplicacao web versionada)
+20. `migrations/20260528_add_certificador_role.sql`
+21. `public_html/` (raiz da aplicacao web versionada)
 
 Dentro de `public_html/`:
 
@@ -244,6 +270,7 @@ Definidos em `config.php`:
 1. `admin`: acesso total (`*`).
 2. `suporte`: acesso limitado por checkboxes de telas e funcoes no modulo `Usuarios`.
 3. `professor`: acesso restrito a operacao academica (alunos e cursos EAD, incluindo matriculas e exames).
+4. `certificador`: acesso dedicado ao modulo `Certificacao`, com foco em documentos, curriculo e historico academico.
 
 ---
 

@@ -218,7 +218,28 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    - `public_html/config.local.php` reside apenas no servidor/ambiente local (nunca versionado, listado no `.gitignore`).
    - Deploys futuros via `pscp` podem sincronizar `config.php` livremente sem risco de sobrescrever as credenciais de producao.
 
-### 1.12) Atualizacao complementar em 16/04/2026
+### 1.12) Atualizacao complementar em 28/05/2026
+
+1. Novo perfil administrativo `Certificador`.
+2. Permissao dedicada:
+   - modulo `certification`
+3. Nova area administrativa:
+   - `GET certification`
+   - `GET certification/academic-history`
+4. Objetivo do perfil:
+   - consultar alunos aptos ao processo de certificacao
+   - visualizar dados cadastrais, documentos e curriculo
+   - abrir o `Historico academico` no mesmo formato formal usado no portal do aluno
+5. Regra funcional importante:
+   - alunos provenientes de `degustacao` nao aparecem para o perfil certificador
+   - acesso direto ao historico desses alunos tambem e bloqueado
+6. Ajuste de banco obrigatorio:
+   - migration `migrations/20260528_add_certificador_role.sql`
+   - amplia o `ENUM` da coluna `users.role` para incluir `certificador`
+7. Ajuste visual:
+   - a tela de `Historico academico` foi adaptada para manter aspecto de documento branco tanto no tema escuro quanto no tema claro do administrativo
+
+### 1.13) Atualizacao complementar em 16/04/2026
 
 1. **Modo escuro (dark mode) no Portal do Aluno e Central Tecnica:**
    - Botao de alternancia (sol/lua) no cabecalho das duas aplicacoes.
@@ -228,7 +249,7 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    - **Excecao documentada:** a tela de `Historico Academico` mantém fundo branco em modo escuro para preservar a aparencia de documento impresso formal (`#academic-history-paper`).
    - Versao do CSS incrementada para `?v=5` para invalidar cache nos browsers.
 
-### 1.13) Atualizacao complementar em 17/04/2026
+### 1.14) Atualizacao complementar em 17/04/2026
 
 1. **Sistema de Cron Jobs interno** implementado.
 2. Novo entry point `cron.php` — autenticado por token (`cron.secret_token` em `public_html/config.local.php`).
@@ -260,7 +281,7 @@ Documentacao completa: `index.php?route=api-management/manual` (admin logado).
    ```
    O token correto esta em `public_html/config.local.php` no servidor, chave `cron.secret_token`.
 
-### 1.14) Atualizacao complementar em 22/04/2026
+### 1.15) Atualizacao complementar em 22/04/2026
 
 1. **Reestilizacao moderna no administrativo (Plano A):**
    - novo visual escuro como padrao no layout administrativo

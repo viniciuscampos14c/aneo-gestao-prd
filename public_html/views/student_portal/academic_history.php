@@ -22,6 +22,8 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
 <style>
 .transcript-paper {
     border: 2px solid #111827;
+    background: #ffffff !important;
+    color: #111827 !important;
 }
 
 .transcript-table {
@@ -35,6 +37,7 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
     border: 1px solid #111827;
     padding: 5px 6px;
     vertical-align: top;
+    color: #111827 !important;
 }
 
 .transcript-table th {
@@ -52,6 +55,35 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
     font-weight: 700;
     padding: 5px 6px;
     text-transform: uppercase;
+    color: #111827 !important;
+}
+
+#academic-history-paper,
+#academic-history-paper * {
+    color: #111827 !important;
+    border-color: #111827 !important;
+}
+
+#academic-history-paper,
+#academic-history-paper header,
+#academic-history-paper section,
+#academic-history-paper footer {
+    background: #ffffff !important;
+}
+
+#academic-history-paper .transcript-table td {
+    background: #ffffff !important;
+}
+
+#academic-history-paper .transcript-table th,
+#academic-history-paper .transcript-subtitle {
+    background: #f3f4f6 !important;
+}
+
+#academic-history-paper footer,
+#academic-history-paper footer p,
+#academic-history-paper footer div {
+    color: #111827 !important;
 }
 
 @page {
