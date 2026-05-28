@@ -424,6 +424,11 @@ class AdminAiController extends BaseController
             && !str_contains($normalized, 'ativ')
             && !str_contains($normalized, 'inativ')
             && !str_contains($normalized, 'inadimplent')
+            && !str_contains($normalized, 'atras')
+            && !str_contains($normalized, 'vencid')
+            && !str_contains($normalized, 'saldo')
+            && !str_contains($normalized, 'fatura')
+            && !str_contains($normalized, 'financeir')
             && !str_contains($normalized, 'matricul');
         if ($asksStudentTotal) {
             $total    = (int) ($summary['total_students'] ?? 0);
@@ -458,35 +463,24 @@ class AdminAiController extends BaseController
             return 'Temos ' . $overdue . ' conta(s) vencida(s) no contas a receber.';
         }
 
-        $asksLeadContact = str_contains($normalized, 'lead')
-            && (str_contains($normalized, 'contat') || str_contains($normalized, 'precis') || str_contains($normalized, 'aguard'));
-        if ($asksLeadContact) {
-            $leads = is_array($matches['leads'] ?? null) ? $matches['leads'] : [];
-            if ($leads === []) {
-                return 'Nao encontrei leads com esse criterio de contato na base interna.';
+        $asksLargestOpenInvoices = (str_contains($normalized, 'fatura') || str_contains($normalized, 'conta') || str_contains($normalized, 'titulo'))
+            && (str_contains($normalized, 'maior') || str_contains($normalized, 'maiores') || str_contains($normalized, 'top') || str_contains($normalized, 'aberto'));
+        if ($asksLargestOpenInvoices) {
+            $largestOpenInvoices = is_array($matches['maiores_faturas_em_aberto'] ?? null) ? $matches['maiores_faturas_em_aberto'] : [];
+            if ($largestOpenInvoices === []) {
+                return 'Nao encontrei faturas em aberto para listar no momento.';
             }
 
-            $names = [];
-            foreach ($leads as $row) {
-                $name = trim((string) ($row['full_name'] ?? ''));
-                if ($name !== '') {
-                    $names[] = $name;
-                }
-            }
-            $names = array_values(array_unique($names));
-            $preview = implode(', ', array_slice($names, 0, 5));
-            if ($preview === '') {
-                $preview = 'sem nomes disponiveis';
+            $lines = ['Maiores faturas em aberto agora:'];
+            foreach (array_slice($largestOpenInvoices, 0, 5) as $row) {
+                $invoiceNumber = trim((string) ($row['invoice_number'] ?? 'Fatura'));
+                $studentName = trim((string) ($row['student_name'] ?? '-'));
+                $dueDate = trim((string) ($row['due_date'] ?? '-'));
+                $balance = number_format((float) ($row['saldo_devedor'] ?? 0), 2, ',', '.');
+                $lines[] = '- ' . $invoiceNumber . ' | aluno: ' . $studentName . ' | venc: ' . $dueDate . ' | saldo: R$ ' . $balance;
             }
 
-            $asksNames = str_contains($normalized, 'qual')
-                || str_contains($normalized, 'quem')
-                || str_contains($normalized, 'nome');
-            if ($asksNames) {
-                return 'Leads que precisam de contato: ' . $preview . '.';
-            }
-
-            return 'Existe(m) ' . count($leads) . ' lead(s) que precisa(m) de contato: ' . $preview . '.';
+            return implode("\n", $lines);
         }
 
         $asksNegotiation = str_contains($normalized, 'negoci')
@@ -522,8 +516,72 @@ class AdminAiController extends BaseController
         if ($asksCommercial && $asksPriority) {
             $leadsWithoutContact = (int) ($summary['leads_without_recent_contact'] ?? 0);
             $openLeadValue = (float) ($summary['open_lead_value'] ?? 0);
-            return 'No comercial, o foco imediato sao ' . $leadsWithoutContact . ' lead(s) sem contato recente, com pipeline em aberto de R$ '
-                . number_format($openLeadValue, 2, ',', '.') . '.';
+            $priorityLeads = is_array($matches['leads_comerciais_prioritarios'] ?? null) ? $matches['leads_comerciais_prioritarios'] : [];
+            if ($priorityLeads === []) {
+                return 'No comercial, o foco imediato sao ' . $leadsWithoutContact . ' lead(s) sem contato recente, com pipeline em aberto de R$ '
+                    . number_format($openLeadValue, 2, ',', '.') . '.';
+            }
+
+            $lines = [
+                'Prioridade comercial agora:',
+                '',
+                '- ' . $leadsWithoutContact . ' lead(s) sem contato recente | pipeline aberto: R$ ' . number_format($openLeadValue, 2, ',', '.'),
+                '',
+                'Top leads para atacar primeiro:',
+            ];
+
+            foreach (array_slice($priorityLeads, 0, 5) as $row) {
+                $name = trim((string) ($row['full_name'] ?? 'Lead'));
+                $status = trim((string) ($row['status_name'] ?? '-'));
+                $source = trim((string) ($row['source'] ?? '-'));
+                $unit = trim((string) ($row['unit_name'] ?? '-'));
+                $leadValue = number_format((float) ($row['lead_value'] ?? 0), 2, ',', '.');
+                $lastContactRaw = trim((string) ($row['last_contact_at'] ?? ''));
+                $lastContactLabel = $lastContactRaw !== '' ? $lastContactRaw : 'sem contato registrado';
+
+                $lines[] = '- ' . $name
+                    . ' | potencial: R$ ' . $leadValue
+                    . ' | status: ' . $status
+                    . ' | origem: ' . $source
+                    . ' | unidade: ' . $unit
+                    . ' | ultimo contato: ' . $lastContactLabel;
+            }
+
+            $lines[] = '';
+            $lines[] = 'Proximo passo sugerido: atacar primeiro os sem contato recente e maior potencial financeiro.';
+
+            return implode("\n", $lines);
+        }
+
+        $asksLeadContact = str_contains($normalized, 'lead')
+            && (str_contains($normalized, 'contat') || str_contains($normalized, 'precis') || str_contains($normalized, 'aguard'));
+        if ($asksLeadContact) {
+            $leads = is_array($matches['leads'] ?? null) ? $matches['leads'] : [];
+            if ($leads === []) {
+                return 'Nao encontrei leads com esse criterio de contato na base interna.';
+            }
+
+            $names = [];
+            foreach ($leads as $row) {
+                $name = trim((string) ($row['full_name'] ?? ''));
+                if ($name !== '') {
+                    $names[] = $name;
+                }
+            }
+            $names = array_values(array_unique($names));
+            $preview = implode(', ', array_slice($names, 0, 5));
+            if ($preview === '') {
+                $preview = 'sem nomes disponiveis';
+            }
+
+            $asksNames = str_contains($normalized, 'qual')
+                || str_contains($normalized, 'quem')
+                || str_contains($normalized, 'nome');
+            if ($asksNames) {
+                return 'Leads que precisam de contato: ' . $preview . '.';
+            }
+
+            return 'Existe(m) ' . count($leads) . ' lead(s) que precisa(m) de contato: ' . $preview . '.';
         }
 
         $asksPriorityToday = str_contains($normalized, 'priorizar')
@@ -538,11 +596,11 @@ class AdminAiController extends BaseController
                 if ($title === '') {
                     continue;
                 }
-                $topAlerts[] = '• ' . $title . ($detail !== '' ? ': ' . $detail : '');
+                $topAlerts[] = '- ' . $title . ($detail !== '' ? ': ' . $detail : '');
             }
 
             if ($topAlerts !== []) {
-                return "Prioridades recomendadas agora:\n" . implode("\n", $topAlerts);
+                return "Prioridades recomendadas agora:\n\n" . implode("\n", $topAlerts);
             }
         }
 
@@ -728,8 +786,22 @@ class AdminAiController extends BaseController
             || str_contains($normalized, 'aberto')
             || str_contains($normalized, 'resolvido')
             || str_contains($normalized, 'fechado');
+        $hasExplicitTopic = str_contains($normalized, 'lead')
+            || str_contains($normalized, 'alun')
+            || str_contains($normalized, 'fatura')
+            || str_contains($normalized, 'conta')
+            || str_contains($normalized, 'boleto')
+            || str_contains($normalized, 'pagamento')
+            || str_contains($normalized, 'receb')
+            || str_contains($normalized, 'negoci')
+            || str_contains($normalized, 'aditivo')
+            || str_contains($normalized, 'ticket')
+            || str_contains($normalized, 'chamad')
+            || str_contains($normalized, 'suporte');
 
-        $shouldAppendPrevious = $wordCount <= 2 || (($hasFollowupPronoun || $hasStatusFollowup) && $wordCount <= 10);
+        $shouldAppendPrevious = $wordCount <= 2
+            || ($hasFollowupPronoun && $wordCount <= 10)
+            || ($hasStatusFollowup && !$hasExplicitTopic && $wordCount <= 10);
         if (!$shouldAppendPrevious) {
             return $question;
         }
