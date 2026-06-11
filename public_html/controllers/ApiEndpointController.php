@@ -162,6 +162,10 @@ class ApiEndpointController extends BaseController
         $data = $this->parseBody();
         $this->validateRequired($data, ['full_name']);
 
+        $targetCompanyId = $this->resolveLeadCompanyId($data);
+        $this->leads->useCompany($targetCompanyId);
+        $_SESSION['company'] = ['id' => $targetCompanyId];
+
         $data = array_merge([
             'email' => '', 'phone' => '', 'lead_value' => 0,
             'assigned_to' => '', 'source' => '', 'lead_status_id' => '',
@@ -171,6 +175,72 @@ class ApiEndpointController extends BaseController
         $id = $this->leads->create($data, $this->actorUserId());
         $lead = $this->leads->find($id);
         $this->ok($lead, null, 201);
+    }
+
+    private function resolveLeadCompanyId(array $data): int
+    {
+        $tokenCompanyId = (int) ($this->token['company_id'] ?? 0);
+        $requestedCompanyId = (int) ($data['company_id'] ?? 0);
+        if ($requestedCompanyId > 0) {
+            if ($this->activeCompanyExists($requestedCompanyId)) {
+                return $requestedCompanyId;
+            }
+            ApiAuth::abort(422, 'Empresa informada em company_id nao encontrada ou inativa.');
+        }
+
+        $target = trim((string) ($data['uf'] ?? $data['state'] ?? $data['unit_name'] ?? ''));
+        if ($target === '') {
+            return $tokenCompanyId;
+        }
+
+        $normalizedTarget = $this->normalizeCompanyMatcher($this->stateNameFromUf($target) ?? $target);
+        foreach ($this->activeCompaniesForLeadRouting() as $company) {
+            $haystack = $this->normalizeCompanyMatcher(
+                (string) ($company['trade_name'] ?? '') . ' ' . (string) ($company['legal_name'] ?? '')
+            );
+            if ($normalizedTarget !== '' && str_contains($haystack, $normalizedTarget)) {
+                return (int) $company['id'];
+            }
+        }
+
+        ApiAuth::abort(422, 'Nao foi possivel identificar a unidade do lead. Envie company_id, uf, state ou unit_name valido.');
+    }
+
+    private function activeCompanyExists(int $companyId): bool
+    {
+        $stmt = db()->prepare('SELECT COUNT(*) FROM companies WHERE id = :id AND is_active = 1');
+        $stmt->execute([':id' => $companyId]);
+        return ((int) $stmt->fetchColumn()) > 0;
+    }
+
+    private function activeCompaniesForLeadRouting(): array
+    {
+        $stmt = db()->query('SELECT id, trade_name, legal_name FROM companies WHERE is_active = 1 ORDER BY id ASC');
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function stateNameFromUf(string $value): ?string
+    {
+        $uf = strtoupper(trim($value));
+        $map = [
+            'AC' => 'acre', 'AL' => 'alagoas', 'AP' => 'amapa', 'AM' => 'amazonas',
+            'BA' => 'bahia', 'CE' => 'ceara', 'DF' => 'brasilia', 'ES' => 'espirito santo',
+            'GO' => 'goiania', 'MA' => 'maranhao', 'MT' => 'mato grosso', 'MS' => 'mato grosso do sul',
+            'MG' => 'minas gerais', 'PA' => 'para', 'PB' => 'paraiba', 'PR' => 'parana',
+            'PE' => 'pernambuco', 'PI' => 'piaui', 'RJ' => 'rio de janeiro', 'RN' => 'rio grande do norte',
+            'RS' => 'rio grande do sul', 'RO' => 'rondonia', 'RR' => 'roraima', 'SC' => 'santa catarina',
+            'SP' => 'sao paulo', 'SE' => 'sergipe', 'TO' => 'palmas',
+        ];
+
+        return $map[$uf] ?? null;
+    }
+
+    private function normalizeCompanyMatcher(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        $value = is_string($ascii) ? $ascii : $value;
+        return trim((string) preg_replace('/[^a-z0-9]+/', ' ', $value));
     }
 
     public function updateLead(int $id): void

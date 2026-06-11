@@ -112,8 +112,9 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
     <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-6 shadow-sm">
         <h3 class="mb-3 text-base font-semibold text-slate-800">RD Station / Envio de Leads</h3>
         <p class="text-sm text-slate-600">
-            Para a RD Station criar leads no ANEO, configure o envio como <strong>POST</strong> para o endpoint abaixo,
-            usando JSON no corpo da requisicao.
+            Para a RD Station criar leads no ANEO, configure um unico envio como <strong>POST</strong> para o endpoint abaixo,
+            usando JSON no corpo da requisicao. A unidade pode ser definida por <code class="font-mono">uf</code>,
+            <code class="font-mono">state</code>, <code class="font-mono">unit_name</code> ou <code class="font-mono">company_id</code>.
         </p>
 
         <div class="mt-4 grid gap-3 md:grid-cols-2">
@@ -134,6 +135,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
   "full_name": "Nome do lead",
   "email": "lead@email.com",
   "phone": "11999999999",
+  "uf": "BA",
   "source": "RD Station",
   "unit_name": "Unidade ou cidade de interesse",
   "tags": "rdstation, landing-page"
@@ -143,6 +145,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
         <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             <strong>Permissao exigida:</strong> o token precisa ter <code class="font-mono">leads.create</code>.
             O unico campo obrigatorio no corpo e <code class="font-mono">full_name</code>.
+            Se a unidade nao for enviada, o lead sera criado na empresa vinculada ao token.
             Nao envie o token na URL; use sempre o header <code class="font-mono">Authorization</code>.
         </div>
     </div>
@@ -243,7 +246,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
                 <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-cyan-300"><code>curl -X POST \
      -H "Authorization: Bearer SEU_TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"full_name":"Joao Silva","email":"joao@email.com","phone":"11999999999","source":"RD Station","unit_name":"Sao Paulo","tags":"rdstation"}' \
+     -d '{"full_name":"Joao Silva","email":"joao@email.com","phone":"11999999999","uf":"SP","source":"RD Station","unit_name":"Sao Paulo","tags":"rdstation"}' \
      "<?= e($apiUrl); ?>?r=leads"</code></pre>
             </div>
             <div>
