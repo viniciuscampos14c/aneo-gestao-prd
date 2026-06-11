@@ -1,8 +1,8 @@
 <div class="mb-6 flex items-center gap-3">
-    <a href="<?= route('api-management'); ?>" class="text-slate-400 hover:text-slate-600">
+    <a href="<?= route('api-management'); ?>" class="text-cyan-300 hover:text-cyan-100">
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
     </a>
-    <h2 class="text-xl font-bold text-slate-800">Manual da API</h2>
+    <h2 class="text-xl font-bold text-slate-100">Manual da API</h2>
 </div>
 
 <?php
@@ -20,7 +20,52 @@ if ($apiBaseUrl === '') {
 $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
 ?>
 
-<div class="max-w-4xl space-y-8">
+<style>
+    .api-manual-dark {
+        color: #dbeafe;
+    }
+    .api-manual-dark .bg-white,
+    .api-manual-dark .bg-slate-50 {
+        background: rgba(8, 31, 50, 0.96) !important;
+    }
+    .api-manual-dark .bg-cyan-50 {
+        background: linear-gradient(135deg, rgba(8, 47, 73, 0.98), rgba(6, 78, 91, 0.72)) !important;
+    }
+    .api-manual-dark .border-slate-100,
+    .api-manual-dark .border-slate-200,
+    .api-manual-dark .border-cyan-100,
+    .api-manual-dark .border-cyan-200 {
+        border-color: rgba(125, 211, 252, 0.28) !important;
+    }
+    .api-manual-dark .text-slate-800,
+    .api-manual-dark .text-slate-700 {
+        color: #f8fafc !important;
+    }
+    .api-manual-dark .text-slate-600 {
+        color: #cbd5e1 !important;
+    }
+    .api-manual-dark .text-slate-500,
+    .api-manual-dark .text-slate-400 {
+        color: #93c5fd !important;
+    }
+    .api-manual-dark .bg-slate-100,
+    .api-manual-dark code.rounded {
+        background: rgba(15, 23, 42, 0.72) !important;
+        color: #e0f2fe !important;
+    }
+    .api-manual-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+        border-color: rgba(125, 211, 252, 0.22) !important;
+    }
+    .api-manual-dark .bg-slate-200 {
+        background: rgba(226, 232, 240, 0.14) !important;
+        color: #bfdbfe !important;
+    }
+    .api-manual-dark .bg-amber-50 {
+        background: rgba(254, 243, 199, 0.96) !important;
+    }
+</style>
+
+<div class="api-manual-dark max-w-5xl space-y-8">
 
     <!-- Visão geral -->
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
