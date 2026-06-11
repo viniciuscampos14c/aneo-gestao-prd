@@ -1,4 +1,18 @@
 <div class="max-w-2xl">
+    <?php
+    $apiBaseUrl = rtrim((string) config('app.public_url', ''), '/');
+    if ($apiBaseUrl === '') {
+        $apiBaseUrl = rtrim((string) config('app.base_url', ''), '/');
+    }
+    if ($apiBaseUrl === '') {
+        $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+        $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        $apiBaseUrl = ($isHttps ? 'https://' : 'http://') . $host;
+    }
+    $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
+    ?>
     <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
         <div class="mb-4 flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white">
@@ -27,7 +41,8 @@
         <h3 class="mb-3 text-sm font-semibold text-slate-700">Como usar</h3>
         <p class="mb-2 text-sm text-slate-600">Informe o token no header <code class="rounded bg-slate-100 px-1 font-mono text-xs">Authorization</code> de cada requisição:</p>
         <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-emerald-300"><code>curl -H "Authorization: Bearer <?= e($rawToken); ?>" \
-     "https://erp-hml.aneobrasil.com.br/api.php?r=students"</code></pre>
+     "<?= e($apiUrl); ?>?r=students"</code></pre>
+        <p class="mt-3 text-xs text-slate-500">Para RD Station criar leads, use <code class="rounded bg-slate-100 px-1 font-mono">POST <?= e($apiUrl); ?>?r=leads</code> com permissao <code class="rounded bg-slate-100 px-1 font-mono">leads.create</code>.</p>
         <p class="mt-3 text-xs text-slate-400">Documentação completa em <a href="<?= route('api-management/manual'); ?>" class="text-cyan-600 hover:underline">Manual da API</a>.</p>
     </div>
 

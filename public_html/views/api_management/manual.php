@@ -5,6 +5,21 @@
     <h2 class="text-xl font-bold text-slate-800">Manual da API</h2>
 </div>
 
+<?php
+$apiBaseUrl = rtrim((string) config('app.public_url', ''), '/');
+if ($apiBaseUrl === '') {
+    $apiBaseUrl = rtrim((string) config('app.base_url', ''), '/');
+}
+if ($apiBaseUrl === '') {
+    $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+    $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $apiBaseUrl = ($isHttps ? 'https://' : 'http://') . $host;
+}
+$apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
+?>
+
 <div class="max-w-4xl space-y-8">
 
     <!-- Visão geral -->
@@ -14,7 +29,7 @@
 
         <div class="mt-4 rounded-lg bg-slate-900 p-4">
             <p class="mb-1 text-xs font-semibold uppercase text-slate-400">Base URL</p>
-            <code class="font-mono text-sm text-cyan-300">https://erp-hml.aneobrasil.com.br/api.php</code>
+            <code class="font-mono text-sm text-cyan-300"><?= e($apiUrl); ?></code>
         </div>
 
         <div class="mt-4 grid gap-3 md:grid-cols-3">
@@ -91,6 +106,45 @@
                 <tr><td class="py-2 pr-4 font-mono text-xs">per_page</td><td class="py-2 pr-4">int</td><td class="py-2">Itens por página (max: 200, padrão: 50)</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- RD Station / Leads -->
+    <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-6 shadow-sm">
+        <h3 class="mb-3 text-base font-semibold text-slate-800">RD Station / Envio de Leads</h3>
+        <p class="text-sm text-slate-600">
+            Para a RD Station criar leads no ANEO, configure o envio como <strong>POST</strong> para o endpoint abaixo,
+            usando JSON no corpo da requisicao.
+        </p>
+
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+            <div class="rounded-lg border border-cyan-100 bg-white p-3">
+                <p class="text-xs font-semibold text-slate-500">Endpoint</p>
+                <code class="mt-1 block break-all font-mono text-xs text-slate-800"><?= e($apiUrl); ?>?r=leads</code>
+            </div>
+            <div class="rounded-lg border border-cyan-100 bg-white p-3">
+                <p class="text-xs font-semibold text-slate-500">Headers obrigatorios</p>
+                <code class="mt-1 block font-mono text-xs text-slate-800">Authorization: Bearer SEU_TOKEN</code>
+                <code class="mt-1 block font-mono text-xs text-slate-800">Content-Type: application/json</code>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <p class="mb-2 text-xs font-semibold text-slate-500">Payload minimo recomendado</p>
+            <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-cyan-300"><code>{
+  "full_name": "Nome do lead",
+  "email": "lead@email.com",
+  "phone": "11999999999",
+  "source": "RD Station",
+  "unit_name": "Unidade ou cidade de interesse",
+  "tags": "rdstation, landing-page"
+}</code></pre>
+        </div>
+
+        <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <strong>Permissao exigida:</strong> o token precisa ter <code class="font-mono">leads.create</code>.
+            O unico campo obrigatorio no corpo e <code class="font-mono">full_name</code>.
+            Nao envie o token na URL; use sempre o header <code class="font-mono">Authorization</code>.
+        </div>
     </div>
 
     <!-- Recursos -->
@@ -182,15 +236,15 @@
             <div>
                 <p class="mb-1 text-xs font-semibold text-slate-500">Listar alunos (página 2, 10 por página)</p>
                 <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-cyan-300"><code>curl -H "Authorization: Bearer SEU_TOKEN" \
-     "https://erp-hml.aneobrasil.com.br/api.php?r=students&page=2&per_page=10&q=maria"</code></pre>
+     "<?= e($apiUrl); ?>?r=students&page=2&per_page=10&q=maria"</code></pre>
             </div>
             <div>
                 <p class="mb-1 text-xs font-semibold text-slate-500">Criar lead via JSON</p>
                 <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-cyan-300"><code>curl -X POST \
      -H "Authorization: Bearer SEU_TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"full_name":"João Silva","email":"joao@email.com","phone":"11999999999","source":"site"}' \
-     "https://erp-hml.aneobrasil.com.br/api.php?r=leads"</code></pre>
+     -d '{"full_name":"Joao Silva","email":"joao@email.com","phone":"11999999999","source":"RD Station","unit_name":"Sao Paulo","tags":"rdstation"}' \
+     "<?= e($apiUrl); ?>?r=leads"</code></pre>
             </div>
             <div>
                 <p class="mb-1 text-xs font-semibold text-slate-500">Criar fatura</p>
@@ -198,7 +252,7 @@
      -H "Authorization: Bearer SEU_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"student_id":42,"due_date":"2026-05-10","amount":350.00,"project_name":"Mensalidade Maio"}' \
-     "https://erp-hml.aneobrasil.com.br/api.php?r=invoices"</code></pre>
+     "<?= e($apiUrl); ?>?r=invoices"</code></pre>
             </div>
         </div>
     </div>

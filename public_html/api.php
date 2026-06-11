@@ -8,7 +8,7 @@
  * - Login do app mobile: POST api.php?r=mobile-auth (usuario + senha).
  *
  * Exemplo:
- *   curl -H "Authorization: Bearer <token>" "https://erp-hml.aneobrasil.com.br/api.php?r=students"
+ *   curl -H "Authorization: Bearer <token>" "https://SEU-DOMINIO/api.php?r=students"
  *
  * Recursos disponiveis: students, leads, invoices, courses, trial_accesses, users, tickets, payment_methods
  * Documentacao completa: index.php?route=api-management/manual
