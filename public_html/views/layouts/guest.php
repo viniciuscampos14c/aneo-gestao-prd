@@ -14,7 +14,13 @@
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100">
-    <main class="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-12">
+    <main class="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-12">
+        <?php if ($msg = flash('success')): ?>
+            <div class="mb-4 rounded-xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-3 text-sm text-emerald-100"><?= e($msg); ?></div>
+        <?php endif; ?>
+        <?php if ($msg = flash('error')): ?>
+            <div class="mb-4 rounded-xl border border-rose-300/40 bg-rose-500/15 px-4 py-3 text-sm text-rose-100"><?= e($msg); ?></div>
+        <?php endif; ?>
         <?= $content; ?>
     </main>
 </body>

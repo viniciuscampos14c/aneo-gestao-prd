@@ -43,6 +43,14 @@ function csrf_validate(): void
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $token = $_POST['_csrf'] ?? '';
         if (!$token || !hash_equals($_SESSION['_csrf_token'] ?? '', $token)) {
+            if (basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === 'support.php') {
+                flash('error', 'Sessao expirada. Atualize a pagina e tente novamente.');
+                $route = trim((string) ($_GET['route'] ?? ''), '/');
+                $fallbackRoute = $route === 'support/login' ? 'support/login' : 'support';
+                header('Location: support.php?route=' . rawurlencode($fallbackRoute));
+                exit;
+            }
+
             http_response_code(419);
             exit('Token CSRF invalido. Atualize a pagina e tente novamente.');
         }
