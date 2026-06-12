@@ -63,6 +63,7 @@ return [
     ],
     'chatwoot' => [
         'enabled' => true,
+        'show_in_menu' => false,
         'base_url' => 'https://app.chatwoot.com',
         'account_id' => '154715',
         'inbox_id' => '98949',

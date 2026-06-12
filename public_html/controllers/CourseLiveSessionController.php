@@ -79,6 +79,7 @@ class CourseLiveSessionController extends BaseController
         $scheduledAt = trim((string) post('scheduled_at'));
         $durationMin = max(15, min(480, (int) post('duration_minutes')));
         $notes       = trim((string) post('notes'));
+        $isGlobal    = post('is_global') === '1';
 
         // Normaliza datetime-local (substitui T por espaço)
         $scheduledAt = str_replace('T', ' ', $scheduledAt);
@@ -112,6 +113,67 @@ class CourseLiveSessionController extends BaseController
         } catch (RuntimeException $e) {
             flash('error', 'Erro ao criar reunião no Zoom: ' . $e->getMessage());
             $this->redirect('courses/live-sessions/create');
+            return;
+        }
+
+        if ($isGlobal) {
+            $targets = $this->model->equivalentPublishedCoursesForGlobal($courseId, $companyId);
+            if ($targets === []) {
+                flash('error', 'Reuniao criada no Zoom, mas nao encontramos cursos equivalentes publicados para vincular a aula global.');
+                $this->redirect($fallback);
+                return;
+            }
+
+            try {
+                $createdSessions = $this->model->createGlobalCopies($targets, [
+                    'title' => $title,
+                    'zoom_meeting_id' => $meeting['meeting_id'],
+                    'zoom_password' => $meeting['password'],
+                    'join_url' => $meeting['join_url'],
+                    'start_url' => $meeting['start_url'],
+                    'scheduled_at' => $scheduledAt,
+                    'duration_minutes' => $durationMin,
+                    'notes' => $notes !== '' ? $notes : null,
+                    'zoom_raw_response' => $meeting['raw'],
+                    'created_by' => $userId,
+                    'global_session_uuid' => $this->generateGlobalSessionUuid(),
+                ]);
+            } catch (Throwable $e) {
+                flash('error', 'Reuniao criada no Zoom, mas nao foi possivel salvar a aula global no ERP: ' . $e->getMessage());
+                $this->redirect($fallback);
+                return;
+            }
+
+            $notifySummary = ['total' => 0, 'sent' => 0, 'failed' => 0];
+            foreach ($createdSessions as $createdSession) {
+                $summary = $this->notifyEnrolledStudents(
+                    (int) $createdSession['company_id'],
+                    (int) $createdSession['course_id'],
+                    $title,
+                    $scheduledAt,
+                    $durationMin,
+                    $meeting
+                );
+
+                $notifySummary['total'] += (int) ($summary['total'] ?? 0);
+                $notifySummary['sent'] += (int) ($summary['sent'] ?? 0);
+                $notifySummary['failed'] += (int) ($summary['failed'] ?? 0);
+            }
+
+            $message = 'Aula global criada com sucesso! Meeting ID: ' . $meeting['meeting_id'];
+            $message .= ' | Unidades vinculadas: ' . count($createdSessions) . '.';
+            if (($notifySummary['total'] ?? 0) > 0) {
+                $message .= ' | Alertas enviados: ' . (int) ($notifySummary['sent'] ?? 0) . '/' . (int) ($notifySummary['total'] ?? 0) . '.';
+            }
+            flash('success', $message);
+
+            if (($notifySummary['failed'] ?? 0) > 0) {
+                flash('error', 'Alguns alertas por e-mail falharam (' . (int) $notifySummary['failed'] . '). Verifique SMTP para envio automatico.');
+            }
+
+            $newId = (int) ($createdSessions[0]['session_id'] ?? 0);
+            $dest = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions?new_id=' . $newId;
+            $this->redirect($dest);
             return;
         }
 
@@ -253,6 +315,31 @@ class CourseLiveSessionController extends BaseController
             return;
         }
 
+        if (!empty($session['is_global']) && !empty($session['global_session_uuid'])) {
+            if (!empty($session['zoom_meeting_id'])) {
+                $creds = $this->model->getZoomCredentials($companyId);
+                if ($creds !== null) {
+                    try {
+                        $zoom = new ZoomService($creds['zoom_account_id'], $creds['zoom_client_id'], $creds['zoom_client_secret']);
+                        $zoom->deleteMeeting($session['zoom_meeting_id']);
+                    } catch (RuntimeException $e) {
+                        // Nao bloqueia o cancelamento local se o Zoom falhar.
+                    }
+                }
+            }
+
+            $affected = $this->model->cancelGlobal((string) $session['global_session_uuid']);
+            if ($affected > 0) {
+                flash('success', 'Aula global cancelada com sucesso em ' . $affected . ' unidade(s).');
+            } else {
+                flash('error', 'Nao foi possivel cancelar a aula global.');
+            }
+
+            $dest = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions';
+            $this->redirect($dest);
+            return;
+        }
+
         // Tenta deletar no Zoom se tiver meeting_id
         if (!empty($session['zoom_meeting_id'])) {
             $creds = $this->model->getZoomCredentials($companyId);
@@ -324,6 +411,15 @@ class CourseLiveSessionController extends BaseController
         $this->render('courses/live_sessions/zoom_settings', [
             'creds' => $creds,
         ]);
+    }
+
+    private function generateGlobalSessionUuid(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 
     private function notifyEnrolledStudents(

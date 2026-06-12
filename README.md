@@ -6,6 +6,20 @@ Documento detalhado: `DOCUMENTACAO_COMPLETA.md`.
 Relatorio de validacao anterior: `VALIDACAO_SISTEMA_2026-03-11.md`.
 Checkpoint mais recente: `STATUS_IMPLEMENTACOES_2026-04-25.md`.
 
+## Ambientes Atuais
+
+Documento operacional principal: `AMBIENTES_DEPLOY_ANEO.md`.
+Status da producao nova: `STATUS_DEPLOY_PROD_BOOTSTRAP_2026-06-08.md`.
+Organizacao Git/producao: `STATUS_ORGANIZACAO_GIT_PROD_2026-06-11.md`.
+
+- HML/treinamento: `https://erp-hml.aneobrasil.com.br`
+- Producao: `https://aneo.aneobrasil.com.br`
+- PWA diretoria producao: `https://diretoria.aneobrasil.com.br`
+- Branch recomendada para desenvolvimento: `main`
+- Branch recomendada para producao aprovada: `production`
+
+Regra operacional: nao alterar HML sem pedido explicito contendo `AUTORIZO ALTERAR HML`.
+
 ## Saneamento do Repositorio (22/05/2026)
 
 1. A migration `migrations/20260316_company_licenses.sql` foi restaurada no repositório.
@@ -651,6 +665,10 @@ Objetivo: permitir cursos sob demanda com controle de progressao.
 2. Validacao HML:
    - `npm run test:e2e:hml`
    - `npm run test:e2e:hml:list`
+   - `npm run test:e2e:hml:mobile`
+   - `npm run test:e2e:hml:mobile:list`
+   - `npm run test:e2e:hml:jully`
+   - `npm run test:e2e:hml:jully:list`
 3. Carga portal do aluno:
    - `npm run load:student:smoke`
    - `npm run load:student:k6`

@@ -426,7 +426,7 @@ class StudentModel extends BaseModel
         return 0;
     }
 
-    public function registerKanbanHistory(int $studentId, ?int $fromStatusId, int $toStatusId, int $changedBy, string $reason = ''): void
+    public function registerKanbanHistory(int $studentId, ?int $fromStatusId, int $toStatusId, ?int $changedBy, string $reason = ''): void
     {
         if (!$this->find($studentId)) {
             return;
@@ -443,7 +443,7 @@ class StudentModel extends BaseModel
             ':from_status_id' => $fromStatusId,
             ':to_status_id' => $toStatusId,
             ':reason' => $reason,
-            ':changed_by' => $changedBy,
+            ':changed_by' => $changedBy !== null && $changedBy > 0 ? $changedBy : null,
             ':created_at' => now(),
         ]);
     }

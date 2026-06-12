@@ -169,12 +169,29 @@ class GestaoAlunoModel extends BaseModel
              {$paymentsJoin}
              WHERE i.student_id = :student_id
              {$companyFilter}
+               AND i.due_date <= CURDATE()
              GROUP BY i.id, i.invoice_number, i.due_date, i.amount, i.paid_amount, i.status
              ORDER BY i.due_date DESC, i.id DESC
              LIMIT 3"
         );
         $stmt->execute($params);
         $installments = $stmt->fetchAll();
+
+        if ($installments === []) {
+            $stmt = $this->db->prepare(
+                "SELECT i.id, i.invoice_number, i.due_date, i.amount, i.paid_amount, i.status,
+                        {$paymentsSelect} AS payments_sum
+                 FROM invoices i
+                 {$paymentsJoin}
+                 WHERE i.student_id = :student_id
+                 {$companyFilter}
+                 GROUP BY i.id, i.invoice_number, i.due_date, i.amount, i.paid_amount, i.status
+                 ORDER BY i.due_date ASC, i.id ASC
+                 LIMIT 3"
+            );
+            $stmt->execute($params);
+            $installments = $stmt->fetchAll();
+        }
 
         $summary = [
             'total' => count($installments),

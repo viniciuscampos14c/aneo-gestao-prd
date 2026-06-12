@@ -1268,7 +1268,7 @@ class CourseModel extends BaseModel
                 ':notes' => 'Acesso de degustacao para o curso "' . trim((string) ($course['name'] ?? '')) . '" em ' . $accessDate,
                 ':monthly_fee' => 0,
                 ':billing_day' => null,
-                ':kanban_status_id' => null,
+                ':kanban_status_id' => $this->defaultKanbanStatusId(),
                 ':created_by' => $createdBy,
                 ':created_at' => now(),
                 ':updated_at' => now(),
@@ -3095,6 +3095,14 @@ class CourseModel extends BaseModel
         $this->courseModulesTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->courseModulesTableExists;
+    }
+
+    private function defaultKanbanStatusId(): ?int
+    {
+        $stmt = $this->db->query('SELECT id FROM kanban_status WHERE is_default = 1 ORDER BY id ASC LIMIT 1');
+        $value = $stmt ? $stmt->fetchColumn() : false;
+
+        return $value !== false ? (int) $value : null;
     }
 
     private function hasCourseLessonsTable(): bool

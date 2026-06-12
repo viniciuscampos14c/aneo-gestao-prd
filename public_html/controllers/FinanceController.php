@@ -38,7 +38,7 @@ class FinanceController extends BaseController
         $this->render('finance/invoices', [
             'title' => 'Faturas',
             'filters' => $filters,
-            'stats' => $this->finance->invoiceStats(),
+            'stats' => $this->finance->invoiceStats($filters),
             'rows' => $result['rows'],
             'meta' => $result['meta'],
             'students' => $this->finance->listStudents(),
@@ -308,6 +308,31 @@ class FinanceController extends BaseController
         $this->redirect('finance/invoices');
     }
 
+    public function itauWebhook(): void
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            $this->json(['ok' => false, 'message' => 'Metodo invalido.'], 405);
+        }
+
+        $rawBody = (string) file_get_contents('php://input');
+        $payload = json_decode($rawBody, true);
+        if (!is_array($payload)) {
+            $this->json(['ok' => false, 'message' => 'Payload JSON invalido.'], 400);
+        }
+
+        $providedToken = $this->itauWebhookTokenFromRequest($payload);
+        $companyId = null;
+        if ($providedToken !== '') {
+            $companyId = (new CompanyIntegrationModel())->findCompanyIdByToken('itau', 'webhook_token', $providedToken);
+            if ($companyId === null || $companyId <= 0) {
+                $this->json(['ok' => false, 'message' => 'Token do webhook Itau invalido.'], 401);
+            }
+        }
+
+        $result = (new FinanceModel($companyId))->processItauWebhook($payload, $companyId);
+        $this->json($result, ($result['ok'] ?? false) ? 200 : 422);
+    }
+
     public function issueDueBankSlips(): void
     {
         require_auth();
@@ -341,6 +366,28 @@ class FinanceController extends BaseController
 
         $this->success((string) ($result['message'] ?? 'Fila de boletos processada com sucesso.'));
         $this->redirect('finance/invoices');
+    }
+
+    private function itauWebhookTokenFromRequest(array $payload): string
+    {
+        $token = trim((string) ($_GET['token'] ?? $_POST['token'] ?? ($payload['token'] ?? '')));
+        if ($token !== '') {
+            return $token;
+        }
+
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        if (!is_array($headers)) {
+            return '';
+        }
+
+        foreach ($headers as $name => $value) {
+            $normalized = strtolower(str_replace(['_', '-'], '', (string) $name));
+            if (in_array($normalized, ['xitauwebhooktoken', 'xwebhooktoken'], true)) {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
     }
 
     public function createInvoice(): void

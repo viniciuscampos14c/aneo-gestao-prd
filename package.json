@@ -9,6 +9,10 @@
     "test:e2e:list": "npx playwright test --config=playwright.config.ts --list",
     "test:e2e:hml": "npx playwright test --config=playwright.hml.config.ts",
     "test:e2e:hml:list": "npx playwright test --config=playwright.hml.config.ts --list",
+    "test:e2e:hml:mobile": "npx playwright test --config=playwright.hml.mobile.config.ts",
+    "test:e2e:hml:mobile:list": "npx playwright test --config=playwright.hml.mobile.config.ts --list",
+    "test:e2e:hml:jully": "npx playwright test --config=playwright.hml.jully.config.ts",
+    "test:e2e:hml:jully:list": "npx playwright test --config=playwright.hml.jully.config.ts --list",
     "load:student:smoke": "node tests/load/smoke-student-portal.mjs",
     "load:student:k6": "k6 run tests/load/k6-student-portal.js"
   },

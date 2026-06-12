@@ -1,0 +1,7 @@
+RewriteEngine On
+
+# Friendly entry points. The legacy query-string URLs remain valid.
+RewriteRule ^admin/?$ index.php?route=login [L,QSA]
+RewriteRule ^aluno/?$ index.php?route=student/login [L,QSA]
+RewriteRule ^portaldoaluno/?$ index.php?route=student/login [L,QSA]
+RewriteRule ^suporte/?$ support.php?route=support/login [L,QSA]

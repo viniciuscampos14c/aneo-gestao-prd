@@ -45,7 +45,7 @@
         <div class="gda-panel-head">
             <div>
                 <h4 class="gda-section-title">Financeiro</h4>
-                <p class="gda-panel-subtitle">Ultimas 3 parcelas vinculadas ao aluno.</p>
+                <p class="gda-panel-subtitle">Ultimas 3 parcelas com vencimento ate hoje.</p>
             </div>
             <span id="mdFinanceStatus" class="gda-finance-status">Sem faturas</span>
         </div>

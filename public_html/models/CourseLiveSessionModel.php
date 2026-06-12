@@ -88,11 +88,13 @@ class CourseLiveSessionModel extends BaseModel
             "INSERT INTO course_live_sessions
                 (company_id, course_id, title, zoom_meeting_id, zoom_password,
                  join_url, start_url, scheduled_at, duration_minutes, notes,
-                 status, zoom_raw_response, created_by, created_at, updated_at)
+                 status, is_global, global_session_uuid, global_master_session_id,
+                 zoom_raw_response, created_by, created_at, updated_at)
              VALUES
                 (:company_id, :course_id, :title, :zoom_meeting_id, :zoom_password,
                  :join_url, :start_url, :scheduled_at, :duration_minutes, :notes,
-                 'scheduled', :zoom_raw_response, :created_by, :created_at, :updated_at)"
+                 'scheduled', :is_global, :global_session_uuid, :global_master_session_id,
+                 :zoom_raw_response, :created_by, :created_at, :updated_at)"
         );
 
         $ok = $stmt->execute([
@@ -106,6 +108,9 @@ class CourseLiveSessionModel extends BaseModel
             ':scheduled_at'      => $data['scheduled_at'],
             ':duration_minutes'  => (int) $data['duration_minutes'],
             ':notes'             => $data['notes']              ?? null,
+            ':is_global'         => !empty($data['is_global']) ? 1 : 0,
+            ':global_session_uuid' => $data['global_session_uuid'] ?? null,
+            ':global_master_session_id' => $data['global_master_session_id'] ?? null,
             ':zoom_raw_response' => $data['zoom_raw_response']  ?? null,
             ':created_by'        => (int) $data['created_by'],
             ':created_at'        => $now,
@@ -160,6 +165,44 @@ class CourseLiveSessionModel extends BaseModel
         ]);
     }
 
+    public function cancelGlobal(string $globalSessionUuid): int
+    {
+        if ($globalSessionUuid === '') {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare(
+            "UPDATE course_live_sessions
+             SET status = 'cancelled', updated_at = :updated_at
+             WHERE global_session_uuid = :global_session_uuid"
+        );
+        $stmt->execute([
+            ':updated_at' => now(),
+            ':global_session_uuid' => $globalSessionUuid,
+        ]);
+
+        return $stmt->rowCount();
+    }
+
+    public function globalPeers(string $globalSessionUuid): array
+    {
+        if ($globalSessionUuid === '') {
+            return [];
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT cls.*, c.name AS course_name, co.trade_name AS company_name
+             FROM course_live_sessions cls
+             INNER JOIN courses c ON c.id = cls.course_id
+             INNER JOIN companies co ON co.id = cls.company_id
+             WHERE cls.global_session_uuid = :global_session_uuid
+             ORDER BY cls.company_id ASC, cls.id ASC"
+        );
+        $stmt->execute([':global_session_uuid' => $globalSessionUuid]);
+
+        return $stmt->fetchAll();
+    }
+
     // -------------------------------------------------------------------------
     // Auxiliares
     // -------------------------------------------------------------------------
@@ -198,6 +241,85 @@ class CourseLiveSessionModel extends BaseModel
         }
 
         return trim($name);
+    }
+
+    public function equivalentPublishedCoursesForGlobal(int $courseId, int $companyId): array
+    {
+        $courseName = $this->findCourseName($courseId, $companyId);
+        if ($courseName === null) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT
+                c.id AS course_id,
+                c.company_id,
+                co.trade_name AS company_name
+             FROM courses c
+             INNER JOIN companies co ON co.id = c.company_id
+             WHERE c.name = :name
+               AND c.status = 'published'
+               AND co.is_active = 1
+             ORDER BY CASE WHEN c.company_id = :company_id THEN 0 ELSE 1 END,
+                      co.trade_name ASC,
+                      c.id ASC"
+        );
+        $stmt->execute([
+            ':name' => $courseName,
+            ':company_id' => $companyId,
+        ]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function createGlobalCopies(array $targets, array $data): array
+    {
+        if ($targets === []) {
+            return [];
+        }
+
+        $created = [];
+        $this->db->beginTransaction();
+
+        try {
+            foreach ($targets as $target) {
+                $sessionId = $this->create(array_merge($data, [
+                    'company_id' => (int) $target['company_id'],
+                    'course_id' => (int) $target['course_id'],
+                    'is_global' => 1,
+                ]));
+
+                if ($sessionId === false) {
+                    throw new RuntimeException('Nao foi possivel salvar uma das copias da aula global.');
+                }
+
+                $created[] = [
+                    'session_id' => $sessionId,
+                    'company_id' => (int) $target['company_id'],
+                    'company_name' => (string) ($target['company_name'] ?? ''),
+                    'course_id' => (int) $target['course_id'],
+                ];
+            }
+
+            $masterId = (int) ($created[0]['session_id'] ?? 0);
+            if ($masterId > 0 && !empty($data['global_session_uuid'])) {
+                $stmt = $this->db->prepare(
+                    "UPDATE course_live_sessions
+                     SET global_master_session_id = :master_id
+                     WHERE global_session_uuid = :global_session_uuid"
+                );
+                $stmt->execute([
+                    ':master_id' => $masterId,
+                    ':global_session_uuid' => $data['global_session_uuid'],
+                ]);
+            }
+
+            $this->db->commit();
+            return $created;
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
 
     public function enrolledStudentsForCourse(int $courseId, int $companyId): array

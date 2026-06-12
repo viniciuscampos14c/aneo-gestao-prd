@@ -3,6 +3,78 @@
 class FinanceNotificationModel extends BaseModel
 {
     private ?bool $logsTableExists = null;
+    private ?array $supportedNotificationTypes = null;
+
+    public function dispatchInvoiceEvent(int $invoiceId, string $notificationType, ?int $companyId = null): array
+    {
+        $notificationType = $this->normalizeNotificationType($notificationType);
+        if (!in_array($notificationType, ['invoice_issued', 'invoice_paid'], true)) {
+            return [
+                'available' => true,
+                'checked' => 0,
+                'sent' => 0,
+                'failed' => 1,
+                'skipped' => 0,
+                'message' => 'Tipo de notificacao financeira invalido.',
+            ];
+        }
+
+        if ($companyId !== null && $companyId > 0) {
+            $this->useCompany($companyId);
+        }
+
+        if (!$this->canSafelyDispatchNotificationType($notificationType)) {
+            return [
+                'available' => false,
+                'checked' => 0,
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => 1,
+                'message' => 'Estrutura de log financeiro ainda nao esta pronta para este tipo de notificacao.',
+            ];
+        }
+
+        $invoice = $this->invoiceForEventNotification($invoiceId);
+        if (!$invoice) {
+            return [
+                'available' => true,
+                'checked' => 0,
+                'sent' => 0,
+                'failed' => 1,
+                'skipped' => 0,
+                'message' => 'Fatura nao encontrada para notificacao.',
+            ];
+        }
+
+        $studentEmail = strtolower(trim((string) ($invoice['student_email'] ?? '')));
+        $financeEmail = strtolower(trim((string) config('automation.finance_bcc_email', '')));
+        $studentEmailValid = $studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL);
+        $financeEmailValid = $financeEmail !== '' && filter_var($financeEmail, FILTER_VALIDATE_EMAIL);
+
+        $result = [
+            'available' => true,
+            'checked' => 1,
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => 0,
+        ];
+
+        if ($studentEmailValid) {
+            $dispatch = $this->dispatchNotification($invoice, $notificationType, 'student', $studentEmail);
+            $result['sent'] += (int) $dispatch['sent'];
+            $result['failed'] += (int) $dispatch['failed'];
+            $result['skipped'] += (int) $dispatch['skipped'];
+        } elseif ($financeEmailValid) {
+            $dispatch = $this->dispatchNotification($invoice, $notificationType, 'admin', $financeEmail);
+            $result['sent'] += (int) $dispatch['sent'];
+            $result['failed'] += (int) $dispatch['failed'];
+            $result['skipped'] += (int) $dispatch['skipped'];
+        } else {
+            $result['skipped']++;
+        }
+
+        return $result;
+    }
 
     public function dispatchDueNotifications(?int $companyId = null, ?string $today = null): array
     {
@@ -106,25 +178,34 @@ class FinanceNotificationModel extends BaseModel
             return ['sent' => 0, 'failed' => 1, 'skipped' => 0];
         }
 
-        $existing = $this->findNotificationLog($companyId, $invoiceId, $notificationType, $recipientType, $recipientEmail);
-        if ($existing && (string) ($existing['status'] ?? '') === 'sent') {
-            return ['sent' => 0, 'failed' => 0, 'skipped' => 1];
-        }
+        try {
+            $existing = $this->hasLogsTable()
+                ? $this->findNotificationLog($companyId, $invoiceId, $notificationType, $recipientType, $recipientEmail)
+                : null;
+            if ($existing && (string) ($existing['status'] ?? '') === 'sent') {
+                return ['sent' => 0, 'failed' => 0, 'skipped' => 1];
+            }
 
-        $mailResult = $this->sendEmail($invoice, $notificationType, $recipientType, $recipientEmail);
-        $this->saveNotificationLog(
-            $existing ? (int) ($existing['id'] ?? 0) : 0,
-            $companyId,
-            $invoiceId,
-            $notificationType,
-            $recipientType,
-            $recipientEmail,
-            (bool) ($mailResult['ok'] ?? false),
-            (string) ($mailResult['message'] ?? '')
-        );
+            $mailResult = $this->sendEmail($invoice, $notificationType, $recipientType, $recipientEmail);
+            if ($this->hasLogsTable()) {
+                $this->saveNotificationLog(
+                    $existing ? (int) ($existing['id'] ?? 0) : 0,
+                    $companyId,
+                    $invoiceId,
+                    $notificationType,
+                    $recipientType,
+                    $recipientEmail,
+                    (bool) ($mailResult['ok'] ?? false),
+                    (string) ($mailResult['message'] ?? '')
+                );
+            }
 
-        if (!empty($mailResult['ok'])) {
-            return ['sent' => 1, 'failed' => 0, 'skipped' => 0];
+            if (!empty($mailResult['ok'])) {
+                return ['sent' => 1, 'failed' => 0, 'skipped' => 0];
+            }
+        } catch (Throwable $e) {
+            error_log('[FINANCE_NOTIFICATION_ERROR] ' . $e->getMessage());
+            return ['sent' => 0, 'failed' => 1, 'skipped' => 0];
         }
 
         return ['sent' => 0, 'failed' => 1, 'skipped' => 0];
@@ -222,27 +303,29 @@ class FinanceNotificationModel extends BaseModel
         $dueDate = (string) ($invoice['due_date'] ?? '');
         $dueDateLabel = $dueDate !== '' ? date('d/m/Y', strtotime($dueDate)) : '-';
         $outstanding = max(0, (float) ($invoice['amount'] ?? 0) - (float) ($invoice['paid_amount'] ?? 0));
+        $amountLabel = format_currency((float) ($invoice['amount'] ?? 0));
+        $paidAmountLabel = format_currency((float) ($invoice['paid_amount'] ?? 0));
+        $paidAt = trim((string) ($invoice['paid_at'] ?? ''));
+        $paidAtLabel = $paidAt !== '' ? date('d/m/Y', strtotime($paidAt)) : '-';
+        $bankSlipUrl = trim((string) ($invoice['boleto_url'] ?? ''));
 
-        $subject = $notificationType === 'due_today'
-            ? '[ANEO] Alerta de vencimento hoje - ' . $invoiceNumber
-            : '[ANEO] Lembrete de vencimento - ' . $invoiceNumber;
-
-        if ($recipientType === 'admin') {
-            $subject = $notificationType === 'due_today'
-                ? '[ANEO] Alerta admin: vencimento hoje - ' . $invoiceNumber
-                : '[ANEO] Lembrete admin: vencimento proximo - ' . $invoiceNumber;
-        }
-
-        // Renderiza template HTML
-        $body = $this->renderEmailTemplate([
-            'invoiceNumber'    => $invoiceNumber,
-            'studentName'      => $studentName,
-            'companyName'      => $companyName,
-            'dueDateLabel'     => $dueDateLabel,
-            'outstanding'      => format_currency($outstanding),
-            'notificationType' => $notificationType,
-            'recipientType'    => $recipientType,
-        ]);
+        [$subject, $body] = $this->buildMessagePayload(
+            $notificationType,
+            $recipientType,
+            [
+                'invoiceNumber'    => $invoiceNumber,
+                'studentName'      => $studentName,
+                'companyName'      => $companyName,
+                'dueDateLabel'     => $dueDateLabel,
+                'outstanding'      => format_currency($outstanding),
+                'amountLabel'      => $amountLabel,
+                'paidAmountLabel'  => $paidAmountLabel,
+                'paidAtLabel'      => $paidAtLabel,
+                'bankSlipUrl'      => $bankSlipUrl,
+                'notificationType' => $notificationType,
+                'recipientType'    => $recipientType,
+            ]
+        );
 
         // Quando o email vai para o aluno, envia BCC para o financeiro
         $bcc = [];
@@ -271,6 +354,38 @@ class FinanceNotificationModel extends BaseModel
         return $result;
     }
 
+    private function invoiceForEventNotification(int $invoiceId): ?array
+    {
+        $stmt = $this->db->prepare('SELECT
+                i.id,
+                i.company_id,
+                i.invoice_number,
+                i.due_date,
+                i.amount,
+                i.paid_amount,
+                i.paid_at,
+                i.status,
+                i.boleto_url,
+                s.id AS student_id,
+                s.full_name AS student_name,
+                s.email_primary AS student_email,
+                c.trade_name AS company_trade_name,
+                c.legal_name AS company_legal_name
+            FROM invoices i
+            INNER JOIN students s ON s.id = i.student_id
+            INNER JOIN companies c ON c.id = i.company_id
+            WHERE i.id = :invoice_id
+              AND i.company_id = :company_id
+            LIMIT 1');
+        $stmt->execute([
+            ':invoice_id' => $invoiceId,
+            ':company_id' => $this->companyId(),
+        ]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     private function hasLogsTable(): bool
     {
         if ($this->logsTableExists !== null) {
@@ -285,6 +400,44 @@ class FinanceNotificationModel extends BaseModel
         $this->logsTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->logsTableExists;
+    }
+
+    private function canSafelyDispatchNotificationType(string $notificationType): bool
+    {
+        if (!$this->hasLogsTable()) {
+            return false;
+        }
+
+        return in_array($notificationType, $this->supportedNotificationTypes(), true);
+    }
+
+    private function supportedNotificationTypes(): array
+    {
+        if ($this->supportedNotificationTypes !== null) {
+            return $this->supportedNotificationTypes;
+        }
+
+        $default = ['reminder', 'due_today'];
+        try {
+            $stmt = $this->db->prepare("SELECT COLUMN_TYPE
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'finance_notification_logs'
+                  AND column_name = 'notification_type'
+                LIMIT 1");
+            $stmt->execute();
+            $columnType = (string) ($stmt->fetchColumn() ?: '');
+
+            if (preg_match_all("/'([^']+)'/", $columnType, $matches) && !empty($matches[1])) {
+                $this->supportedNotificationTypes = array_values(array_unique(array_map('strval', $matches[1])));
+                return $this->supportedNotificationTypes;
+            }
+        } catch (Throwable $e) {
+            error_log('[FINANCE_NOTIFICATION_SCHEMA_ERROR] ' . $e->getMessage());
+        }
+
+        $this->supportedNotificationTypes = $default;
+        return $this->supportedNotificationTypes;
     }
 
     private function normalizeDate(?string $date): string
@@ -302,6 +455,44 @@ class FinanceNotificationModel extends BaseModel
         return $parsed->format('Y-m-d');
     }
 
+    private function normalizeNotificationType(string $notificationType): string
+    {
+        $notificationType = strtolower(trim($notificationType));
+        return match ($notificationType) {
+            'issued', 'boleto_issued' => 'invoice_issued',
+            'paid', 'payment_paid' => 'invoice_paid',
+            default => $notificationType,
+        };
+    }
+
+    private function buildMessagePayload(string $notificationType, string $recipientType, array $vars): array
+    {
+        $invoiceNumber = (string) ($vars['invoiceNumber'] ?? 'Fatura');
+        $subject = '[ANEO] Atualizacao financeira - ' . $invoiceNumber;
+
+        if ($notificationType === 'due_today') {
+            $subject = '[ANEO] Alerta de vencimento hoje - ' . $invoiceNumber;
+            if ($recipientType === 'admin') {
+                $subject = '[ANEO] Alerta admin: vencimento hoje - ' . $invoiceNumber;
+            }
+        } elseif ($notificationType === 'reminder') {
+            $subject = '[ANEO] Lembrete de vencimento - ' . $invoiceNumber;
+            if ($recipientType === 'admin') {
+                $subject = '[ANEO] Lembrete admin: vencimento proximo - ' . $invoiceNumber;
+            }
+        } elseif ($notificationType === 'invoice_issued') {
+            $subject = $recipientType === 'admin'
+                ? '[ANEO] Copia financeira: boleto emitido - ' . $invoiceNumber
+                : '[ANEO] Boleto emitido - ' . $invoiceNumber;
+        } elseif ($notificationType === 'invoice_paid') {
+            $subject = $recipientType === 'admin'
+                ? '[ANEO] Copia financeira: fatura paga - ' . $invoiceNumber
+                : '[ANEO] Confirmacao de pagamento - ' . $invoiceNumber;
+        }
+
+        return [$subject, $this->renderEmailTemplate($vars)];
+    }
+
     private function renderEmailTemplate(array $vars): string
     {
         // Monta URL absoluta da logo
@@ -314,13 +505,16 @@ class FinanceNotificationModel extends BaseModel
                 $publicUrl = $scheme . '://' . $host;
             }
         }
-        $vars['logoUrl']     = $publicUrl !== '' ? $publicUrl . '/assets/img/logo_aneo.png' : '';
+        $vars['logoUrl']     = $publicUrl !== '' ? $publicUrl . '/assets/brand/aneo-wordmark-transparente-branco.png?v=20260512-brand-kit-v1' : '';
         $vars['accentColor'] = '#0ea5e9';
 
         // Renderiza via output buffer
         ob_start();
         extract($vars, EXTR_SKIP);
-        include __DIR__ . '/../views/email/billing_notification.php';
+        $template = in_array((string) ($vars['notificationType'] ?? ''), ['invoice_issued', 'invoice_paid'], true)
+            ? '/../views/email/finance_event_notification.php'
+            : '/../views/email/billing_notification.php';
+        include __DIR__ . $template;
         return (string) ob_get_clean();
     }
 }

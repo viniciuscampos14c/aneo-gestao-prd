@@ -5,7 +5,7 @@ const erpApiBaseUrl = 'https://erp-hml.aneobrasil.com.br/api.php';
 const apiStorageKey = 'aneo_pwa_api_config_v1';
 
 const adminUser = 'qa_admin_hml';
-const adminPassword = 'Qa123456!';
+const adminPassword = process.env.ANEO_HML_ADMIN_PASSWORD ?? '';
 
 type StoredApiConfig = {
   baseUrl: string;
@@ -254,13 +254,14 @@ test('valida mobile PWA HML ponta a ponta', async ({ browser, request }) => {
     await expect(firstStudentCard).toContainText(/Situacao Financeira|Saldo em aberto|Saldo vencido/);
   });
 
-  await test.step('chamados no mobile mostram os tickets gerados na renegociacao', async () => {
+  await test.step('chamados no mobile mostram o acompanhamento dos aditivos gerados', async () => {
     await navigateTab(page, /Chamados|Fila/i);
-    await expect(page.getByPlaceholder(/Buscar por codigo, assunto ou solicitante/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/Buscar por aluno ou codigo do aditivo/i)).toBeVisible();
 
-    await page.getByPlaceholder(/Buscar por codigo, assunto ou solicitante/i).fill(selectedStudentName);
+    await page.getByPlaceholder(/Buscar por aluno ou codigo do aditivo/i).fill(selectedStudentName);
     await expect(page.locator('body')).toContainText(selectedStudentName);
-    await expect(page.locator('body')).toContainText(/Negociacao financeira|Aditivo financeiro/);
+    await expect(page.locator('body')).toContainText(/Aguardando analise|Solicitar ajuste|Aprovado|Reprovado/);
+    await expect(page.locator('body')).toContainText(/Aditivo financeiro/);
   });
 
   await context.close();

@@ -53,7 +53,7 @@ class BanksController extends BaseController
 
         $settings = $this->normalizeItauSettings($settings);
 
-        $webhookUrl = rtrim(config('app.base_url', ''), '/') . '/index.php?route=finance/webhook/itau';
+        $webhookUrl = $this->buildItauWebhookUrl($settings);
 
         $this->render('banks/itau', [
             'title'       => 'Configuração Itaú',
@@ -130,7 +130,10 @@ class BanksController extends BaseController
             return;
         }
 
-        $webhookUrl = rtrim(config('app.base_url', ''), '/') . '/index.php?route=finance/webhook/itau';
+        $settings = $this->integrations->tableExists()
+            ? $this->integrations->mergeWithGlobalConfig('itau', $companyId)
+            : config('itau', []);
+        $webhookUrl = $this->buildItauWebhookUrl($settings);
 
         try {
             $service = new ItauService($companyId);
@@ -219,5 +222,21 @@ class BanksController extends BaseController
         $settings['webhook_token']    = (string) ($settings['webhook_token'] ?? '');
 
         return $settings;
+    }
+
+    private function buildItauWebhookUrl(array $settings): string
+    {
+        $baseUrl = trim((string) config('app.base_url', ''));
+        if ($baseUrl === '') {
+            $baseUrl = trim((string) config('app.public_url', ''));
+        }
+
+        $webhookUrl = rtrim($baseUrl, '/') . '/index.php?route=finance/webhook/itau';
+        $token = trim((string) ($settings['webhook_token'] ?? ''));
+        if ($token !== '') {
+            $webhookUrl .= '&token=' . rawurlencode($token);
+        }
+
+        return $webhookUrl;
     }
 }

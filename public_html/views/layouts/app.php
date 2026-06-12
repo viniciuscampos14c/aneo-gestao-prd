@@ -43,7 +43,7 @@ $menu = [
     ['module' => 'students', 'label' => 'Rematrículas', 'icon' => 'document-check', 'route' => 'students/reenrollments', 'hide_for_professor' => true],
     ['module' => 'student_schedule', 'label' => 'Escala Aluno', 'icon' => 'calendar-days', 'route' => 'escala-aluno'],
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
-    ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot'],
+    ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot', 'hidden' => !((bool) config('chatwoot.show_in_menu', false))],
     ['module' => 'courses', 'label' => 'Cursos EAD', 'icon' => 'academic-cap', 'route' => 'courses'],
     ['module' => 'signatures', 'label' => 'Assinaturas', 'icon' => 'document-check', 'route' => 'signatures'],
     ['module' => 'arsenal', 'label' => 'Arsenal Digital', 'icon' => 'book-open', 'route' => 'arsenal'],
@@ -211,6 +211,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
         <nav class="admin-sidebar-nav min-h-0 flex-1 overflow-y-auto p-4">
             <ul class="space-y-1">
                 <?php foreach ($menu as $item): ?>
+                    <?php if (!empty($item['hidden'])) { continue; } ?>
                     <?php if (!has_permission($item['module'])) { continue; } ?>
                     <?php if ($isProfessor && !empty($item['hide_for_professor'])) { continue; } ?>
                     <?php $active = str_starts_with($currentRoute, $item['route']) ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'; ?>

@@ -178,6 +178,11 @@ $meta = $sessions['meta'] ?? ['page' => 1, 'last_page' => 1, 'total' => 0];
                                 <span class="inline-block rounded-full px-3 py-0.5 text-xs font-semibold <?= $badge; ?>">
                                     <?= e($slabel); ?>
                                 </span>
+                                <?php if (!empty($s['is_global'])): ?>
+                                    <span class="mt-1 inline-block rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">
+                                        Global
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <div class="flex items-center justify-center gap-2">

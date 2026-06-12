@@ -46,10 +46,9 @@ class FinanceModel extends BaseModel
         ]);
     }
 
-    public function invoiceStats(): array
+    public function invoiceStats(array $filters = []): array
     {
         $this->refreshOverdueInvoices();
-        $companyId = $this->companyId();
 
         $counts = [
             'open' => 0,
@@ -59,17 +58,40 @@ class FinanceModel extends BaseModel
             'draft' => 0,
         ];
 
-        $stmt = $this->db->prepare('SELECT status, COUNT(*) AS qty FROM invoices WHERE company_id = :company_id GROUP BY status');
-        $stmt->execute([':company_id' => $companyId]);
+        [$whereSql, $params] = $this->invoiceFilterSql($filters, 'i', 's', 'stats_');
+
+        $stmt = $this->db->prepare("SELECT i.status, COUNT(*) AS qty
+            FROM invoices i
+            LEFT JOIN students s ON s.id = i.student_id
+            WHERE {$whereSql}
+            GROUP BY i.status");
+        $stmt->execute($params);
         foreach ($stmt->fetchAll() as $row) {
             $counts[$row['status']] = (int) $row['qty'];
         }
 
         $totals = [
-            'paid_value' => (float) $this->scalar("SELECT COALESCE(SUM(paid_amount),0) FROM invoices WHERE company_id = :company_id AND status = 'paid'", [':company_id' => $companyId]),
-            'overdue_value' => (float) $this->scalar("SELECT COALESCE(SUM(amount - paid_amount),0) FROM invoices WHERE company_id = :company_id AND status = 'overdue'", [':company_id' => $companyId]),
-            'pending_value' => (float) $this->scalar("SELECT COALESCE(SUM(amount - paid_amount),0) FROM invoices WHERE company_id = :company_id AND status IN ('open','partial')", [':company_id' => $companyId]),
-            'settled_today' => (int) $this->scalar("SELECT COUNT(*) FROM invoices WHERE company_id = :company_id AND status = 'paid' AND paid_at = CURDATE()", [':company_id' => $companyId]),
+            'paid_value' => (float) $this->scalar("SELECT COALESCE(SUM(i.paid_amount),0)
+                FROM invoices i
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND i.status = 'paid'", $params),
+            'overdue_value' => (float) $this->scalar("SELECT COALESCE(SUM(i.amount - i.paid_amount),0)
+                FROM invoices i
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND i.status = 'overdue'", $params),
+            'pending_value' => (float) $this->scalar("SELECT COALESCE(SUM(i.amount - i.paid_amount),0)
+                FROM invoices i
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND i.status IN ('open','partial')", $params),
+            'settled_today' => (int) $this->scalar("SELECT COUNT(*)
+                FROM invoices i
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND i.status = 'paid'
+                  AND i.paid_at = CURDATE()", $params),
             'nfe_issued' => 0,
             'nfe_pending' => 0,
             'boletos_issued' => 0,
@@ -80,26 +102,30 @@ class FinanceModel extends BaseModel
             $totals['nfe_issued'] = (int) $this->scalar("SELECT COUNT(*)
                 FROM fiscal_invoices fi
                 INNER JOIN invoices i ON i.id = fi.invoice_id
-                WHERE i.company_id = :company_id
-                  AND fi.status = 'issued'", [':company_id' => $companyId]);
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND fi.status = 'issued'", $params);
             $totals['nfe_pending'] = (int) $this->scalar("SELECT COUNT(*)
                 FROM fiscal_invoices fi
                 INNER JOIN invoices i ON i.id = fi.invoice_id
-                WHERE i.company_id = :company_id
-                  AND fi.status IN ('pending','processing')", [':company_id' => $companyId]);
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND fi.status IN ('pending','processing')", $params);
         }
 
         if ($this->hasBankSlipTable()) {
             $totals['boletos_issued'] = (int) $this->scalar("SELECT COUNT(*)
                 FROM bank_slips bs
                 INNER JOIN invoices i ON i.id = bs.invoice_id
-                WHERE i.company_id = :company_id
-                  AND bs.status IN ('issued','registered')", [':company_id' => $companyId]);
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND bs.status IN ('issued','registered')", $params);
             $totals['boletos_pending'] = (int) $this->scalar("SELECT COUNT(*)
                 FROM bank_slips bs
                 INNER JOIN invoices i ON i.id = bs.invoice_id
-                WHERE i.company_id = :company_id
-                  AND bs.status IN ('pending','processing')", [':company_id' => $companyId]);
+                LEFT JOIN students s ON s.id = i.student_id
+                WHERE {$whereSql}
+                  AND bs.status IN ('pending','processing')", $params);
         }
 
         return array_merge($counts, $totals);
@@ -482,6 +508,9 @@ class FinanceModel extends BaseModel
         }
 
         $this->syncStudentFinanceKanban((int) $invoice['student_id'], $createdBy);
+        (new FinanceNotificationModel())
+            ->useCompany($this->companyId())
+            ->dispatchInvoiceEvent($invoiceId, 'invoice_paid');
 
         return [
             'ok' => true,
@@ -907,6 +936,12 @@ class FinanceModel extends BaseModel
             ]);
         }
 
+        if (in_array($status, ['issued', 'registered'], true)) {
+            (new FinanceNotificationModel())
+                ->useCompany($this->companyId())
+                ->dispatchInvoiceEvent($invoiceId, 'invoice_issued');
+        }
+
         return [
             'ok' => true,
             'status' => $status,
@@ -979,6 +1014,7 @@ class FinanceModel extends BaseModel
         }
         $stmt->execute($params);
 
+        $paymentApplied = false;
         if ($invoice && in_array($status, ['paid', 'received'], true) && (float) $invoice['paid_amount'] < (float) $invoice['amount']) {
             $outstanding = max(0, (float) $invoice['amount'] - (float) $invoice['paid_amount']);
             $paidAmount = isset($serviceResult['paid_amount']) ? (float) $serviceResult['paid_amount'] : $outstanding;
@@ -998,6 +1034,16 @@ class FinanceModel extends BaseModel
                     $changedBy,
                     $paymentMethodId
                 );
+                $paymentApplied = true;
+            }
+        }
+
+        if (in_array($status, ['paid', 'received'], true)) {
+            $refreshedInvoice = $paymentApplied ? $this->findInvoice($invoiceId) : $invoice;
+            if ($refreshedInvoice && (float) $refreshedInvoice['paid_amount'] >= (float) $refreshedInvoice['amount']) {
+                (new FinanceNotificationModel())
+                    ->useCompany($this->companyId())
+                    ->dispatchInvoiceEvent($invoiceId, 'invoice_paid');
             }
         }
 
@@ -1006,6 +1052,127 @@ class FinanceModel extends BaseModel
             'ok' => true,
             'status' => $status,
             'message' => $message,
+        ];
+    }
+
+    public function processItauWebhook(array $payload, ?int $companyId = null): array
+    {
+        if (!$this->hasBankSlipTable()) {
+            return ['ok' => false, 'message' => 'Estrutura de boleto indisponivel no banco.'];
+        }
+
+        if ($companyId !== null && $companyId > 0) {
+            $this->useCompany($companyId);
+        }
+
+        $identifiers = $this->itauWebhookIdentifiers($payload);
+        if ($identifiers === []) {
+            return ['ok' => false, 'message' => 'Webhook Itau sem identificador de boleto reconhecido.'];
+        }
+
+        $record = $this->bankSlipByItauIdentifiers($identifiers, $companyId);
+        if (!$record) {
+            return ['ok' => false, 'message' => 'Boleto nao encontrado para o webhook Itau.'];
+        }
+
+        $companyId = (int) ($record['company_id'] ?? $companyId ?? 0);
+        if ($companyId > 0) {
+            $this->useCompany($companyId);
+        }
+
+        $invoiceId = (int) ($record['invoice_id'] ?? 0);
+        $invoice = $this->findInvoice($invoiceId);
+        if (!$invoice) {
+            return ['ok' => false, 'message' => 'Fatura do boleto nao encontrada.'];
+        }
+
+        $status = $this->normalizeItauWebhookStatus($payload, (string) ($record['status'] ?? 'pending'));
+        $paidAt = $this->normalizeItauWebhookDate($this->extractFromPayload($payload, [
+            'data_pagamento',
+            'dataPagamento',
+            'data_liquidacao',
+            'dataLiquidacao',
+            'paid_at',
+        ]));
+        $paidAmount = $this->normalizeItauWebhookAmount($this->extractFromPayload($payload, [
+            'valor_pago',
+            'valorPago',
+            'valor_liquidado',
+            'valorLiquidado',
+            'valor_titulo',
+            'valorTitulo',
+            'amount',
+        ]));
+
+        $now = now();
+        $hasNossoNumero = $this->bankSlipNossoNumeroColumnAvailable();
+        $stmt = $this->db->prepare('UPDATE bank_slips SET
+            status = :status,
+            external_id = :external_id,
+            ' . ($hasNossoNumero ? 'nosso_numero = :nosso_numero,' : '') . '
+            response_payload = :response_payload,
+            error_message = :error_message,
+            last_attempt_at = :last_attempt_at,
+            issued_at = :issued_at,
+            paid_at = :paid_at,
+            updated_at = :updated_at
+            WHERE id = :id');
+
+        $params = [
+            ':status' => $status,
+            ':external_id' => $identifiers['external_id'] ?? $record['external_id'],
+            ':response_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ':error_message' => 'Status atualizado por webhook Itau.',
+            ':last_attempt_at' => $now,
+            ':issued_at' => in_array($status, ['issued', 'registered'], true) ? ($record['issued_at'] ?: $now) : $record['issued_at'],
+            ':paid_at' => in_array($status, ['paid', 'received'], true) ? ($paidAt ?: date('Y-m-d')) : $record['paid_at'],
+            ':updated_at' => $now,
+            ':id' => (int) $record['id'],
+        ];
+        if ($hasNossoNumero) {
+            $params[':nosso_numero'] = $identifiers['nosso_numero'] ?? ($record['nosso_numero'] ?? null);
+        }
+        $stmt->execute($params);
+
+        $paymentApplied = false;
+        if (in_array($status, ['paid', 'received'], true) && (float) $invoice['paid_amount'] < (float) $invoice['amount']) {
+            $outstanding = max(0, (float) $invoice['amount'] - (float) $invoice['paid_amount']);
+            $amountToApply = $paidAmount !== null ? $paidAmount : $outstanding;
+            $amountToApply = min(max(0, $amountToApply), $outstanding);
+
+            if ($amountToApply > 0) {
+                $paymentMethodId = $this->invoicePaymentMethodsAvailable()
+                    ? (int) ($invoice['payment_method_id'] ?? 0)
+                    : null;
+                $methodName = $this->resolvePaymentMethodName($paymentMethodId, 'Boleto Itau');
+                $this->recordBatchPayment(
+                    [$invoiceId],
+                    $amountToApply,
+                    $methodName,
+                    $paidAt ?: date('Y-m-d'),
+                    'Baixa automatica por webhook Itau.',
+                    0,
+                    $paymentMethodId
+                );
+                $paymentApplied = true;
+            }
+        }
+
+        if (in_array($status, ['paid', 'received'], true)) {
+            $refreshedInvoice = $paymentApplied ? $this->findInvoice($invoiceId) : $invoice;
+            if ($refreshedInvoice && (float) $refreshedInvoice['paid_amount'] >= (float) $refreshedInvoice['amount']) {
+                (new FinanceNotificationModel())
+                    ->useCompany($this->companyId())
+                    ->dispatchInvoiceEvent($invoiceId, 'invoice_paid');
+            }
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Webhook Itau processado com sucesso.',
+            'status' => $status,
+            'invoice_id' => $invoiceId,
+            'payment_applied' => $paymentApplied,
         ];
     }
 
@@ -1025,6 +1192,7 @@ class FinanceModel extends BaseModel
             ':start_date' => $startDate,
             ':end_date' => $endDate,
         ];
+        $invoiceJoinSql = '';
 
         if (!empty($filters['student_id'])) {
             $invoiceWhere[] = 'i.student_id = :student_id';
@@ -1036,16 +1204,26 @@ class FinanceModel extends BaseModel
             $invoiceParams[':invoice_status'] = $filters['status'];
         }
 
+        if (!empty($filters['method']) && $this->invoicePaymentMethodsAvailable()) {
+            $invoiceJoinSql = 'LEFT JOIN payment_methods pm_invoice ON pm_invoice.id = i.payment_method_id AND pm_invoice.company_id = i.company_id';
+            $invoiceWhere[] = 'COALESCE(pm_invoice.name, "") = :invoice_method';
+            $invoiceParams[':invoice_method'] = $filters['method'];
+        }
+
         $invoiceWhereSql = implode(' AND ', $invoiceWhere);
 
         $totalInvoiced = (float) $this->scalar(
-            "SELECT COALESCE(SUM(i.amount), 0) FROM invoices i WHERE {$invoiceWhereSql}",
+            "SELECT COALESCE(SUM(i.amount), 0)
+             FROM invoices i
+             {$invoiceJoinSql}
+             WHERE {$invoiceWhereSql}",
             $invoiceParams
         );
 
         $pendingValue = (float) $this->scalar(
             "SELECT COALESCE(SUM(i.amount - i.paid_amount), 0)
              FROM invoices i
+             {$invoiceJoinSql}
              WHERE {$invoiceWhereSql} AND i.status IN ('open','partial','overdue')",
             $invoiceParams
         );
@@ -1053,6 +1231,7 @@ class FinanceModel extends BaseModel
         $overdueValue = (float) $this->scalar(
             "SELECT COALESCE(SUM(i.amount - i.paid_amount), 0)
              FROM invoices i
+             {$invoiceJoinSql}
              WHERE {$invoiceWhereSql} AND i.status = 'overdue'",
             $invoiceParams
         );
@@ -1066,6 +1245,7 @@ class FinanceModel extends BaseModel
             ':settled_start_date' => $startDate,
             ':settled_end_date' => $endDate,
         ];
+        $settledJoinSql = '';
 
         if (!empty($filters['student_id'])) {
             $settledWhere[] = 'i.student_id = :settled_student_id';
@@ -1079,8 +1259,17 @@ class FinanceModel extends BaseModel
             $settledWhere[] = "i.status = 'paid'";
         }
 
+        if (!empty($filters['method']) && $this->invoicePaymentMethodsAvailable()) {
+            $settledJoinSql = 'LEFT JOIN payment_methods pm_settled ON pm_settled.id = i.payment_method_id AND pm_settled.company_id = i.company_id';
+            $settledWhere[] = 'COALESCE(pm_settled.name, "") = :settled_method';
+            $settledParams[':settled_method'] = $filters['method'];
+        }
+
         $settledCount = (int) $this->scalar(
-            "SELECT COUNT(*) FROM invoices i WHERE " . implode(' AND ', $settledWhere),
+            "SELECT COUNT(*)
+             FROM invoices i
+             {$settledJoinSql}
+             WHERE " . implode(' AND ', $settledWhere),
             $settledParams
         );
 
@@ -1126,6 +1315,7 @@ class FinanceModel extends BaseModel
         $dailyInvoicedStmt = $this->db->prepare(
             "SELECT i.due_date AS ref_date, COALESCE(SUM(i.amount), 0) AS total
              FROM invoices i
+             {$invoiceJoinSql}
              WHERE {$invoiceWhereSql}
              GROUP BY i.due_date
              ORDER BY i.due_date ASC"
@@ -1182,10 +1372,16 @@ class FinanceModel extends BaseModel
                 $nfeParams[':nfe_invoice_status'] = $filters['status'];
             }
 
+            if (!empty($filters['method']) && $this->invoicePaymentMethodsAvailable()) {
+                $nfeWhere[] = 'COALESCE(pm_invoice.name, "") = :nfe_method';
+                $nfeParams[':nfe_method'] = $filters['method'];
+            }
+
             $stmt = $this->db->prepare(
                 "SELECT fi.status, COUNT(*) AS qty
                  FROM fiscal_invoices fi
                  INNER JOIN invoices i ON i.id = fi.invoice_id
+                 {$invoiceJoinSql}
                  WHERE " . implode(' AND ', $nfeWhere) . "
                  GROUP BY fi.status"
             );
@@ -1362,6 +1558,7 @@ class FinanceModel extends BaseModel
     public function reportReceivables(array $filters, int $perPage, int $page): array
     {
         $hasFiscalTable = $this->hasFiscalTable();
+        $hasInvoicePaymentMethod = $this->invoicePaymentMethodsAvailable();
         $where = [
             'i.company_id = :company_id',
             'i.due_date BETWEEN :start_date AND :end_date',
@@ -1382,17 +1579,26 @@ class FinanceModel extends BaseModel
             $params[':invoice_status'] = $filters['status'];
         }
 
+        if (!empty($filters['method']) && $hasInvoicePaymentMethod) {
+            $where[] = 'COALESCE(pm.name, "") = :method';
+            $params[':method'] = $filters['method'];
+        }
+
         $whereSql = implode(' AND ', $where);
 
         $fiscalJoin = $hasFiscalTable ? "LEFT JOIN fiscal_invoices fi ON fi.invoice_id = i.id" : "";
         $fiscalFields = $hasFiscalTable
             ? "fi.status AS fiscal_status, fi.number AS fiscal_number"
             : "NULL AS fiscal_status, NULL AS fiscal_number";
+        $paymentJoin = $hasInvoicePaymentMethod
+            ? "LEFT JOIN payment_methods pm ON pm.id = i.payment_method_id AND pm.company_id = i.company_id"
+            : "";
 
         $countSql = "SELECT COUNT(*)
             FROM invoices i
             INNER JOIN students s ON s.id = i.student_id
             {$fiscalJoin}
+            {$paymentJoin}
             WHERE {$whereSql}";
 
         $dataSql = "SELECT
@@ -1411,6 +1617,7 @@ class FinanceModel extends BaseModel
             FROM invoices i
             INNER JOIN students s ON s.id = i.student_id
             {$fiscalJoin}
+            {$paymentJoin}
             WHERE {$whereSql}
             ORDER BY i.due_date ASC, i.id DESC";
 
@@ -2053,6 +2260,27 @@ class FinanceModel extends BaseModel
         ];
     }
 
+    public function studentGeneratedPlanInvoiceCount(int $studentId): int
+    {
+        $studentId = (int) $studentId;
+        if ($studentId <= 0) {
+            return 0;
+        }
+
+        $stmt = $this->db->prepare('SELECT COUNT(*)
+            FROM invoices
+            WHERE company_id = :company_id
+              AND student_id = :student_id
+              AND tags LIKE :marker');
+        $stmt->execute([
+            ':company_id' => $this->companyId(),
+            ':student_id' => $studentId,
+            ':marker' => '%PlanoAluno#' . $studentId . ' Parcela#%',
+        ]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     public function issueDueBankSlips(int $createdBy, int $defaultDaysBefore = 10, int $limit = 100): array
     {
         if (!$this->hasBankSlipTable()) {
@@ -2147,6 +2375,7 @@ class FinanceModel extends BaseModel
     public function syncStudentFinanceKanban(int $studentId, int $changedBy): void
     {
         $companyId = $this->companyId();
+        $this->students->useCompany($companyId);
         $student = $this->students->find($studentId);
         if (!$student || (int) ($student['company_id'] ?? 0) !== $companyId) {
             return;
@@ -2165,17 +2394,6 @@ class FinanceModel extends BaseModel
         ]);
         $overdueCount = (int) $stmt->fetchColumn();
 
-        $openStmt = $this->db->prepare("SELECT COUNT(*)
-            FROM invoices
-            WHERE company_id = :company_id
-              AND student_id = :student_id
-              AND status IN ('open','partial','overdue')");
-        $openStmt->execute([
-            ':company_id' => $companyId,
-            ':student_id' => $studentId,
-        ]);
-        $openCount = (int) $openStmt->fetchColumn();
-
         $hasActiveAgreement = $this->studentHasActiveAgreementInvoices($studentId, $companyId);
 
         $targetStatusId = null;
@@ -2183,7 +2401,7 @@ class FinanceModel extends BaseModel
             $targetStatusId = $this->statusIdBySlug('acordo-ativo');
         } elseif ($overdueCount >= 2) {
             $targetStatusId = $this->statusIdBySlug('inadimplente');
-        } elseif ($openCount === 0) {
+        } else {
             $targetStatusId = $this->statusIdBySlug('sem-pendencias') ?: $this->students->defaultKanbanStatusId();
         }
 
@@ -2209,28 +2427,20 @@ class FinanceModel extends BaseModel
             $reason = 'Atualizacao automatica por regularizacao';
         }
 
-        $this->students->registerKanbanHistory($studentId, (int) $student['kanban_status_id'], (int) $targetStatusId, $changedBy, $reason);
+        $fromStatusId = !empty($student['kanban_status_id']) ? (int) $student['kanban_status_id'] : null;
+        $this->students->registerKanbanHistory($studentId, $fromStatusId, (int) $targetStatusId, $changedBy, $reason);
     }
 
     public function syncFinanceBoardStatuses(int $changedBy): void
     {
         $companyId = $this->companyId();
+        $this->students->useCompany($companyId);
         $this->refreshOverdueInvoices();
 
-        $stmt = $this->db->prepare("SELECT DISTINCT s.id
+        $stmt = $this->db->prepare("SELECT s.id
             FROM students s
-            LEFT JOIN invoices i
-                ON i.company_id = s.company_id
-               AND i.student_id = s.id
             WHERE s.company_id = :company_id
-              AND (
-                    i.id IS NOT NULL
-                    OR s.kanban_status_id IN (
-                        SELECT id
-                        FROM kanban_status
-                        WHERE slug IN ('sem-pendencias', 'inadimplente', 'acordo-ativo')
-                    )
-                  )");
+              AND s.is_active = 1");
         $stmt->execute([':company_id' => $companyId]);
 
         foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $studentId) {
@@ -2469,6 +2679,35 @@ class FinanceModel extends BaseModel
         return $stmt->fetchColumn();
     }
 
+    private function invoiceFilterSql(array $filters, string $invoiceAlias = 'i', string $studentAlias = 's', string $prefix = ''): array
+    {
+        $where = ["{$invoiceAlias}.company_id = :{$prefix}company_id"];
+        $params = [":{$prefix}company_id" => $this->companyId()];
+
+        if (!empty($filters['q'])) {
+            $where[] = "({$invoiceAlias}.invoice_number LIKE :{$prefix}q OR {$studentAlias}.full_name LIKE :{$prefix}q OR {$invoiceAlias}.tags LIKE :{$prefix}q OR {$invoiceAlias}.project_name LIKE :{$prefix}q)";
+            $params[":{$prefix}q"] = '%' . $filters['q'] . '%';
+        }
+
+        if (!empty($filters['status'])) {
+            $where[] = "{$invoiceAlias}.status = :{$prefix}status";
+            $params[":{$prefix}status"] = $filters['status'];
+        }
+
+        if (!empty($filters['student_id'])) {
+            $where[] = "{$invoiceAlias}.student_id = :{$prefix}student_id";
+            $params[":{$prefix}student_id"] = (int) $filters['student_id'];
+        }
+
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $where[] = "{$invoiceAlias}.due_date BETWEEN :{$prefix}start_date AND :{$prefix}end_date";
+            $params[":{$prefix}start_date"] = (string) $filters['start_date'];
+            $params[":{$prefix}end_date"] = (string) $filters['end_date'];
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
     private function buildDateLabels(string $startDate, string $endDate): array
     {
         $labels = [];
@@ -2673,6 +2912,166 @@ class FinanceModel extends BaseModel
         ]);
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    private function bankSlipByItauIdentifiers(array $identifiers, ?int $companyId = null): ?array
+    {
+        $values = array_values(array_unique(array_filter(array_map('strval', $identifiers), fn ($value) => trim($value) !== '')));
+        if ($values === []) {
+            return null;
+        }
+
+        $hasNossoNumero = $this->bankSlipNossoNumeroColumnAvailable();
+        $conditions = ['bs.external_id IN (' . implode(',', array_fill(0, count($values), '?')) . ')'];
+        $params = $values;
+
+        if ($hasNossoNumero) {
+            $conditions[] = 'bs.nosso_numero IN (' . implode(',', array_fill(0, count($values), '?')) . ')';
+            $params = array_merge($params, $values);
+        }
+
+        $where = '(' . implode(' OR ', $conditions) . ')';
+        if ($companyId !== null && $companyId > 0) {
+            $where .= ' AND i.company_id = ?';
+            $params[] = $companyId;
+        }
+
+        $stmt = $this->db->prepare("SELECT bs.*, i.company_id
+            FROM bank_slips bs
+            INNER JOIN invoices i ON i.id = bs.invoice_id
+            WHERE {$where}
+            ORDER BY bs.id DESC
+            LIMIT 1");
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    private function itauWebhookIdentifiers(array $payload): array
+    {
+        $externalId = $this->extractFromPayload($payload, [
+            'id_boleto',
+            'idBoleto',
+            'id_boleto_individual',
+            'idBoletoIndividual',
+            'external_id',
+            'boleto_id',
+        ]);
+        $nossoNumero = $this->extractFromPayload($payload, [
+            'nosso_numero',
+            'nossoNumero',
+            'numero_nosso_numero',
+            'numeroNossoNumero',
+            'numero_nosso_numero_boleto',
+        ]);
+
+        return array_filter([
+            'external_id' => trim((string) $externalId),
+            'nosso_numero' => trim((string) $nossoNumero),
+        ], fn ($value) => $value !== '');
+    }
+
+    private function normalizeItauWebhookStatus(array $payload, string $fallback): string
+    {
+        $raw = strtolower(trim((string) $this->extractFromPayload($payload, [
+            'status',
+            'situacao',
+            'situacao_boleto',
+            'situacaoBoleto',
+            'situacao_geral_boleto',
+            'situacaoGeralBoleto',
+            'codigo_situacao',
+        ])));
+
+        if ($raw === '') {
+            return $fallback !== '' ? $fallback : 'pending';
+        }
+
+        $normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $raw);
+        $normalized = is_string($normalized) ? $normalized : $raw;
+
+        if (str_contains($normalized, 'pag') || str_contains($normalized, 'liquid') || str_contains($normalized, 'receb') || str_contains($normalized, 'baixad')) {
+            return 'paid';
+        }
+        if (str_contains($normalized, 'cancel') || str_contains($normalized, 'expir')) {
+            return 'cancelled';
+        }
+        if (str_contains($normalized, 'venc')) {
+            return 'overdue';
+        }
+        if (str_contains($normalized, 'registr') || str_contains($normalized, 'emit') || str_contains($normalized, 'abert') || str_contains($normalized, 'ativo')) {
+            return 'issued';
+        }
+
+        return $fallback !== '' ? $fallback : 'pending';
+    }
+
+    private function normalizeItauWebhookDate($value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $formats = ['Y-m-d', 'd/m/Y', 'Y-m-d H:i:s', DateTimeInterface::ATOM];
+        foreach ($formats as $format) {
+            $date = DateTime::createFromFormat($format, $value);
+            if ($date instanceof DateTime) {
+                return $date->format('Y-m-d');
+            }
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function normalizeItauWebhookAmount($value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        $clean = preg_replace('/[^\d,.-]/', '', (string) $value);
+        if ($clean === null || $clean === '') {
+            return null;
+        }
+
+        if (str_contains($clean, ',') && str_contains($clean, '.')) {
+            $clean = str_replace('.', '', $clean);
+        }
+        $clean = str_replace(',', '.', $clean);
+
+        return is_numeric($clean) ? (float) $clean : null;
+    }
+
+    private function extractFromPayload(array $payload, array $keys)
+    {
+        $keysMap = array_fill_keys($keys, true);
+        $stack = [$payload];
+
+        while ($stack !== []) {
+            $item = array_pop($stack);
+            if (!is_array($item)) {
+                continue;
+            }
+
+            foreach ($item as $key => $value) {
+                if (is_string($key) && isset($keysMap[$key])) {
+                    return $value;
+                }
+
+                if (is_array($value)) {
+                    $stack[] = $value;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function hasFiscalTable(): bool

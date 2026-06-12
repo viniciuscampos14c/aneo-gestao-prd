@@ -224,6 +224,10 @@ class StudentController extends BaseController
             return;
         }
 
+        if (!$this->validateGeneratedFinancialPlanChanges($id, $student, $data)) {
+            return;
+        }
+
         if (!$this->validatePortalData($portal, false, $id, $portalAccount, 'students/edit&id=' . $id)) {
             return;
         }
@@ -526,6 +530,51 @@ class StudentController extends BaseController
         }
 
         return true;
+    }
+
+    private function validateGeneratedFinancialPlanChanges(int $studentId, array $currentStudent, array $data): bool
+    {
+        if (!$this->students->financialPlanFeatureAvailable()) {
+            return true;
+        }
+
+        if ($this->finance->studentGeneratedPlanInvoiceCount($studentId) <= 0) {
+            return true;
+        }
+
+        $trackedFields = [
+            'monthly_fee' => 'valor da parcela',
+            'billing_day' => 'dia de vencimento',
+            'financial_plan_installments' => 'quantidade de parcelas',
+            'financial_plan_first_due_date' => 'primeiro vencimento',
+            'financial_plan_payment_method_id' => 'forma de pagamento padrao',
+        ];
+
+        foreach ($trackedFields as $field => $label) {
+            $before = $this->normalizeFinancialPlanComparableValue($field, $currentStudent[$field] ?? null);
+            $after = $this->normalizeFinancialPlanComparableValue($field, $data[$field] ?? null);
+
+            if ($before !== $after) {
+                $this->error('Plano financeiro ja possui faturas geradas. Para evitar divergencia nos relatorios, ajuste "' . $label . '" diretamente nas faturas ou refaca o plano com um procedimento controlado.');
+                $this->redirect('students/edit&id=' . $studentId);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function normalizeFinancialPlanComparableValue(string $field, $value): string
+    {
+        if ($field === 'monthly_fee') {
+            return number_format((float) $value, 2, '.', '');
+        }
+
+        if (in_array($field, ['billing_day', 'financial_plan_installments', 'financial_plan_payment_method_id'], true)) {
+            return (string) (int) $value;
+        }
+
+        return trim((string) $value);
     }
 
     private function handleFinancialPlanGeneration(int $studentId, array $data): string

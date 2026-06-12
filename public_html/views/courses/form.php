@@ -514,6 +514,14 @@ $formatLessonDuration = static function (int $seconds): string {
                     <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
                     <input type="hidden" name="redirect_to" value="<?= e($backToCourse); ?>">
 
+                    <label class="flex gap-3 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-3 text-xs text-cyan-900">
+                        <input type="checkbox" name="is_global" value="1" class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
+                        <span>
+                            <strong class="block text-sm">Aula global para todas as unidades deste curso</strong>
+                            O sistema criara uma unica reuniao Zoom e vinculara o mesmo link aos cursos equivalentes das empresas ativas.
+                        </span>
+                    </label>
+
                     <div class="grid gap-3 sm:grid-cols-2">
                         <label class="course-zoom-builder-field block sm:col-span-2">
                             <span class="mb-1 block text-xs font-medium text-slate-700">Título da aula <span class="text-rose-500">*</span></span>
@@ -582,6 +590,11 @@ $formatLessonDuration = static function (int $seconds): string {
                     <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $sbadge[$st] ?? 'bg-slate-100 text-slate-600'; ?>">
                         <?= $slabel[$st] ?? $st; ?>
                     </span>
+                    <?php if (!empty($zs['is_global'])): ?>
+                        <span class="inline-block rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">
+                            Global
+                        </span>
+                    <?php endif; ?>
                     <?php if (!empty($zs['join_url'])): ?>
                         <a href="<?= e($zs['join_url']); ?>" target="_blank" rel="noopener"
                            class="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition">
