@@ -853,6 +853,8 @@ class StudentPortalController extends BaseController
 
         $gradedQuestions = 0;
         $correctAnswers = 0;
+        $objectiveQuestions = 0;
+        $hasEssayQuestion = false;
         $answers = [];
 
         foreach ($questions as $question) {
@@ -860,12 +862,17 @@ class StudentPortalController extends BaseController
             $answerText = trim((string) ($answersInput[$questionId] ?? ''));
             $isCorrect = null;
 
-            if ((string) $question['question_type'] === 'objective' && trim((string) $question['correct_answer']) !== '') {
-                $gradedQuestions++;
-                $isCorrect = $this->normalizeAnswer($answerText) === $this->normalizeAnswer((string) $question['correct_answer']) ? 1 : 0;
-                if ($isCorrect === 1) {
-                    $correctAnswers++;
+            if ((string) $question['question_type'] === 'objective') {
+                $objectiveQuestions++;
+                if (trim((string) $question['correct_answer']) !== '') {
+                    $gradedQuestions++;
+                    $isCorrect = $this->normalizeAnswer($answerText) === $this->normalizeAnswer((string) $question['correct_answer']) ? 1 : 0;
+                    if ($isCorrect === 1) {
+                        $correctAnswers++;
+                    }
                 }
+            } else {
+                $hasEssayQuestion = true;
             }
 
             $answers[] = [
@@ -878,8 +885,9 @@ class StudentPortalController extends BaseController
         $submittedAt = now();
         $score = null;
         $submissionStatus = 'pending_review';
+        $canAutoGrade = !$hasEssayQuestion && $objectiveQuestions > 0 && $gradedQuestions === count($questions);
 
-        if ($gradedQuestions > 0) {
+        if ($canAutoGrade) {
             $score = round(($correctAnswers / $gradedQuestions) * 10, 2);
             $submissionStatus = 'auto_graded';
         }
@@ -932,7 +940,11 @@ class StudentPortalController extends BaseController
             $this->redirect('student/exams');
         }
 
-        $this->success('Prova enviada com sucesso. Ela ficara pendente para correcao manual.');
+        if ($hasEssayQuestion) {
+            $this->success('Prova dissertativa enviada com sucesso. Ela sera corrigida pela equipe e sua nota sera publicada posteriormente.');
+        } else {
+            $this->success('Prova enviada com sucesso. Ela ficara pendente para correcao manual.');
+        }
         $this->redirect('student/exams');
     }
 

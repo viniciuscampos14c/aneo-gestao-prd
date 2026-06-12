@@ -83,7 +83,7 @@ $calendarRows = $examCalendar ?? [];
                                 <?php elseif ($hasExternal): ?>
                                     <span class="inline-flex rounded-full border border-cyan-400 bg-cyan-200 px-2 py-1 text-xs font-semibold text-cyan-950">Prova externa</span>
                                 <?php elseif ($hasSubmission): ?>
-                                    <span class="inline-flex rounded-full border border-amber-400 bg-amber-200 px-2 py-1 text-xs font-semibold text-amber-950">Enviada (aguardando)</span>
+                                    <span class="inline-flex rounded-full border border-amber-400 bg-amber-200 px-2 py-1 text-xs font-semibold text-amber-950">Aguardando correcao</span>
                                 <?php elseif ($isLockedBySchedule): ?>
                                     <span class="inline-flex rounded-full border border-sky-400 bg-sky-200 px-2 py-1 text-xs font-semibold text-sky-950">Agendada</span>
                                 <?php elseif ((int) $exam['questions_total'] <= 0): ?>
@@ -124,13 +124,16 @@ $calendarRows = $examCalendar ?? [];
         <h3 class="mb-3 text-lg font-semibold">Provas enviadas aguardando correcao</h3>
         <div class="space-y-2 text-sm">
             <?php foreach ($pendingSubmissions as $pending): ?>
-                <div class="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2">
-                    <p class="font-medium"><?= e($pending['exam_title']); ?> <span class="text-slate-500">(<?= e($pending['course_name']); ?>)</span></p>
-                    <p class="text-xs font-medium text-amber-950">Enviada em <?= e(date('d/m/Y H:i', strtotime((string) $pending['submitted_at']))); ?>.</p>
+                <div class="student-exam-pending-card rounded-lg px-3 py-2">
+                    <p class="student-exam-pending-title font-medium">
+                        <?= e($pending['exam_title']); ?>
+                        <span class="student-exam-pending-course">(<?= e($pending['course_name']); ?>)</span>
+                    </p>
+                    <p class="student-exam-pending-date text-xs font-medium">Enviada em <?= e(date('d/m/Y H:i', strtotime((string) $pending['submitted_at']))); ?>.</p>
                 </div>
             <?php endforeach; ?>
             <?php if ($pendingSubmissions === []): ?>
-                <p class="text-slate-500">Nenhuma prova pendente de correcao.</p>
+                <p class="text-slate-500">Nenhuma prova aguardando correcao.</p>
             <?php endif; ?>
         </div>
     </section>

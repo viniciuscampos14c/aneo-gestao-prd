@@ -323,12 +323,20 @@ class ReenrollmentModel extends BaseModel
     public function openInvoices(int $studentId, int $companyId): array
     {
         $stmt = $this->db->prepare(
-            "SELECT id, invoice_number, due_date, amount, paid_amount, status
+            "SELECT
+                id,
+                invoice_number,
+                due_date,
+                amount,
+                paid_amount,
+                status,
+                GREATEST(amount - COALESCE(paid_amount, 0), 0) AS outstanding_amount
              FROM invoices
              WHERE student_id = :sid
                AND company_id = :cid
                AND status IN ('open', 'overdue', 'partial')
                AND (status = 'overdue' OR due_date < CURDATE())
+               AND GREATEST(amount - COALESCE(paid_amount, 0), 0) > 0.009
              ORDER BY due_date ASC"
         );
         $stmt->execute([':sid' => $studentId, ':cid' => $companyId]);

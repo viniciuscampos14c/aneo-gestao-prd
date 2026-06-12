@@ -326,6 +326,8 @@ class SupportDeskController extends BaseController
 
     private function requireAuth(): void
     {
+        enforce_session_idle_timeout('support', ['support_desk_auth'], 'support/login', true);
+
         if (!(bool) config('support_desk.enabled', false) || !$this->isAuthenticated()) {
             $this->redirectTo('support/login');
         }

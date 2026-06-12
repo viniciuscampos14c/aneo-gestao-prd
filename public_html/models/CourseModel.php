@@ -11,6 +11,8 @@ class CourseModel extends BaseModel
     private ?bool $studentLessonProgressTableExists = null;
     private ?bool $examExternalLinksTableExists = null;
     private ?bool $examInternalLinksTableExists = null;
+    private ?bool $examSubmissionsTableExists = null;
+    private ?bool $examSubmissionAnswersTableExists = null;
 
     public function categories(): array
     {
@@ -1671,6 +1673,186 @@ class CourseModel extends BaseModel
         if ($this->hasExamExternalLinksTable()) {
             $this->deactivateExternalExamLinkByExamStudent($examId, $studentId);
         }
+
+        if ($this->hasExamSubmissionsTable()) {
+            $stmt = $this->db->prepare("UPDATE exam_submissions
+                SET status = 'submitted',
+                    score = :score,
+                    updated_at = :updated_at
+                WHERE exam_id = :exam_id
+                  AND student_id = :student_id
+                  AND status = 'pending_review'");
+            $stmt->execute([
+                ':score' => $score,
+                ':updated_at' => now(),
+                ':exam_id' => $examId,
+                ':student_id' => $studentId,
+            ]);
+        }
+    }
+
+    public function examSubmissionsFeatureAvailable(): bool
+    {
+        return $this->hasExamSubmissionsTable() && $this->hasExamSubmissionAnswersTable();
+    }
+
+    public function listExamSubmissions(array $filters, int $perPage, int $page): array
+    {
+        if (!$this->examSubmissionsFeatureAvailable()) {
+            return [
+                'rows' => [],
+                'meta' => pagination_meta(0, $perPage, $page),
+            ];
+        }
+
+        [$whereSql, $params] = $this->buildExamSubmissionFilters($filters);
+
+        $countSql = "SELECT COUNT(*)
+            FROM exam_submissions sub
+            INNER JOIN exams ex ON ex.id = sub.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN students st ON st.id = sub.student_id
+            WHERE {$whereSql}";
+
+        $dataSql = "SELECT
+                sub.id,
+                sub.exam_id,
+                sub.student_id,
+                sub.status,
+                sub.score,
+                sub.graded_questions,
+                sub.correct_answers,
+                sub.submitted_at,
+                sub.created_at,
+                sub.updated_at,
+                ex.title AS exam_title,
+                ex.passing_score,
+                c.id AS course_id,
+                c.name AS course_name,
+                st.full_name AS student_name,
+                '' AS student_email,
+                COALESCE(ans.answers_total, 0) AS answers_total,
+                COALESCE(ans.essay_answers_total, 0) AS essay_answers_total,
+                COALESCE(ans.objective_answers_total, 0) AS objective_answers_total,
+                er.id AS result_id,
+                er.score AS result_score,
+                er.status AS result_status,
+                er.submitted_at AS result_submitted_at
+            FROM exam_submissions sub
+            INNER JOIN exams ex ON ex.id = sub.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN students st ON st.id = sub.student_id
+            LEFT JOIN (
+                SELECT
+                    esa.submission_id,
+                    COUNT(*) AS answers_total,
+                    SUM(CASE WHEN eq.question_type = 'essay' THEN 1 ELSE 0 END) AS essay_answers_total,
+                    SUM(CASE WHEN eq.question_type = 'objective' THEN 1 ELSE 0 END) AS objective_answers_total
+                FROM exam_submission_answers esa
+                INNER JOIN exam_questions eq ON eq.id = esa.question_id
+                GROUP BY esa.submission_id
+            ) ans ON ans.submission_id = sub.id
+            LEFT JOIN exam_results er ON er.id = (
+                SELECT er2.id
+                FROM exam_results er2
+                WHERE er2.exam_id = sub.exam_id
+                  AND er2.student_id = sub.student_id
+                ORDER BY er2.submitted_at DESC, er2.id DESC
+                LIMIT 1
+            )
+            WHERE {$whereSql}
+            ORDER BY
+                CASE WHEN sub.status = 'pending_review' THEN 0 ELSE 1 END,
+                sub.submitted_at DESC,
+                sub.id DESC";
+
+        return $this->paginate($countSql, $dataSql, $params, $perPage, $page);
+    }
+
+    public function findExamSubmission(int $submissionId): ?array
+    {
+        if ($submissionId <= 0 || !$this->examSubmissionsFeatureAvailable()) {
+            return null;
+        }
+
+        $params = [':id' => $submissionId];
+        $companyFilter = '';
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $companyFilter = ' AND c.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                sub.id,
+                sub.exam_id,
+                sub.student_id,
+                sub.status,
+                sub.score,
+                sub.graded_questions,
+                sub.correct_answers,
+                sub.submitted_at,
+                sub.created_at,
+                sub.updated_at,
+                ex.title AS exam_title,
+                ex.description AS exam_description,
+                ex.passing_score,
+                c.id AS course_id,
+                c.name AS course_name,
+                st.full_name AS student_name,
+                '' AS student_email,
+                er.id AS result_id,
+                er.score AS result_score,
+                er.status AS result_status,
+                er.submitted_at AS result_submitted_at
+            FROM exam_submissions sub
+            INNER JOIN exams ex ON ex.id = sub.exam_id
+            INNER JOIN courses c ON c.id = ex.course_id
+            INNER JOIN students st ON st.id = sub.student_id
+            LEFT JOIN exam_results er ON er.id = (
+                SELECT er2.id
+                FROM exam_results er2
+                WHERE er2.exam_id = sub.exam_id
+                  AND er2.student_id = sub.student_id
+                ORDER BY er2.submitted_at DESC, er2.id DESC
+                LIMIT 1
+            )
+            WHERE sub.id = :id{$companyFilter}
+            LIMIT 1");
+        $stmt->execute($params);
+
+        $row = $stmt->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    public function listExamSubmissionAnswers(int $submissionId): array
+    {
+        if ($submissionId <= 0 || !$this->examSubmissionsFeatureAvailable()) {
+            return [];
+        }
+
+        $submission = $this->findExamSubmission($submissionId);
+        if ($submission === null) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                esa.id,
+                esa.submission_id,
+                esa.question_id,
+                esa.answer_text,
+                esa.is_correct,
+                esa.created_at,
+                eq.question_type,
+                eq.question_text,
+                eq.options_json,
+                eq.correct_answer
+            FROM exam_submission_answers esa
+            INNER JOIN exam_questions eq ON eq.id = esa.question_id
+            WHERE esa.submission_id = :submission_id
+            ORDER BY eq.id ASC, esa.id ASC");
+        $stmt->execute([':submission_id' => $submissionId]);
+
+        return $stmt->fetchAll();
     }
 
     public function externalExamFeatureAvailable(): bool
@@ -2421,6 +2603,43 @@ class CourseModel extends BaseModel
         return (bool) $stmt->fetchColumn();
     }
 
+    private function buildExamSubmissionFilters(array $filters): array
+    {
+        $where = ['1=1'];
+        $params = [];
+
+        if ($this->hasCourseCompanyColumn() && $this->companyId() > 0) {
+            $where[] = 'c.company_id = :company_id';
+            $params[':company_id'] = $this->companyId();
+        }
+
+        $status = trim((string) ($filters['status'] ?? 'pending_review'));
+        if (in_array($status, ['pending_review', 'submitted', 'auto_graded'], true)) {
+            $where[] = 'sub.status = :status';
+            $params[':status'] = $status;
+        }
+
+        $courseId = (int) ($filters['course_id'] ?? 0);
+        if ($courseId > 0) {
+            $where[] = 'c.id = :course_id';
+            $params[':course_id'] = $courseId;
+        }
+
+        $examId = (int) ($filters['exam_id'] ?? 0);
+        if ($examId > 0) {
+            $where[] = 'ex.id = :exam_id';
+            $params[':exam_id'] = $examId;
+        }
+
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            $where[] = '(st.full_name LIKE :q OR ex.title LIKE :q OR c.name LIKE :q)';
+            $params[':q'] = '%' . $q . '%';
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
     private function findLatestExamResultId(int $examId, int $studentId): int
     {
         if ($examId <= 0 || $studentId <= 0) {
@@ -2778,6 +2997,38 @@ class CourseModel extends BaseModel
         $this->examInternalLinksTableExists = ((int) $stmt->fetchColumn()) > 0;
 
         return $this->examInternalLinksTableExists;
+    }
+
+    private function hasExamSubmissionsTable(): bool
+    {
+        if ($this->examSubmissionsTableExists !== null) {
+            return $this->examSubmissionsTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'exam_submissions'");
+        $stmt->execute();
+        $this->examSubmissionsTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->examSubmissionsTableExists;
+    }
+
+    private function hasExamSubmissionAnswersTable(): bool
+    {
+        if ($this->examSubmissionAnswersTableExists !== null) {
+            return $this->examSubmissionAnswersTableExists;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = 'exam_submission_answers'");
+        $stmt->execute();
+        $this->examSubmissionAnswersTableExists = ((int) $stmt->fetchColumn()) > 0;
+
+        return $this->examSubmissionAnswersTableExists;
     }
 
     private function hasCourseCompanyColumn(): bool

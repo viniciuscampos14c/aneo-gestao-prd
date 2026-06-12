@@ -73,7 +73,10 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             <h2 class="text-2xl font-semibold">Exames / Avaliacoes</h2>
             <p class="text-sm text-slate-500">Crie provas internas e externas, publique links e acompanhe notas dos alunos em um unico lugar.</p>
         </div>
-        <a href="<?= route('courses'); ?>" class="rounded-lg border border-sky-700 bg-sky-950/60 px-3 py-2 text-sm font-semibold text-sky-100 hover:bg-sky-900">Voltar</a>
+        <div class="flex flex-wrap gap-2">
+            <a href="<?= route('courses/exams/submissions'); ?>" class="rounded-lg border border-cyan-400/60 bg-cyan-400/10 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/20">Correções dissertativas</a>
+            <a href="<?= route('courses'); ?>" class="rounded-lg border border-sky-700 bg-sky-950/60 px-3 py-2 text-sm font-semibold text-sky-100 hover:bg-sky-900">Voltar</a>
+        </div>
     </div>
 
     <?php if (!$scheduleEnabled): ?>
@@ -321,13 +324,17 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
         </section>
     <?php endif; ?>
 
-    <section class="rounded-xl border border-slate-200 bg-white p-4">
-        <div class="mb-4">
-            <h3 class="text-lg font-semibold text-slate-900">Lancamento de notas</h3>
-            <p class="text-sm text-slate-500">Use este formulario para registrar ou atualizar a nota final de um aluno em uma avaliacao. Se a nota ja existir, o sistema atualiza o resultado mais recente.</p>
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Correcao e publicacao</p>
+                <h3 class="mt-1 text-xl font-semibold text-slate-900">Lancamento de notas</h3>
+                <p class="mt-1 max-w-3xl text-sm text-slate-500">Registre a nota final de provas dissertativas ou ajuste resultados ja publicados. Ao salvar, o aluno passa a ver a nota no historico academico.</p>
+            </div>
+            <span class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">Objetivas podem sair automaticamente</span>
         </div>
 
-        <form method="post" action="<?= route('courses/exams/result'); ?>" id="exam-result-form" class="grid gap-3 lg:grid-cols-6">
+        <form method="post" action="<?= route('courses/exams/result'); ?>" id="exam-result-form" class="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 lg:grid-cols-6">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <input type="hidden" name="result_id" id="exam-result-id" value="">
 
@@ -387,85 +394,90 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             </div>
 
             <div class="flex items-end gap-2">
-                <button id="exam-result-submit" class="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50">Salvar nota</button>
+                <button id="exam-result-submit" class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">Salvar nota</button>
                 <button type="button" id="exam-result-cancel" class="hidden rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
             </div>
         </form>
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-            <div class="mb-3">
-                <h3 class="text-lg font-semibold text-slate-900">Resultados recentes dos alunos</h3>
-                <p class="text-sm text-slate-500">Visao para o professor acompanhar o desempenho mais recente nas provas e atividades corrigidas.</p>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Ultimas notas</p>
+                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Resultados recentes dos alunos</h3>
+                    <p class="text-sm text-slate-500">Desempenho mais recente nas avaliacoes corrigidas ou publicadas.</p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"><?= count($recentResults); ?> resultado(s)</span>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                            <th class="px-3 py-2">Data</th>
-                            <th class="px-3 py-2">Aluno</th>
-                            <th class="px-3 py-2">Curso</th>
-                            <th class="px-3 py-2">Avaliacao</th>
-                            <th class="px-3 py-2">Nota</th>
-                            <th class="px-3 py-2">Status</th>
-                            <?php if ($isAdminResultEditor): ?>
-                                <th class="px-3 py-2 text-right">Acao</th>
-                            <?php endif; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recentResults as $result): ?>
-                            <?php $approved = (string) ($result['status'] ?? '') === 'approved'; ?>
-                            <tr class="border-b border-slate-100 hover:bg-slate-50">
-                                <td class="px-3 py-2"><?= !empty($result['submitted_at']) ? e(date('d/m/Y H:i', strtotime((string) $result['submitted_at']))) : '-'; ?></td>
-                                <td class="px-3 py-2 font-medium"><?= e((string) ($result['student_name'] ?? '-')); ?></td>
-                                <td class="px-3 py-2"><?= e((string) ($result['course_name'] ?? '-')); ?></td>
-                                <td class="px-3 py-2"><?= e((string) ($result['exam_title'] ?? '-')); ?></td>
-                                <td class="px-3 py-2"><?= e(number_format((float) ($result['score'] ?? 0), 2, ',', '.')); ?> / <?= e(number_format((float) ($result['passing_score'] ?? 0), 2, ',', '.')); ?></td>
-                                <td class="px-3 py-2">
-                                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold <?= $approved ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'; ?>">
+            <div class="space-y-3">
+                <?php foreach ($recentResults as $result): ?>
+                    <?php
+                    $approved = (string) ($result['status'] ?? '') === 'approved';
+                    $score = (float) ($result['score'] ?? 0);
+                    $passingScore = (float) ($result['passing_score'] ?? 0);
+                    $scorePercent = max(0, min(100, ($score / 10) * 100));
+                    ?>
+                    <article class="rounded-2xl border <?= $approved ? 'border-emerald-100 bg-emerald-50/50' : 'border-rose-100 bg-rose-50/45'; ?> p-4">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-semibold text-slate-950"><?= e((string) ($result['student_name'] ?? '-')); ?></p>
+                                    <span class="rounded-full px-2 py-1 text-[11px] font-semibold <?= $approved ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'; ?>">
                                         <?= $approved ? 'Aprovado' : 'Reprovado'; ?>
                                     </span>
-                                </td>
-                                <?php if ($isAdminResultEditor): ?>
-                                    <td class="px-3 py-2 text-right">
-                                        <button
-                                            type="button"
-                                            class="exam-result-edit rounded border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                            data-result-id="<?= (int) ($result['id'] ?? 0); ?>"
-                                            data-exam-id="<?= (int) ($result['exam_id'] ?? 0); ?>"
-                                            data-student-id="<?= (int) ($result['student_id'] ?? 0); ?>"
-                                            data-course-name="<?= e((string) ($result['course_name'] ?? '')); ?>"
-                                            data-exam-title="<?= e((string) ($result['exam_title'] ?? '')); ?>"
-                                            data-student-name="<?= e((string) ($result['student_name'] ?? '')); ?>"
-                                            data-score="<?= e(number_format((float) ($result['score'] ?? 0), 2, '.', '')); ?>"
-                                            data-passing-score="<?= e(number_format((float) ($result['passing_score'] ?? 0), 2, '.', '')); ?>"
-                                            data-submitted-at="<?= !empty($result['submitted_at']) ? e(date('Y-m-d\TH:i', strtotime((string) $result['submitted_at']))) : ''; ?>"
-                                        >
-                                            Editar
-                                        </button>
-                                    </td>
-                                <?php endif; ?>
-                            </tr>
-                        <?php endforeach; ?>
-                        <?php if ($recentResults === []): ?>
-                            <tr>
-                                <td colspan="<?= $isAdminResultEditor ? '7' : '6'; ?>" class="px-3 py-6 text-center text-slate-500">Nenhum resultado de avaliacao registrado ate o momento.</td>
-                            </tr>
+                                </div>
+                                <p class="mt-1 text-sm text-slate-700"><?= e((string) ($result['exam_title'] ?? '-')); ?></p>
+                                <p class="mt-0.5 text-xs text-slate-500"><?= e((string) ($result['course_name'] ?? '-')); ?><?= !empty($result['submitted_at']) ? ' | ' . e(date('d/m/Y H:i', strtotime((string) $result['submitted_at']))) : ''; ?></p>
+                            </div>
+                            <div class="min-w-[118px] rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Nota</p>
+                                <p class="text-2xl font-black <?= $approved ? 'text-emerald-700' : 'text-rose-700'; ?>"><?= e(number_format($score, 2, ',', '.')); ?></p>
+                                <p class="text-xs text-slate-500">min. <?= e(number_format($passingScore, 2, ',', '.')); ?></p>
+                            </div>
+                        </div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                            <div class="h-full rounded-full <?= $approved ? 'bg-emerald-500' : 'bg-rose-500'; ?>" style="width: <?= $scorePercent; ?>%"></div>
+                        </div>
+                        <?php if ($isAdminResultEditor): ?>
+                            <div class="mt-3 flex justify-end">
+                                <button
+                                    type="button"
+                                    class="exam-result-edit rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                                    data-result-id="<?= (int) ($result['id'] ?? 0); ?>"
+                                    data-exam-id="<?= (int) ($result['exam_id'] ?? 0); ?>"
+                                    data-student-id="<?= (int) ($result['student_id'] ?? 0); ?>"
+                                    data-course-name="<?= e((string) ($result['course_name'] ?? '')); ?>"
+                                    data-exam-title="<?= e((string) ($result['exam_title'] ?? '')); ?>"
+                                    data-student-name="<?= e((string) ($result['student_name'] ?? '')); ?>"
+                                    data-score="<?= e(number_format($score, 2, '.', '')); ?>"
+                                    data-passing-score="<?= e(number_format($passingScore, 2, '.', '')); ?>"
+                                    data-submitted-at="<?= !empty($result['submitted_at']) ? e(date('Y-m-d\TH:i', strtotime((string) $result['submitted_at']))) : ''; ?>"
+                                >
+                                    Editar nota
+                                </button>
+                            </div>
                         <?php endif; ?>
-                    </tbody>
-                </table>
+                    </article>
+                <?php endforeach; ?>
+                <?php if ($recentResults === []): ?>
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Nenhum resultado de avaliacao registrado ate o momento.</div>
+                <?php endif; ?>
             </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-            <div class="mb-3">
-                <h3 class="text-lg font-semibold text-slate-900">Resumo por avaliacao</h3>
-                <p class="text-sm text-slate-500">Ajuda o professor a enxergar rapidamente quantos alunos foram aprovados ou reprovados em cada prova.</p>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="mb-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Consolidado</p>
+                <h3 class="mt-1 text-lg font-semibold text-slate-900">Resumo por avaliacao</h3>
+                <p class="text-sm text-slate-500">Leitura rapida de aprovacao por prova.</p>
             </div>
             <div class="space-y-3">
                 <?php foreach ($resultsByExamRows as $examSummary): ?>
+                    <?php
+                    $summaryTotal = max(1, (int) ($examSummary['total'] ?? 0));
+                    $approvedPercent = min(100, ((int) ($examSummary['approved'] ?? 0) / $summaryTotal) * 100);
+                    ?>
                     <article class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -477,6 +489,9 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                         <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
                             <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">Aprovados: <strong><?= (int) $examSummary['approved']; ?></strong></div>
                             <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">Reprovados: <strong><?= (int) $examSummary['failed']; ?></strong></div>
+                        </div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                            <div class="h-full rounded-full bg-emerald-500" style="width: <?= $approvedPercent; ?>%"></div>
                         </div>
                         <?php if (!empty($examSummary['last_submitted_at'])): ?>
                             <p class="mt-2 text-xs text-slate-500">Ultimo resultado em <?= e(date('d/m/Y H:i', strtotime((string) $examSummary['last_submitted_at']))); ?></p>

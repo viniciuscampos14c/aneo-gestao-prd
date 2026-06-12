@@ -7,13 +7,25 @@
         <a href="<?= route('student/exams'); ?>" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar</a>
     </div>
 
+    <?php
+    $questionTypes = array_values(array_unique(array_map(
+        static fn ($question): string => (string) ($question['question_type'] ?? ''),
+        $questions
+    )));
+    $isEssayExam = in_array('essay', $questionTypes, true);
+    ?>
+
     <div class="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
         <p><strong>Descricao:</strong> <?= e($exam['description'] ?: 'Sem descricao.'); ?></p>
         <p class="mt-1"><strong>Nota minima:</strong> <?= e(number_format((float) $exam['passing_score'], 2, ',', '.')); ?></p>
         <?php if (!empty($exam['scheduled_at'])): ?>
             <p class="mt-1"><strong>Data da prova:</strong> <?= e(date('d/m/Y H:i', strtotime((string) $exam['scheduled_at']))); ?></p>
         <?php endif; ?>
-        <p class="mt-1 text-xs text-slate-500">As questoes objetivas com gabarito sao corrigidas automaticamente.</p>
+        <?php if ($isEssayExam): ?>
+            <p class="mt-1 text-xs font-semibold text-amber-700">Esta prova possui respostas dissertativas. Ao enviar, ela ficara aguardando correcao e sua nota sera publicada posteriormente.</p>
+        <?php else: ?>
+            <p class="mt-1 text-xs text-slate-500">As questoes objetivas com gabarito sao corrigidas automaticamente e a nota e publicada ao finalizar.</p>
+        <?php endif; ?>
     </div>
 
     <form method="post" action="<?= route('student/exams/submit'); ?>" class="space-y-4">

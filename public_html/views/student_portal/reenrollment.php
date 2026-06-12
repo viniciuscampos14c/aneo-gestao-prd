@@ -122,7 +122,9 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
                             $dueFmt = $due !== '' ? date('d/m/Y', strtotime($due)) : '—';
                             $amount = (float) ($inv['amount'] ?? 0);
                             $paid   = (float) ($inv['paid_amount'] ?? 0);
-                            $remaining = $amount - $paid;
+                            $remaining = isset($inv['outstanding_amount'])
+                                ? (float) $inv['outstanding_amount']
+                                : max($amount - $paid, 0);
                             $isOverdue = $st === 'overdue';
                             ?>
                             <tr>

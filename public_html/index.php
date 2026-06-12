@@ -267,8 +267,11 @@ $router->post('courses/activities/store', fn () => $courses->storeActivity());
 $router->post('courses/activities/delete', fn () => $courses->deleteActivity());
 
 $router->get('courses/exams', fn () => $courses->exams());
+$router->get('courses/exams/submissions', fn () => $courses->examSubmissions());
+$router->get('courses/exams/submission', fn () => $courses->examSubmission());
 $router->post('courses/exams/store', fn () => $courses->storeExam());
 $router->post('courses/exams/result', fn () => $courses->storeExamResult());
+$router->post('courses/exams/submission/grade', fn () => $courses->gradeExamSubmission());
 $router->post('courses/exams/external-link/store', fn () => $courses->storeExternalExamLink());
 $router->post('courses/exams/external-link/deactivate', fn () => $courses->deactivateExternalExamLink());
 

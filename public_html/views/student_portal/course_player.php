@@ -39,26 +39,43 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                 <?php
                 $moduleUnlocked = !empty($module['is_unlocked']);
                 $moduleCompleted = !empty($module['is_completed']);
+                $moduleLessons = $module['lessons'] ?? [];
+                $moduleLessonCount = count($moduleLessons);
+                $moduleRequiredCount = count(array_filter($moduleLessons, static fn (array $lesson): bool => !empty($lesson['is_required'])));
+                $moduleCompletedCount = count(array_filter($moduleLessons, static fn (array $lesson): bool => !empty($lesson['is_completed'])));
+                $moduleHasSelectedLesson = $selectedLesson && count(array_filter($moduleLessons, static fn (array $lesson): bool => (int) ($lesson['id'] ?? 0) === (int) ($selectedLesson['id'] ?? 0))) > 0;
                 ?>
-                <article class="student-module-card rounded-xl border <?= $moduleUnlocked ? 'student-module-card-open border-slate-200 bg-white' : 'student-module-card-locked border-slate-200 bg-slate-50'; ?> p-3">
-                    <div class="mb-2 flex items-start justify-between gap-2">
-                        <div>
-                            <p class="student-module-title text-sm font-semibold text-slate-900"><?= e((string) $module['title']); ?></p>
+                <details class="student-module-card student-module-collapsible rounded-xl border <?= $moduleUnlocked ? 'student-module-card-open border-slate-200 bg-white' : 'student-module-card-locked border-slate-200 bg-slate-50'; ?> p-0" <?= $moduleHasSelectedLesson ? 'open' : ''; ?>>
+                    <summary class="student-module-summary flex cursor-pointer list-none items-start justify-between gap-3 p-3">
+                        <div class="min-w-0">
+                            <div class="flex items-start gap-2">
+                                <span class="student-module-chevron mt-1 text-xs" aria-hidden="true">›</span>
+                                <div class="min-w-0">
+                                    <p class="student-module-title text-base font-bold leading-snug text-slate-900"><?= e((string) $module['title']); ?></p>
+                                    <p class="student-module-count mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                        <?= $moduleLessonCount; ?> aula(s)<?= $moduleRequiredCount > 0 ? ' | ' . $moduleRequiredCount . ' obrigatoria(s)' : ''; ?>
+                                        <?= $moduleCompletedCount > 0 ? ' | ' . $moduleCompletedCount . ' concluida(s)' : ''; ?>
+                                    </p>
+                                </div>
+                            </div>
                             <?php if (trim((string) ($module['description'] ?? '')) !== ''): ?>
-                                <p class="student-module-description text-xs text-slate-500"><?= e((string) $module['description']); ?></p>
+                                <p class="student-module-description mt-2 line-clamp-2 text-xs text-slate-500"><?= e((string) $module['description']); ?></p>
                             <?php endif; ?>
                         </div>
-                        <?php if (!$moduleUnlocked): ?>
-                            <span class="student-module-badge student-module-badge-locked rounded-full px-2 py-1 text-[11px] font-semibold">Bloqueado</span>
-                        <?php elseif ($moduleCompleted): ?>
-                            <span class="student-module-badge student-module-badge-complete rounded-full px-2 py-1 text-[11px] font-semibold">Concluido</span>
-                        <?php else: ?>
-                            <span class="student-module-badge student-module-badge-active rounded-full px-2 py-1 text-[11px] font-semibold">Em andamento</span>
-                        <?php endif; ?>
-                    </div>
+                        <div class="flex shrink-0 flex-col items-end gap-2">
+                            <?php if (!$moduleUnlocked): ?>
+                                <span class="student-module-badge student-module-badge-locked rounded-full px-2 py-1 text-[11px] font-semibold">Bloqueado</span>
+                            <?php elseif ($moduleCompleted): ?>
+                                <span class="student-module-badge student-module-badge-complete rounded-full px-2 py-1 text-[11px] font-semibold">Concluido</span>
+                            <?php else: ?>
+                                <span class="student-module-badge student-module-badge-active rounded-full px-2 py-1 text-[11px] font-semibold">Em andamento</span>
+                            <?php endif; ?>
+                            <span class="student-module-open-hint text-[11px] font-semibold text-slate-500">Ver aulas</span>
+                        </div>
+                    </summary>
 
-                    <div class="space-y-2">
-                        <?php foreach (($module['lessons'] ?? []) as $lesson): ?>
+                    <div class="student-module-lessons space-y-2 px-3 pb-3">
+                        <?php foreach ($moduleLessons as $lesson): ?>
                             <?php
                             $lessonSelected = $selectedLesson && (int) ($selectedLesson['id'] ?? 0) === (int) ($lesson['id'] ?? 0);
                             $lessonCompleted = !empty($lesson['is_completed']);
@@ -80,11 +97,11 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                             <?php endif; ?>
                         <?php endforeach; ?>
 
-                        <?php if (($module['lessons'] ?? []) === []): ?>
+                        <?php if ($moduleLessons === []): ?>
                             <p class="student-module-empty rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500">Sem aulas neste modulo.</p>
                         <?php endif; ?>
                     </div>
-                </article>
+                </details>
             <?php endforeach; ?>
 
             <?php if ($modules === []): ?>

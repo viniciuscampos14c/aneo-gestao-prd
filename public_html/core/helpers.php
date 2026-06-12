@@ -127,6 +127,55 @@ function is_logged_in(): bool
     return current_user() !== null;
 }
 
+function session_idle_timeout_seconds(): int
+{
+    $minutes = (int) config('security.session_idle_timeout_minutes', 60);
+    return max(0, $minutes) * 60;
+}
+
+function enforce_session_idle_timeout(string $scope, array $authKeys, string $loginRoute, bool $supportScript = false): void
+{
+    $hasAuth = false;
+    foreach ($authKeys as $key) {
+        if (isset($_SESSION[$key])) {
+            $hasAuth = true;
+            break;
+        }
+    }
+
+    if (!$hasAuth) {
+        return;
+    }
+
+    $timeout = session_idle_timeout_seconds();
+    if ($timeout <= 0) {
+        return;
+    }
+
+    $now = time();
+    $activityKey = '_last_activity_' . $scope;
+    $lastActivity = (int) ($_SESSION[$activityKey] ?? 0);
+
+    if ($lastActivity > 0 && ($now - $lastActivity) > $timeout) {
+        foreach ($authKeys as $key) {
+            unset($_SESSION[$key]);
+        }
+        unset($_SESSION[$activityKey]);
+
+        flash('error', 'Sessao expirada por inatividade. Entre novamente para continuar.');
+        session_regenerate_id(true);
+
+        if ($supportScript) {
+            header('Location: support.php?route=' . rawurlencode($loginRoute));
+            exit;
+        }
+
+        redirect($loginRoute);
+    }
+
+    $_SESSION[$activityKey] = $now;
+}
+
 function is_admin(): bool
 {
     $user = current_user();
@@ -258,6 +307,8 @@ function default_admin_route(): string
 
 function require_auth(): void
 {
+    enforce_session_idle_timeout('admin', ['user', 'user_companies', 'company'], 'login');
+
     if (!is_logged_in()) {
         redirect('login');
     }
@@ -345,6 +396,8 @@ function enforce_current_company_license(?string $route = null): void
 
 function require_student_auth(): void
 {
+    enforce_session_idle_timeout('student', ['student'], 'student/login');
+
     if (!is_student_logged_in()) {
         redirect('student/login');
     }

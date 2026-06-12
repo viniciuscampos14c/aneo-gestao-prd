@@ -989,6 +989,94 @@ class CourseController extends BaseController
         $this->redirect('courses/exams');
     }
 
+    public function examSubmissions(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+
+        $filters = [
+            'q' => trim((string) request('q', '')),
+            'course_id' => (int) request('course_id', 0),
+            'exam_id' => (int) request('exam_id', 0),
+            'status' => trim((string) request('status', 'pending_review')),
+        ];
+
+        $perPage = (int) request('per_page', config('app.default_pagination', 50));
+        if (!in_array($perPage, config('app.pagination_options', [50, 100, 200]), true)) {
+            $perPage = 50;
+        }
+        $page = max(1, (int) request('page', 1));
+
+        $result = $this->courses->listExamSubmissions($filters, $perPage, $page);
+        $courses = $this->courses->listCourses([], 1000, 1);
+        $exams = $this->courses->listExams([], 1000, 1);
+
+        $this->render('courses/exam_submissions', [
+            'title' => 'Correção de provas',
+            'rows' => $result['rows'],
+            'meta' => $result['meta'],
+            'filters' => $filters,
+            'courses' => $courses['rows'],
+            'exams' => $exams['rows'],
+            'featureAvailable' => $this->courses->examSubmissionsFeatureAvailable(),
+            'paginationOptions' => config('app.pagination_options', [50, 100, 200]),
+        ]);
+    }
+
+    public function examSubmission(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+
+        $submissionId = (int) request('id', 0);
+        $submission = $this->courses->findExamSubmission($submissionId);
+        if ($submission === null) {
+            $this->error('Entrega de prova nao encontrada.');
+            $this->redirect('courses/exams/submissions');
+        }
+
+        $answers = $this->courses->listExamSubmissionAnswers($submissionId);
+
+        $this->render('courses/exam_submission_show', [
+            'title' => 'Corrigir prova',
+            'submission' => $submission,
+            'answers' => $answers,
+        ]);
+    }
+
+    public function gradeExamSubmission(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+        csrf_validate();
+
+        $submissionId = (int) post('submission_id');
+        $submission = $this->courses->findExamSubmission($submissionId);
+        if ($submission === null) {
+            $this->error('Entrega de prova nao encontrada para correcao.');
+            $this->redirect('courses/exams/submissions');
+        }
+
+        $data = [
+            'result_id' => (int) ($submission['result_id'] ?? 0),
+            'exam_id' => (int) ($submission['exam_id'] ?? 0),
+            'student_id' => (int) ($submission['student_id'] ?? 0),
+            'score' => parse_decimal((string) post('score', '0')),
+            'passing_score' => parse_decimal((string) post('passing_score', (string) ($submission['passing_score'] ?? '7'))),
+            'submitted_at' => trim((string) post('submitted_at')) ?: now(),
+        ];
+
+        if ($data['exam_id'] <= 0 || $data['student_id'] <= 0) {
+            $this->error('Entrega invalida para publicacao de nota.');
+            $this->redirect('courses/exams/submissions');
+        }
+
+        $this->courses->registerExamResult($data, (int) current_user()['id']);
+        $this->notifyStudentAboutExamResult((int) $data['exam_id'], (int) $data['student_id'], (float) $data['score']);
+        $this->success('Prova corrigida e resultado publicado para o aluno.');
+        $this->redirect('courses/exams/submission&id=' . $submissionId);
+    }
+
     public function storeExternalExamLink(): void
     {
         require_auth();
@@ -1325,6 +1413,14 @@ class CourseController extends BaseController
                     : null,
                 'correct_answer' => $correctAnswer !== '' ? $correctAnswer : null,
             ];
+        }
+
+        $questionTypes = array_values(array_unique(array_map(
+            static fn (array $row): string => (string) ($row['question_type'] ?? ''),
+            $rows
+        )));
+        if (count($questionTypes) > 1) {
+            $errors[] = 'Crie a prova somente com questoes objetivas ou somente com questoes dissertativas. Nao misture os dois tipos na mesma prova.';
         }
 
         return ['rows' => $rows, 'errors' => $errors];

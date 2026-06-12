@@ -805,10 +805,6 @@ class DataImportController extends BaseController
         if ($lessonTitle === '') {
             $errors[] = 'Informe nome_aula.';
         }
-        if ($videoUrl === '') {
-            $errors[] = 'Informe url_video.';
-        }
-
         [$status, $statusOk] = $this->parseCourseStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
             $errors[] = 'Status do curso invalido. Use Rascunho ou Publicado.';
@@ -816,6 +812,13 @@ class DataImportController extends BaseController
 
         $moduleOrder = max(1, (int) ($this->field($row, ['ordem_modulo', 'module_order']) ?: 1));
         $lessonOrder = max(1, (int) ($this->field($row, ['ordem_aula', 'lesson_order']) ?: 1));
+        $moduleActive = $this->parseBool($this->field($row, ['modulo_ativo', 'module_active']), true) ? 1 : 0;
+        $lessonActive = $this->parseBool($this->field($row, ['aula_ativa', 'lesson_active']), true) ? 1 : 0;
+        if ($videoUrl === '') {
+            $lessonActive = 0;
+            $warnings[] = 'Aula importada sem url_video e mantida inativa ate a gravacao ser informada.';
+        }
+
         $progress = (int) ($this->field($row, ['progresso_minimo', 'min_progress_percent']) ?: 70);
         if ($progress < 1 || $progress > 100) {
             $errors[] = 'Progresso minimo deve estar entre 1 e 100.';
@@ -848,7 +851,7 @@ class DataImportController extends BaseController
                     'title' => $moduleTitle,
                     'description' => $this->field($row, ['descricao_modulo', 'module_description']),
                     'display_order' => $moduleOrder,
-                    'is_active' => $this->parseBool($this->field($row, ['modulo_ativo', 'module_active']), true) ? 1 : 0,
+                    'is_active' => $moduleActive,
                 ],
                 'lesson' => [
                     'title' => $lessonTitle,
@@ -858,7 +861,7 @@ class DataImportController extends BaseController
                     'min_progress_percent' => $progress,
                     'display_order' => $lessonOrder,
                     'is_required' => $this->parseBool($this->field($row, ['aula_obrigatoria', 'lesson_required']), true) ? 1 : 0,
-                    'is_active' => $this->parseBool($this->field($row, ['aula_ativa', 'lesson_active']), true) ? 1 : 0,
+                    'is_active' => $lessonActive,
                 ],
             ],
         ];

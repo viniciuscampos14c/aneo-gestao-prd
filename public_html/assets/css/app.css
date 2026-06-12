@@ -6106,6 +6106,51 @@ html:not(.dark) .student-modern-main .student-reenroll-help {
     border: 1px solid transparent;
 }
 
+.student-module-collapsible {
+    overflow: hidden;
+}
+
+.student-module-summary {
+    user-select: none;
+}
+
+.student-module-summary::-webkit-details-marker {
+    display: none;
+}
+
+.student-module-summary::marker {
+    content: "";
+}
+
+.student-module-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    font-weight: 800;
+    transform: rotate(0deg);
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.student-module-collapsible[open] .student-module-chevron {
+    transform: rotate(90deg);
+}
+
+.student-module-collapsible[open] .student-module-open-hint {
+    opacity: 0.82;
+}
+
+.student-module-lessons {
+    border-top: 1px solid rgba(128, 170, 204, 0.22);
+}
+
+.student-module-count,
+.student-module-open-hint {
+    letter-spacing: 0.045em;
+}
+
 html.dark .student-modern-main .student-courses-title,
 html.dark .student-modern-main .student-course-player-title,
 html.dark .student-modern-main .student-stage-title,
@@ -6126,7 +6171,9 @@ html.dark .student-modern-main .student-lesson-meta,
 html.dark .student-modern-main .student-stage-description,
 html.dark .student-modern-main .student-stage-help,
 html.dark .student-modern-main .student-module-empty,
-html.dark .student-modern-main .student-stage-empty {
+html.dark .student-modern-main .student-stage-empty,
+html.dark .student-modern-main .student-module-count,
+html.dark .student-modern-main .student-module-open-hint {
     color: #93b2ce !important;
 }
 
@@ -6145,6 +6192,20 @@ html.dark .student-modern-main .student-module-card-locked,
 html.dark .student-modern-main .student-stage-progress {
     border-color: rgba(122, 164, 197, 0.34) !important;
     background: rgba(11, 34, 54, 0.76) !important;
+}
+
+html.dark .student-modern-main .student-module-summary:hover {
+    background: rgba(20, 57, 84, 0.55) !important;
+}
+
+html.dark .student-modern-main .student-module-chevron {
+    background: rgba(7, 24, 42, 0.84) !important;
+    color: #7ed8ff !important;
+}
+
+html.dark .student-modern-main .student-module-lessons {
+    border-top-color: rgba(122, 164, 197, 0.24) !important;
+    background: rgba(6, 24, 40, 0.22) !important;
 }
 
 html.dark .student-modern-main .student-courses-cover-placeholder,
@@ -6236,6 +6297,25 @@ html:not(.dark) .student-modern-main .student-module-card-locked,
 html:not(.dark) .student-modern-main .student-stage-progress {
     border-color: rgba(136, 168, 199, 0.46) !important;
     background: rgba(226, 239, 250, 0.88) !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-summary:hover {
+    background: rgba(216, 236, 250, 0.72) !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-chevron {
+    background: rgba(201, 224, 241, 0.88) !important;
+    color: #25698f !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-count,
+html:not(.dark) .student-modern-main .student-module-open-hint {
+    color: #58738d !important;
+}
+
+html:not(.dark) .student-modern-main .student-module-lessons {
+    border-top-color: rgba(136, 168, 199, 0.32) !important;
+    background: rgba(242, 248, 254, 0.42) !important;
 }
 
 html:not(.dark) .student-modern-main .student-courses-cover-placeholder,
@@ -9159,6 +9239,38 @@ html:not(.dark) .student-exams-shell span[class*="bg-rose-200"] {
     background: var(--aneo-light-danger-soft) !important;
     border-color: rgba(185, 56, 56, 0.22) !important;
     color: var(--aneo-light-danger) !important;
+}
+
+.student-exams-shell .student-exam-pending-card {
+    border: 1px solid rgba(245, 158, 11, 0.36);
+    background: linear-gradient(135deg, rgba(120, 53, 15, 0.34), rgba(69, 26, 3, 0.28));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.student-exams-shell .student-exam-pending-title {
+    color: #fde68a;
+}
+
+.student-exams-shell .student-exam-pending-course {
+    color: #fbbf24;
+}
+
+.student-exams-shell .student-exam-pending-date {
+    color: #fef3c7;
+}
+
+html:not(.dark) .student-exams-shell .student-exam-pending-card {
+    border-color: rgba(164, 106, 31, 0.24);
+    background: linear-gradient(135deg, #fff7d6, #fffbeb);
+}
+
+html:not(.dark) .student-exams-shell .student-exam-pending-title {
+    color: #7c2d12;
+}
+
+html:not(.dark) .student-exams-shell .student-exam-pending-course,
+html:not(.dark) .student-exams-shell .student-exam-pending-date {
+    color: #92400e;
 }
 
 html:not(.dark) .student-exams-shell a[class*="bg-cyan-200"],
