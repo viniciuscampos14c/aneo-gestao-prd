@@ -266,6 +266,55 @@ Seguranca:
 - nenhum CPF foi incluido no Git, documentacao ou logs de fechamento;
 - integracao Itau e formas de pagamento permaneceram desativadas durante toda a carga.
 
+## Contingencia sem webhook
+
+O fluxo por cron foi validado como alternativa operacional ao webhook:
+
+1. `boleto_issue_due` seleciona faturas abertas com:
+   - forma integrada Itau;
+   - integracao ativa;
+   - vencimento dentro da janela configurada;
+   - boleto ainda nao emitido ou elegivel para nova tentativa.
+2. O job chama a API Itau e persiste o boleto emitido.
+3. `boleto_sync` consulta periodicamente boletos nao pagos/finalizados.
+4. Quando o Itau retorna situacao paga:
+   - `bank_slips` recebe status `paid`;
+   - um registro e criado em `payments`;
+   - o valor e vinculado em `payment_items`;
+   - a fatura e atualizada para `paid`;
+   - o evento `invoice_paid` e disparado.
+
+Evidencia HML:
+
+- o boleto da fatura de teste foi baixado pela sincronizacao da API;
+- pagamento `PG-20260617173838`;
+- observacao: `Baixa automatica por sincronizacao de boleto API.`;
+- consulta direta posterior ao Itau retornou `status=paid` e valor `R$ 5,00`;
+- jobs HML continuam executando automaticamente com status `ok`.
+
+Correcao preventiva:
+
+- a consulta de status passou a usar `pagamentos_cobranca.data_inclusao_pagamento`;
+- o valor passou a priorizar `valor_pago_total_cobranca`;
+- isso preserva a data bancaria real mesmo quando o cron sincroniza no dia seguinte;
+- teste com a resposta real do Itau retornou `paid_at=2026-06-17` e `paid_amount=5`.
+
+Publicacao em producao:
+
+- arquivo: `public_html/core/ItauService.php`;
+- backup: `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/itau_status_date_fix_20260618_183810`;
+- lint remoto: aprovado;
+- hash local/producao: `942cc18e61f4e0d811896c25d292a86ce511ff0ec8fdff65c1162e13463196f2`;
+- OAuth/mTLS apos publicacao: HTTP 200;
+- integracao, forma Itau e jobs financeiros permaneceram desativados.
+
+Conclusao:
+
+- webhook nao e obrigatorio para a emissao ou para a baixa;
+- sem webhook, a baixa depende da execucao recorrente de `boleto_sync`;
+- o atraso maximo de reconhecimento sera aproximadamente o intervalo do agendamento;
+- para redundancia, o go-live deve usar webhook e cron, mantendo o cron como reconciliacao/contingencia.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`

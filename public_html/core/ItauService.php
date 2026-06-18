@@ -228,8 +228,34 @@ class ItauService
             ?? $data['status']
             ?? ''
         )));
-        $valorPagoRaw = $detalhes['valor_pago'] ?? $detalhes['valor_total_pago'] ?? $detalhes['valor_titulo'] ?? $data['valor_pago'] ?? null;
+        $pagamentos = $data['dado_boleto']['pagamentos_cobranca']
+            ?? $detalhes['pagamentos_cobranca']
+            ?? $data['pagamentos_cobranca']
+            ?? [];
+        if (is_array($pagamentos) && !array_is_list($pagamentos)) {
+            $pagamentos = [$pagamentos];
+        }
+        $ultimoPagamento = is_array($pagamentos) && $pagamentos !== []
+            ? end($pagamentos)
+            : [];
+        if (!is_array($ultimoPagamento)) {
+            $ultimoPagamento = [];
+        }
+        $valorPagoRaw = $ultimoPagamento['valor_pago_total_cobranca']
+            ?? $detalhes['valor_pago']
+            ?? $detalhes['valor_total_pago']
+            ?? $detalhes['valor_titulo']
+            ?? $data['valor_pago']
+            ?? null;
         $valorPago = $valorPagoRaw !== null ? $this->parseMoneyValue($valorPagoRaw) : null;
+        $dataPagamento = $this->parseDateValue(
+            $ultimoPagamento['data_inclusao_pagamento']
+                ?? $detalhes['data_pagamento']
+                ?? $detalhes['data_liquidacao']
+                ?? $data['data_pagamento']
+                ?? $data['data_liquidacao']
+                ?? null
+        );
         $pagoStatus = ['paga', 'pago', 'baixada', 'baixado', 'liquidado', 'liquidada', 'recebido', 'recebida', 'paid', 'received', 'liquidated'];
         $isPago = in_array($situacao, $pagoStatus, true) || str_contains($situacao, 'liquid') || str_contains($situacao, 'baixad') || str_contains($situacao, 'pag');
         $pixData = $data['dados_qrcode'] ?? $detalhes['dados_qrcode'] ?? [];
@@ -248,7 +274,7 @@ class ItauService
             'pix_copy_paste'   => $pixData['emv'] ?? $pixData['pix_copia_e_cola'] ?? $bankSlip['pix_copy_paste'] ?? null,
             'boleto_url'       => $bankSlip['boleto_url'] ?? null,
             'pdf_url'          => $bankSlip['pdf_url'] ?? null,
-            'paid_at'          => $isPago ? date('Y-m-d') : ($bankSlip['paid_at'] ?? null),
+            'paid_at'          => $isPago ? ($dataPagamento ?? date('Y-m-d')) : ($bankSlip['paid_at'] ?? null),
             'paid_amount'      => $isPago ? $valorPago : null,
             'expires_at'       => $bankSlip['expires_at'] ?? null,
             'response_payload' => $response,
@@ -575,6 +601,20 @@ class ItauService
             ? str_replace(['.', ','], ['', '.'], $raw)
             : $raw;
         return is_numeric($normalized) ? (float) $normalized : null;
+    }
+
+    private function parseDateValue($value): ?string
+    {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            return (new DateTimeImmutable($raw))->format('Y-m-d');
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 
     private function pixTxid(int $invoiceId): string
