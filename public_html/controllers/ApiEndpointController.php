@@ -32,6 +32,105 @@ class ApiEndpointController extends BaseController
     // STUDENTS
     // =========================================================================
 
+    public function createRdStationStudent(): void
+    {
+        ApiAuth::requirePermission($this->token, 'rdstation_students', 'create');
+
+        $data = $this->parseBody();
+        $this->validateRequired($data, [
+            'company_id',
+            'full_name',
+            'email',
+            'phone',
+            'city',
+            'birth_date',
+            'rg',
+            'cpf',
+            'enrolled_at',
+            'invoice_due_day',
+        ]);
+
+        $companyId = (int) ($data['company_id'] ?? 0);
+        if ($companyId <= 0 || !$this->activeCompanyExists($companyId)) {
+            ApiAuth::abort(422, 'company_id nao corresponde a uma empresa ativa.');
+        }
+
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            ApiAuth::abort(422, 'email deve conter um endereco valido.');
+        }
+
+        $phone = $this->normalizeBrazilianPhone((string) ($data['phone'] ?? ''));
+        if ($phone === null) {
+            ApiAuth::abort(422, 'phone deve conter 10 ou 11 digitos, com DDD.');
+        }
+
+        $cpf = preg_replace('/\D/', '', (string) ($data['cpf'] ?? '')) ?: '';
+        if (!$this->isValidCpf($cpf)) {
+            ApiAuth::abort(422, 'cpf invalido.');
+        }
+
+        $birthDate = $this->validateIsoDate((string) ($data['birth_date'] ?? ''), 'birth_date');
+        if ($birthDate >= date('Y-m-d')) {
+            ApiAuth::abort(422, 'birth_date deve ser anterior a data atual.');
+        }
+
+        $enrolledAt = $this->validateIsoDate((string) ($data['enrolled_at'] ?? ''), 'enrolled_at');
+        $invoiceDueDay = filter_var(
+            $data['invoice_due_day'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1, 'max_range' => 31]]
+        );
+        if ($invoiceDueDay === false) {
+            ApiAuth::abort(422, 'invoice_due_day deve ser um numero inteiro entre 1 e 31.');
+        }
+
+        $existingByCpf = $this->findStudentIdentity('cpf', $cpf);
+        if ($existingByCpf && (int) $existingByCpf['company_id'] !== $companyId) {
+            ApiAuth::abort(409, 'CPF ja cadastrado em outra empresa. Contate a ANEO para transferir o aluno.');
+        }
+
+        $existing = $existingByCpf ?: $this->findStudentIdentity('email_primary', $email, $companyId);
+        $this->students->useCompany($companyId);
+        $_SESSION['company'] = ['id' => $companyId];
+
+        $studentData = array_merge(
+            $this->rdStationStudentDefaults($existing),
+            [
+                'full_name' => trim((string) $data['full_name']),
+                'email_primary' => $email,
+                'phone' => $phone,
+                'city' => trim((string) $data['city']),
+                'birth_date' => $birthDate,
+                'rg' => trim((string) $data['rg']),
+                'cpf' => $cpf,
+                'cro' => array_key_exists('cro', $data)
+                    ? trim((string) $data['cro'])
+                    : (string) ($existing['cro'] ?? ''),
+                'enrolled_at' => $enrolledAt,
+                'billing_day' => (int) $invoiceDueDay,
+                'is_active' => 1,
+            ]
+        );
+
+        if ($existing) {
+            $studentId = (int) $existing['id'];
+            $this->students->update($studentId, $studentData, $this->actorUserId());
+            $student = $this->students->find($studentId);
+            $this->ok([
+                'action' => 'updated',
+                'student' => $student,
+            ]);
+        }
+
+        $studentId = $this->students->create($studentData, $this->actorUserId());
+        $student = $this->students->find($studentId);
+        $this->ok([
+            'action' => 'created',
+            'student' => $student,
+        ], null, 201);
+    }
+
     public function listStudents(): void
     {
         ApiAuth::requirePermission($this->token, 'students', 'search');
@@ -584,6 +683,96 @@ class ApiEndpointController extends BaseController
             $payload['meta'] = $meta;
         }
         $this->json($payload, $status);
+    }
+
+    private function rdStationStudentDefaults(?array $existing): array
+    {
+        return [
+            'primary_contact' => (string) ($existing['primary_contact'] ?? ''),
+            'admin_info' => (string) ($existing['admin_info'] ?? ''),
+            'ra' => (string) ($existing['ra'] ?? ''),
+            'notes' => (string) ($existing['notes'] ?? ''),
+            'monthly_fee' => (float) ($existing['monthly_fee'] ?? 0),
+            'kanban_status_id' => $existing['kanban_status_id'] ?? '',
+            'profile_photo' => (string) ($existing['profile_photo'] ?? ''),
+            'practice_unit_id' => $existing['practice_unit_id'] ?? null,
+            'residency_level' => (string) ($existing['residency_level'] ?? 'R1'),
+            'financial_plan_profile' => (string) ($existing['financial_plan_profile'] ?? ''),
+            'financial_plan_installments' => $existing['financial_plan_installments'] ?? null,
+            'financial_plan_first_due_date' => (string) ($existing['financial_plan_first_due_date'] ?? ''),
+            'financial_plan_payment_method_id' => $existing['financial_plan_payment_method_id'] ?? null,
+            'financial_plan_auto_generate' => (int) ($existing['financial_plan_auto_generate'] ?? 0),
+            'financial_plan_boleto_days_before' => (int) ($existing['financial_plan_boleto_days_before'] ?? 10),
+            'financial_plan_generated_at' => (string) ($existing['financial_plan_generated_at'] ?? ''),
+        ];
+    }
+
+    private function findStudentIdentity(string $field, string $value, ?int $companyId = null): ?array
+    {
+        if (!in_array($field, ['cpf', 'email_primary'], true)) {
+            return null;
+        }
+
+        $sql = "SELECT * FROM students WHERE {$field} = :value";
+        $params = [':value' => $value];
+        if ($companyId !== null && $companyId > 0) {
+            $sql .= ' AND company_id = :company_id';
+            $params[':company_id'] = $companyId;
+        }
+        $sql .= ' ORDER BY id ASC LIMIT 1';
+
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    private function normalizeBrazilianPhone(string $phone): ?string
+    {
+        $digits = preg_replace('/\D/', '', $phone) ?: '';
+        if (in_array(strlen($digits), [12, 13], true) && str_starts_with($digits, '55')) {
+            $digits = substr($digits, 2);
+        }
+
+        return in_array(strlen($digits), [10, 11], true) ? $digits : null;
+    }
+
+    private function validateIsoDate(string $value, string $field): string
+    {
+        $value = trim($value);
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        $errors = DateTimeImmutable::getLastErrors();
+        if (
+            !$date
+            || ($errors !== false && ((int) $errors['warning_count'] > 0 || (int) $errors['error_count'] > 0))
+            || $date->format('Y-m-d') !== $value
+        ) {
+            ApiAuth::abort(422, "{$field} deve usar o formato YYYY-MM-DD.");
+        }
+
+        return $value;
+    }
+
+    private function isValidCpf(string $cpf): bool
+    {
+        if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($digit = 9; $digit < 11; $digit++) {
+            $sum = 0;
+            for ($index = 0; $index < $digit; $index++) {
+                $sum += (int) $cpf[$index] * (($digit + 1) - $index);
+            }
+            $check = (10 * $sum) % 11;
+            $check = $check === 10 ? 0 : $check;
+            if ($check !== (int) $cpf[$digit]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function actorUserId(): int

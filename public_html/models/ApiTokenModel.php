@@ -4,6 +4,7 @@ class ApiTokenModel extends BaseModel
 {
     // Recursos disponíveis e suas capabilities
     public const RESOURCES = [
+        'rdstation_students' => ['create'],
         'students' => ['get', 'search', 'create', 'update', 'delete'],
         'leads'    => ['get', 'search', 'create', 'update', 'delete'],
         'invoices' => ['get', 'search', 'create', 'delete'],
@@ -15,6 +16,7 @@ class ApiTokenModel extends BaseModel
     ];
 
     public const RESOURCE_LABELS = [
+        'rdstation_students' => 'RD Station - Alunos',
         'students' => 'Alunos',
         'leads'    => 'Leads',
         'invoices' => 'Faturas',

@@ -10,7 +10,7 @@
  * Exemplo:
  *   curl -H "Authorization: Bearer <token>" "https://SEU-DOMINIO/api.php?r=students"
  *
- * Recursos disponiveis: students, leads, invoices, courses, trial_accesses, users, tickets, payment_methods
+ * Recursos disponiveis: rdstation_students, students, leads, invoices, courses, trial_accesses, users, tickets, payment_methods
  * Documentacao completa: index.php?route=api-management/manual
  */
 
@@ -72,6 +72,9 @@ $api = new ApiEndpointController($token);
 
 try {
     match (true) {
+        // RD Station / students
+        $resource === 'rdstation_students' && $method === 'POST' => $api->createRdStationStudent(),
+
         // students
         $resource === 'students' && $method === 'GET'    && $id === null => $api->listStudents(),
         $resource === 'students' && $method === 'GET'    && $id !== null => $api->getStudent($id),

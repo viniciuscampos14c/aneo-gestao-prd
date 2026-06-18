@@ -155,6 +155,49 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
 
     <!-- RD Station / Leads -->
     <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-6 shadow-sm">
+        <h3 class="mb-3 text-base font-semibold text-slate-800">RD Station / Cadastro de Alunos</h3>
+        <p class="text-sm text-slate-600">
+            Endpoint exclusivo para a RD Station cadastrar ou atualizar alunos. O CPF funciona como chave de
+            idempotencia: o primeiro envio cria o aluno e os reenvios para a mesma empresa atualizam o cadastro.
+        </p>
+
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+            <div class="rounded-lg border border-cyan-100 bg-white p-3">
+                <p class="text-xs font-semibold text-slate-500">Endpoint</p>
+                <code class="mt-1 block break-all font-mono text-xs text-slate-800"><?= e($apiUrl); ?>?r=rdstation_students</code>
+            </div>
+            <div class="rounded-lg border border-cyan-100 bg-white p-3">
+                <p class="text-xs font-semibold text-slate-500">Permissao exclusiva</p>
+                <code class="mt-1 block font-mono text-xs text-slate-800">rdstation_students.create</code>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <p class="mb-2 text-xs font-semibold text-slate-500">Exemplo de payload</p>
+            <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs text-cyan-300"><code>{
+  "company_id": 5,
+  "full_name": "Maria da Silva",
+  "email": "maria.silva@example.com",
+  "phone": "71999998888",
+  "city": "Salvador",
+  "birth_date": "1995-08-21",
+  "rg": "123456789",
+  "cpf": "52998224725",
+  "cro": "CRO-BA 12345",
+  "enrolled_at": "2026-06-18",
+  "invoice_due_day": 10
+}</code></pre>
+        </div>
+
+        <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            Todas as datas usam <code class="font-mono">YYYY-MM-DD</code>. O campo
+            <code class="font-mono">invoice_due_day</code> representa o dia mensal de vencimento, de 1 a 31.
+            O CRO e opcional; os demais campos do exemplo sao obrigatorios.
+        </div>
+    </div>
+
+    <!-- RD Station / Leads -->
+    <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-6 shadow-sm">
         <h3 class="mb-3 text-base font-semibold text-slate-800">RD Station / Envio de Leads</h3>
         <p class="text-sm text-slate-600">
             Para a RD Station criar leads no ANEO, configure um unico envio como <strong>POST</strong> para o endpoint abaixo,
@@ -198,6 +241,12 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
     <!-- Recursos -->
     <?php
     $endpointDefs = [
+        'rdstation_students' => [
+            'label' => 'RD Station - Alunos',
+            'endpoints' => [
+                ['method' => 'POST', 'path' => 'api.php?r=rdstation_students', 'cap' => 'create', 'desc' => 'Criar ou atualizar aluno de forma idempotente pelo CPF'],
+            ],
+        ],
         'students' => [
             'label' => 'Alunos',
             'endpoints' => [

@@ -492,6 +492,56 @@ Conclusao:
 - a empresa Bahia e sua forma Itau ficaram ativas para manter o piloto operacional;
 - as demais empresas continuam sem integracao Itau ativa.
 
+## API RD Station para cadastro de alunos
+
+Endpoint implantado em producao em `18/06/2026`:
+
+- `POST https://aneo.aneobrasil.com.br/api.php?r=rdstation_students`
+- permissao exclusiva: `rdstation_students.create`;
+- token ID `98`, sem expiracao e sem permissoes adicionais;
+- credencial armazenada fora da raiz publica em
+  `/home/u674156040/secure/aneo-prd/rdstation/credential.txt`.
+
+Campos obrigatorios:
+
+- empresa (`company_id`);
+- nome completo;
+- e-mail;
+- telefone;
+- cidade;
+- data de nascimento;
+- RG;
+- CPF;
+- data de entrada;
+- dia mensal de vencimento das faturas.
+
+Campo opcional:
+
+- CRO.
+
+Comportamento e seguranca:
+
+- valida e-mail, telefone brasileiro, CPF, datas e dia de vencimento;
+- CPF funciona como chave principal de idempotencia;
+- reenvio do mesmo CPF para a mesma empresa atualiza o aluno;
+- CPF encontrado em outra empresa retorna HTTP `409`;
+- token nao permite listar, consultar, excluir ou acessar faturas;
+- endpoint nao cria faturas nem boletos;
+- documento externo: `DOCUMENTACAO_API_RD_STATION_ALUNOS.md`.
+
+Teste end-to-end:
+
+- primeiro envio criou o aluno tecnico ID `106`;
+- segundo envio do mesmo CPF retornou `action: updated` para o ID `106`;
+- tentativa de listar alunos retornou HTTP `403`;
+- CPF invalido retornou HTTP `422`;
+- aluno tecnico removido ao final, sem faturas associadas.
+
+Backups:
+
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/rdstation_students_api_20260618_165104`
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/rdstation_api_test_20260618_165301`
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`
