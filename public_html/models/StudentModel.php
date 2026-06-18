@@ -7,6 +7,7 @@ class StudentModel extends BaseModel
     private ?bool $practiceUnitColumnExists = null;
     private ?bool $residencyLevelColumnExists = null;
     private ?bool $studentCityColumnExists = null;
+    private ?bool $studentCpfColumnExists = null;
     private ?bool $studentFinancialPlanColumnsExist = null;
 
     public function stats(): array
@@ -106,28 +107,30 @@ class StudentModel extends BaseModel
         $statusId = $this->resolveKanbanStatusId($data['kanban_status_id'] ?? null);
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
         $supportsCity = $this->hasStudentCityColumn();
+        $supportsCpf = $this->hasStudentCpfColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
         $supportsFinancialPlan = $this->financialPlanFeatureAvailable();
+        $data['ra'] = $this->resolveStudentRa((string) ($data['ra'] ?? ''), $this->companyId());
         $insertSql = $supportsPhoto
             ? 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone' . ($supportsCity ? ', city' : '') . ', profile_photo, is_active,
-                admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
+                admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ($supportsCpf ? ', cpf' : '') . ', rg, cro, notes, monthly_fee, billing_day,
                 ' . ($supportsFinancialPlan ? 'financial_plan_profile, financial_plan_installments, financial_plan_first_due_date, financial_plan_payment_method_id, financial_plan_auto_generate, financial_plan_boleto_days_before, financial_plan_generated_at,' : '') . '
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone' . ($supportsCity ? ', :city' : '') . ', :profile_photo, :is_active,
-                :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
+                :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ($supportsCpf ? ', :cpf' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
                 ' . ($supportsFinancialPlan ? ':financial_plan_profile, :financial_plan_installments, :financial_plan_first_due_date, :financial_plan_payment_method_id, :financial_plan_auto_generate, :financial_plan_boleto_days_before, :financial_plan_generated_at,' : '') . '
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )'
             : 'INSERT INTO students (
                 company_id, full_name, primary_contact, email_primary, phone' . ($supportsCity ? ', city' : '') . ', is_active,
-                admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ', rg, cro, notes, monthly_fee, billing_day,
+                admin_info, ra, birth_date, enrolled_at' . ($supportsPractice ? ', practice_unit_id, residency_level' : '') . ($supportsCpf ? ', cpf' : '') . ', rg, cro, notes, monthly_fee, billing_day,
                 ' . ($supportsFinancialPlan ? 'financial_plan_profile, financial_plan_installments, financial_plan_first_due_date, financial_plan_payment_method_id, financial_plan_auto_generate, financial_plan_boleto_days_before, financial_plan_generated_at,' : '') . '
                 kanban_status_id, created_by, created_at, updated_at
             ) VALUES (
                 :company_id, :full_name, :primary_contact, :email_primary, :phone' . ($supportsCity ? ', :city' : '') . ', :is_active,
-                :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
+                :admin_info, :ra, :birth_date, :enrolled_at' . ($supportsPractice ? ', :practice_unit_id, :residency_level' : '') . ($supportsCpf ? ', :cpf' : '') . ', :rg, :cro, :notes, :monthly_fee, :billing_day,
                 ' . ($supportsFinancialPlan ? ':financial_plan_profile, :financial_plan_installments, :financial_plan_first_due_date, :financial_plan_payment_method_id, :financial_plan_auto_generate, :financial_plan_boleto_days_before, :financial_plan_generated_at,' : '') . '
                 :kanban_status_id, :created_by, :created_at, :updated_at
             )';
@@ -161,6 +164,9 @@ class StudentModel extends BaseModel
         }
         if ($supportsCity) {
             $params[':city'] = trim((string) ($data['city'] ?? '')) ?: null;
+        }
+        if ($supportsCpf) {
+            $params[':cpf'] = preg_replace('/\D/', '', (string) ($data['cpf'] ?? '')) ?: null;
         }
         if ($supportsPractice) {
             $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
@@ -208,6 +214,7 @@ class StudentModel extends BaseModel
         $statusId = $this->resolveKanbanStatusId($data['kanban_status_id'] ?? null, $currentStatusId);
         $supportsPhoto = $this->hasStudentProfilePhotoColumn();
         $supportsCity = $this->hasStudentCityColumn();
+        $supportsCpf = $this->hasStudentCpfColumn();
         $supportsPractice = $this->practiceScheduleFeatureAvailable();
         $supportsFinancialPlan = $this->financialPlanFeatureAvailable();
         $updateSql = $supportsPhoto
@@ -229,6 +236,7 @@ class StudentModel extends BaseModel
                 notes = :notes,
                 monthly_fee = :monthly_fee,
                 billing_day = :billing_day,
+                ' . ($supportsCpf ? 'cpf = :cpf,' : '') . '
                 ' . ($supportsFinancialPlan ? 'financial_plan_profile = :financial_plan_profile,
                 financial_plan_installments = :financial_plan_installments,
                 financial_plan_first_due_date = :financial_plan_first_due_date,
@@ -256,6 +264,7 @@ class StudentModel extends BaseModel
                 notes = :notes,
                 monthly_fee = :monthly_fee,
                 billing_day = :billing_day,
+                ' . ($supportsCpf ? 'cpf = :cpf,' : '') . '
                 ' . ($supportsFinancialPlan ? 'financial_plan_profile = :financial_plan_profile,
                 financial_plan_installments = :financial_plan_installments,
                 financial_plan_first_due_date = :financial_plan_first_due_date,
@@ -294,6 +303,9 @@ class StudentModel extends BaseModel
         }
         if ($supportsCity) {
             $params[':city'] = trim((string) ($data['city'] ?? '')) ?: null;
+        }
+        if ($supportsCpf) {
+            $params[':cpf'] = preg_replace('/\D/', '', (string) ($data['cpf'] ?? '')) ?: null;
         }
         if ($supportsPractice) {
             $params[':practice_unit_id'] = !empty($data['practice_unit_id']) ? (int) $data['practice_unit_id'] : null;
@@ -550,22 +562,24 @@ class StudentModel extends BaseModel
     public function createFromLead(array $lead, int $createdBy): int
     {
         $statusId = $this->defaultKanbanStatusId();
+        $companyId = (int) ($lead['company_id'] ?? $this->companyId());
         $stmt = $this->db->prepare('INSERT INTO students (
             company_id, full_name, primary_contact, email_primary, phone, is_active,
-            admin_info, notes, kanban_status_id, created_by, created_at, updated_at
+            admin_info, ra, notes, kanban_status_id, created_by, created_at, updated_at
         ) VALUES (
             :company_id, :full_name, :primary_contact, :email_primary, :phone, 1,
-            :admin_info, :notes, :kanban_status_id, :created_by, :created_at, :updated_at
+            :admin_info, :ra, :notes, :kanban_status_id, :created_by, :created_at, :updated_at
         )');
 
         $now = now();
         $stmt->execute([
-            ':company_id' => (int) ($lead['company_id'] ?? $this->companyId()),
+            ':company_id' => $companyId,
             ':full_name' => $lead['full_name'],
             ':primary_contact' => $lead['full_name'],
             ':email_primary' => $lead['email'],
             ':phone' => $lead['phone'],
             ':admin_info' => 'Convertido do lead #' . $lead['id'],
+            ':ra' => $this->resolveStudentRa('', $companyId),
             ':notes' => 'Origem lead: ' . ($lead['source'] ?: 'Nao informado'),
             ':kanban_status_id' => $statusId,
             ':created_by' => $createdBy,
@@ -580,6 +594,16 @@ class StudentModel extends BaseModel
         }
 
         return $id;
+    }
+
+    private function resolveStudentRa(string $ra, int $companyId): string
+    {
+        $ra = trim($ra);
+        if ($ra !== '') {
+            return $ra;
+        }
+
+        return StudentRaGenerator::nextForCompany($this->db, $companyId) ?? '';
     }
 
     public function portalFeatureAvailable(): bool
@@ -741,6 +765,17 @@ class StudentModel extends BaseModel
         $this->studentCityColumnExists = $this->schemaColumnExists('students', 'city');
 
         return $this->studentCityColumnExists;
+    }
+
+    private function hasStudentCpfColumn(): bool
+    {
+        if ($this->studentCpfColumnExists !== null) {
+            return $this->studentCpfColumnExists;
+        }
+
+        $this->studentCpfColumnExists = $this->schemaColumnExists('students', 'cpf');
+
+        return $this->studentCpfColumnExists;
     }
 
     private function resolveKanbanStatusId($requestedStatusId, $fallbackStatusId = null): ?int

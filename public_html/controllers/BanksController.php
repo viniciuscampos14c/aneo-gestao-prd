@@ -187,6 +187,26 @@ class BanksController extends BaseController
             'cert_path'        => trim((string) post('itau_cert_path')),
             'key_path'         => $keyPath,
             'webhook_token'    => $webhookToken,
+            'process_stage'    => in_array(trim((string) post('itau_process_stage')), ['validacao', 'efetivacao'], true)
+                ? trim((string) post('itau_process_stage'))
+                : 'efetivacao',
+            'instrument'       => in_array(trim((string) post('itau_instrument')), ['boleto', 'boleto_pix'], true)
+                ? trim((string) post('itau_instrument'))
+                : 'boleto_pix',
+            'codigo_especie'   => trim((string) post('itau_codigo_especie')) ?: '01',
+            'instrucao_1'      => trim((string) post('itau_instrucao_1')),
+            'instrucao_2'      => trim((string) post('itau_instrucao_2')),
+            'instrucao_3'      => trim((string) post('itau_instrucao_3')),
+            'instrucao_4'      => trim((string) post('itau_instrucao_4')),
+            'instrucao_5'      => trim((string) post('itau_instrucao_5')),
+            'codigo_tipo_juros' => trim((string) post('itau_codigo_tipo_juros')) ?: '05',
+            'percentual_juros' => trim((string) post('itau_percentual_juros')),
+            'valor_juros'      => trim((string) post('itau_valor_juros')),
+            'dias_juros'       => trim((string) post('itau_dias_juros')),
+            'codigo_tipo_multa' => trim((string) post('itau_codigo_tipo_multa')) ?: '03',
+            'percentual_multa' => trim((string) post('itau_percentual_multa')),
+            'valor_multa'      => trim((string) post('itau_valor_multa')),
+            'dias_multa'       => trim((string) post('itau_dias_multa')),
         ];
 
         foreach ($settings as $key => $value) {
@@ -220,6 +240,24 @@ class BanksController extends BaseController
         $settings['cert_path']        = (string) ($settings['cert_path'] ?? '');
         $settings['key_path']         = (string) ($settings['key_path'] ?? '');
         $settings['webhook_token']    = (string) ($settings['webhook_token'] ?? '');
+        $settings['process_stage']    = in_array((string) ($settings['process_stage'] ?? ''), ['validacao', 'efetivacao'], true)
+            ? (string) $settings['process_stage']
+            : 'efetivacao';
+        $settings['instrument']       = in_array((string) ($settings['instrument'] ?? ''), ['boleto', 'boleto_pix'], true)
+            ? (string) $settings['instrument']
+            : 'boleto_pix';
+        $settings['codigo_especie']   = (string) ($settings['codigo_especie'] ?? '01');
+        for ($i = 1; $i <= 5; $i++) {
+            $settings['instrucao_' . $i] = (string) ($settings['instrucao_' . $i] ?? '');
+        }
+        $settings['codigo_tipo_juros'] = (string) ($settings['codigo_tipo_juros'] ?? '05');
+        $settings['percentual_juros']  = (string) ($settings['percentual_juros'] ?? '');
+        $settings['valor_juros']       = (string) ($settings['valor_juros'] ?? '');
+        $settings['dias_juros']        = (string) ($settings['dias_juros'] ?? '');
+        $settings['codigo_tipo_multa'] = (string) ($settings['codigo_tipo_multa'] ?? '03');
+        $settings['percentual_multa']  = (string) ($settings['percentual_multa'] ?? '');
+        $settings['valor_multa']       = (string) ($settings['valor_multa'] ?? '');
+        $settings['dias_multa']        = (string) ($settings['dias_multa'] ?? '');
 
         return $settings;
     }

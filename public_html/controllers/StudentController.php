@@ -430,6 +430,7 @@ class StudentController extends BaseController
             'enrolled_at' => trim((string) post('enrolled_at')),
             'practice_unit_id' => post('practice_unit_id') !== '' ? (int) post('practice_unit_id') : null,
             'residency_level' => strtoupper(trim((string) post('residency_level', 'R1'))),
+            'cpf' => preg_replace('/\D/', '', (string) post('cpf')),
             'rg' => trim((string) post('rg')),
             'cro' => trim((string) post('cro')),
             'notes' => trim((string) post('notes')),

@@ -308,6 +308,9 @@ class FinanceNotificationModel extends BaseModel
         $paidAt = trim((string) ($invoice['paid_at'] ?? ''));
         $paidAtLabel = $paidAt !== '' ? date('d/m/Y', strtotime($paidAt)) : '-';
         $bankSlipUrl = trim((string) ($invoice['boleto_url'] ?? ''));
+        $bankSlipDigitableLine = trim((string) ($invoice['boleto_digitable_line'] ?? ''));
+        $bankSlipBarcode = trim((string) ($invoice['boleto_barcode'] ?? ''));
+        $bankSlipPixCopyPaste = trim((string) ($invoice['boleto_pix_copy_paste'] ?? ''));
 
         [$subject, $body] = $this->buildMessagePayload(
             $notificationType,
@@ -322,6 +325,9 @@ class FinanceNotificationModel extends BaseModel
                 'paidAmountLabel'  => $paidAmountLabel,
                 'paidAtLabel'      => $paidAtLabel,
                 'bankSlipUrl'      => $bankSlipUrl,
+                'bankSlipDigitableLine' => $bankSlipDigitableLine,
+                'bankSlipBarcode' => $bankSlipBarcode,
+                'bankSlipPixCopyPaste' => $bankSlipPixCopyPaste,
                 'notificationType' => $notificationType,
                 'recipientType'    => $recipientType,
             ]
@@ -365,13 +371,19 @@ class FinanceNotificationModel extends BaseModel
                 i.paid_amount,
                 i.paid_at,
                 i.status,
-                i.boleto_url,
+                COALESCE(NULLIF(bs.boleto_url, \'\'), NULLIF(i.boleto_url, \'\')) AS boleto_url,
+                bs.digitable_line AS boleto_digitable_line,
+                bs.barcode AS boleto_barcode,
+                bs.pix_copy_paste AS boleto_pix_copy_paste,
                 s.id AS student_id,
                 s.full_name AS student_name,
                 s.email_primary AS student_email,
                 c.trade_name AS company_trade_name,
                 c.legal_name AS company_legal_name
             FROM invoices i
+            LEFT JOIN bank_slips bs
+                ON bs.invoice_id = i.id
+               AND bs.status NOT IN (\'cancelled\',\'failed\')
             INNER JOIN students s ON s.id = i.student_id
             INNER JOIN companies c ON c.id = i.company_id
             WHERE i.id = :invoice_id

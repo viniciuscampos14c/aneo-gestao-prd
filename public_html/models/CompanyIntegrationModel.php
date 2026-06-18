@@ -162,15 +162,21 @@ class CompanyIntegrationModel extends BaseModel
 
     public function findCompanyIdByToken(string $integrationKey, string $tokenField, string $token): ?int
     {
+        $companyIds = $this->findCompanyIdsByToken($integrationKey, $tokenField, $token);
+        return $companyIds[0] ?? null;
+    }
+
+    public function findCompanyIdsByToken(string $integrationKey, string $tokenField, string $token): array
+    {
         if (!$this->tableExists()) {
-            return null;
+            return [];
         }
 
         $integrationKey = trim($integrationKey);
         $tokenField = trim($tokenField);
         $token = trim($token);
         if ($integrationKey === '' || $tokenField === '' || $token === '') {
-            return null;
+            return [];
         }
 
         $stmt = $this->db->prepare('SELECT company_id, settings_json
@@ -179,6 +185,7 @@ class CompanyIntegrationModel extends BaseModel
               AND is_enabled = 1');
         $stmt->execute([':integration_key' => $integrationKey]);
 
+        $companyIds = [];
         foreach ($stmt->fetchAll() as $row) {
             $settings = json_decode((string) ($row['settings_json'] ?? ''), true);
             if (!is_array($settings)) {
@@ -187,10 +194,13 @@ class CompanyIntegrationModel extends BaseModel
 
             $candidate = trim((string) ($settings[$tokenField] ?? ''));
             if ($candidate !== '' && hash_equals($candidate, $token)) {
-                return (int) ($row['company_id'] ?? 0);
+                $companyId = (int) ($row['company_id'] ?? 0);
+                if ($companyId > 0) {
+                    $companyIds[] = $companyId;
+                }
             }
         }
 
-        return null;
+        return array_values(array_unique($companyIds));
     }
 }

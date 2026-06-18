@@ -11,6 +11,9 @@
  *   string $paidAmountLabel
  *   string $paidAtLabel
  *   string $bankSlipUrl
+ *   string $bankSlipDigitableLine
+ *   string $bankSlipBarcode
+ *   string $bankSlipPixCopyPaste
  *   string $notificationType
  *   string $recipientType
  *   string $logoUrl
@@ -21,6 +24,11 @@ $isStudent = ($recipientType ?? '') === 'student';
 $logoUrl = $logoUrl ?? '';
 $headline = $isIssued ? 'Boleto emitido' : 'Pagamento confirmado';
 $bannerColor = $isIssued ? '#2563eb' : '#16a34a';
+$bankSlipUrl = trim((string) ($bankSlipUrl ?? ''));
+$bankSlipDigitableLine = trim((string) ($bankSlipDigitableLine ?? ''));
+$bankSlipBarcode = trim((string) ($bankSlipBarcode ?? ''));
+$bankSlipPixCopyPaste = trim((string) ($bankSlipPixCopyPaste ?? ''));
+$hasPaymentData = $bankSlipUrl !== '' || $bankSlipDigitableLine !== '' || $bankSlipBarcode !== '' || $bankSlipPixCopyPaste !== '';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -98,16 +106,44 @@ $bannerColor = $isIssued ? '#2563eb' : '#16a34a';
                       <td style="font-size:16px;color:#0f172a;font-weight:700;"><?= htmlspecialchars($amountLabel ?? ''); ?></td>
                     </tr>
                     <?php if ($isIssued): ?>
-                      <tr>
-                        <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Link do boleto</td>
-                        <td style="font-size:14px;color:#1d4ed8;">
-                          <?php if (!empty($bankSlipUrl)): ?>
+                      <?php if ($bankSlipUrl !== ''): ?>
+                        <tr>
+                          <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Link do boleto</td>
+                          <td style="font-size:14px;color:#1d4ed8;">
                             <a href="<?= htmlspecialchars($bankSlipUrl); ?>" style="color:#1d4ed8;text-decoration:none;">Abrir boleto</a>
-                          <?php else: ?>
-                            Disponivel no portal financeiro do aluno.
-                          <?php endif; ?>
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
+                      <?php endif; ?>
+                      <?php if ($bankSlipDigitableLine !== ''): ?>
+                        <tr>
+                          <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;vertical-align:top;">Linha digitavel</td>
+                          <td style="font-size:13px;color:#0f172a;font-family:Consolas,Monaco,monospace;word-break:break-all;line-height:1.5;">
+                            <?= htmlspecialchars($bankSlipDigitableLine); ?>
+                          </td>
+                        </tr>
+                      <?php endif; ?>
+                      <?php if ($bankSlipBarcode !== ''): ?>
+                        <tr>
+                          <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;vertical-align:top;">Codigo de barras</td>
+                          <td style="font-size:13px;color:#0f172a;font-family:Consolas,Monaco,monospace;word-break:break-all;line-height:1.5;">
+                            <?= htmlspecialchars($bankSlipBarcode); ?>
+                          </td>
+                        </tr>
+                      <?php endif; ?>
+                      <?php if ($bankSlipPixCopyPaste !== ''): ?>
+                        <tr>
+                          <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;vertical-align:top;">PIX copia e cola</td>
+                          <td style="font-size:12px;color:#0f172a;font-family:Consolas,Monaco,monospace;word-break:break-all;line-height:1.5;">
+                            <?= htmlspecialchars($bankSlipPixCopyPaste); ?>
+                          </td>
+                        </tr>
+                      <?php endif; ?>
+                      <?php if (!$hasPaymentData): ?>
+                        <tr>
+                          <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Boleto</td>
+                          <td style="font-size:14px;color:#475569;">Disponivel no portal financeiro do aluno.</td>
+                        </tr>
+                      <?php endif; ?>
                     <?php else: ?>
                       <tr>
                         <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Valor pago</td>

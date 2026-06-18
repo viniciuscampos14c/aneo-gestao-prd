@@ -296,8 +296,37 @@ $exportQuery = http_build_query([
                                         </div>
                                     <?php endif; ?>
 
-                                    <?php if (!empty($row['boleto_digitable_line'])): ?>
-                                        <p class="max-w-[240px] break-words text-[11px] text-slate-500"><?= e($row['boleto_digitable_line']); ?></p>
+                                    <?php if (!empty($row['boleto_digitable_line']) || !empty($row['boleto_barcode']) || !empty($row['boleto_pix_copy_paste'])): ?>
+                                        <details class="max-w-[320px] text-left">
+                                            <summary class="inline-flex cursor-pointer list-none rounded border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">
+                                                Ver dados
+                                            </summary>
+                                            <div class="mt-2 space-y-2">
+                                                <?php if (!empty($row['boleto_digitable_line'])): ?>
+                                                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2 text-[11px]">
+                                                        <p class="mb-1 font-semibold uppercase tracking-wide text-slate-500">Linha digitavel</p>
+                                                        <p class="break-all font-mono text-slate-700"><?= e($row['boleto_digitable_line']); ?></p>
+                                                        <button type="button" class="mt-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-100" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode((string) $row['boleto_digitable_line']); ?>)">Copiar</button>
+                                                    </div>
+                                                <?php endif; ?>
+
+                                                <?php if (!empty($row['boleto_barcode'])): ?>
+                                                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2 text-[11px]">
+                                                        <p class="mb-1 font-semibold uppercase tracking-wide text-slate-500">Codigo de barras</p>
+                                                        <p class="break-all font-mono text-slate-700"><?= e($row['boleto_barcode']); ?></p>
+                                                        <button type="button" class="mt-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-100" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode((string) $row['boleto_barcode']); ?>)">Copiar</button>
+                                                    </div>
+                                                <?php endif; ?>
+
+                                                <?php if (!empty($row['boleto_pix_copy_paste'])): ?>
+                                                    <div class="rounded-lg border border-cyan-200 bg-cyan-50 p-2 text-[11px]">
+                                                        <p class="mb-1 font-semibold uppercase tracking-wide text-cyan-700">PIX copia e cola</p>
+                                                        <p class="max-h-16 overflow-auto break-all font-mono text-cyan-800"><?= e($row['boleto_pix_copy_paste']); ?></p>
+                                                        <button type="button" class="mt-1 rounded border border-cyan-200 bg-white px-2 py-1 text-[10px] font-semibold text-cyan-700 hover:bg-cyan-100" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode((string) $row['boleto_pix_copy_paste']); ?>)">Copiar PIX</button>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </details>
                                     <?php endif; ?>
 
                                     <?php if ($canBoletoGenerate && $row['status'] !== 'paid'): ?>

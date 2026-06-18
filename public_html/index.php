@@ -211,6 +211,18 @@ $router->post('chatwoot/open-phone', fn () => $chatwoot->openPhone());
 $router->post('chatwoot/webhook', fn () => $chatwootWebhook->receive());
 
 $router->get('signatures', fn () => $signatures->index());
+$router->get('signatures/send', function () {
+    flash('error', 'Use o botao Enviar D4Sign dentro da aba Assinaturas para iniciar o envio.');
+    redirect('signatures');
+});
+$router->get('signatures/sync', function () {
+    flash('error', 'Use o botao Sincronizar dentro da aba Assinaturas para atualizar o status.');
+    redirect('signatures');
+});
+$router->get('signatures/delete', function () {
+    flash('error', 'Use o botao Excluir dentro da aba Assinaturas para remover a solicitacao.');
+    redirect('signatures');
+});
 $router->post('signatures/settings/save', fn () => $signatures->saveSettings());
 $router->post('signatures/store', fn () => $signatures->store());
 $router->post('signatures/send', fn () => $signatures->send());

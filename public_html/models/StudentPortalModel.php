@@ -390,6 +390,29 @@ class StudentPortalModel extends BaseModel
         ]);
     }
 
+    public function accountIsActive(int $accountId, int $studentId): bool
+    {
+        if (!$this->hasPortalAccountsTable() || $accountId <= 0 || $studentId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare("SELECT spa.is_active, s.is_active AS student_is_active
+            FROM student_portal_accounts spa
+            INNER JOIN students s ON s.id = spa.student_id
+            WHERE spa.id = :account_id
+              AND spa.student_id = :student_id
+            LIMIT 1");
+        $stmt->execute([
+            ':account_id' => $accountId,
+            ':student_id' => $studentId,
+        ]);
+        $row = $stmt->fetch();
+
+        return $row
+            && (int) ($row['is_active'] ?? 0) === 1
+            && (int) ($row['student_is_active'] ?? 0) === 1;
+    }
+
     public function trialAccessContext(int $studentId, ?string $referenceDate = null): array
     {
         $context = [
@@ -3118,6 +3141,8 @@ class StudentPortalModel extends BaseModel
                     i.paid_at,
                     COALESCE(NULLIF(bs.boleto_url, ''), NULLIF(i.boleto_url, '')) AS boleto_url,
                     bs.digitable_line,
+                    bs.barcode,
+                    bs.pix_copy_paste,
                     bs.status AS boleto_status
                 FROM invoices i
                 LEFT JOIN bank_slips bs
@@ -3128,6 +3153,8 @@ class StudentPortalModel extends BaseModel
                         i.status = 'paid'
                         OR COALESCE(NULLIF(bs.boleto_url, ''), NULLIF(i.boleto_url, '')) IS NOT NULL
                         OR NULLIF(bs.digitable_line, '') IS NOT NULL
+                        OR NULLIF(bs.barcode, '') IS NOT NULL
+                        OR NULLIF(bs.pix_copy_paste, '') IS NOT NULL
                       )
                 ORDER BY i.due_date DESC, i.id DESC
                 LIMIT :lim OFFSET :off";

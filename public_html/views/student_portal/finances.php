@@ -121,7 +121,10 @@ function finance_url(string $status, int $page = 1): string {
                             $dueFmt     = $dueDate !== '' ? date('d/m/Y', strtotime($dueDate)) : '—';
                             $subtitle   = trim((string) ($inv['project_name'] ?? $inv['tags'] ?? ''));
                             $boletoUrl  = trim((string) ($inv['boleto_url'] ?? ''));
-                            $hasBoleto  = $boletoUrl !== '';
+                            $boletoLine = trim((string) ($inv['digitable_line'] ?? ''));
+                            $boletoBarcode = trim((string) ($inv['barcode'] ?? ''));
+                            $boletoPix = trim((string) ($inv['pix_copy_paste'] ?? ''));
+                            $hasBoleto  = $boletoUrl !== '' || $boletoLine !== '' || $boletoBarcode !== '' || $boletoPix !== '';
                             ?>
                             <tr class="hover:bg-slate-50 transition">
                                 <td class="px-4 py-3">
@@ -149,10 +152,40 @@ function finance_url(string $status, int $page = 1): string {
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     <?php if ($hasBoleto): ?>
-                                        <a href="<?= e($boletoUrl); ?>" target="_blank" rel="noopener"
-                                           class="inline-block rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100">
-                                            Ver boleto
-                                        </a>
+                                        <details class="text-left">
+                                            <summary class="inline-flex cursor-pointer list-none items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100">
+                                                Ver dados de pagamento
+                                            </summary>
+                                            <div class="mt-2 max-w-[360px] space-y-2">
+                                                <?php if ($boletoUrl !== ''): ?>
+                                                    <a href="<?= e($boletoUrl); ?>" target="_blank" rel="noopener"
+                                                       class="inline-block rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100">
+                                                        Abrir boleto
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if ($boletoLine !== ''): ?>
+                                                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                        <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">Linha digitavel</p>
+                                                        <p class="break-all font-mono text-[11px] text-slate-700"><?= e($boletoLine); ?></p>
+                                                        <button type="button" class="mt-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode($boletoLine); ?>)">Copiar</button>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <?php if ($boletoBarcode !== ''): ?>
+                                                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                        <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">Codigo de barras</p>
+                                                        <p class="break-all font-mono text-[11px] text-slate-700"><?= e($boletoBarcode); ?></p>
+                                                        <button type="button" class="mt-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode($boletoBarcode); ?>)">Copiar</button>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <?php if ($boletoPix !== ''): ?>
+                                                    <div class="rounded-lg border border-sky-200 bg-sky-50 p-2">
+                                                        <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-sky-700">PIX copia e cola</p>
+                                                        <p class="max-h-16 overflow-auto break-all font-mono text-[11px] text-sky-800"><?= e($boletoPix); ?></p>
+                                                        <button type="button" class="mt-1 rounded border border-sky-200 bg-white px-2 py-1 text-[10px] font-semibold text-sky-700" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode($boletoPix); ?>)">Copiar PIX</button>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </details>
                                     <?php else: ?>
                                         <span class="text-xs text-slate-300">—</span>
                                     <?php endif; ?>

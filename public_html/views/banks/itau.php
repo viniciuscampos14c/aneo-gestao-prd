@@ -179,6 +179,111 @@ $environment = (string) ($settings['environment'] ?? 'sandbox');
             <p id="webhook-result" class="hidden text-xs font-medium"></p>
         </div>
 
+        <div class="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Parametros de Emissao</h3>
+
+            <div class="grid gap-3 md:grid-cols-3">
+                <label class="block">
+                    <span class="mb-1 block text-sm">Etapa do processo</span>
+                    <select name="itau_process_stage" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option value="efetivacao" <?= ($settings['process_stage'] ?? 'efetivacao') === 'efetivacao' ? 'selected' : ''; ?>>Efetivacao</option>
+                        <option value="validacao" <?= ($settings['process_stage'] ?? '') === 'validacao' ? 'selected' : ''; ?>>Validacao</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Instrumento</span>
+                    <select name="itau_instrument" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option value="boleto_pix" <?= ($settings['instrument'] ?? 'boleto_pix') === 'boleto_pix' ? 'selected' : ''; ?>>Boleto PIX / BoleCode</option>
+                        <option value="boleto" <?= ($settings['instrument'] ?? '') === 'boleto' ? 'selected' : ''; ?>>Boleto</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Codigo especie</span>
+                    <input type="text" name="itau_codigo_especie"
+                           value="<?= e($settings['codigo_especie'] ?? '01'); ?>"
+                           placeholder="01"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+            </div>
+
+            <p class="text-xs text-slate-500">
+                Para producao, o padrao esperado e efetivacao + Boleto PIX, igual ao fluxo atual do Perfex.
+            </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Instrucoes, Juros e Multa</h3>
+
+            <div class="grid gap-3 md:grid-cols-2">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <label class="block <?= $i === 5 ? 'md:col-span-2' : ''; ?>">
+                        <span class="mb-1 block text-sm">Instrucao <?= $i; ?></span>
+                        <input type="text" name="itau_instrucao_<?= $i; ?>"
+                               value="<?= e($settings['instrucao_' . $i] ?? ''); ?>"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    </label>
+                <?php endfor; ?>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-4">
+                <label class="block">
+                    <span class="mb-1 block text-sm">Tipo de juros</span>
+                    <input type="text" name="itau_codigo_tipo_juros"
+                           value="<?= e($settings['codigo_tipo_juros'] ?? '05'); ?>"
+                           placeholder="05"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Percentual juros</span>
+                    <input type="text" name="itau_percentual_juros"
+                           value="<?= e($settings['percentual_juros'] ?? ''); ?>"
+                           placeholder="000000100000"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Valor juros</span>
+                    <input type="text" name="itau_valor_juros"
+                           value="<?= e($settings['valor_juros'] ?? ''); ?>"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Dias juros</span>
+                    <input type="number" min="0" name="itau_dias_juros"
+                           value="<?= e($settings['dias_juros'] ?? ''); ?>"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-4">
+                <label class="block">
+                    <span class="mb-1 block text-sm">Tipo de multa</span>
+                    <input type="text" name="itau_codigo_tipo_multa"
+                           value="<?= e($settings['codigo_tipo_multa'] ?? '03'); ?>"
+                           placeholder="03"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Percentual multa</span>
+                    <input type="text" name="itau_percentual_multa"
+                           value="<?= e($settings['percentual_multa'] ?? ''); ?>"
+                           placeholder="000000200000"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Valor multa</span>
+                    <input type="text" name="itau_valor_multa"
+                           value="<?= e($settings['valor_multa'] ?? ''); ?>"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-sm">Dias multa</span>
+                    <input type="number" min="0" name="itau_dias_multa"
+                           value="<?= e($settings['dias_multa'] ?? ''); ?>"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </label>
+            </div>
+        </div>
+
         <!-- Botões -->
         <div class="flex flex-wrap gap-2">
             <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">

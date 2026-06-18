@@ -321,16 +321,32 @@ class FinanceController extends BaseController
         }
 
         $providedToken = $this->itauWebhookTokenFromRequest($payload);
-        $companyId = null;
-        if ($providedToken !== '') {
-            $companyId = (new CompanyIntegrationModel())->findCompanyIdByToken('itau', 'webhook_token', $providedToken);
-            if ($companyId === null || $companyId <= 0) {
-                $this->json(['ok' => false, 'message' => 'Token do webhook Itau invalido.'], 401);
+        if ($providedToken === '') {
+            $this->json(['ok' => false, 'message' => 'Token do webhook Itau obrigatorio.'], 401);
+        }
+
+        $companyIds = (new CompanyIntegrationModel())->findCompanyIdsByToken('itau', 'webhook_token', $providedToken);
+        if ($companyIds === []) {
+            $this->json(['ok' => false, 'message' => 'Token do webhook Itau invalido.'], 401);
+        }
+
+        $lastResult = null;
+        foreach ($companyIds as $companyId) {
+            $result = (new FinanceModel())->useCompany($companyId)->processItauWebhook($payload, $companyId);
+            if (!empty($result['ok'])) {
+                $this->json($result, 200);
+            }
+
+            $lastResult = $result;
+            if (($result['message'] ?? '') !== 'Boleto nao encontrado para o webhook Itau.') {
+                break;
             }
         }
 
-        $result = (new FinanceModel($companyId))->processItauWebhook($payload, $companyId);
-        $this->json($result, ($result['ok'] ?? false) ? 200 : 422);
+        $this->json(
+            $lastResult ?: ['ok' => false, 'message' => 'Boleto nao encontrado para o webhook Itau.'],
+            422
+        );
     }
 
     public function issueDueBankSlips(): void
@@ -1151,6 +1167,12 @@ class FinanceController extends BaseController
             $this->redirect('finance/payables');
         }
 
+        $dateError = $this->validatePayableDates($data);
+        if ($dateError !== '') {
+            $this->error($dateError);
+            $this->redirect('finance/payables');
+        }
+
         $supplier = $this->suppliers->find((int) (current_company_id() ?? 0), $data['supplier_id']);
         if (!$supplier || (int) ($supplier['is_active'] ?? 0) !== 1) {
             $this->error('Fornecedor invalido ou inativo.');
@@ -1176,7 +1198,23 @@ class FinanceController extends BaseController
             'company_id' => (int) (current_company_id() ?? 0),
         ]);
 
-        $this->success('Conta a pagar cadastrada com sucesso.');
+        $message = 'Conta a pagar cadastrada com sucesso.';
+        if (!empty($data['is_recurring']) && $data['recurrence_until'] !== '') {
+            $recurrence = $this->payables->generateRecurringPayablesForTemplate($id, $data['recurrence_until'], (int) (current_user()['id'] ?? 0));
+            if (!($recurrence['ok'] ?? false)) {
+                $this->error((string) ($recurrence['message'] ?? 'Conta salva, mas nao foi possivel gerar as recorrencias.'));
+                $this->redirect('finance/payables');
+            }
+
+            $created = (int) ($recurrence['created'] ?? 0);
+            $existing = (int) ($recurrence['existing'] ?? 0);
+            $message .= ' ' . $created . ' recorrencia(s) futura(s) gerada(s).';
+            if ($existing > 0) {
+                $message .= ' ' . $existing . ' ja existia(m).';
+            }
+        }
+
+        $this->success($message);
         $this->redirect('finance/payables');
     }
 
@@ -1201,6 +1239,12 @@ class FinanceController extends BaseController
         $data = $this->collectPayablePayload();
         if ($data['supplier_id'] <= 0 || $data['description'] === '' || $data['payable_number'] === '' || $data['due_date'] === '' || $data['amount'] <= 0) {
             $this->error('Preencha fornecedor, numero, descricao, vencimento e valor.');
+            $this->redirect('finance/payables');
+        }
+
+        $dateError = $this->validatePayableDates($data);
+        if ($dateError !== '') {
+            $this->error($dateError);
             $this->redirect('finance/payables');
         }
 
@@ -1660,16 +1704,55 @@ class FinanceController extends BaseController
             'payable_number' => trim((string) post('payable_number')),
             'description' => trim((string) post('description')),
             'category' => trim((string) post('category')),
-            'competence_date' => trim((string) post('competence_date')),
-            'due_date' => trim((string) post('due_date')),
+            'competence_date' => $this->normalizePayableDate((string) post('competence_date')),
+            'due_date' => $this->normalizePayableDate((string) post('due_date')),
             'amount' => parse_decimal((string) post('amount', '0')),
             'status' => trim((string) post('status', 'open')),
             'notes' => trim((string) post('notes')),
-            'paid_at' => trim((string) post('paid_at')),
+            'paid_at' => $this->normalizePayableDate((string) post('paid_at')),
             'is_recurring' => post('is_recurring') ? 1 : 0,
             'recurrence_interval' => trim((string) post('recurrence_interval', 'monthly')),
-            'recurrence_until' => trim((string) post('recurrence_until')),
+            'recurrence_until' => $this->normalizePayableDate((string) post('recurrence_until')),
+            'recurrence_until_raw' => trim((string) post('recurrence_until')),
         ];
+    }
+
+    private function normalizePayableDate(string $date): string
+    {
+        $date = trim($date);
+        if ($date === '') {
+            return '';
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return '';
+        }
+
+        [$year, $month, $day] = array_map('intval', explode('-', $date));
+        if ($year < 2000 || $year > 2100 || !checkdate($month, $day, $year)) {
+            return '';
+        }
+
+        return sprintf('%04d-%02d-%02d', $year, $month, $day);
+    }
+
+    private function validatePayableDates(array $data): string
+    {
+        if ((string) ($data['due_date'] ?? '') === '') {
+            return 'Informe uma data de vencimento valida.';
+        }
+
+        if (!empty($data['is_recurring']) && (string) ($data['recurrence_until'] ?? '') !== '') {
+            if (strtotime((string) $data['recurrence_until']) < strtotime((string) $data['due_date'])) {
+                return 'A data final da recorrencia precisa ser igual ou posterior ao vencimento.';
+            }
+        }
+
+        if (!empty($data['is_recurring']) && (string) ($data['recurrence_until_raw'] ?? '') !== '' && (string) ($data['recurrence_until'] ?? '') === '') {
+            return 'Informe uma data final de recorrencia valida.';
+        }
+
+        return '';
     }
 
     private function normalizePayableAttachmentType(string $type): string

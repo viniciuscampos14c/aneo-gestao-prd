@@ -298,8 +298,8 @@ class FinanceModel extends BaseModel
             WHERE {$whereSql}";
 
         $bankFields = $hasBankSlipTable
-            ? "bs.id AS boleto_id, bs.provider AS boleto_provider, bs.status AS boleto_status, bs.external_id AS boleto_external_id, bs.digitable_line AS boleto_digitable_line, bs.barcode AS boleto_barcode, bs.boleto_url AS bank_slip_url, bs.pdf_url AS boleto_pdf_url, bs.error_message AS boleto_error_message, bs.last_attempt_at AS boleto_last_attempt_at"
-            : "NULL AS boleto_id, NULL AS boleto_provider, NULL AS boleto_status, NULL AS boleto_external_id, NULL AS boleto_digitable_line, NULL AS boleto_barcode, NULL AS bank_slip_url, NULL AS boleto_pdf_url, NULL AS boleto_error_message, NULL AS boleto_last_attempt_at";
+            ? "bs.id AS boleto_id, bs.provider AS boleto_provider, bs.status AS boleto_status, bs.external_id AS boleto_external_id, bs.digitable_line AS boleto_digitable_line, bs.barcode AS boleto_barcode, bs.pix_copy_paste AS boleto_pix_copy_paste, bs.boleto_url AS bank_slip_url, bs.pdf_url AS boleto_pdf_url, bs.error_message AS boleto_error_message, bs.last_attempt_at AS boleto_last_attempt_at"
+            : "NULL AS boleto_id, NULL AS boleto_provider, NULL AS boleto_status, NULL AS boleto_external_id, NULL AS boleto_digitable_line, NULL AS boleto_barcode, NULL AS boleto_pix_copy_paste, NULL AS bank_slip_url, NULL AS boleto_pdf_url, NULL AS boleto_error_message, NULL AS boleto_last_attempt_at";
 
         $fiscalFields = $hasFiscalTable
             ? "fi.id AS fiscal_id, fi.status AS fiscal_status, fi.number AS fiscal_number, fi.provider AS fiscal_provider, fi.error_message AS fiscal_error_message, fi.last_attempt_at AS fiscal_last_attempt_at"
@@ -524,7 +524,7 @@ class FinanceModel extends BaseModel
         float $negotiatedTotal,
         int $installments,
         string $firstDueDate,
-        int $createdBy,
+        ?int $createdBy,
         array $context = []
     ): array {
         $studentId = (int) $studentId;
@@ -785,7 +785,7 @@ class FinanceModel extends BaseModel
                 ':error_message' => ($serviceResult['message'] ?? null),
                 ':last_attempt_at' => $now,
                 ':issued_at' => $status === 'issued' ? $now : null,
-                ':created_by' => $createdBy,
+                ':created_by' => $createdBy > 0 ? $createdBy : null,
                 ':created_at' => $now,
                 ':updated_at' => $now,
             ]);
@@ -914,7 +914,7 @@ class FinanceModel extends BaseModel
                 ':last_attempt_at' => $now,
                 ':issued_at' => in_array($status, ['issued', 'registered'], true) ? $now : null,
                 ':expires_at' => $serviceResult['expires_at'] ?? null,
-                ':created_by' => $createdBy,
+                ':created_by' => $createdBy > 0 ? $createdBy : null,
                 ':created_at' => $now,
                 ':updated_at' => $now,
             ];
@@ -2042,7 +2042,7 @@ class FinanceModel extends BaseModel
             ':amount' => $amount,
             ':paid_at' => $paidAt,
             ':notes' => $notes,
-            ':created_by' => $createdBy,
+            ':created_by' => ($createdBy !== null && $createdBy > 0) ? $createdBy : null,
             ':created_at' => $now,
             ':updated_at' => $now,
         ];
@@ -2446,6 +2446,101 @@ class FinanceModel extends BaseModel
         foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $studentId) {
             $this->syncStudentFinanceKanban((int) $studentId, $changedBy);
         }
+    }
+
+    public function enforceMobileAgreementAccessGracePeriod(int $graceDays = 3): array
+    {
+        if (!$this->schemaTableExists('student_portal_accounts')) {
+            return [
+                'ok' => true,
+                'checked' => 0,
+                'blocked' => 0,
+                'message' => 'Portal do aluno indisponivel nesta empresa.',
+            ];
+        }
+
+        $companyId = $this->companyId();
+        $graceDays = max(1, min(30, $graceDays));
+        $agreementKeySql = "COALESCE(NULLIF(i.project_name, ''), CONCAT('Acordo mobile #', i.student_id, ' - ', DATE(i.created_at)))";
+
+        $sql = "SELECT DISTINCT pending.account_id, pending.student_id
+            FROM (
+                SELECT
+                    spa.id AS account_id,
+                    spa.student_id,
+                    {$agreementKeySql} AS agreement_key,
+                    MIN(i.created_at) AS agreement_created_at,
+                    SUM(CASE
+                        WHEN i.status IN ('open', 'partial', 'overdue')
+                         AND GREATEST(i.amount - COALESCE(i.paid_amount, 0), 0) > 0.009
+                        THEN 1 ELSE 0
+                    END) AS open_count,
+                    SUM(CASE
+                        WHEN i.status = 'paid'
+                          OR COALESCE(i.paid_amount, 0) > 0.009
+                          OR i.paid_at IS NOT NULL
+                        THEN 1 ELSE 0
+                    END) AS paid_count
+                FROM invoices i
+                INNER JOIN students s ON s.id = i.student_id AND s.company_id = i.company_id
+                INNER JOIN student_portal_accounts spa ON spa.student_id = s.id
+                WHERE i.company_id = :company_id
+                  AND s.is_active = 1
+                  AND spa.is_active = 1
+                  AND (
+                        i.tags LIKE :agreement_tag
+                        OR i.project_name LIKE :negotiation_project
+                        OR i.project_name LIKE :addendum_project
+                      )
+                GROUP BY spa.id, spa.student_id, {$agreementKeySql}
+                HAVING agreement_created_at <= DATE_SUB(NOW(), INTERVAL {$graceDays} DAY)
+                   AND open_count > 0
+                   AND paid_count = 0
+            ) pending";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':company_id' => $companyId,
+            ':agreement_tag' => '%Acordo mobile%',
+            ':negotiation_project' => 'Negociacao financeiro (App Diretoria)%',
+            ':addendum_project' => 'Aditivo financeiro (App Diretoria)%',
+        ]);
+
+        $rows = $stmt->fetchAll() ?: [];
+        if ($rows === []) {
+            return [
+                'ok' => true,
+                'checked' => 0,
+                'blocked' => 0,
+                'message' => 'Nenhum acordo mobile fora do prazo sem baixa.',
+            ];
+        }
+
+        $blocked = 0;
+        $update = $this->db->prepare('UPDATE student_portal_accounts
+            SET is_active = 0,
+                updated_at = :updated_at
+            WHERE id = :account_id
+              AND student_id = :student_id
+              AND is_active = 1');
+
+        foreach ($rows as $row) {
+            $update->execute([
+                ':updated_at' => now(),
+                ':account_id' => (int) ($row['account_id'] ?? 0),
+                ':student_id' => (int) ($row['student_id'] ?? 0),
+            ]);
+            if ($update->rowCount() > 0) {
+                $blocked++;
+            }
+        }
+
+        return [
+            'ok' => true,
+            'checked' => count($rows),
+            'blocked' => $blocked,
+            'message' => "Acordos mobile avaliados: " . count($rows) . ". Acessos bloqueados: {$blocked}.",
+        ];
     }
 
     private function studentHasActiveAgreementInvoices(int $studentId, int $companyId): bool

@@ -92,12 +92,19 @@ if (!empty($student['enrolled_at'])) {
 
         <label class="block">
             <span class="mb-1 block text-sm font-medium">RA</span>
-            <input type="text" name="ra" value="<?= e($student['ra'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <input type="text" name="ra" value="<?= e($student['ra'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Gerado automaticamente se ficar em branco">
+            <span class="mt-1 block text-xs text-slate-400">Deixe em branco para gerar pela filial: 100001, 200001, 300001...</span>
         </label>
 
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Data de nascimento</span>
             <input type="date" name="birth_date" value="<?= e($student['birth_date'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">CPF</span>
+            <input type="text" name="cpf" value="<?= e($student['cpf'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Somente numeros">
+            <span class="mt-1 block text-xs text-slate-400">Necessario para emissao de boleto bancario.</span>
         </label>
 
         <label class="block">
