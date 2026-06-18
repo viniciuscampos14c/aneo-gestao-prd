@@ -437,6 +437,61 @@ Seguranca:
 - credenciais SMTP nao foram registradas neste documento;
 - scripts temporarios de ativacao e teste foram removidos do servidor apos a validacao.
 
+## Emissao automatica pela janela do aluno
+
+Piloto realizado em producao em `18/06/2026` com o aluno `Aneo Bahia`,
+ID `105`, empresa ID `5`.
+
+Configuracao controlada:
+
+- plano personalizado com uma parcela de `R$ 1,00`;
+- primeiro vencimento em `28/06/2026`;
+- forma de pagamento `ITAU - Boleto API`, ID `26`;
+- geracao automatica de faturas internas habilitada;
+- antecedencia para emissao do boleto configurada em `10 dias`.
+
+Evidencias:
+
+- o plano gerou somente a fatura interna `FATURA-000383-26`, ID `383`;
+- antes do cron, a fatura estava aberta e sem boleto;
+- em `18/06/2026`, a diferenca para o vencimento era exatamente `10 dias`;
+- o job `boleto_issue_due` processou uma fatura, emitiu um boleto e retornou zero erros;
+- boleto ID `4`, provedor Itau, status `issued`;
+- identificador externo, linha digitavel, codigo de barras e PIX presentes;
+- uma segunda execucao do job processou zero faturas, confirmando idempotencia;
+- somente um registro de boleto foi criado para a fatura.
+
+Notificacao:
+
+- a primeira tentativa revelou que o remetente global sobrepunha o SMTP por empresa;
+- o servidor recusou o remetente por nao pertencer ao usuario autenticado;
+- `FinanceNotificationModel` foi corrigido para deixar `EmailService` usar o remetente SMTP da empresa;
+- remetente e resposta SMTP das seis empresas foram alinhados ao usuario autenticado;
+- a notificacao foi reenviada apenas ao aluno piloto, sem BCC;
+- log final `invoice_issued`: `sent`, sem erro.
+
+Runner preparado:
+
+- `/home/u674156040/secure/aneo-prd/cron/run_boleto_issue_due.sh`;
+- permissao `700`;
+- executa somente `boleto_issue_due`;
+- nao executa quando o job esta desabilitado no banco;
+- ainda precisa ser cadastrado no painel Hostinger.
+
+Backups:
+
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/boleto_window_pilot_20260618_163706`
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/smtp_sender_fix_20260618_163930`
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/finance_notification_smtp_fix_20260618_163918`
+
+Conclusao:
+
+- a criacao automatica das faturas internas pelo cadastro do aluno esta validada;
+- a emissao do boleto no limite configurado de dias esta validada;
+- emissao, notificacao SMTP e protecao contra duplicidade estao validadas;
+- a empresa Bahia e sua forma Itau ficaram ativas para manter o piloto operacional;
+- as demais empresas continuam sem integracao Itau ativa.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`

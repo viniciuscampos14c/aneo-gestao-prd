@@ -293,7 +293,6 @@ class FinanceNotificationModel extends BaseModel
 
     private function sendEmail(array $invoice, string $notificationType, string $recipientType, string $recipientEmail): array
     {
-        $from = trim((string) config('support.from_email', 'nao-responda@aneo.local'));
         $companyId = (int) ($invoice['company_id'] ?? current_company_id() ?? 0);
         $invoiceNumber = (string) ($invoice['invoice_number'] ?? 'Fatura');
         $studentName = (string) ($invoice['student_name'] ?? 'Aluno');
@@ -349,9 +348,7 @@ class FinanceNotificationModel extends BaseModel
             $body,
             [
                 'company_id' => $companyId,
-                'from_email' => $from,
                 'from_name'  => $companyName,
-                'reply_to'   => $from,
                 'is_html'    => true,
                 'bcc'        => $bcc,
             ]
