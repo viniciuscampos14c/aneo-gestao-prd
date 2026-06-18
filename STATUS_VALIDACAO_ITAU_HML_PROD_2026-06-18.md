@@ -315,6 +315,67 @@ Conclusao:
 - o atraso maximo de reconhecimento sera aproximadamente o intervalo do agendamento;
 - para redundancia, o go-live deve usar webhook e cron, mantendo o cron como reconciliacao/contingencia.
 
+## Piloto real ANEO Bahia
+
+Escopo ativado:
+
+- empresa: `ANEO BAHIA`, ID `5`;
+- aluno piloto: ID `105`;
+- integracao Itau Bahia: ativa;
+- forma `ITAU - Boleto API`, ID `26`: ativa;
+- `boleto_sync`: ativo;
+- `boleto_issue_due`: mantido desativado.
+
+Backup pre-piloto:
+
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/itau_bahia_pilot_20260618_154726`
+
+Fatura e boleto:
+
+- fatura: `FATURA-000380-26`;
+- valor: `R$ 1,00`;
+- vencimento: `20/06/2026`;
+- boleto: ID interno `3`;
+- status inicial: `issued`;
+- linha digitavel, codigo de barras e PIX recebidos da API Itau;
+- apenas um boleto vinculado a fatura.
+
+Validacao dos jobs:
+
+- `boleto_sync` manual:
+  - boletos verificados: `1`;
+  - atualizados: `1`;
+  - erros: `0`.
+- `boleto_issue_due` foi habilitado apenas durante teste controlado:
+  - faturas processadas: `0`;
+  - novos boletos: `0`;
+  - erros: `0`;
+  - desativado novamente apos o teste.
+
+Correcao multiempresa:
+
+- `FinanceModel::useCompany()` passou a sincronizar o contexto do submodelo de alunos;
+- isso evita `Aluno vinculado nao encontrado` em execucoes cron multiempresa;
+- backup: `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/finance_company_context_fix_20260618_185336`;
+- lint e hash local/producao aprovados.
+
+Cron Hostinger:
+
+- executor seguro: `/home/u674156040/secure/aneo-prd/cron/run_boleto_sync.sh`;
+- permissao: `700`;
+- agendamento criado no hPanel: a cada 5 minutos;
+- primeira execucao automatica confirmada em `18/06/2026 16:05:04`;
+- resultado: `Boletos verificados: 1. Atualizados: 1. Erros: 0.`;
+- o executor roda somente `boleto_sync` e nao pode emitir boletos.
+
+Webhook:
+
+- endpoint ANEO producao autenticado e funcional;
+- tentativa de registro externo no Itau retornou HTTP 403;
+- o mesmo certificado e formato do modulo Perfex foram utilizados;
+- conclusao: a credencial/contrato permite OAuth, emissao e consulta, mas nao autorizou alterar o webhook pela API;
+- o piloto permanece coberto pelo `boleto_sync` automatico a cada 5 minutos.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`

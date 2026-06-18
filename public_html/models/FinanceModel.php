@@ -21,6 +21,17 @@ class FinanceModel extends BaseModel
         $this->paymentMethods = new PaymentMethodModel();
     }
 
+    public function useCompany(?int $companyId): static
+    {
+        parent::useCompany($companyId);
+
+        if (isset($this->students)) {
+            $this->students->useCompany($this->companyId());
+        }
+
+        return $this;
+    }
+
     public function listStudents(): array
     {
         $stmt = $this->db->prepare('SELECT id, full_name
