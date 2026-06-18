@@ -411,6 +411,32 @@ Conclusao final:
 - no go-live sera necessario ativar as integracoes/formas desejadas;
 - emissao automatica permanecera desligada ate decisao operacional explicita.
 
+## SMTP de producao
+
+Ativacao realizada em `18/06/2026`, apos a autorizacao explicita
+`AUTORIZO ATIVAR SMTP PROD`.
+
+Validacoes:
+
+- o HML nao possuia SMTP autenticado por empresa e utilizava o `mail()` nativo;
+- a configuracao SMTP do Perfex de producao foi usada como origem controlada;
+- conexao, `EHLO` e autenticacao SMTP foram aprovados antes da ativacao;
+- SMTP habilitado para as seis empresas de producao: Brasilia, Bahia, Rio de Janeiro, Palmas, Goiania e Sao Paulo;
+- todas as seis linhas foram relidas e validadas como habilitadas e completas;
+- nenhum disparo em massa foi realizado;
+- foi enviada somente uma mensagem de teste ao aluno piloto `Aneo Bahia`, ID `105`, empresa ID `5`;
+- envio sem BCC e aceito pelo servidor SMTP;
+- o teste SMTP nao gerou fatura, boleto ou cobranca.
+
+Backup protegido antes da ativacao:
+
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/smtp_all_companies_20260618_193047`
+
+Seguranca:
+
+- credenciais SMTP nao foram registradas neste documento;
+- scripts temporarios de ativacao e teste foram removidos do servidor apos a validacao.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`
