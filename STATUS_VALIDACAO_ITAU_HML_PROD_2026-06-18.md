@@ -109,6 +109,46 @@ Producao:
 
 Conclusao: producao ja possui codigo e estrutura de banco, mas ainda nao esta operacionalmente habilitada para emitir boletos Itau.
 
+## Checkpoint de producao apos autorizacoes
+
+Autorizacoes recebidas:
+
+- `AUTORIZO ALTERAR PROD`
+- `AUTORIZO ALTERAR BANCO PROD`
+
+Backups criados antes da ativacao:
+
+- codigo: `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/itau_code_pre_activation_20260618_144309.tar.gz`
+- banco/configuracoes: `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/itau_db_pre_activation_20260618_114252`
+
+O backup de banco contem:
+
+- 6 registros de `company_integrations` do Itau;
+- 6 formas de pagamento integradas;
+- estrutura das tabelas `bank_slips` e `students`.
+
+Validacao das seis unidades de producao:
+
+- configuracao em ambiente `production`;
+- etapa `efetivacao`;
+- instrumento `boleto_pix`;
+- Client ID e Client Secret preenchidos;
+- ID do beneficiario preenchido;
+- token de webhook preenchido;
+- certificado e chave privada encontrados em pasta segura fora do document root;
+- integracao e forma de pagamento mantidas desativadas.
+
+Validacoes tecnicas:
+
+- lint PHP remoto dos 15 arquivos do recorte: aprovado;
+- `/admin`: HTTP 200;
+- `/aluno`: HTTP 200;
+- `/suporte`: HTTP 200;
+- `/api.php`: HTTP 400 esperado sem recurso/token;
+- raiz: HTTP 302 esperado para redirecionamento.
+
+Nenhuma alteracao de dados foi necessaria nesta etapa, pois schema, registros e parametros ja estavam preparados. A ativacao continua aguardando autorizacao especifica.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`
