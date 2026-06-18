@@ -376,6 +376,41 @@ Webhook:
 - conclusao: a credencial/contrato permite OAuth, emissao e consulta, mas nao autorizou alterar o webhook pela API;
 - o piloto permanece coberto pelo `boleto_sync` automatico a cada 5 minutos.
 
+## Encerramento do piloto
+
+Pagamento confirmado:
+
+- boleto ID `3`: `paid`;
+- fatura `FATURA-000380-26`: `paid`;
+- valor pago: `R$ 1,00`;
+- pagamento: `PG-20260618160629`;
+- metodo: `ITAU - Boleto API`;
+- origem: baixa automatica por sincronizacao;
+- um boleto, um pagamento e um vinculo financeiro, sem duplicidade;
+- notificacoes `invoice_issued` e `invoice_paid` enviadas sem erro.
+
+Estado mantido ate o go-live:
+
+- integracoes Itau ativas: `0`;
+- formas de pagamento Itau ativas: `0`;
+- `boleto_issue_due`: desativado;
+- `boleto_sync`: ativo;
+- agendamento Hostinger: a cada 5 minutos;
+- executor seguro nao emite boletos;
+- sem integracao ativa, o sync nao encontra candidatos e nao gera efeitos bancarios.
+
+Backup antes da inativacao:
+
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/itau_bahia_deactivate_20260618_161515`
+
+Conclusao final:
+
+- piloto end-to-end de producao aprovado;
+- emissao, consulta, pagamento, baixa, conciliacao e idempotencia aprovados;
+- operacao bancaria permanece inativa ate o go-live;
+- no go-live sera necessario ativar as integracoes/formas desejadas;
+- emissao automatica permanecera desligada ate decisao operacional explicita.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`
