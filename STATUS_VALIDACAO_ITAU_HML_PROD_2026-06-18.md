@@ -149,6 +149,72 @@ Validacoes tecnicas:
 
 Nenhuma alteracao de dados foi necessaria nesta etapa, pois schema, registros e parametros ja estavam preparados. A ativacao continua aguardando autorizacao especifica.
 
+## Validacao preventiva de go-live
+
+Validacoes adicionais executadas sem ativar cobrancas:
+
+- OAuth2/mTLS HML: HTTP 200 e token obtido.
+- OAuth2/mTLS producao: HTTP 200 e token obtido.
+- certificado de producao valido de `12/01/2026` ate `12/01/2027`;
+- certificado e chave privada com permissao `600`;
+- diretorios dos certificados com acesso restrito;
+- webhook HML com token real: endpoint autenticado e processamento alcancado;
+- webhook producao enquanto desativado: retorna token invalido por desenho, pois apenas integracoes ativas aceitam webhook;
+- cron sem token em HML e producao: HTTP 401;
+- cron producao com token real e `boleto_sync` desativado: token aceito, runner carregado e execucao bloqueada;
+- nenhuma fatura de producao vinculada atualmente a forma Itau;
+- nenhuma fatura entraria imediatamente na janela automatica de emissao.
+
+Estado do cron:
+
+- HML: jobs financeiros habilitados, agendamento executado em `18/06/2026 11:00:05`, todos com status `ok`.
+- Producao: `boleto_issue_due`, `boleto_sync` e notificacoes financeiras desativados, sem execucao anterior.
+- Producao: nao existe evidencia de agendamento automatico financeiro ativo.
+
+Estado do webhook:
+
+- a confirmacao real do pagamento foi entregue ao HML;
+- o cadastro externo atual deve ser considerado apontado para HML;
+- a URL deve ser alterada para producao somente na janela de go-live;
+- a API do Itau retornou HTTP 403 para tentativa de consulta GET do webhook, portanto a confirmacao final deve ser feita pelo registro PUT e por uma entrega controlada.
+
+Bloqueios operacionais encontrados:
+
+- todos os alunos atualmente cadastrados em producao estao sem CPF:
+  - Brasilia: 24;
+  - Bahia: 19;
+  - Rio de Janeiro: 14;
+  - Palmas: 5;
+  - Goiania: 4;
+  - Sao Paulo: 1 registro, inativo.
+- SMTP permanece desativado em HML e producao;
+- integracoes e formas Itau permanecem desativadas em producao;
+- cron financeiro de producao permanece desativado;
+- ainda nao houve emissao e pagamento controlados usando a URL e o banco de producao.
+
+Conclusao de prontidao:
+
+- codigo, schema, credenciais, certificado, OAuth e fluxo HML: aprovados;
+- operacao bancaria em producao: ainda nao liberada;
+- os bloqueios obrigatorios sao carga/validacao de CPF, virada do webhook, ativacao controlada dos jobs e teste real de baixo valor em producao.
+
+## Sequencia recomendada para o dia do go-live
+
+1. Concluir e validar os CPFs dos alunos que receberao boleto.
+2. Manter `boleto_issue_due` desativado.
+3. Ativar a integracao e a forma Itau apenas para a unidade piloto.
+4. Registrar no Itau o webhook de producao.
+5. Testar o webhook de producao com identificador inexistente.
+6. Criar uma fatura piloto de baixo valor com CPF validado.
+7. Emitir manualmente o boleto piloto.
+8. Pagar e aguardar a baixa por webhook.
+9. Se necessario, testar `boleto_sync` manualmente.
+10. Conferir `bank_slips`, `payments`, `payment_items`, fatura e notificacoes.
+11. Somente depois ativar `boleto_sync`.
+12. Ativar `boleto_issue_due` por ultimo.
+13. Criar/confirmar o agendamento automatico de producao.
+14. Acompanhar o primeiro ciclo completo antes de ampliar para as demais unidades.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`
