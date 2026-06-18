@@ -215,6 +215,57 @@ Conclusao de prontidao:
 13. Criar/confirmar o agendamento automatico de producao.
 14. Acompanhar o primeiro ciclo completo antes de ampliar para as demais unidades.
 
+## Carga de CPF a partir do Perfex
+
+Fonte:
+
+- Perfex de producao: `sistema.aneobrasil.com.br`;
+- tabela de clientes/contatos;
+- campo personalizado `customers_cpf`, ID `39`;
+- campo fiscal `vat` usado somente como alternativa quando o campo personalizado continha CPF invalido.
+
+Procedimento:
+
+1. Comparacao dos alunos ANEO com clientes/contatos Perfex por:
+   - e-mail;
+   - telefone normalizado;
+   - nome normalizado.
+2. Exigencia de correspondencia unica.
+3. Validacao matematica dos digitos verificadores do CPF.
+4. Backup integral dos registros de alunos antes da escrita.
+5. Atualizacao transacional apenas da coluna `students.cpf`.
+6. Revalidacao completa contra a fonte Perfex.
+
+Resultado:
+
+- alunos em producao: `66`;
+- correspondencias unicas: `66`;
+- ambiguidades: `0`;
+- alunos sem correspondencia: `0`;
+- CPFs validos gravados: `66`;
+- CPFs duplicados: `0`;
+- divergencias apos revalidacao: `0`.
+
+Distribuicao:
+
+- Brasilia: `24/24`;
+- Bahia: `19/19`;
+- Rio de Janeiro: `14/14`;
+- Palmas: `5/5`;
+- Goiania: `4/4`;
+- Sao Paulo: sem alunos cadastrados.
+
+Backup:
+
+- `/home/u674156040/domains/aneo.aneobrasil.com.br/deploy_backups/student_cpf_perfex_20260618_120021`
+
+Seguranca:
+
+- backup e mapeamento armazenados fora da pasta publica;
+- arquivos com permissao `600`;
+- nenhum CPF foi incluido no Git, documentacao ou logs de fechamento;
+- integracao Itau e formas de pagamento permaneceram desativadas durante toda a carga.
+
 ## Arquivos do recorte a versionar
 
 - `public_html/controllers/BanksController.php`
