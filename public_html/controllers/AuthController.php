@@ -133,7 +133,7 @@ class AuthController extends BaseController
         session_destroy();
         session_start();
         session_regenerate_id(true);
-        $this->success('Sessao encerrada.');
+        $this->success('Sessão encerrada.');
         $this->redirect('login');
     }
 }

@@ -20,7 +20,7 @@ class SupportDeskController extends BaseController
         }
 
         $this->render('support_desk/login', [
-            'title' => 'Central Tecnica - Login',
+            'title' => 'Central Técnica - Login',
             'enabled' => (bool) config('support_desk.enabled', false),
         ], 'layouts/guest');
     }
@@ -38,7 +38,7 @@ class SupportDeskController extends BaseController
         $password = (string) post('password');
 
         if ($login === '' || $password === '') {
-            flash('error', 'Informe usuário ou email e senha.');
+            flash('error', 'Informe usuário ou e-mail e senha.');
             $this->redirectTo('support/login');
         }
 
@@ -102,7 +102,7 @@ class SupportDeskController extends BaseController
     public function logout(): void
     {
         unset($_SESSION['support_desk_auth']);
-        flash('success', 'Sessao da central técnica encerrada.');
+        flash('success', 'Sessão da central técnica encerrada.');
         $this->redirectTo('support/login');
     }
 

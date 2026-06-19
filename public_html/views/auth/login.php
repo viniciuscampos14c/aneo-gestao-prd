@@ -4,12 +4,12 @@
             <img src="assets/brand/aneo-wordmark-transparente-branco.svg?v=20260512-brand-kit-v1" alt="Logo ANEO" class="h-12 w-auto">
             <p class="inline-flex rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">Plataforma Integrada</p>
         </div>
-        <h1 class="text-4xl font-semibold leading-tight">Gestao Educacional + CRM + Financeiro em um unico painel.</h1>
-        <p class="text-slate-300">Acesse para administrar alunos, funil comercial, faturas, cursos e operacoes da ANEO.</p>
+        <h1 class="text-4xl font-semibold leading-tight">Gestão Educacional + CRM + Financeiro em um único painel.</h1>
+        <p class="text-slate-300">Acesse para administrar alunos, funil comercial, faturas, cursos e operações da ANEO.</p>
         <div class="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Kanban financeiro com arrastar e soltar</div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Pipeline de leads customizavel</div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Faturas, pagamentos e recorrencia</div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Pipeline de leads customizável</div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Faturas, pagamentos e recorrência</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Cursos EAD e matrículas</div>
         </div>
     </section>
@@ -30,7 +30,7 @@
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
             <label class="block">
-                <span class="mb-1 block text-sm text-slate-300">Usuário ou Email</span>
+                <span class="mb-1 block text-sm text-slate-300">Usuário ou e-mail</span>
                 <input type="text" name="login" required class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-400" placeholder="admin@aneo.local">
             </label>
 
@@ -42,7 +42,7 @@
             <button type="submit" class="w-full rounded-lg bg-cyan-600 px-4 py-2 font-medium text-white hover:bg-cyan-500">Entrar</button>
         </form>
 
-        <p class="mt-4 text-xs text-slate-400">Seed padrao: usuário <code>admin</code> / senha <code>admin123</code>.</p>
+        <p class="mt-4 text-xs text-slate-400">Seed padrão: usuário <code>admin</code> / senha <code>admin123</code>.</p>
         <a href="<?= route('student/login'); ?>" class="mt-3 inline-flex text-xs text-cyan-300 hover:text-cyan-200">Entrar no portal do aluno</a>
     </section>
 </div>

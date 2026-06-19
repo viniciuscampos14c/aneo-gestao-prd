@@ -16,7 +16,7 @@ async function attemptUiLogin(page: Page): Promise<boolean> {
   await page.goto(mobileBaseUrl, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('body')).toContainText(/ANEO Diretoria|Entrar no APP/);
 
-  await page.getByLabel(/Usuario ou e-mail/i).fill(adminUser);
+  await page.getByLabel(/Usuário ou e-mail/i).fill(adminUser);
   await page.getByLabel(/^Senha$/i).fill(adminPassword);
   await page.getByRole('button', { name: /^Entrar$/i }).click();
 

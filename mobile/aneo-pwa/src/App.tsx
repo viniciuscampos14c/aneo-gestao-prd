@@ -128,8 +128,8 @@ export default function App() {
       <div className="app-shell loading-shell">
         <div className="surface-card centered-card">
           <p className="eyebrow">ANEO Diretoria</p>
-          <h1>Carregando sessao</h1>
-          <p>Estamos preparando o painel PWA para continuar de onde voce parou.</p>
+          <h1>Carregando sessão</h1>
+          <p>Estamos preparando o painel PWA para continuar de onde você parou.</p>
         </div>
       </div>
     );

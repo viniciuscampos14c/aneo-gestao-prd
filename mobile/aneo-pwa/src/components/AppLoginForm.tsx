@@ -54,7 +54,7 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
       resetCompanySelection();
       onAuthenticated(result.config);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Nao foi possivel autenticar no app.';
+      const msg = err instanceof Error ? err.message : 'Não foi possível autenticar no app.';
       setError(msg);
       resetCompanySelection();
     } finally {
@@ -70,7 +70,7 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
 
       <div className="field-grid">
         <div className="field-wrap">
-          <label htmlFor="login">Usuario ou e-mail</label>
+          <label htmlFor="login">Usuário ou e-mail</label>
           <input
             id="login"
             className="text-input"
@@ -116,7 +116,7 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
       {requiresCompany ? (
         <div className="detail-card">
           <h4>Selecione a empresa</h4>
-          <p className="muted">Esse usuario possui mais de um CNPJ. Escolha a empresa para continuar.</p>
+          <p className="muted">Esse usuário possui mais de um CNPJ. Escolha a empresa para continuar.</p>
 
           <div className="course-list">
             {companyOptions.map((company) => {
@@ -130,7 +130,7 @@ export function AppLoginForm({ initialBaseUrl, onAuthenticated }: AppLoginFormPr
                 >
                   <div className="inline-between">
                     <strong>{company.name}</strong>
-                    {company.isDefault ? <span className="pill pill-warning">Padrao</span> : null}
+                    {company.isDefault ? <span className="pill pill-warning">Padrão</span> : null}
                   </div>
                 </button>
               );

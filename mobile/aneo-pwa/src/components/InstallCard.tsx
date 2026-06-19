@@ -77,7 +77,7 @@ export function InstallCard({ compact = false }: InstallCardProps) {
           }
         }}
         disabled={!promptEvent}
-        title={promptEvent ? 'Adicionar ao celular' : 'Instalacao disponivel no navegador'}
+        title={promptEvent ? 'Adicionar ao celular' : 'Instalação disponível no navegador'}
       >
         Adicionar ao celular
       </button>

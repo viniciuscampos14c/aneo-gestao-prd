@@ -5,10 +5,10 @@
             <p class="inline-flex rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">ANEO EAD</p>
         </div>
         <h1 class="text-4xl font-semibold leading-tight">Portal do Aluno</h1>
-        <p class="text-slate-300">Acesse seus cursos, aulas ao vivo, materiais, progresso e histórico de avaliacoes em um ambiente separado do painel administrativo.</p>
+        <p class="text-slate-300">Acesse seus cursos, aulas ao vivo, materiais, progresso e histórico de avaliações em um ambiente separado do painel administrativo.</p>
         <div class="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Meus cursos e matrículas</div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Proximas aulas ao vivo</div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Próximas aulas ao vivo</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Materiais e anexos</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Notas e desempenho</div>
         </div>
@@ -30,7 +30,7 @@
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
             <label class="block">
-                <span class="mb-1 block text-sm text-slate-300">Login ou Email</span>
+                <span class="mb-1 block text-sm text-slate-300">Login ou e-mail</span>
                 <input type="text" name="login" required class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-400" placeholder="seu.login">
             </label>
 
