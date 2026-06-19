@@ -19,7 +19,7 @@ class SystemModuleController extends BaseController
         $selectedModule = $selectedId > 0 ? $this->modules->findModule($selectedId) : null;
 
         $this->render('system_modules/index', [
-            'title' => 'Modulos do Sistema',
+            'title' => 'Módulos do Sistema',
             'modules' => $this->modules->listModules(),
             'selectedModule' => $selectedModule,
             'stats' => $this->modules->stats(),
@@ -41,7 +41,7 @@ class SystemModuleController extends BaseController
         $this->ensureRuntimeDirectories();
 
         if (!class_exists('ZipArchive')) {
-            $this->error('A extensao ZIP do PHP nao esta habilitada neste servidor.');
+            $this->error('A extensão ZIP do PHP não esta habilitada neste servidor.');
             $this->redirect('system-modules');
         }
 
@@ -59,7 +59,7 @@ class SystemModuleController extends BaseController
 
         $tmpPath = (string) ($file['tmp_name'] ?? '');
         if ($tmpPath === '' || !is_uploaded_file($tmpPath)) {
-            $this->error('Nao foi possivel validar o arquivo enviado.');
+            $this->error('Não foi possível validar o arquivo enviado.');
             $this->redirect('system-modules');
         }
 
@@ -68,20 +68,20 @@ class SystemModuleController extends BaseController
         $packagePath = $this->packagesRoot() . DIRECTORY_SEPARATOR . $packageName;
 
         if (!move_uploaded_file($tmpPath, $packagePath)) {
-            $this->error('Nao foi possivel salvar o pacote enviado.');
+            $this->error('Não foi possível salvar o pacote enviado.');
             $this->redirect('system-modules');
         }
 
         try {
             $result = $this->installPackage($packagePath, $originalName, $hash);
-            $this->success('Modulo instalado com sucesso. Ele ficou inativo ate voce ativar manualmente.');
+            $this->success('Módulo instalado com sucesso. Ele ficou inativo ate você ativar manualmente.');
             $this->redirect('system-modules&id=' . (int) $result['module_id']);
         } catch (Throwable $e) {
             $this->modules->log(null, null, 'install_failed', 'error', $e->getMessage(), [
                 'package' => $originalName,
                 'hash' => $hash,
             ]);
-            $this->error('Falha ao instalar modulo: ' . $e->getMessage());
+            $this->error('Falha ao instalar módulo: ' . $e->getMessage());
             $this->redirect('system-modules');
         }
     }
@@ -96,18 +96,18 @@ class SystemModuleController extends BaseController
         $moduleId = (int) post('module_id', 0);
         $module = $this->modules->findModule($moduleId);
         if (!$module) {
-            $this->error('Modulo nao encontrado.');
+            $this->error('Módulo não encontrado.');
             $this->redirect('system-modules');
         }
 
         if ((string) ($module['status'] ?? '') === 'error') {
-            $this->error('Este modulo esta com erro de instalacao. Reinstale uma versao corrigida antes de ativar.');
+            $this->error('Este módulo esta com erro de instalacao. Reinstale uma versao corrigida antes de ativar.');
             $this->redirect('system-modules&id=' . $moduleId);
         }
 
         $this->modules->setStatus($moduleId, 'active');
-        $this->modules->log($moduleId, (string) $module['module_key'], 'activated', 'info', 'Modulo ativado pelo administrador.');
-        $this->success('Modulo ativado.');
+        $this->modules->log($moduleId, (string) $module['module_key'], 'activated', 'info', 'Módulo ativado pelo administrador.');
+        $this->success('Módulo ativado.');
         $this->redirect('system-modules&id=' . $moduleId);
     }
 
@@ -121,13 +121,13 @@ class SystemModuleController extends BaseController
         $moduleId = (int) post('module_id', 0);
         $module = $this->modules->findModule($moduleId);
         if (!$module) {
-            $this->error('Modulo nao encontrado.');
+            $this->error('Módulo não encontrado.');
             $this->redirect('system-modules');
         }
 
         $this->modules->setStatus($moduleId, 'inactive');
-        $this->modules->log($moduleId, (string) $module['module_key'], 'deactivated', 'info', 'Modulo desativado pelo administrador.');
-        $this->success('Modulo desativado.');
+        $this->modules->log($moduleId, (string) $module['module_key'], 'deactivated', 'info', 'Módulo desativado pelo administrador.');
+        $this->success('Módulo desativado.');
         $this->redirect('system-modules&id=' . $moduleId);
     }
 
@@ -136,7 +136,7 @@ class SystemModuleController extends BaseController
         $zip = new ZipArchive();
         $opened = $zip->open($packagePath);
         if ($opened !== true) {
-            throw new RuntimeException('Nao foi possivel abrir o ZIP enviado.');
+            throw new RuntimeException('Não foi possível abrir o ZIP enviado.');
         }
 
         try {
@@ -145,7 +145,7 @@ class SystemModuleController extends BaseController
             $moduleKey = $normalized['key'];
 
             if ($this->modules->findByKey($moduleKey)) {
-                throw new RuntimeException('Ja existe um modulo instalado com a chave "' . $moduleKey . '".');
+                throw new RuntimeException('Ja existe um módulo instalado com a chave "' . $moduleKey . '".');
             }
 
             $this->validateZipEntries($zip);
@@ -155,7 +155,7 @@ class SystemModuleController extends BaseController
             $installPathForDb = 'modules/' . $moduleKey;
 
             if (is_dir($installPath)) {
-                throw new RuntimeException('Ja existe uma pasta instalada para este modulo.');
+                throw new RuntimeException('Ja existe uma pasta instalada para este módulo.');
             }
 
             if (is_dir($stagingPath)) {
@@ -163,18 +163,18 @@ class SystemModuleController extends BaseController
             }
 
             if (!mkdir($stagingPath, 0775, true) && !is_dir($stagingPath)) {
-                throw new RuntimeException('Nao foi possivel criar a pasta temporaria de instalacao.');
+                throw new RuntimeException('Não foi possível criar a pasta temporaria de instalacao.');
             }
 
             if (!$zip->extractTo($stagingPath)) {
-                throw new RuntimeException('Nao foi possivel extrair o pacote ZIP.');
+                throw new RuntimeException('Não foi possível extrair o pacote ZIP.');
             }
 
             $this->writeModuleDenyFile($stagingPath);
 
             if (!rename($stagingPath, $installPath)) {
                 $this->deleteDirectory($stagingPath, $this->packagesRoot());
-                throw new RuntimeException('Nao foi possivel mover o modulo para a pasta final.');
+                throw new RuntimeException('Não foi possível mover o módulo para a pasta final.');
             }
 
             $migrations = $this->resolveMigrations($installPath, $normalized['migrations']);
@@ -209,7 +209,7 @@ class SystemModuleController extends BaseController
                 throw $e;
             }
 
-            $this->modules->log($moduleId, $moduleKey, 'installed', 'info', 'Modulo instalado em modo inativo.', [
+            $this->modules->log($moduleId, $moduleKey, 'installed', 'info', 'Módulo instalado em modo inativo.', [
                 'version' => $normalized['version'],
                 'package_hash' => $hash,
                 'migrations' => count($migrations),
@@ -234,7 +234,7 @@ class SystemModuleController extends BaseController
 
         $manifest = json_decode(trim($raw), true);
         if (!is_array($manifest)) {
-            throw new RuntimeException('O module.json nao e um JSON valido.');
+            throw new RuntimeException('O module.json não e um JSON valido.');
         }
 
         return $manifest;
@@ -244,22 +244,22 @@ class SystemModuleController extends BaseController
     {
         $key = strtolower(trim((string) ($manifest['key'] ?? $manifest['name'] ?? '')));
         if (!preg_match('/^[a-z][a-z0-9_-]{2,60}$/', $key)) {
-            throw new RuntimeException('A chave do modulo deve usar apenas letras minusculas, numeros, hifen ou underline.');
+            throw new RuntimeException('A chave do módulo deve usar apenas letras minusculas, numeros, hifen ou underline.');
         }
 
         $title = trim((string) ($manifest['title'] ?? $manifest['label'] ?? ''));
         if ($title === '') {
-            throw new RuntimeException('Informe o titulo do modulo no module.json.');
+            throw new RuntimeException('Informe o título do módulo no module.json.');
         }
 
         $version = trim((string) ($manifest['version'] ?? '1.0.0'));
         if ($version === '') {
-            throw new RuntimeException('Informe a versao do modulo.');
+            throw new RuntimeException('Informe a versao do módulo.');
         }
 
         $minCoreVersion = trim((string) ($manifest['min_core_version'] ?? ''));
         if ($minCoreVersion !== '' && version_compare($this->coreVersion(), $minCoreVersion, '<')) {
-            throw new RuntimeException('Este modulo exige core ' . $minCoreVersion . ' ou superior.');
+            throw new RuntimeException('Este módulo exige core ' . $minCoreVersion . ' ou superior.');
         }
 
         return [
@@ -298,7 +298,7 @@ class SystemModuleController extends BaseController
             }
 
             if (!preg_match('/^[a-zA-Z0-9_.:-]+$/', $key)) {
-                throw new RuntimeException('Permissao invalida no manifesto: ' . $key);
+                throw new RuntimeException('Permissão inválida no manifesto: ' . $key);
             }
 
             $normalized[$key] = [
@@ -330,7 +330,7 @@ class SystemModuleController extends BaseController
             }
 
             if (str_contains($route, '..') || str_starts_with($route, '/') || preg_match('/^[a-z]+:\/\//i', $route)) {
-                throw new RuntimeException('Rota invalida no menu do manifesto: ' . $route);
+                throw new RuntimeException('Rota inválida no menu do manifesto: ' . $route);
             }
 
             if ($route !== 'modules/' . $moduleKey && !str_starts_with($route, 'modules/' . $moduleKey . '/')) {
@@ -372,7 +372,7 @@ class SystemModuleController extends BaseController
 
             $file = str_replace('\\', '/', $file);
             if (!$this->isSafeRelativePath($file) || !str_ends_with(strtolower($file), '.sql')) {
-                throw new RuntimeException('Migration invalida no manifesto: ' . $file);
+                throw new RuntimeException('Migration inválida no manifesto: ' . $file);
             }
 
             $normalized[] = $file;
@@ -431,7 +431,7 @@ class SystemModuleController extends BaseController
         foreach ($migrations as $migration) {
             $path = $installPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $migration);
             if (!is_file($path)) {
-                throw new RuntimeException('Migration informada nao foi encontrada: ' . $migration);
+                throw new RuntimeException('Migration informada não foi encontrada: ' . $migration);
             }
             $this->assertInside($path, $installPath);
         }
@@ -462,7 +462,7 @@ class SystemModuleController extends BaseController
     private function validateMigrationSql(string $sql, string $migration): void
     {
         if (preg_match('/\b(DROP|TRUNCATE|RENAME)\b/i', $sql)) {
-            throw new RuntimeException('Comandos destrutivos nao sao permitidos na primeira fase (' . $migration . ').');
+            throw new RuntimeException('Comandos destrutivos não são permitidos na primeira fase (' . $migration . ').');
         }
     }
 
@@ -523,7 +523,7 @@ class SystemModuleController extends BaseController
     private function ensureDirectory(string $path): void
     {
         if (!is_dir($path) && !mkdir($path, 0775, true) && !is_dir($path)) {
-            throw new RuntimeException('Nao foi possivel criar a pasta: ' . $path);
+            throw new RuntimeException('Não foi possível criar a pasta: ' . $path);
         }
     }
 

@@ -2,7 +2,7 @@
 <section class="courses-enrollments-shell space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-semibold text-white">Matriculas</h2>
+            <h2 class="text-2xl font-semibold text-white">Matrículas</h2>
             <p class="text-sm text-slate-300">Vincule alunos aos cursos e acompanhe status/progresso.</p>
         </div>
         <a href="<?= route('courses'); ?>" class="rounded-lg border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 transition hover:border-cyan-400/50 hover:bg-slate-800">Voltar</a>
@@ -79,14 +79,14 @@
                     </tr>
                 <?php endforeach; ?>
                 <?php if ($rows === []): ?>
-                    <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Nenhuma matricula registrada.</td></tr>
+                    <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Nenhuma matrícula registrada.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'courses/enrollments', 'page' => $p, 'course_id' => $currentCourseFilter]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

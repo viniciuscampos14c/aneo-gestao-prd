@@ -63,10 +63,10 @@ $currentStatus = (string) ($filters['status'] ?? 'pending_review');
         </div>
 
         <div>
-            <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Pagina</label>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Página</label>
             <select name="per_page" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-cyan-300 focus:outline-none">
                 <?php foreach ($paginationOptions as $option): ?>
-                    <option value="<?= (int) $option; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $option ? 'selected' : ''; ?>><?= (int) $option; ?>/pagina</option>
+                    <option value="<?= (int) $option; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $option ? 'selected' : ''; ?>><?= (int) $option; ?>/página</option>
                 <?php endforeach; ?>
             </select>
         </div>

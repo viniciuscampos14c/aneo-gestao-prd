@@ -172,7 +172,7 @@ function finance_url(string $status, int $page = 1): string {
                                                 <?php endif; ?>
                                                 <?php if ($boletoBarcode !== ''): ?>
                                                     <div class="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                                                        <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">Codigo de barras</p>
+                                                        <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">Código de barras</p>
                                                         <p class="break-all font-mono text-[11px] text-slate-700"><?= e($boletoBarcode); ?></p>
                                                         <button type="button" class="mt-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600" onclick="navigator.clipboard && navigator.clipboard.writeText(<?= json_encode($boletoBarcode); ?>)">Copiar</button>
                                                     </div>

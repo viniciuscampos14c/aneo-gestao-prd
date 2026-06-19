@@ -419,19 +419,19 @@ $statusBadgeClass = static function (string $status): string {
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold <?= $useCourseDashboard ? 'text-white' : ''; ?>">Cursos EAD</h2>
-            <p class="text-sm <?= $useCourseDashboard ? 'text-slate-300' : 'text-slate-500'; ?>">Catalogo de cursos, publicacao e acompanhamento.</p>
+            <p class="text-sm <?= $useCourseDashboard ? 'text-slate-300' : 'text-slate-500'; ?>">Catalogo de cursos, publicação e acompanhamento.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <?php if ($canCategory): ?>
                 <a href="<?= route('courses/categories'); ?>" class="course-catalog-tab rounded-lg px-3 py-2 text-sm <?= $useCourseDashboard ? '' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>">Categorias</a>
             <?php endif; ?>
             <?php if ($canEnrollment): ?>
-                <a href="<?= route('courses/enrollments'); ?>" class="course-catalog-tab rounded-lg px-3 py-2 text-sm <?= $useCourseDashboard ? '' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>">Matriculas</a>
+                <a href="<?= route('courses/enrollments'); ?>" class="course-catalog-tab rounded-lg px-3 py-2 text-sm <?= $useCourseDashboard ? '' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>">Matrículas</a>
             <?php endif; ?>
             <?php if ($canTrial): ?>
                 <a href="<?= route('courses/trial-access'); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold <?= $useCourseDashboard ? 'course-catalog-tab course-catalog-tab-green' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'; ?>">Degustacao</a>
             <?php endif; ?>
-            <a href="<?= route('courses/calendar'); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold <?= $useCourseDashboard ? 'course-catalog-tab course-catalog-tab-amber' : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'; ?>">Agenda Academica</a>
+            <a href="<?= route('courses/calendar'); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold <?= $useCourseDashboard ? 'course-catalog-tab course-catalog-tab-amber' : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'; ?>">Agenda Acadêmica</a>
             <?php if ($canExam): ?>
                 <a href="<?= route('courses/exams'); ?>" class="course-catalog-tab rounded-lg px-3 py-2 text-sm <?= $useCourseDashboard ? '' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>">Exames</a>
             <?php endif; ?>
@@ -457,7 +457,7 @@ $statusBadgeClass = static function (string $status): string {
 
         <select name="per_page" class="rounded-lg px-3 py-2 text-sm <?= $useCourseDashboard ? 'course-catalog-select' : 'border border-slate-200'; ?>">
             <?php foreach ($paginationOptions as $opt): ?>
-                <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 0) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 0) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
             <?php endforeach; ?>
         </select>
 
@@ -493,7 +493,7 @@ $statusBadgeClass = static function (string $status): string {
             <article class="course-stat-card rounded-2xl p-4">
                 <div class="mb-3 flex items-center justify-between">
                     <span class="text-xs uppercase tracking-[0.18em] text-sky-300">Volume</span>
-                    <span class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-100">Matriculas</span>
+                    <span class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-100">Matrículas</span>
                 </div>
                 <p class="text-3xl font-semibold text-white"><?= (int) ($stats['enrollments_total'] ?? 0); ?></p>
                 <p class="mt-1 text-sm text-slate-400">Ativas e concluidas</p>
@@ -616,7 +616,7 @@ $statusBadgeClass = static function (string $status): string {
                         <th class="px-3 py-3">Capa</th>
                         <th class="px-3 py-3">Nome do curso</th>
                         <th class="px-3 py-3">Categoria</th>
-                        <th class="px-3 py-3">Situacao</th>
+                        <th class="px-3 py-3">Situação</th>
                         <th class="px-3 py-3">Opcoes</th>
                     </tr>
                 </thead>
@@ -666,7 +666,7 @@ $statusBadgeClass = static function (string $status): string {
     <?php endif; ?>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm <?= $useCourseDashboard ? 'text-slate-300' : ''; ?>">
-        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
         <div class="flex flex-wrap gap-2">
             <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                 <?php $pageQuery = $buildCourseQuery(['page' => $p]); ?>

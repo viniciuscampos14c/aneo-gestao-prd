@@ -105,7 +105,7 @@ function exchange_url(array $filters, int $page = 1): string
                             <th class="px-4 py-3 text-left">Aluno</th>
                             <th class="px-4 py-3 text-left">Unidade atual</th>
                             <th class="px-4 py-3 text-left">Destino</th>
-                            <th class="px-4 py-3 text-left">M&ecirc;s desejado</th>
+                            <th class="px-4 py-3 text-left">Data pretendida</th>
                             <th class="px-4 py-3 text-center">Meses cursando</th>
                             <th class="px-4 py-3 text-center">Status</th>
                             <th class="px-4 py-3 text-left">Enviado em</th>
@@ -120,7 +120,9 @@ function exchange_url(array $filters, int $page = 1): string
                             $slabel = $statusLabels[$st] ?? $st;
                             $dm = (string) ($row['desired_month'] ?? '');
                             $dmFmt = '';
-                            if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
+                            if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dm, $m)) {
+                                $dmFmt = $m[3] . '/' . $m[2] . '/' . $m[1];
+                            } elseif ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
                                 $months = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
                                 $dmFmt = ($months[(int) $m[2]] ?? $m[2]) . '/' . $m[1];
                             }

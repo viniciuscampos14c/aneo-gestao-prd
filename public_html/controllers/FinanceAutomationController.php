@@ -28,7 +28,7 @@ class FinanceAutomationController extends BaseController
         if ($configuredToken !== '' && !hash_equals($configuredToken, $providedToken)) {
             $this->json([
                 'ok' => false,
-                'message' => 'Token invalido para automacao financeira.',
+                'message' => 'Token inválido para automacao financeira.',
             ], 401);
         }
 

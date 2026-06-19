@@ -51,7 +51,7 @@ $exportQuery = http_build_query([
 
     <?php if (!$invoicePaymentMethodsAvailable): ?>
         <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Formas de pagamento ainda nao disponiveis no banco. Execute a migration
+            Formas de pagamento ainda não disponíveis no banco. Execute a migration
             <code>migrations/20260424_finance_payment_methods.sql</code>.
         </div>
     <?php endif; ?>
@@ -103,7 +103,7 @@ $exportQuery = http_build_query([
 
             <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
 
@@ -171,7 +171,7 @@ $exportQuery = http_build_query([
                         'cancelled' => 'Cancelado',
                         'failed', 'error' => 'Falhou',
                         'pending' => 'Pendente',
-                        default => 'Nao gerado',
+                        default => 'Não gerado',
                     };
                     $boletoStatusColor = match ($boletoStatus) {
                         'issued', 'registered' => 'bg-emerald-100 text-emerald-700',
@@ -190,7 +190,7 @@ $exportQuery = http_build_query([
                     $paymentMethodName = trim((string) ($row['payment_method_name'] ?? ''));
                     $paymentMethodMode = trim((string) ($row['payment_method_mode'] ?? ''));
                     $paymentMethodProvider = trim((string) ($row['payment_method_provider_key'] ?? ''));
-                    $paymentMethodLabel = $paymentMethodName !== '' ? $paymentMethodName : 'Nao definido';
+                    $paymentMethodLabel = $paymentMethodName !== '' ? $paymentMethodName : 'Não definido';
                     $canBoletoAutomation = !$invoicePaymentMethodsAvailable || $paymentMethodName === '' || $paymentMethodMode === 'integrated';
                     $windowDays = (int) ($row['student_boleto_days_before'] ?? 10);
                     $windowDays = $windowDays > 0 ? $windowDays : 10;
@@ -267,12 +267,12 @@ $exportQuery = http_build_query([
                                         <input type="hidden" name="method" value="<?= e($paymentMethodName !== '' ? $paymentMethodName : 'PIX'); ?>">
                                         <input type="hidden" name="payment_method_id" value="<?= (int) ($row['payment_method_id'] ?? 0); ?>">
                                         <input type="hidden" name="paid_at" value="<?= date('Y-m-d'); ?>">
-                                        <input type="hidden" name="notes" value="Baixa manual pelo modulo de contas a receber.">
+                                        <input type="hidden" name="notes" value="Baixa manual pelo módulo de contas a receber.">
                                         <button class="finance-btn finance-btn-settle rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Efetuar baixa</button>
                                         <p class="finance-helper-text text-[11px] text-slate-500">Baixa total do saldo em aberto.</p>
                                     </form>
                                 <?php else: ?>
-                                    <p class="text-xs text-slate-400">Sem permissao para baixa.</p>
+                                    <p class="text-xs text-slate-400">Sem permissão para baixa.</p>
                                 <?php endif; ?>
                             <?php endif; ?>
                         </td>
@@ -281,7 +281,7 @@ $exportQuery = http_build_query([
                             <?php if (!$canBoletoAutomation): ?>
                                 <p class="text-xs text-slate-400">Forma manual (sem automacao de boleto).</p>
                             <?php elseif (empty($boletosAvailable)): ?>
-                                <p class="text-xs text-slate-400">Estrutura de boleto nao instalada.</p>
+                                <p class="text-xs text-slate-400">Estrutura de boleto não instalada.</p>
                             <?php else: ?>
                                 <div class="space-y-1">
                                     <span class="finance-boleto-pill rounded-full px-2 py-1 text-xs font-semibold <?= $boletoStatusColor; ?> <?= $boletoToneClass; ?>"><?= e($boletoStatusLabel); ?></span>
@@ -362,7 +362,7 @@ $exportQuery = http_build_query([
                                 'processing' => 'Processando',
                                 'failed' => 'Falhou',
                                 'pending' => 'Pendente',
-                                default => 'Nao solicitada',
+                                default => 'Não solicitada',
                             };
                             ?>
                             <?php if ($row['status'] !== 'paid'): ?>
@@ -383,7 +383,7 @@ $exportQuery = http_build_query([
                                                 <button class="finance-btn finance-btn-nfe rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Gerar Nota Fiscal de Saida</button>
                                             </form>
                                         <?php else: ?>
-                                            <p class="text-xs text-slate-400">Sem permissao para NF-e.</p>
+                                            <p class="text-xs text-slate-400">Sem permissão para NF-e.</p>
                                         <?php endif; ?>
                                         <?php if (!empty($row['fiscal_error_message'])): ?>
                                             <p class="text-[11px] text-rose-600"><?= e($row['fiscal_error_message']); ?></p>
@@ -464,7 +464,7 @@ $exportQuery = http_build_query([
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                 <a href="index.php?<?= http_build_query($paginationBase + ['page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

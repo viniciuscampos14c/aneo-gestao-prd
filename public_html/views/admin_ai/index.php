@@ -22,7 +22,7 @@ $aiModel = trim((string) ($aiModel ?? ''));
 
     <?php if (!$historyAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Historico no banco indisponivel. Execute a migracao <code>migrations/20260310_admin_ai_chat.sql</code>.
+            Histórico no banco indisponivel. Execute a migração <code>migrations/20260310_admin_ai_chat.sql</code>.
             O chat segue funcional, mas os dados ficam apenas na sessao atual do navegador.
         </div>
     <?php endif; ?>
@@ -102,7 +102,7 @@ $aiModel = trim((string) ($aiModel ?? ''));
                 <?php if ($messages === []): ?>
                     <div id="ai-empty-state" class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                         Pergunte algo como:
-                        <br>- Qual e o saldo vencido hoje e quantos alunos estao em atraso?
+                        <br>- Qual e o saldo vencido hoje e quantos alunos estão em atraso?
                         <br>- Temos negociacoes ou aditivos mobile pendentes?
                         <br>- Quais leads o comercial precisa atacar primeiro?
                     </div>
@@ -250,7 +250,7 @@ $aiModel = trim((string) ($aiModel ?? ''));
             const payload = await response.json();
             if (!response.ok || !payload || !payload.ok) {
                 const messageError = payload && payload.message ? payload.message : 'Falha ao consultar assistente.';
-                appendMessage('assistant', 'Erro: ' + messageError, { warning: 'Nao foi possivel concluir a consulta.' });
+                appendMessage('assistant', 'Erro: ' + messageError, { warning: 'Não foi possível concluir a consulta.' });
                 return;
             }
 
@@ -268,7 +268,7 @@ $aiModel = trim((string) ($aiModel ?? ''));
             });
         } catch (error) {
             appendMessage('assistant', 'Erro de rede ao consultar o assistente.', {
-                warning: 'Verifique conexao e configuracao da API.'
+                warning: 'Verifique conexao e configuração da API.'
             });
         } finally {
             submitBtn.disabled = false;

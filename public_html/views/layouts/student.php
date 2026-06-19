@@ -42,20 +42,21 @@ if ($nameParts !== []) {
 }
 $menu = $isTrialAccess
     ? [
-        ['label' => 'Inicio', 'route' => 'student/dashboard'],
+        ['label' => 'Início', 'route' => 'student/dashboard'],
         ['label' => 'Aulas ao Vivo', 'route' => 'student/live'],
     ]
     : [
-        ['label' => 'Inicio', 'route' => 'student/dashboard'],
+        ['label' => 'Início', 'route' => 'student/dashboard'],
         ['label' => 'Meus Cursos', 'route' => 'student/courses'],
+        ['label' => 'Minhas Dúvidas', 'route' => 'student/questions'],
         ['label' => 'Minha Escala', 'route' => 'student/schedule'],
         ['label' => 'Agenda', 'route' => 'student/calendar'],
         ['label' => 'Aulas ao Vivo', 'route' => 'student/live'],
         ['label' => 'Materiais', 'route' => 'student/materials'],
         ['label' => 'Arsenal', 'route' => 'student/arsenal'],
         ['label' => 'Progresso', 'route' => 'student/progress'],
-        ['label' => 'Avaliacoes', 'route' => 'student/exams'],
-        ['label' => 'Historico Academico', 'route' => 'student/academic-history'],
+        ['label' => 'Avaliações', 'route' => 'student/exams'],
+        ['label' => 'Histórico Acadêmico', 'route' => 'student/academic-history'],
     ];
 $logoBuild = '20260512-brand-kit-v1';
 $studentTicketAlerts = isset($studentTicketAlerts) && is_array($studentTicketAlerts) ? $studentTicketAlerts : [];
@@ -82,7 +83,7 @@ $studentCsrfToken = csrf_token();
                         <p class="text-xs uppercase tracking-[0.2em] text-sky-600">ANEO</p>
                         <h1 class="text-lg font-semibold text-slate-900">Portal do Aluno</h1>
                     </div>
-                    <a href="<?= route('student/dashboard'); ?>" class="hidden sm:block" title="Ir para Inicio">
+                    <a href="<?= route('student/dashboard'); ?>" class="hidden sm:block" title="Ir para Início">
                         <span class="aneo-theme-logo-frame aneo-logo-scope-student">
                             <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO portal do aluno tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-desktop">
                             <img src="assets/brand/aneo-wordmark-simples-dark.svg?v=<?= e($logoBuild); ?>" alt="Logo ANEO portal do aluno tema escuro" class="aneo-theme-logo aneo-logo-dark aneo-logo-mobile">
@@ -99,7 +100,7 @@ $studentCsrfToken = csrf_token();
                     <button type="button"
                             data-student-alert-trigger
                             class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                            title="Notificacoes">
+                            title="Notificações">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
                         </svg>
@@ -138,7 +139,7 @@ $studentCsrfToken = csrf_token();
                                 </div>
                             </div>
                             <div class="px-2 py-2">
-                                <p class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Acessos rapidos</p>
+                                <p class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Acessos rápidos</p>
                                 <a href="<?= route('student/exchange'); ?>"
                                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-cyan-200">
                                     <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/50 dark:text-cyan-300">
@@ -147,8 +148,8 @@ $studentCsrfToken = csrf_token();
                                         </svg>
                                     </span>
                                     <div class="text-left">
-                                        <p class="font-medium">Intercambio Aneo</p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">Solicite e acompanhe seu intercambio</p>
+                                        <p class="font-medium">Intercâmbio ANEO</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Solicite e acompanhe seu intercâmbio</p>
                                     </div>
                                 </a>
                                 <a href="<?= route('student/requests'); ?>"
@@ -177,7 +178,7 @@ $studentCsrfToken = csrf_token();
                                 </a>
                             </div>
                             <div class="border-t border-slate-200 bg-slate-50/70 px-2 py-2 dark:border-slate-700 dark:bg-slate-950/60">
-                                <p class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Sessao</p>
+                                <p class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Sessão</p>
                                 <a href="<?= route('student/logout'); ?>"
                                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-rose-600 transition hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40">
                                     <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
@@ -208,7 +209,7 @@ $studentCsrfToken = csrf_token();
             <?php if ($isTrialAccess): ?>
                 <div class="mx-auto max-w-7xl px-4 pb-4 lg:px-8">
                     <div class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
-                        Acesso degustacao ativo para o curso <strong><?= e((string) ($trialAccess['course_name'] ?? '')); ?></strong> em <?= e(date('d/m/Y', strtotime((string) ($trialAccess['access_date'] ?? date('Y-m-d'))))); ?>.
+                        Acesso degustação ativo para o curso <strong><?= e((string) ($trialAccess['course_name'] ?? '')); ?></strong> em <?= e(date('d/m/Y', strtotime((string) ($trialAccess['access_date'] ?? date('Y-m-d'))))); ?>.
                     </div>
                 </div>
             <?php endif; ?>
@@ -229,7 +230,7 @@ $studentCsrfToken = csrf_token();
     <div class="portal-alert-modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-xl">
         <div class="portal-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div>
-                <h3 class="portal-alert-title text-lg font-semibold text-sky-700 dark:text-cyan-200">Notificacoes</h3>
+                <h3 class="portal-alert-title text-lg font-semibold text-sky-700 dark:text-cyan-200">Notificações</h3>
                 <p class="portal-alert-subtitle text-xs text-slate-500 dark:text-slate-400">Resumo de aulas ao vivo, chamados e escalas recentes.</p>
             </div>
             <button type="button" data-student-alert-close class="rounded-lg border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Fechar</button>
@@ -243,14 +244,14 @@ $studentCsrfToken = csrf_token();
                             <?php
                             $alertType = trim((string) ($alert['notification_type'] ?? 'general'));
                             $alertTitle = trim((string) ($alert['title'] ?? 'Nova escala'));
-                            $alertMessage = trim((string) ($alert['message'] ?? 'Voce recebeu uma nova alocacao de escala.'));
+                            $alertMessage = trim((string) ($alert['message'] ?? 'Você recebeu uma nova alocação de escala.'));
                             $alertCreatedAt = trim((string) ($alert['created_at'] ?? ''));
                             $alertRead = (int) ($alert['is_read'] ?? 0) === 1;
                             $alertLink = trim((string) ($alert['link_url'] ?? '')) !== '' ? trim((string) $alert['link_url']) : $studentScheduleRoute;
                             $alertSectionLabel = match ($alertType) {
-                                'exam_published' => 'Avaliacao',
+                                'exam_published' => 'Avaliação',
                                 'exam_result' => 'Resultado',
-                                'exchange_request' => 'Intercambio',
+                                'exchange_request' => 'Intercâmbio',
                                 'live_class' => 'Aula ao vivo',
                                 'support_ticket_pending' => 'Chamado',
                                 'support_ticket_resolved' => 'Chamado',
@@ -258,14 +259,14 @@ $studentCsrfToken = csrf_token();
                                 default => 'Portal',
                             };
                             $alertButtonLabel = match ($alertType) {
-                                'exam_published' => 'Abrir Avaliacoes',
+                                'exam_published' => 'Abrir Avaliações',
                                 'exam_result' => 'Ver Resultado',
-                                'exchange_request' => 'Abrir Intercambio',
+                                'exchange_request' => 'Abrir Intercâmbio',
                                 'live_class' => 'Abrir Aulas ao Vivo',
                                 'support_ticket_pending' => 'Abrir Chamados',
                                 'support_ticket_resolved' => 'Abrir Chamados',
                                 'duty_schedule' => 'Abrir Minha Escala',
-                                default => 'Abrir Notificacao',
+                                default => 'Abrir Notificação',
                             };
                             $alertCardClass = match ($alertType) {
                                 'exam_published' => 'border-sky-100 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/30',
@@ -353,7 +354,7 @@ $studentCsrfToken = csrf_token();
                     <article class="portal-alert-card rounded-xl border border-sky-100 bg-sky-50/50 px-4 py-3 text-sm dark:border-sky-900/60 dark:bg-sky-950/25">
                         <p class="portal-alert-card-title font-semibold text-slate-800 dark:text-slate-100"><?= e((string) ($alert['subject'] ?? 'Chamado')); ?></p>
                         <p class="portal-alert-card-copy mt-1 text-xs text-slate-600 dark:text-slate-300">
-                            Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
+                            Código: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
                             | Status: <?= e((string) ($alert['status'] ?? 'open')); ?>
                             | Atualizado em: <?= e((string) ($alert['updated_at'] ?? $alert['created_at'] ?? '')); ?>
                         </p>
@@ -365,7 +366,7 @@ $studentCsrfToken = csrf_token();
 
             <?php if ($studentPortalAlerts === [] && $studentLiveAlerts === [] && $studentTicketAlerts === []): ?>
                 <article class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    Nenhuma notificacao pendente no momento.
+                    Nenhuma notificação pendente no momento.
                 </article>
             <?php endif; ?>
         </div>

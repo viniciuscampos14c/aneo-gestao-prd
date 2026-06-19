@@ -31,7 +31,7 @@ if ($publicBaseUrl !== '') {
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Empresas</h2>
-            <p class="text-sm text-slate-500">Cadastre os CNPJs e controle quais usuarios podem acessar cada empresa.</p>
+            <p class="text-sm text-slate-500">Cadastre os CNPJs e controle quais usuários podem acessar cada empresa.</p>
         </div>
     </div>
 
@@ -85,7 +85,7 @@ if ($publicBaseUrl !== '') {
 
         <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <?php foreach ($paginationOptions as $opt): ?>
-                <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
             <?php endforeach; ?>
         </select>
 
@@ -99,7 +99,7 @@ if ($publicBaseUrl !== '') {
                     <th class="px-3 py-3">ID</th>
                     <th class="px-3 py-3">Empresa</th>
                     <th class="px-3 py-3">CNPJ</th>
-                    <th class="px-3 py-3">Usuarios</th>
+                    <th class="px-3 py-3">Usuários</th>
                     <th class="px-3 py-3">Status</th>
                     <th class="px-3 py-3">Acoes</th>
                 </tr>
@@ -147,7 +147,7 @@ if ($publicBaseUrl !== '') {
     </div>
 
     <div class="companies-pagination flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'companies', 'page' => $p]); ?>" class="companies-page-link rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'companies-page-link-active bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>">
@@ -160,21 +160,21 @@ if ($publicBaseUrl !== '') {
     <div class="rounded-xl border border-slate-200 bg-white p-5">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h3 class="text-lg font-semibold">Configuracao D4Sign</h3>
-                <p class="text-sm text-slate-500">Mantenha aqui as credenciais de assinatura digital da empresa. Essa configuracao saiu do modulo Assinaturas para ficar concentrada em Cadastro.</p>
+                <h3 class="text-lg font-semibold">Configuração D4Sign</h3>
+                <p class="text-sm text-slate-500">Mantenha aqui as credenciais de assinatura digital da empresa. Essa configuração saiu do módulo Assinaturas para ficar concentrada em Cadastro.</p>
             </div>
         </div>
 
         <?php if (!$integrationAvailable): ?>
             <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                A tabela <code>company_integrations</code> nao foi encontrada. Execute a migracao <code>migrations/20260306_phase2_company_isolation_integrations.sql</code>.
+                A tabela <code>company_integrations</code> não foi encontrada. Execute a migração <code>migrations/20260306_phase2_company_isolation_integrations.sql</code>.
             </div>
         <?php endif; ?>
 
         <form method="get" action="index.php" class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_auto] md:items-end">
             <input type="hidden" name="route" value="companies">
             <label class="block">
-                <span class="mb-1 block text-sm font-medium">Empresa da configuracao</span>
+                <span class="mb-1 block text-sm font-medium">Empresa da configuração</span>
                 <select name="integration_company_id" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecione...</option>
                     <?php foreach ($companyOptions as $companyOption): ?>
@@ -185,7 +185,7 @@ if ($publicBaseUrl !== '') {
                     <?php endforeach; ?>
                 </select>
             </label>
-            <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Carregar configuracao</button>
+            <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Carregar configuração</button>
         </form>
 
         <?php if ($integrationCompany): ?>
@@ -245,7 +245,7 @@ if ($publicBaseUrl !== '') {
 
                 <div class="lg:col-span-6 flex justify-end">
                     <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" <?= $integrationAvailable ? '' : 'disabled'; ?>>
-                        Salvar configuracao D4Sign
+                        Salvar configuração D4Sign
                     </button>
                 </div>
             </form>

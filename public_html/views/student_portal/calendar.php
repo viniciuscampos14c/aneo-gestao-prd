@@ -5,14 +5,14 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
 <section class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-semibold">Agenda Academica</h2>
-            <p class="text-sm text-slate-500">Calendario unificado com provas, aulas ao vivo e prazos de atividades.</p>
+            <h2 class="text-2xl font-semibold">Agenda Acadêmica</h2>
+            <p class="text-sm text-slate-500">Calendário unificado com provas, aulas ao vivo e prazos de atividades.</p>
         </div>
     </div>
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Agenda academica ainda nao habilitada nesta base. Avise o administrativo para executar a migracao mais recente.
+            Agenda acadêmica ainda não habilitada nesta base. Avise o administrativo para executar a migração mais recente.
         </div>
     <?php endif; ?>
 
@@ -51,7 +51,7 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
     </form>
 
     <section class="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 class="mb-3 text-lg font-semibold">Meu calendario</h3>
+        <h3 class="mb-3 text-lg font-semibold">Meu calendário</h3>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
@@ -94,7 +94,7 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
                         </tr>
                     <?php endforeach; ?>
                     <?php if ($events === []): ?>
-                        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">Nenhum evento academico no periodo.</td></tr>
+                        <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">Nenhum evento acadêmico no periodo.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -114,7 +114,7 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
                 </div>
             <?php endforeach; ?>
             <?php if ($reminders === []): ?>
-                <p class="text-slate-500">Nenhum lembrete automatico enviado para voce ainda.</p>
+                <p class="text-slate-500">Nenhum lembrete automatico enviado para você ainda.</p>
             <?php endif; ?>
         </div>
     </section>

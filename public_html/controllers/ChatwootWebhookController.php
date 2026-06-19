@@ -23,7 +23,7 @@ class ChatwootWebhookController extends BaseController
         if ($configuredToken !== '' && !hash_equals($configuredToken, $providedToken)) {
             $this->json([
                 'ok' => false,
-                'message' => 'Webhook token invalido.',
+                'message' => 'Webhook token inválido.',
             ], 401);
         }
 
@@ -32,11 +32,11 @@ class ChatwootWebhookController extends BaseController
         }
 
         if (!$this->chatwoot->isConfigured()) {
-            $this->json(['ok' => false, 'message' => 'Integracao Chatwoot nao configurada.'], 503);
+            $this->json(['ok' => false, 'message' => 'Integracao Chatwoot não configurada.'], 503);
         }
 
         if (!$this->flow->featureAvailable()) {
-            $this->json(['ok' => false, 'message' => 'Tabela chatwoot_flow_sessions indisponivel. Rode a migracao SQL.'], 503);
+            $this->json(['ok' => false, 'message' => 'Tabela chatwoot_flow_sessions indisponivel. Rode a migração SQL.'], 503);
         }
 
         $payload = $this->readJsonPayload();

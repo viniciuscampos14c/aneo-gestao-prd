@@ -114,7 +114,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
                 <p class="mb-2 text-xs font-semibold text-slate-500">Erro</p>
                 <pre class="rounded-lg bg-slate-900 p-4 text-xs text-rose-300"><code>{
   "ok": false,
-  "message": "Token invalido ou expirado.",
+  "message": "Token inválido ou expirado.",
   "code": 401
 }</code></pre>
             </div>
@@ -167,7 +167,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
                 <code class="mt-1 block break-all font-mono text-xs text-slate-800"><?= e($apiUrl); ?>?r=rdstation_students</code>
             </div>
             <div class="rounded-lg border border-cyan-100 bg-white p-3">
-                <p class="text-xs font-semibold text-slate-500">Permissao exclusiva</p>
+                <p class="text-xs font-semibold text-slate-500">Permissão exclusiva</p>
                 <code class="mt-1 block font-mono text-xs text-slate-800">rdstation_students.create</code>
             </div>
         </div>
@@ -192,7 +192,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
         <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             Todas as datas usam <code class="font-mono">YYYY-MM-DD</code>. O campo
             <code class="font-mono">invoice_due_day</code> representa o dia mensal de vencimento, de 1 a 31.
-            O CRO e opcional; os demais campos do exemplo sao obrigatorios.
+            O CRO e opcional; os demais campos do exemplo são obrigatórios.
         </div>
     </div>
 
@@ -211,7 +211,7 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
                 <code class="mt-1 block break-all font-mono text-xs text-slate-800"><?= e($apiUrl); ?>?r=leads</code>
             </div>
             <div class="rounded-lg border border-cyan-100 bg-white p-3">
-                <p class="text-xs font-semibold text-slate-500">Headers obrigatorios</p>
+                <p class="text-xs font-semibold text-slate-500">Headers obrigatórios</p>
                 <code class="mt-1 block font-mono text-xs text-slate-800">Authorization: Bearer SEU_TOKEN</code>
                 <code class="mt-1 block font-mono text-xs text-slate-800">Content-Type: application/json</code>
             </div>
@@ -231,10 +231,10 @@ $apiUrl = rtrim($apiBaseUrl, '/') . '/api.php';
         </div>
 
         <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            <strong>Permissao exigida:</strong> o token precisa ter <code class="font-mono">leads.create</code>.
-            O unico campo obrigatorio no corpo e <code class="font-mono">full_name</code>.
-            Se a unidade nao for enviada, o lead sera criado na empresa vinculada ao token.
-            Nao envie o token na URL; use sempre o header <code class="font-mono">Authorization</code>.
+            <strong>Permissão exigida:</strong> o token precisa ter <code class="font-mono">leads.create</code>.
+            O unico campo obrigatório no corpo e <code class="font-mono">full_name</code>.
+            Se a unidade não for enviada, o lead sera criado na empresa vinculada ao token.
+            Não envie o token na URL; use sempre o header <code class="font-mono">Authorization</code>.
         </div>
     </div>
 

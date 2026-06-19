@@ -75,7 +75,7 @@ class CompanyController extends BaseController
         try {
             $id = $this->companies->create($payload['data']);
         } catch (PDOException $e) {
-            $this->error('Nao foi possivel cadastrar empresa. Verifique se o CNPJ ja existe.');
+            $this->error('Não foi possível cadastrar empresa. Verifique se o CNPJ ja existe.');
             $this->redirect('companies');
         }
 
@@ -105,7 +105,7 @@ class CompanyController extends BaseController
         $id = (int) post('id');
         $before = $this->companySnapshot($id);
         if ($id <= 0 || !$before) {
-            $this->error('Empresa nao encontrada.');
+            $this->error('Empresa não encontrada.');
             $this->redirect('companies');
         }
 
@@ -118,7 +118,7 @@ class CompanyController extends BaseController
         try {
             $this->companies->update($id, $payload['data']);
         } catch (PDOException $e) {
-            $this->error('Nao foi possivel atualizar empresa. Verifique se o CNPJ ja existe.');
+            $this->error('Não foi possível atualizar empresa. Verifique se o CNPJ ja existe.');
             $this->redirect('companies&edit=' . $id);
         }
 
@@ -154,7 +154,7 @@ class CompanyController extends BaseController
 
         $before = $this->companySnapshot($id);
         if ($id <= 0 || !$before) {
-            $this->error('Empresa nao encontrada.');
+            $this->error('Empresa não encontrada.');
             $this->redirect('companies');
         }
 
@@ -223,14 +223,14 @@ class CompanyController extends BaseController
         csrf_validate();
 
         if (!$this->integrations->tableExists()) {
-            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->error('Tabela company_integrations ainda não existe. Execute a migração da Fase 2.');
             $this->redirect('companies/smtp');
         }
 
         $companyId = (int) post('company_id');
         $company = $companyId > 0 ? $this->companies->find($companyId) : null;
         if (!$company) {
-            $this->error('Empresa invalida para salvar SMTP.');
+            $this->error('Empresa inválida para salvar SMTP.');
             $this->redirect('companies/smtp');
         }
 
@@ -254,13 +254,13 @@ class CompanyController extends BaseController
             'entity_type' => 'company_smtp',
             'entity_id' => $companyId,
             'entity_label' => (string) ($company['trade_name'] ?? $company['legal_name'] ?? ('Empresa #' . $companyId)),
-            'description' => 'Configuracao SMTP atualizada.',
+            'description' => 'Configuração SMTP atualizada.',
             'before' => $before,
             'after' => $after,
             'company_id' => $companyId,
         ]);
 
-        $this->success('Configuracao SMTP atualizada com sucesso.');
+        $this->success('Configuração SMTP atualizada com sucesso.');
         $this->redirect('companies/smtp&company_id=' . $companyId);
     }
 
@@ -273,7 +273,7 @@ class CompanyController extends BaseController
         $companyId = (int) post('company_id');
         $company = $companyId > 0 ? $this->companies->find($companyId) : null;
         if (!$company) {
-            $this->error('Empresa invalida para teste SMTP.');
+            $this->error('Empresa inválida para teste SMTP.');
             $this->redirect('companies/smtp');
         }
 
@@ -372,14 +372,14 @@ class CompanyController extends BaseController
         csrf_validate();
 
         if (!$this->integrations->tableExists()) {
-            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->error('Tabela company_integrations ainda não existe. Execute a migração da Fase 2.');
             $this->redirect('companies');
         }
 
         $companyId = (int) post('company_id');
         $company = $companyId > 0 ? $this->companies->find($companyId) : null;
         if (!$company) {
-            $this->error('Empresa invalida para salvar credenciais.');
+            $this->error('Empresa inválida para salvar credenciais.');
             $this->redirect('companies');
         }
 
@@ -437,14 +437,14 @@ class CompanyController extends BaseController
         csrf_validate();
 
         if (!$this->integrations->tableExists()) {
-            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->error('Tabela company_integrations ainda não existe. Execute a migração da Fase 2.');
             $this->redirect('companies');
         }
 
         $companyId = (int) post('company_id');
         $company = $companyId > 0 ? $this->companies->find($companyId) : null;
         if (!$company) {
-            $this->error('Empresa invalida para salvar configuracao D4Sign.');
+            $this->error('Empresa inválida para salvar configuração D4Sign.');
             $this->redirect('companies');
         }
 
@@ -467,9 +467,9 @@ class CompanyController extends BaseController
             && $d4sign['settings']['safe_uuid'] !== '';
 
         if ($configured) {
-            $this->success('Configuracao D4Sign atualizada com sucesso.');
+            $this->success('Configuração D4Sign atualizada com sucesso.');
         } else {
-            $this->success('Configuracao salva. Faltam token_api, crypt_key ou safe_uuid para envio de contratos.');
+            $this->success('Configuração salva. Faltam token_api, crypt_key ou safe_uuid para envio de contratos.');
         }
 
         $this->redirect('companies&integration_company_id=' . $companyId);
@@ -793,7 +793,7 @@ class CompanyController extends BaseController
                 return ['error' => 'Informe um e-mail de resposta valido.', 'enabled' => $enabled, 'settings' => []];
             }
             if (($username !== '' && $password === '') || ($username === '' && $password !== '')) {
-                return ['error' => 'Usuario e senha SMTP devem ser informados juntos.', 'enabled' => $enabled, 'settings' => []];
+                return ['error' => 'Usuário e senha SMTP devem ser informados juntos.', 'enabled' => $enabled, 'settings' => []];
             }
         }
 
@@ -868,7 +868,7 @@ class CompanyController extends BaseController
         ];
 
         if ($data['legal_name'] === '') {
-            return ['error' => 'Razao social e obrigatoria.'];
+            return ['error' => 'Razão social é obrigatória.'];
         }
 
         $digits = $this->companies->normalizeCnpj($data['cnpj']);

@@ -38,7 +38,7 @@ $hasCover = $coverImage !== '' && media_path_available($coverImage);
 
             <div class="grid gap-3 md:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-xs uppercase tracking-wide text-slate-500">Modulos</p>
+                    <p class="text-xs uppercase tracking-wide text-slate-500">Módulos</p>
                     <p class="mt-2 text-2xl font-semibold text-slate-900"><?= count($courseModules); ?></p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -61,7 +61,7 @@ $hasCover = $coverImage !== '' && media_path_available($coverImage);
                     <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                                <h5 class="font-semibold text-slate-900"><?= e((string) ($module['title'] ?? 'Modulo')); ?></h5>
+                                <h5 class="font-semibold text-slate-900"><?= e((string) ($module['title'] ?? 'Módulo')); ?></h5>
                                 <p class="text-sm text-slate-500"><?= e((string) ($module['description'] ?? '')); ?></p>
                             </div>
                             <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700"><?= count($module['lessons'] ?? []); ?> aula(s)</span>
@@ -81,7 +81,7 @@ $hasCover = $coverImage !== '' && media_path_available($coverImage);
 
                 <?php if ($courseModules === []): ?>
                     <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                        Este curso ainda nao possui modulos configurados.
+                        Este curso ainda não possui módulos configurados.
                     </div>
                 <?php endif; ?>
             </div>

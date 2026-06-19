@@ -136,14 +136,14 @@ $environment = (string) ($settings['environment'] ?? 'sandbox');
                     <span class="mb-1 block text-sm">Caminho do Certificado (.crt)</span>
                     <input type="text" name="itau_cert_path"
                            value="<?= e($settings['cert_path'] ?? ''); ?>"
-                           placeholder="/home/usuario/certs/itau.crt"
+                           placeholder="/home/usuário/certs/itau.crt"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
                 </label>
                 <label class="block">
                     <span class="mb-1 block text-sm">Caminho da Chave Privada (.key)</span>
                     <input type="text" name="itau_key_path"
                            value="<?= e($settings['key_path'] ?? ''); ?>"
-                           placeholder="/home/usuario/certs/itau.key"
+                           placeholder="/home/usuário/certs/itau.key"
                            class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
                 </label>
             </div>
@@ -187,7 +187,7 @@ $environment = (string) ($settings['environment'] ?? 'sandbox');
                     <span class="mb-1 block text-sm">Etapa do processo</span>
                     <select name="itau_process_stage" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                         <option value="efetivacao" <?= ($settings['process_stage'] ?? 'efetivacao') === 'efetivacao' ? 'selected' : ''; ?>>Efetivacao</option>
-                        <option value="validacao" <?= ($settings['process_stage'] ?? '') === 'validacao' ? 'selected' : ''; ?>>Validacao</option>
+                        <option value="validacao" <?= ($settings['process_stage'] ?? '') === 'validacao' ? 'selected' : ''; ?>>Validação</option>
                     </select>
                 </label>
                 <label class="block">

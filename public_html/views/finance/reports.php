@@ -27,8 +27,8 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
 <section class="finance-reports-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-2xl font-semibold">Relatorios Financeiros</h2>
-            <p class="text-sm text-slate-500">Analise por periodo com foco em recebimentos, pendencias e inadimplencia.</p>
+            <h2 class="text-2xl font-semibold">Relatórios Financeiros</h2>
+            <p class="text-sm text-slate-500">Análise por período com foco em recebimentos, pendências e inadimplência.</p>
         </div>
         <div class="flex gap-2">
             <a href="<?= route('finance/invoices'); ?>" class="finance-reports-nav-btn rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Faturas</a>
@@ -45,10 +45,10 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
 
         <select name="period" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="today" <?= $filters['period'] === 'today' ? 'selected' : ''; ?>>Hoje</option>
-            <option value="last_7" <?= $filters['period'] === 'last_7' ? 'selected' : ''; ?>>Ultimos 7 dias</option>
-            <option value="last_30" <?= $filters['period'] === 'last_30' ? 'selected' : ''; ?>>Ultimos 30 dias</option>
-            <option value="month_current" <?= $filters['period'] === 'month_current' ? 'selected' : ''; ?>>Mes atual</option>
-            <option value="month_previous" <?= $filters['period'] === 'month_previous' ? 'selected' : ''; ?>>Mes anterior</option>
+            <option value="last_7" <?= $filters['period'] === 'last_7' ? 'selected' : ''; ?>>Últimos 7 dias</option>
+            <option value="last_30" <?= $filters['period'] === 'last_30' ? 'selected' : ''; ?>>Últimos 30 dias</option>
+            <option value="month_current" <?= $filters['period'] === 'month_current' ? 'selected' : ''; ?>>Mês atual</option>
+            <option value="month_previous" <?= $filters['period'] === 'month_previous' ? 'selected' : ''; ?>>Mês anterior</option>
             <option value="custom" <?= $filters['period'] === 'custom' ? 'selected' : ''; ?>>Personalizado</option>
         </select>
 
@@ -93,7 +93,7 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
         <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <?php foreach ($paginationOptions as $opt): ?>
                 <option value="<?= (int) $opt; ?>" <?= (string) request('per_page', $paginationOptions[0]) === (string) $opt ? 'selected' : ''; ?>>
-                    <?= (int) $opt; ?>/pagina
+                    <?= (int) $opt; ?>/página
                 </option>
             <?php endforeach; ?>
         </select>
@@ -119,8 +119,8 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
             <article class="finance-reports-kpi finance-reports-kpi-received rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Recebido</p><p class="mt-2 text-xl font-semibold"><?= e(format_currency($overview['cards']['total_received'])); ?></p></article>
             <article class="finance-reports-kpi finance-reports-kpi-pending rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Pendente</p><p class="mt-2 text-xl font-semibold"><?= e(format_currency($overview['cards']['pending_value'])); ?></p></article>
             <article class="finance-reports-kpi finance-reports-kpi-overdue rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Vencido</p><p class="mt-2 text-xl font-semibold"><?= e(format_currency($overview['cards']['overdue_value'])); ?></p></article>
-            <article class="finance-reports-kpi finance-reports-kpi-settled rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Baixas no periodo</p><p class="mt-2 text-xl font-semibold"><?= (int) $overview['cards']['settled_count']; ?></p></article>
-            <article class="finance-reports-kpi finance-reports-kpi-default rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Inadimplencia</p><p class="mt-2 text-xl font-semibold"><?= number_format((float) $overview['cards']['inadimplencia_percent'], 2, ',', '.'); ?>%</p></article>
+            <article class="finance-reports-kpi finance-reports-kpi-settled rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Baixas no período</p><p class="mt-2 text-xl font-semibold"><?= (int) $overview['cards']['settled_count']; ?></p></article>
+            <article class="finance-reports-kpi finance-reports-kpi-default rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs uppercase text-slate-500">Inadimplência</p><p class="mt-2 text-xl font-semibold"><?= number_format((float) $overview['cards']['inadimplencia_percent'], 2, ',', '.'); ?>%</p></article>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -145,7 +145,7 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
         ?>
 
         <section class="finance-reports-chart rounded-xl border border-slate-200 bg-white p-4">
-            <h3 class="mb-3 text-lg font-semibold">Evolucao diaria (ultimos 31 dias do periodo)</h3>
+            <h3 class="mb-3 text-lg font-semibold">Evolução diária (últimos 31 dias do período)</h3>
             <div class="space-y-2">
                 <?php foreach ($lastIndexes as $idx): ?>
                     <?php
@@ -180,9 +180,9 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
             <table class="finance-reports-table min-w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <th class="px-3 py-3">Referencia</th>
+                        <th class="px-3 py-3">Referência</th>
                         <th class="px-3 py-3">Data</th>
-                        <th class="px-3 py-3">Metodo</th>
+                        <th class="px-3 py-3">Método</th>
                         <th class="px-3 py-3">Valor</th>
                         <th class="px-3 py-3">Aplicado</th>
                         <th class="px-3 py-3">Faturas</th>
@@ -204,7 +204,7 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
                         </tr>
                     <?php endforeach; ?>
                     <?php if ($rows === []): ?>
-                        <tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Nenhum recebimento no periodo.</td></tr>
+                        <tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Nenhum recebimento no período.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -291,7 +291,7 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
                             </tr>
                         <?php endforeach; ?>
                         <?php if ($aging['top_debtors'] === []): ?>
-                            <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">Sem devedores no periodo.</td></tr>
+                            <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">Sem devedores no período.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -305,16 +305,16 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
             <table class="finance-reports-table min-w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <th class="px-3 py-3">Numero</th>
+                        <th class="px-3 py-3">Número</th>
                         <th class="px-3 py-3">Fornecedor</th>
-                        <th class="px-3 py-3">Descricao</th>
-                        <th class="px-3 py-3">Competencia</th>
+                        <th class="px-3 py-3">Descrição</th>
+                        <th class="px-3 py-3">Competência</th>
                         <th class="px-3 py-3">Vencimento</th>
                         <th class="px-3 py-3">Valor</th>
                         <th class="px-3 py-3">Pago</th>
                         <th class="px-3 py-3">Saldo</th>
                         <th class="px-3 py-3">Status</th>
-                        <th class="px-3 py-3">Metodo</th>
+                        <th class="px-3 py-3">Método</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -368,7 +368,7 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
                         </tr>
                     <?php endforeach; ?>
                     <?php if (($cashflow['rows'] ?? []) === []): ?>
-                        <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">Nenhum movimento financeiro encontrado no periodo.</td></tr>
+                        <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">Nenhum movimento financeiro encontrado no período.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -378,7 +378,7 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
     <?php if ($tab === 'fiscal'): ?>
         <?php if (!$fiscalAvailable): ?>
             <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                Tabela fiscal ainda nao disponivel no banco atual. Execute a atualizacao SQL (tabela `fiscal_invoices`) para habilitar esta guia.
+                Tabela fiscal ainda não disponível no banco atual. Execute a atualização SQL (tabela `fiscal_invoices`) para habilitar esta guia.
             </div>
         <?php else: ?>
             <?php $rows = $fiscal['rows']; $meta = $fiscal['meta']; ?>
@@ -392,8 +392,8 @@ $suppliers = is_array($suppliers ?? null) ? $suppliers : [];
                             <th class="px-3 py-3">Status Fatura</th>
                             <th class="px-3 py-3">Provider</th>
                             <th class="px-3 py-3">Status NF-e</th>
-                            <th class="px-3 py-3">Numero</th>
-                            <th class="px-3 py-3">Ultima tentativa</th>
+                            <th class="px-3 py-3">Número</th>
+                            <th class="px-3 py-3">Última tentativa</th>
                             <th class="px-3 py-3">Erro</th>
                         </tr>
                     </thead>

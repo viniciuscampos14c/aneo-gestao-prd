@@ -6,11 +6,11 @@
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Sua escala ainda nao foi habilitada pela equipe administrativa.
+            Sua escala ainda não foi habilitada pela equipe administrativa.
         </div>
     <?php elseif ($schedules === []): ?>
         <div class="student-schedule-empty rounded-2xl border border-dashed px-6 py-10 text-center">
-            <p class="text-base font-medium">Nenhuma escala publicada para voce no momento.</p>
+            <p class="text-base font-medium">Nenhuma escala publicada para você no momento.</p>
             <p class="mt-2 text-sm">Assim que sua unidade publicar uma escala com seu nome, ela aparecera aqui.</p>
         </div>
     <?php else: ?>
@@ -23,7 +23,7 @@
                                 <p class="student-schedule-unit text-xs font-semibold uppercase tracking-[0.2em]"><?= e((string) ($schedule['unit_name'] ?? '')); ?></p>
                                 <h3 class="mt-1 text-xl font-semibold"><?= e((string) ($schedule['schedule_title'] ?? 'Escala')); ?></h3>
                                 <p class="student-schedule-period mt-1 text-sm">
-                                    Periodo: <?= e(date('d/m/Y', strtotime((string) ($schedule['schedule_start_date'] ?? 'now')))); ?> ate <?= e(date('d/m/Y', strtotime((string) ($schedule['schedule_end_date'] ?? 'now')))); ?>
+                                    Período: <?= e(date('d/m/Y', strtotime((string) ($schedule['schedule_start_date'] ?? 'now')))); ?> até <?= e(date('d/m/Y', strtotime((string) ($schedule['schedule_end_date'] ?? 'now')))); ?>
                                 </p>
                             </div>
                             <span class="student-schedule-badge rounded-full px-3 py-1 text-xs font-semibold">Publicada</span>
@@ -46,7 +46,7 @@
                                             <div class="student-schedule-week-card rounded-xl border px-4 py-3">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <span class="rounded-full bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white"><?= e((string) ($week['slot_group'] ?? 'R1')); ?></span>
-                                                    <span class="student-schedule-week-text text-sm font-medium">Voce esta escalado(a) nesta semana.</span>
+                                                    <span class="student-schedule-week-text text-sm font-medium">Você está escalado(a) nesta semana.</span>
                                                 </div>
                                                 <?php if (!empty($week['week_notes'])): ?>
                                                     <p class="student-schedule-week-note mt-2 text-sm"><?= nl2br(e((string) $week['week_notes'])); ?></p>

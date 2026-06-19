@@ -282,6 +282,165 @@ class StudentScheduleModel extends BaseModel
         }
     }
 
+    public function syncWeeksPreservingAssignments(int $scheduleId, array $weeks): array
+    {
+        $this->db->beginTransaction();
+
+        try {
+            $existingStmt = $this->db->prepare("SELECT w.*,
+                    (SELECT COUNT(*) FROM student_duty_assignments a WHERE a.schedule_week_id = w.id) AS assigned_total,
+                    (SELECT COUNT(*) FROM student_duty_assignments a WHERE a.schedule_week_id = w.id AND a.slot_group = 'R3') AS r3_assigned,
+                    (SELECT COUNT(*) FROM student_duty_assignments a WHERE a.schedule_week_id = w.id AND a.slot_group = 'R2') AS r2_assigned,
+                    (SELECT COUNT(*) FROM student_duty_assignments a WHERE a.schedule_week_id = w.id AND a.slot_group = 'R1') AS r1_assigned
+                FROM student_duty_schedule_weeks w
+                WHERE w.schedule_id = :schedule_id
+                ORDER BY w.week_order ASC");
+            $existingStmt->execute([':schedule_id' => $scheduleId]);
+
+            $existingByRange = [];
+            $existingRows = [];
+            foreach ($existingStmt->fetchAll() as $row) {
+                $row['assigned_total'] = (int) ($row['assigned_total'] ?? 0);
+                $row['r3_assigned'] = (int) ($row['r3_assigned'] ?? 0);
+                $row['r2_assigned'] = (int) ($row['r2_assigned'] ?? 0);
+                $row['r1_assigned'] = (int) ($row['r1_assigned'] ?? 0);
+                $rangeKey = (string) $row['start_date'] . '|' . (string) $row['end_date'];
+                $existingByRange[$rangeKey] = $row;
+                $existingRows[(int) $row['id']] = $row;
+            }
+
+            $matchedIds = [];
+            foreach ($weeks as $week) {
+                $rangeKey = (string) $week['start_date'] . '|' . (string) $week['end_date'];
+                if (isset($existingByRange[$rangeKey])) {
+                    $matchedIds[] = (int) $existingByRange[$rangeKey]['id'];
+                }
+            }
+            $matchedIds = array_values(array_unique($matchedIds));
+
+            $blockedWeeks = [];
+            foreach ($existingRows as $existingId => $existing) {
+                if (in_array($existingId, $matchedIds, true)) {
+                    continue;
+                }
+
+                if ((int) ($existing['assigned_total'] ?? 0) > 0) {
+                    $blockedWeeks[] = date('d/m', strtotime((string) $existing['start_date']))
+                        . ' - '
+                        . date('d/m', strtotime((string) $existing['end_date']));
+                }
+            }
+
+            if ($blockedWeeks !== []) {
+                throw new RuntimeException(
+                    'Não foi possível atualizar a grade porque existem alunos alocados em semana(s) que sairiam do período: '
+                    . implode(', ', $blockedWeeks)
+                    . '. Remova essas alocacoes manualmente ou ajuste o periodo antes de atualizar.'
+                );
+            }
+
+            $deleteIds = array_values(array_filter(
+                array_keys($existingRows),
+                static fn (int $existingId): bool => !in_array($existingId, $matchedIds, true)
+            ));
+            if ($deleteIds !== []) {
+                $placeholders = implode(',', array_fill(0, count($deleteIds), '?'));
+                $delete = $this->db->prepare("DELETE FROM student_duty_schedule_weeks WHERE id IN ({$placeholders})");
+                $delete->execute($deleteIds);
+            }
+
+            if ($matchedIds !== []) {
+                $temporaryOrder = $this->db->prepare('UPDATE student_duty_schedule_weeks
+                    SET week_order = :week_order
+                    WHERE id = :id');
+                foreach ($matchedIds as $matchedId) {
+                    $temporaryOrder->execute([
+                        ':week_order' => 1000000 + $matchedId,
+                        ':id' => $matchedId,
+                    ]);
+                }
+            }
+
+            $insert = $this->db->prepare('INSERT INTO student_duty_schedule_weeks (
+                schedule_id, month_ref, week_order, start_date, end_date, r3_slots, r2_slots, r1_slots, notes, created_at, updated_at
+            ) VALUES (
+                :schedule_id, :month_ref, :week_order, :start_date, :end_date, :r3_slots, :r2_slots, :r1_slots, :notes, :created_at, :updated_at
+            )');
+
+            $update = $this->db->prepare('UPDATE student_duty_schedule_weeks SET
+                month_ref = :month_ref,
+                week_order = :week_order,
+                r3_slots = :r3_slots,
+                r2_slots = :r2_slots,
+                r1_slots = :r1_slots,
+                notes = :notes,
+                updated_at = :updated_at
+                WHERE id = :id');
+
+            $summary = ['created' => 0, 'updated' => 0, 'deleted_empty' => count($deleteIds)];
+            foreach ($weeks as $week) {
+                $rangeKey = (string) $week['start_date'] . '|' . (string) $week['end_date'];
+                $existing = $existingByRange[$rangeKey] ?? null;
+
+                if ($existing !== null) {
+                    foreach (['r3' => 'R3', 'r2' => 'R2', 'r1' => 'R1'] as $fieldPrefix => $groupLabel) {
+                        $slotField = $fieldPrefix . '_slots';
+                        $assignedField = $fieldPrefix . '_assigned';
+                        if ((int) $week[$slotField] < (int) ($existing[$assignedField] ?? 0)) {
+                            throw new RuntimeException(sprintf(
+                                'Não é possível reduzir %s na semana %s - %s para %d vaga(s), pois existem %d aluno(s) alocados.',
+                                $groupLabel,
+                                date('d/m', strtotime((string) $week['start_date'])),
+                                date('d/m', strtotime((string) $week['end_date'])),
+                                (int) $week[$slotField],
+                                (int) ($existing[$assignedField] ?? 0)
+                            ));
+                        }
+                    }
+
+                    $notes = trim((string) ($week['notes'] ?? ''));
+                    if ($notes === '') {
+                        $notes = (string) ($existing['notes'] ?? '');
+                    }
+
+                    $update->execute([
+                        ':month_ref' => $week['month_ref'],
+                        ':week_order' => $week['week_order'],
+                        ':r3_slots' => $week['r3_slots'],
+                        ':r2_slots' => $week['r2_slots'],
+                        ':r1_slots' => $week['r1_slots'],
+                        ':notes' => $notes,
+                        ':updated_at' => now(),
+                        ':id' => (int) $existing['id'],
+                    ]);
+                    $summary['updated']++;
+                    continue;
+                }
+
+                $insert->execute([
+                    ':schedule_id' => $scheduleId,
+                    ':month_ref' => $week['month_ref'],
+                    ':week_order' => $week['week_order'],
+                    ':start_date' => $week['start_date'],
+                    ':end_date' => $week['end_date'],
+                    ':r3_slots' => $week['r3_slots'],
+                    ':r2_slots' => $week['r2_slots'],
+                    ':r1_slots' => $week['r1_slots'],
+                    ':notes' => $week['notes'],
+                    ':created_at' => now(),
+                    ':updated_at' => now(),
+                ]);
+                $summary['created']++;
+            }
+
+            $this->db->commit();
+            return $summary;
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
     public function updateWeek(int $weekId, array $data): void
     {
         $stmt = $this->db->prepare('UPDATE student_duty_schedule_weeks SET
@@ -299,6 +458,25 @@ class StudentScheduleModel extends BaseModel
             ':updated_at' => now(),
             ':id' => $weekId,
         ]);
+    }
+
+    public function assignmentCountsForWeek(int $weekId): array
+    {
+        $stmt = $this->db->prepare('SELECT slot_group, COUNT(*) AS total
+            FROM student_duty_assignments
+            WHERE schedule_week_id = :week_id
+            GROUP BY slot_group');
+        $stmt->execute([':week_id' => $weekId]);
+
+        $counts = ['R3' => 0, 'R2' => 0, 'R1' => 0];
+        foreach ($stmt->fetchAll() as $row) {
+            $group = strtoupper((string) ($row['slot_group'] ?? ''));
+            if (isset($counts[$group])) {
+                $counts[$group] = (int) ($row['total'] ?? 0);
+            }
+        }
+
+        return $counts;
     }
 
     public function listWeeks(int $scheduleId): array
@@ -458,16 +636,16 @@ class StudentScheduleModel extends BaseModel
     {
         $week = $this->findWeek($weekId);
         if (!$week) {
-            throw new RuntimeException('Semana da escala nao encontrada.');
+            throw new RuntimeException('Semana da escala não encontrada.');
         }
 
         if ((string) ($week['status'] ?? '') === 'archived') {
-            throw new RuntimeException('Escala arquivada nao pode receber alteracoes.');
+            throw new RuntimeException('Escala arquivada não pode receber alteracoes.');
         }
 
         $student = $this->findStudentForAssignment($studentId, (int) $week['unit_id']);
         if (!$student) {
-            throw new RuntimeException('Aluno invalido para esta unidade.');
+            throw new RuntimeException('Aluno inválido para esta unidade.');
         }
 
         $studentLevel = strtoupper((string) ($student['residency_level'] ?? 'R1'));
@@ -478,7 +656,7 @@ class StudentScheduleModel extends BaseModel
 
         $eligibleSince = $this->eligibleSince((string) ($student['enrolled_at'] ?? ''));
         if ($eligibleSince === null || $eligibleSince > (string) $week['start_date']) {
-            throw new RuntimeException('Aluno ainda nao elegivel para escala. Aguardando os 40 dias da entrada.');
+            throw new RuntimeException('Aluno ainda não elegível para escala. Aguardando os 40 dias da entrada.');
         }
 
         $existing = $this->db->prepare('SELECT id FROM student_duty_assignments WHERE schedule_week_id = :schedule_week_id AND student_id = :student_id LIMIT 1');
@@ -487,7 +665,7 @@ class StudentScheduleModel extends BaseModel
             ':student_id' => $studentId,
         ]);
         if ($existing->fetch()) {
-            throw new RuntimeException('Aluno ja escalado nesta semana.');
+            throw new RuntimeException('Aluno já escalado nesta semana.');
         }
 
         $crossScheduleConflict = $this->findWeeklyConflict(
@@ -499,7 +677,7 @@ class StudentScheduleModel extends BaseModel
         );
         if ($crossScheduleConflict) {
             $conflictTitle = trim((string) ($crossScheduleConflict['schedule_title'] ?? ''));
-            $message = 'Aluno ja escalado nesta mesma semana em outra escala da unidade.';
+            $message = 'Aluno já escalado nesta mesma semana em outra escala da unidade.';
             if ($conflictTitle !== '') {
                 $message .= ' Escala: ' . $conflictTitle . '.';
             }
@@ -509,7 +687,7 @@ class StudentScheduleModel extends BaseModel
         $slotLimit = $this->slotLimitForWeek($week, $slotGroup);
         $position = $this->nextSlotPosition($weekId, $slotGroup);
         if ($position > $slotLimit) {
-            throw new RuntimeException('Nao ha mais vagas disponiveis nesta coluna para a semana.');
+            throw new RuntimeException('Não há mais vagas disponíveis nesta coluna para a semana.');
         }
 
         $stmt = $this->db->prepare('INSERT INTO student_duty_assignments (

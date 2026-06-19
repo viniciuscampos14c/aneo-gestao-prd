@@ -12,7 +12,7 @@ $scopeLabels = [
 <section class="space-y-6">
     <div>
         <h2 class="text-2xl font-semibold">Arsenal do Aluno</h2>
-        <p class="text-sm text-slate-500">Biblioteca de livros digitais e materiais de apoio liberados para voce.</p>
+        <p class="text-sm text-slate-500">Biblioteca de livros digitais e materiais de apoio liberados para você.</p>
     </div>
 
     <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
@@ -60,7 +60,7 @@ $scopeLabels = [
 
         <?php if ($rows === []): ?>
             <article class="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-                Nenhum material disponivel com os filtros atuais.
+                Nenhum material disponível com os filtros atuais.
             </article>
         <?php endif; ?>
     </div>

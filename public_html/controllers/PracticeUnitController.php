@@ -17,7 +17,7 @@ class PracticeUnitController extends BaseController
         $editing = $editingId > 0 ? $this->units->findUnit($editingId) : null;
 
         if ($editingId > 0 && !$editing) {
-            $this->error('Unidade nao encontrada.');
+            $this->error('Unidade não encontrada.');
             $this->redirect('practice-units');
             return;
         }
@@ -56,7 +56,7 @@ class PracticeUnitController extends BaseController
 
         $id = (int) post('id');
         if ($id <= 0 || !$this->units->findUnit($id)) {
-            $this->error('Unidade nao encontrada.');
+            $this->error('Unidade não encontrada.');
             $this->redirect('practice-units');
         }
 
@@ -81,7 +81,7 @@ class PracticeUnitController extends BaseController
         $id = (int) post('id');
         $unit = $this->units->findUnit($id);
         if ($id <= 0 || !$unit) {
-            $this->error('Unidade nao encontrada.');
+            $this->error('Unidade não encontrada.');
             $this->redirect('practice-units');
         }
 
@@ -107,7 +107,7 @@ class PracticeUnitController extends BaseController
             return;
         }
 
-        $this->error('Modulo de unidades/hospitais indisponivel no banco. Execute a migration 20260505_student_duty_schedule.sql.');
+        $this->error('Módulo de unidades/hospitais indisponivel no banco. Execute a migration 20260505_student_duty_schedule.sql.');
         $this->redirect('practice-units');
     }
 

@@ -70,12 +70,12 @@ class SignatureController extends BaseController
 
         $companyId = (int) (current_company_id() ?? 0);
         if ($companyId <= 0) {
-            $this->error('Selecione a empresa antes de salvar a configuracao D4Sign.');
+            $this->error('Selecione a empresa antes de salvar a configuração D4Sign.');
             $this->redirect('signatures');
         }
 
         if (!$this->integrations->tableExists()) {
-            $this->error('Tabela company_integrations ainda nao existe. Execute a migracao da Fase 2.');
+            $this->error('Tabela company_integrations ainda não existe. Execute a migração da Fase 2.');
             $this->redirect('signatures');
         }
 
@@ -113,9 +113,9 @@ class SignatureController extends BaseController
             && $settings['safe_uuid'] !== '';
 
         if ($configured) {
-            $this->success('Configuracao D4Sign atualizada com sucesso.');
+            $this->success('Configuração D4Sign atualizada com sucesso.');
         } else {
-            $this->success('Configuracao salva. Faltam token_api, crypt_key ou safe_uuid para envio de contratos.');
+            $this->success('Configuração salva. Faltam token_api, crypt_key ou safe_uuid para envio de contratos.');
         }
 
         $this->redirect('signatures');
@@ -128,7 +128,7 @@ class SignatureController extends BaseController
         csrf_validate();
 
         if (!$this->signatures->featureAvailable()) {
-            $this->error('Estrutura de assinaturas indisponivel no banco. Execute a migracao de assinaturas.');
+            $this->error('Estrutura de assinaturas indisponivel no banco. Execute a migração de assinaturas.');
             $this->redirect('signatures');
         }
 
@@ -138,13 +138,13 @@ class SignatureController extends BaseController
         $file = $_FILES['contract_file'] ?? null;
 
         if ($studentId <= 0 || $title === '') {
-            $this->error('Aluno e titulo do contrato sao obrigatorios.');
+            $this->error('Aluno e título do contrato são obrigatórios.');
             $this->redirect('signatures');
         }
 
         $student = $this->students->find($studentId);
         if (!$student) {
-            $this->error('Aluno nao encontrado para assinatura.');
+            $this->error('Aluno não encontrado para assinatura.');
             $this->redirect('signatures');
         }
 
@@ -174,7 +174,7 @@ class SignatureController extends BaseController
         ], (int) current_user()['id'], (int) (current_company_id() ?? 0));
 
         if ($requestId <= 0) {
-            $this->error('Nao foi possivel cadastrar solicitacao de assinatura.');
+            $this->error('Não foi possível cadastrar solicitacao de assinatura.');
             $this->redirect('signatures');
         }
 
@@ -193,7 +193,7 @@ class SignatureController extends BaseController
         $request = $this->signatures->findRequest($id, $companyId);
 
         if (!$request) {
-            $this->error('Solicitacao de assinatura nao encontrada.');
+            $this->error('Solicitacao de assinatura não encontrada.');
             $this->redirect('signatures');
         }
 
@@ -283,8 +283,8 @@ class SignatureController extends BaseController
                 'message' => $e->getMessage(),
                 'caught_at' => now(),
             ];
-            $message = 'O D4Sign recebeu o envio, mas o sistema nao conseguiu finalizar o retorno da tela. Sincronize o contrato para confirmar o status.';
-            $this->signatures->markError($id, $message . ' Detalhe tecnico: ' . $e->getMessage(), $meta, $companyId);
+            $message = 'O D4Sign recebeu o envio, mas o sistema não conseguiu finalizar o retorno da tela. Sincronize o contrato para confirmar o status.';
+            $this->signatures->markError($id, $message . ' Detalhe técnico: ' . $e->getMessage(), $meta, $companyId);
             $this->error($message);
         }
         $this->redirect('signatures');
@@ -301,7 +301,7 @@ class SignatureController extends BaseController
         $request = $this->signatures->findRequest($id, $companyId);
 
         if (!$request) {
-            $this->error('Solicitacao nao encontrada para sincronizacao.');
+            $this->error('Solicitacao não encontrada para sincronizacao.');
             $this->redirect('signatures');
         }
 
@@ -372,7 +372,7 @@ class SignatureController extends BaseController
         $companyId = (int) (current_company_id() ?? 0);
         $request = $this->signatures->findRequest($id, $companyId);
         if (!$request) {
-            $this->error('Solicitacao nao encontrada para exclusao.');
+            $this->error('Solicitacao não encontrada para exclusão.');
             $this->redirect('signatures');
         }
 
@@ -391,7 +391,7 @@ class SignatureController extends BaseController
         $companyId = $this->d4sign->companyId();
         $configuredToken = $this->d4sign->webhookToken();
         if ($configuredToken !== '' && !hash_equals($configuredToken, $receivedToken)) {
-            $this->json(['ok' => false, 'message' => 'Token de webhook invalido.'], 401);
+            $this->json(['ok' => false, 'message' => 'Token de webhook inválido.'], 401);
         }
 
         $rawBody = file_get_contents('php://input');
@@ -404,7 +404,7 @@ class SignatureController extends BaseController
         }
 
         if (!$this->validateWebhookHmac($rawBody)) {
-            $this->json(['ok' => false, 'message' => 'HMAC invalido.'], 401);
+            $this->json(['ok' => false, 'message' => 'HMAC inválido.'], 401);
         }
 
         $documentUuid = $this->extractFromPayload($payload, ['uuid_document', 'uuid_doc', 'document_uuid', 'uuid']);
@@ -546,7 +546,7 @@ class SignatureController extends BaseController
 
         $extension = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
         if (!in_array($extension, ['pdf', 'doc', 'docx'], true)) {
-            $this->error('Formato invalido para contrato. Use PDF, DOC ou DOCX.');
+            $this->error('Formato inválido para contrato. Use PDF, DOC ou DOCX.');
             return null;
         }
 
@@ -565,7 +565,7 @@ class SignatureController extends BaseController
         $targetPath = $targetDir . '/' . $storedName;
 
         if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $targetPath)) {
-            $this->error('Nao foi possivel salvar o contrato no servidor.');
+            $this->error('Não foi possível salvar o contrato no servidor.');
             return null;
         }
 
@@ -623,7 +623,7 @@ class SignatureController extends BaseController
                 $message = (string) ($list['message'] ?? '');
             }
             if ($message === '') {
-                $message = 'D4Sign ainda nao retornou arquivo assinado para download.';
+                $message = 'D4Sign ainda não retornou arquivo assinado para download.';
             }
 
             return ['ok' => false, 'message' => $message, 'attempts' => $attempts];

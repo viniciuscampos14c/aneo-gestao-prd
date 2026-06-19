@@ -80,16 +80,16 @@ class LicenseService
     public function activateFixedKey(int $companyId, string $key, int $userId = 0, string $note = ''): array
     {
         if ($companyId <= 0) {
-            return ['ok' => false, 'message' => 'Empresa invalida.'];
+            return ['ok' => false, 'message' => 'Empresa inválida.'];
         }
 
         if (!$this->available()) {
-            return ['ok' => false, 'message' => 'Estrutura de licenciamento nao encontrada no banco.'];
+            return ['ok' => false, 'message' => 'Estrutura de licenciamento não encontrada no banco.'];
         }
 
         $validated = $this->validateFixedKey($key);
         if (!$validated['ok']) {
-            return ['ok' => false, 'message' => (string) ($validated['message'] ?? 'Chave de licenca invalida.')];
+            return ['ok' => false, 'message' => (string) ($validated['message'] ?? 'Chave de licença inválida.')];
         }
 
         $durationDays = max(1, (int) ($validated['duration_days'] ?? 365));
@@ -174,7 +174,7 @@ class LicenseService
     {
         $normalized = $this->normalizeKey($rawKey);
         if ($normalized === '') {
-            return ['ok' => false, 'message' => 'Informe a chave de licenca.'];
+            return ['ok' => false, 'message' => 'Informe a chave de licença.'];
         }
 
         $keys = $this->configuredKeys();
@@ -196,7 +196,7 @@ class LicenseService
             ];
         }
 
-        return ['ok' => false, 'message' => 'Chave de licenca invalida.'];
+        return ['ok' => false, 'message' => 'Chave de licença inválida.'];
     }
 
     private function configuredKeys(): array

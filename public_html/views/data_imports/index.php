@@ -76,7 +76,7 @@ $selectedBatchId = (int) ($selectedBatch['id'] ?? 0);
                 <p class="text-sm text-slate-500">Nesta fase inicial, o sistema aceita CSV separado por ponto e virgula.</p>
             </div>
             <?php if (!$canUpload): ?>
-                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Sem permissao para enviar</span>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Sem permissão para enviar</span>
             <?php endif; ?>
         </div>
 
@@ -102,7 +102,7 @@ $selectedBatchId = (int) ($selectedBatch['id'] ?? 0);
         </form>
 
         <div class="mt-4 rounded-xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-xs leading-relaxed text-cyan-800">
-            A pre-validacao tambem confere duplicidades dentro da propria planilha: alunos com mesmo email ou RA na mesma filial serao bloqueados, usuarios com mesmo email ou login tambem, unidades com mesmo nome tambem, e aulas repetidas no mesmo curso/modulo nao poderao ser confirmadas.
+            A pre-validacao também confere duplicidades dentro da própria planilha: alunos com mesmo email ou RA na mesma filial serão bloqueados, usuários com mesmo email ou login também, unidades com mesmo nome também, e aulas repetidas no mesmo curso/módulo não poderão ser confirmadas.
         </div>
     </div>
 
@@ -227,7 +227,7 @@ $selectedBatchId = (int) ($selectedBatch['id'] ?? 0);
 
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-5 py-4">
-            <h3 class="text-lg font-semibold text-slate-800">Historico de importacoes</h3>
+            <h3 class="text-lg font-semibold text-slate-800">Histórico de importacoes</h3>
             <p class="text-sm text-slate-500">Acompanhe os lotes enviados e reabra a previa quando necessario.</p>
         </div>
         <div class="overflow-x-auto">

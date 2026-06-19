@@ -5,9 +5,9 @@
             <p class="inline-flex rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">ANEO EAD</p>
         </div>
         <h1 class="text-4xl font-semibold leading-tight">Portal do Aluno</h1>
-        <p class="text-slate-300">Acesse seus cursos, aulas ao vivo, materiais, progresso e historico de avaliacoes em um ambiente separado do painel administrativo.</p>
+        <p class="text-slate-300">Acesse seus cursos, aulas ao vivo, materiais, progresso e histórico de avaliacoes em um ambiente separado do painel administrativo.</p>
         <div class="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
-            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Meus cursos e matriculas</div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Meus cursos e matrículas</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Proximas aulas ao vivo</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Materiais e anexos</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Notas e desempenho</div>
@@ -42,7 +42,7 @@
             <button type="submit" class="w-full rounded-lg bg-cyan-600 px-4 py-2 font-medium text-white hover:bg-cyan-500">Entrar</button>
         </form>
 
-        <p class="mt-4 text-xs text-slate-400">Se voce nao recebeu seu acesso, solicite ao setor responsavel.</p>
+        <p class="mt-4 text-xs text-slate-400">Se você não recebeu seu acesso, solicite ao setor responsável.</p>
         <a href="<?= route('login'); ?>" class="mt-3 inline-flex text-xs text-cyan-300 hover:text-cyan-200">Ir para painel administrativo</a>
     </section>
 </div>

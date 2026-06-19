@@ -48,7 +48,7 @@ class ExchangeController extends BaseController
         $request = $this->exchange->findById($id, $companyId);
 
         if ($request === null) {
-            flash('error', 'Solicitacao nao encontrada.');
+            flash('error', 'Solicitacao não encontrada.');
             $this->redirect('exchange');
         }
 
@@ -81,7 +81,7 @@ class ExchangeController extends BaseController
             }
             flash('success', 'Status atualizado com sucesso.');
         } else {
-            flash('error', 'Nao foi possivel atualizar o status.');
+            flash('error', 'Não foi possível atualizar o status.');
         }
 
         $this->redirect('exchange/show?id=' . $id);
@@ -117,7 +117,7 @@ class ExchangeController extends BaseController
                 . ($targetUnit !== '' ? ' para ' . $targetUnit : '')
                 . ' foi recusada pela equipe administrativa.',
             'viewed' => 'Sua solicitacao de intercambio foi aberta e esta em analise pela equipe administrativa.',
-            default => 'Sua solicitacao de intercambio recebeu uma atualizacao no painel administrativo.',
+            default => 'Sua solicitação de intercâmbio recebeu uma atualização no painel administrativo.',
         };
 
         if ($notes !== '') {

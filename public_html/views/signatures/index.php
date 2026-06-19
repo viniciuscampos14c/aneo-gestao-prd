@@ -80,12 +80,12 @@ $d4signStatusLabels = [
 
     <?php if (!$featureAvailable): ?>
         <div class="signatures-alert rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            Estrutura de assinatura indisponivel no banco. Execute a migracao `migrations/20260306_d4sign_signatures.sql`.
+            Estrutura de assinatura indisponivel no banco. Execute a migração `migrations/20260306_d4sign_signatures.sql`.
         </div>
     <?php endif; ?>
 
     <div class="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900">
-        A configuracao do D4Sign e do webhook agora fica em <strong>Cadastro &gt; Empresas</strong>, junto das demais credenciais da empresa ativa.
+        A configuração do D4Sign e do webhook agora fica em <strong>Cadastro &gt; Empresas</strong>, junto das demais credenciais da empresa ativa.
     </div>
     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         O plano financeiro do contrato agora fica <strong>somente para consulta</strong> nesta tela. A geracao e manutencao das parcelas deve acontecer apenas no <strong>cadastro do aluno</strong>.
@@ -111,16 +111,16 @@ $d4signStatusLabels = [
                 </select>
             </label>
             <label class="block">
-                <span class="mb-1 block text-sm font-medium">Titulo *</span>
-                <input type="text" name="title" required placeholder="Contrato de Matricula" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <span class="mb-1 block text-sm font-medium">Título *</span>
+                <input type="text" name="title" required placeholder="Contrato de Matrícula" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <label class="block">
                 <span class="mb-1 block text-sm font-medium">Arquivo *</span>
                 <input type="file" name="contract_file" required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="signatures-file-input w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <label class="block lg:col-span-4">
-                <span class="mb-1 block text-sm font-medium">Descricao</span>
-                <input type="text" name="description" placeholder="Observacoes internas do contrato" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <span class="mb-1 block text-sm font-medium">Descrição</span>
+                <input type="text" name="description" placeholder="Observações internas do contrato" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <div class="lg:col-span-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -148,7 +148,7 @@ $d4signStatusLabels = [
                         <input id="signature-financial-billing-day" type="text" value="-" readonly class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
                     </label>
                 </div>
-                <p id="signature-financial-generated-at" class="mt-3 text-xs text-slate-500">Geracao do financeiro: nao informada.</p>
+                <p id="signature-financial-generated-at" class="mt-3 text-xs text-slate-500">Geração do financeiro: não informada.</p>
             </div>
             <div class="flex items-end">
                 <button class="signatures-create-btn w-full rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Criar solicitacao</button>
@@ -173,7 +173,7 @@ $d4signStatusLabels = [
         <div class="flex gap-2">
             <select name="per_page" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="signatures-filter-btn rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
@@ -286,7 +286,7 @@ $d4signStatusLabels = [
     </div>
 
     <div class="signatures-pagination flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'signatures', 'page' => $p]); ?>" class="signatures-page-link rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'signatures-page-link-active bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
@@ -329,7 +329,7 @@ $d4signStatusLabels = [
         fields.amount.value = '-';
         fields.firstDueDate.value = '-';
         fields.billingDay.value = '-';
-        fields.generatedAt.textContent = 'Geracao do financeiro: nao informada.';
+        fields.generatedAt.textContent = 'Geração do financeiro: não informada.';
         fields.status.textContent = 'Selecione um aluno';
         fields.status.className = 'rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700';
     };
@@ -359,8 +359,8 @@ $d4signStatusLabels = [
         fields.firstDueDate.value = firstDueDate !== '' ? formatDate(firstDueDate) : '-';
         fields.billingDay.value = billingDay !== '' && billingDay !== '0' ? billingDay : '-';
         fields.generatedAt.textContent = generatedAt !== ''
-            ? `Geracao do financeiro: ${generatedAt}`
-            : 'Geracao do financeiro: ainda nao registrada.';
+            ? `Geração do financeiro: ${generatedAt}`
+            : 'Geração do financeiro: ainda não registrada.';
 
         if (hasPlan) {
             fields.status.textContent = 'Plano financeiro encontrado';

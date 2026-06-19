@@ -5,15 +5,15 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
 <section class="courses-calendar-shell space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h2 class="text-2xl font-semibold">Agenda Academica</h2>
-            <p class="text-sm text-slate-500">Calendario unificado com provas, aulas ao vivo, atividades e lembretes automaticos.</p>
+            <h2 class="text-2xl font-semibold">Agenda Acadêmica</h2>
+            <p class="text-sm text-slate-500">Calendário unificado com provas, aulas ao vivo, atividades e lembretes automaticos.</p>
         </div>
         <a href="<?= route('courses'); ?>" class="courses-calendar-back-btn rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar para Cursos</a>
     </div>
 
     <?php if (!$featureAvailable): ?>
         <div class="courses-calendar-alert rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Agenda academica indisponivel nesta base. Execute a migracao
+            Agenda acadêmica indisponivel nesta base. Execute a migração
             <code>migrations/20260305_academic_calendar_full.sql</code> para habilitar atividades e lembretes automaticos.
         </div>
     <?php endif; ?>
@@ -65,7 +65,7 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
                     <option value="<?= (int) $course['id']; ?>"><?= e($course['name']); ?> (<?= e($course['status']); ?>)</option>
                 <?php endforeach; ?>
             </select>
-            <input type="text" name="title" required placeholder="Titulo da atividade" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <input type="text" name="title" required placeholder="Título da atividade" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <input type="datetime-local" name="due_datetime" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <select name="reminder_hours_before" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ([2, 6, 12, 24, 48, 72] as $hours): ?>
@@ -73,12 +73,12 @@ $automation = $automationSummary ?? ['available' => false, 'queued' => 0, 'sent'
                 <?php endforeach; ?>
             </select>
             <button class="courses-calendar-save-btn rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Salvar atividade</button>
-            <textarea name="description" rows="2" placeholder="Descricao (opcional)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5"></textarea>
+            <textarea name="description" rows="2" placeholder="Descrição (opcional)" class="rounded-lg border border-slate-200 px-3 py-2 text-sm lg:col-span-5"></textarea>
         </form>
     </section>
 
     <section class="courses-calendar-table-panel rounded-xl border border-slate-200 bg-white p-4">
-        <h3 class="mb-3 text-lg font-semibold">Calendario Unificado</h3>
+        <h3 class="mb-3 text-lg font-semibold">Calendário Unificado</h3>
         <div class="courses-calendar-table-wrap overflow-x-auto">
             <table class="courses-calendar-table min-w-full text-sm">
                 <thead>

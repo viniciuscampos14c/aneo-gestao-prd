@@ -64,14 +64,15 @@ test('valida HML real da ANEO', async ({ browser, request }) => {
 
   await test.step('admin login e rotas principais', async () => {
     await loginAdmin(adminPage);
+    await expect(adminPage.locator('body')).toContainText('Visão Geral');
 
     const routes: Array<[string, string | RegExp]> = [
-      ['/index.php?route=dashboard', /BI Gerencial|Visao Geral|Dashboard/],
+      ['/index.php?route=dashboard', /BI Gerencial|Visão Geral|Dashboard/],
       ['/index.php?route=students', /Alunos|Total de alunos/],
       ['/index.php?route=leads', /Leads|Funil comercial/],
       ['/index.php?route=finance/payment-methods', /Formas de Pagamento/],
-      ['/index.php?route=finance/reports', /Relatorios Financeiros|Entradas por forma/],
-      ['/index.php?route=courses', /Cursos EAD|Catalogo de cursos/],
+      ['/index.php?route=finance/reports', /Relatórios Financeiros|Entradas por forma/],
+      ['/index.php?route=courses', /Cursos EAD|Catálogo de cursos/],
       ['/index.php?route=api-management', /Gerenciamento de API|Tokens de API/],
       ['/index.php?route=exchange', /Intercâmbio Aluno|Solicitações de intercâmbio/],
     ];
@@ -97,7 +98,7 @@ test('valida HML real da ANEO', async ({ browser, request }) => {
     await expect(adminPage.locator('body')).toContainText(leadName);
   });
 
-  await test.step('alunos QA e fluxo de rematricula', async () => {
+  await test.step('alunos QA e fluxo de rematrícula', async () => {
     await adminPage.goto(`${baseUrl}/index.php?route=students&q=QA`, { waitUntil: 'domcontentloaded' });
     await clearAdminOverlay(adminPage);
     await expect(adminPage.locator('body')).toContainText('QA Aluno Portal');
@@ -108,34 +109,36 @@ test('valida HML real da ANEO', async ({ browser, request }) => {
     const okPage = await okContext.newPage();
     await loginStudent(okPage, reenrollOkUser, studentPassword);
     await expect(okPage).toHaveURL(/student(?:\/|%2F)(dashboard|reenrollment)/);
-    await expect(okPage.locator('body')).toContainText(/Rematricula confirmada|Portal do Aluno|Pode confirmar sua rematricula/);
+    await expect(okPage.locator('body')).toContainText(/Rematrícula confirmada|Portal do Aluno|Pode confirmar sua rematrícula/);
     await okContext.close();
 
     const blockedContext = await browser.newContext();
     const blockedPage = await blockedContext.newPage();
     await loginStudent(blockedPage, reenrollBlockedUser, studentPassword);
     await expect(blockedPage).toHaveURL(/student(?:\/|%2F)reenrollment/);
-    await expect(blockedPage.locator('body')).toContainText(/faturas em aberto|pendencias financeiras/);
+    await expect(blockedPage.locator('body')).toContainText(/faturas em aberto|pendências financeiras/);
     await blockedContext.close();
   });
 
-  await test.step('portal do aluno, escala, intercambio e chamado', async () => {
+  await test.step('portal do aluno, escala, intercâmbio e chamado', async () => {
     const studentContext = await browser.newContext();
     const studentPage = await studentContext.newPage();
     await loginStudent(studentPage, studentUser, studentPassword);
     await expect(studentPage).toHaveURL(/student(?:\/|%2F)dashboard/);
+    await expect(studentPage.locator('body')).toContainText('Olá, QA Aluno Portal');
+    await expect(studentPage.locator('body')).toContainText('Início');
 
     await studentPage.goto(`${baseUrl}/index.php?route=student/schedule`, { waitUntil: 'domcontentloaded' });
-    await expect(studentPage.locator('body')).toContainText(/Minha Escala|Voce esta escalado|Escala/);
+    await expect(studentPage.locator('body')).toContainText(/Minha Escala|Você está escalado|Escala/);
 
     await studentPage.goto(`${baseUrl}/index.php?route=student/exchange`, { waitUntil: 'domcontentloaded' });
-    await expect(studentPage.locator('body')).toContainText(/Intercambio Aneo|Minhas Solicitacoes/);
+    await expect(studentPage.locator('body')).toContainText(/Intercâmbio Aneo|Minhas Solicitações/);
     await expect(studentPage.locator('body')).toContainText(/Aprovado|Visualizado|Solicitação|solicitação em andamento/);
 
     await studentPage.goto(`${baseUrl}/index.php?route=student/requests`, { waitUntil: 'domcontentloaded' });
     await studentPage.locator('input[name="subject"]').fill(ticketSubject);
     await studentPage.locator('select[name="priority"]').selectOption('high');
-    await studentPage.locator('textarea[name="description"]').fill('Chamado criado na rodada final de validacao HML.');
+    await studentPage.locator('textarea[name="description"]').fill('Chamado criado na rodada final de validação HML.');
     await studentPage.getByRole('button', { name: /Abrir chamado/i }).click();
     await expect(studentPage.locator('body')).toContainText(ticketSubject);
     await expect(studentPage.locator('body')).toContainText(/ANEO\d+/);

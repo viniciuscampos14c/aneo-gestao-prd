@@ -352,7 +352,7 @@ class FinanceModel extends BaseModel
     {
         $invoice = $this->findInvoice($id);
         if (!$invoice) {
-            return ['ok' => false, 'message' => 'Fatura nao encontrada.'];
+            return ['ok' => false, 'message' => 'Fatura não encontrada.'];
         }
 
         $now = now();
@@ -497,12 +497,12 @@ class FinanceModel extends BaseModel
     {
         $invoice = $this->findInvoice($invoiceId);
         if (!$invoice) {
-            return ['ok' => false, 'message' => 'Fatura nao encontrada.'];
+            return ['ok' => false, 'message' => 'Fatura não encontrada.'];
         }
 
         $outstanding = max(0, (float) $invoice['amount'] - (float) $invoice['paid_amount']);
         if ($outstanding <= 0) {
-            return ['ok' => false, 'message' => 'Esta fatura ja esta quitada.'];
+            return ['ok' => false, 'message' => 'Esta fatura já esta quitada.'];
         }
 
         if (($paymentMethodId === null || $paymentMethodId <= 0) && $this->invoicePaymentMethodsAvailable()) {
@@ -515,7 +515,7 @@ class FinanceModel extends BaseModel
         $paymentId = $this->recordBatchPayment([$invoiceId], $outstanding, $method, $paidAt, $description, $createdBy, $paymentMethodId);
 
         if ($paymentId <= 0) {
-            return ['ok' => false, 'message' => 'Nao foi possivel efetuar a baixa da fatura.'];
+            return ['ok' => false, 'message' => 'Não foi possível efetuar a baixa da fatura.'];
         }
 
         $this->syncStudentFinanceKanban((int) $invoice['student_id'], $createdBy);
@@ -544,21 +544,21 @@ class FinanceModel extends BaseModel
         $firstDueDate = trim($firstDueDate);
 
         if ($studentId <= 0) {
-            return ['ok' => false, 'message' => 'Aluno invalido para aplicar a negociacao.'];
+            return ['ok' => false, 'message' => 'Aluno inválido para aplicar a negociacao.'];
         }
 
         if ($negotiatedTotal <= 0) {
-            return ['ok' => false, 'message' => 'Valor negociado invalido.'];
+            return ['ok' => false, 'message' => 'Valor negociado inválido.'];
         }
 
         $dueDate = DateTimeImmutable::createFromFormat('Y-m-d', $firstDueDate);
         if (!$dueDate || $dueDate->format('Y-m-d') !== $firstDueDate) {
-            return ['ok' => false, 'message' => 'Primeiro vencimento invalido para gerar as parcelas.'];
+            return ['ok' => false, 'message' => 'Primeiro vencimento inválido para gerar as parcelas.'];
         }
 
         $student = $this->students->find($studentId);
         if (!$student || (int) ($student['company_id'] ?? 0) !== $this->companyId()) {
-            return ['ok' => false, 'message' => 'Aluno da negociacao nao encontrado nesta empresa.'];
+            return ['ok' => false, 'message' => 'Aluno da negociacao não encontrado nesta empresa.'];
         }
 
         $scope = trim((string) ($context['scope'] ?? 'total'));
@@ -608,7 +608,7 @@ class FinanceModel extends BaseModel
             if ($missingNumbers !== []) {
                 return [
                     'ok' => false,
-                    'message' => 'Nao foi possivel localizar todas as faturas selecionadas para a negociacao: ' . implode(', ', $missingNumbers) . '.',
+                    'message' => 'Não foi possível localizar todas as faturas selecionadas para a negociacao: ' . implode(', ', $missingNumbers) . '.',
                 ];
             }
         }
@@ -626,7 +626,7 @@ class FinanceModel extends BaseModel
         $outstandingTotal = round($outstandingTotal, 2);
 
         if ($openInvoiceIds === [] || $outstandingTotal <= 0) {
-            return ['ok' => false, 'message' => 'Nao existem titulos elegiveis para aplicar esta negociacao.'];
+            return ['ok' => false, 'message' => 'Não existem titulos elegiveis para aplicar esta negociacao.'];
         }
 
         if ($negotiatedTotal > ($outstandingTotal + 0.01)) {
@@ -714,19 +714,19 @@ class FinanceModel extends BaseModel
             }
             error_log('[MOBILE_NEGOTIATION_APPROVAL_ERROR] ' . $e->getMessage());
 
-            return ['ok' => false, 'message' => 'Nao foi possivel aplicar a negociacao no financeiro.'];
+            return ['ok' => false, 'message' => 'Não foi possível aplicar a negociacao no financeiro.'];
         }
     }
 
     public function generateFiscalInvoice(int $invoiceId, int $createdBy): array
     {
         if (!$this->hasFiscalTable()) {
-            return ['ok' => false, 'message' => 'Estrutura fiscal indisponivel no banco. Execute a atualizacao SQL.'];
+            return ['ok' => false, 'message' => 'Estrutura fiscal indisponivel no banco. Execute a atualização SQL.'];
         }
 
         $invoice = $this->findInvoice($invoiceId);
         if (!$invoice) {
-            return ['ok' => false, 'message' => 'Fatura nao encontrada.'];
+            return ['ok' => false, 'message' => 'Fatura não encontrada.'];
         }
 
         if ($invoice['status'] !== 'paid') {
@@ -735,7 +735,7 @@ class FinanceModel extends BaseModel
 
         $student = $this->students->find((int) $invoice['student_id']);
         if (!$student) {
-            return ['ok' => false, 'message' => 'Aluno vinculado nao encontrado.'];
+            return ['ok' => false, 'message' => 'Aluno vinculado não encontrado.'];
         }
 
         $payload = $this->fiscalService->buildPayload($invoice, $student);
@@ -812,21 +812,21 @@ class FinanceModel extends BaseModel
     public function generateBankSlip(int $invoiceId, int $createdBy): array
     {
         if (!$this->hasBankSlipTable()) {
-            return ['ok' => false, 'message' => 'Estrutura de boleto indisponivel no banco. Execute a atualizacao SQL.'];
+            return ['ok' => false, 'message' => 'Estrutura de boleto indisponivel no banco. Execute a atualização SQL.'];
         }
 
         $invoice = $this->findInvoice($invoiceId);
         if (!$invoice) {
-            return ['ok' => false, 'message' => 'Fatura nao encontrada.'];
+            return ['ok' => false, 'message' => 'Fatura não encontrada.'];
         }
 
         if ($invoice['status'] === 'paid') {
-            return ['ok' => false, 'message' => 'Fatura paga nao permite gerar novo boleto.'];
+            return ['ok' => false, 'message' => 'Fatura paga não permite gerar novo boleto.'];
         }
 
         $student = $this->students->find((int) $invoice['student_id']);
         if (!$student) {
-            return ['ok' => false, 'message' => 'Aluno vinculado nao encontrado.'];
+            return ['ok' => false, 'message' => 'Aluno vinculado não encontrado.'];
         }
 
         $paymentMethod = $this->resolveInvoicePaymentMethod($invoice);
@@ -963,17 +963,17 @@ class FinanceModel extends BaseModel
     public function syncBankSlipStatus(int $invoiceId, int $changedBy): array
     {
         if (!$this->hasBankSlipTable()) {
-            return ['ok' => false, 'message' => 'Estrutura de boleto indisponivel no banco. Execute a atualizacao SQL.'];
+            return ['ok' => false, 'message' => 'Estrutura de boleto indisponivel no banco. Execute a atualização SQL.'];
         }
 
         $record = $this->bankSlipByInvoice($invoiceId);
         if (!$record) {
-            return ['ok' => false, 'message' => 'Boleto ainda nao foi gerado para esta fatura.'];
+            return ['ok' => false, 'message' => 'Boleto ainda não foi gerado para esta fatura.'];
         }
 
         $invoice = $this->findInvoice($invoiceId);
         if (!$invoice) {
-            return ['ok' => false, 'message' => 'Fatura nao encontrada para sincronizar boleto.'];
+            return ['ok' => false, 'message' => 'Fatura não encontrada para sincronizar boleto.'];
         }
 
         $paymentMethod = $this->resolveInvoicePaymentMethod($invoice);
@@ -1083,7 +1083,7 @@ class FinanceModel extends BaseModel
 
         $record = $this->bankSlipByItauIdentifiers($identifiers, $companyId);
         if (!$record) {
-            return ['ok' => false, 'message' => 'Boleto nao encontrado para o webhook Itau.'];
+            return ['ok' => false, 'message' => 'Boleto não encontrado para o webhook Itau.'];
         }
 
         $companyId = (int) ($record['company_id'] ?? $companyId ?? 0);
@@ -1094,7 +1094,7 @@ class FinanceModel extends BaseModel
         $invoiceId = (int) ($record['invoice_id'] ?? 0);
         $invoice = $this->findInvoice($invoiceId);
         if (!$invoice) {
-            return ['ok' => false, 'message' => 'Fatura do boleto nao encontrada.'];
+            return ['ok' => false, 'message' => 'Fatura do boleto não encontrada.'];
         }
 
         $status = $this->normalizeItauWebhookStatus($payload, (string) ($record['status'] ?? 'pending'));
@@ -2159,16 +2159,16 @@ class FinanceModel extends BaseModel
     {
         $studentId = (int) $studentId;
         if ($studentId <= 0) {
-            return ['ok' => false, 'message' => 'Aluno invalido para gerar plano financeiro.'];
+            return ['ok' => false, 'message' => 'Aluno inválido para gerar plano financeiro.'];
         }
 
         if (!$this->studentFinancialPlanFeatureAvailable()) {
-            return ['ok' => false, 'message' => 'Plano financeiro do aluno indisponivel no banco. Execute a migracao correspondente.'];
+            return ['ok' => false, 'message' => 'Plano financeiro do aluno indisponível no banco. Execute a migração correspondente.'];
         }
 
         $student = $this->students->find($studentId);
         if (!$student || (int) ($student['company_id'] ?? 0) !== $this->companyId()) {
-            return ['ok' => false, 'message' => 'Aluno nao encontrado para gerar o plano financeiro.'];
+            return ['ok' => false, 'message' => 'Aluno não encontrado para gerar o plano financeiro.'];
         }
 
         $qty = max(0, (int) ($student['financial_plan_installments'] ?? 0));
@@ -2180,7 +2180,7 @@ class FinanceModel extends BaseModel
             : 0;
 
         if ($qty <= 0 || $amount <= 0 || !$this->isValidDate($firstDueDate)) {
-            return ['ok' => false, 'message' => 'O aluno nao possui um plano financeiro completo para gerar as parcelas.'];
+            return ['ok' => false, 'message' => 'O aluno não possui um plano financeiro completo para gerar as parcelas.'];
         }
 
         if ($billingDay <= 0) {
@@ -2233,7 +2233,7 @@ class FinanceModel extends BaseModel
                 $this->db->rollBack();
                 return [
                     'ok' => false,
-                    'message' => 'Nao foi possivel gerar o plano financeiro completo do aluno.',
+                    'message' => 'Não foi possível gerar o plano financeiro completo do aluno.',
                     'created' => 0,
                     'existing' => $existing,
                     'failed' => $failed,
@@ -2299,7 +2299,7 @@ class FinanceModel extends BaseModel
         }
 
         if (!$this->invoicePaymentMethodsAvailable()) {
-            return ['ok' => false, 'message' => 'Formas de pagamento ainda nao disponiveis para emitir boletos automaticamente.'];
+            return ['ok' => false, 'message' => 'Formas de pagamento ainda não disponíveis para emitir boletos automaticamente.'];
         }
 
         $studentWindowSql = $this->studentFinancialPlanFeatureAvailable()
@@ -2736,8 +2736,8 @@ class FinanceModel extends BaseModel
 
         $status = $shouldKeepIntegrated ? 'pending' : 'cancelled';
         $errorMessage = $shouldKeepIntegrated
-            ? 'Boleto marcado para reemissao apos alteracao administrativa da fatura.'
-            : 'Boleto cancelado apos mudanca para forma de pagamento sem integracao.';
+            ? 'Boleto marcado para reemissão após alteração administrativa da fatura.'
+            : 'Boleto cancelado após mudança para forma de pagamento sem integração.';
 
         $stmt = $this->db->prepare('UPDATE bank_slips
             SET status = :status,

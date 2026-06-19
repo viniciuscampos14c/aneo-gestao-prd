@@ -145,7 +145,7 @@ class ChatwootService
         if (!$this->isEnabled()) {
             return [
                 'ok' => false,
-                'message' => 'Integracao Chatwoot desativada em config.php.',
+                'message' => 'Integração Chatwoot desativada em config.php.',
                 'conversation_url' => null,
             ];
         }
@@ -212,7 +212,7 @@ class ChatwootService
             if (!$createContact['ok']) {
                 return [
                     'ok' => false,
-                    'message' => $createContact['message'] ?: 'Nao foi possivel criar contato no Chatwoot.',
+                    'message' => $createContact['message'] ?: 'Não foi possível criar contato no Chatwoot.',
                     'conversation_url' => $this->dashboardConversationsUrl(),
                 ];
             }
@@ -223,7 +223,7 @@ class ChatwootService
         if (!$contact || empty($contact['id'])) {
             return [
                 'ok' => false,
-                'message' => 'Nao foi possivel identificar contato no Chatwoot.',
+                'message' => 'Não foi possível identificar contato no Chatwoot.',
                 'conversation_url' => $this->dashboardConversationsUrl(),
             ];
         }
@@ -249,7 +249,7 @@ class ChatwootService
             if (!$createdConversation['ok']) {
                 return [
                     'ok' => false,
-                    'message' => $createdConversation['message'] ?: 'Nao foi possivel criar conversa no Chatwoot.',
+                    'message' => $createdConversation['message'] ?: 'Não foi possível criar conversa no Chatwoot.',
                     'conversation_url' => $this->dashboardConversationsUrl(),
                     'contact_id' => $contactId,
                     'contact_source_id' => $sourceId,
@@ -337,7 +337,7 @@ class ChatwootService
         ];
 
         if ($data['name'] === '') {
-            return ['ok' => false, 'message' => 'Nome do contato nao informado.'];
+            return ['ok' => false, 'message' => 'Nome do contato não informado.'];
         }
 
         if ($data['email'] === '') {
@@ -368,12 +368,12 @@ class ChatwootService
     public function createConversation(int $contactId, string $sourceId): array
     {
         if ($contactId <= 0) {
-            return ['ok' => false, 'message' => 'Contato invalido para criar conversa.'];
+            return ['ok' => false, 'message' => 'Contato inválido para criar conversa.'];
         }
 
         $sourceId = trim($sourceId);
         if ($sourceId === '') {
-            return ['ok' => false, 'message' => 'source_id da conversa nao informado.'];
+            return ['ok' => false, 'message' => 'source_id da conversa não informado.'];
         }
 
         $payload = [
@@ -399,7 +399,7 @@ class ChatwootService
     public function sendConversationMessage(int $conversationId, string $content, bool $private = false): array
     {
         if ($conversationId <= 0) {
-            return ['ok' => false, 'message' => 'Conversa invalida para envio de mensagem.'];
+            return ['ok' => false, 'message' => 'Conversa inválida para envio de mensagem.'];
         }
 
         $content = trim($content);
@@ -437,12 +437,12 @@ class ChatwootService
     private function request(string $method, string $path, ?array $payload = null, array $query = []): array
     {
         if (!function_exists('curl_init')) {
-            return ['ok' => false, 'status' => 0, 'message' => 'Extensao cURL nao disponivel no servidor.', 'data' => []];
+            return ['ok' => false, 'status' => 0, 'message' => 'Extensão cURL não disponível no servidor.', 'data' => []];
         }
 
         $method = strtoupper(trim($method));
         if (!in_array($method, ['GET', 'POST'], true)) {
-            return ['ok' => false, 'status' => 0, 'message' => 'Metodo HTTP nao suportado para Chatwoot.', 'data' => []];
+            return ['ok' => false, 'status' => 0, 'message' => 'Metodo HTTP não suportado para Chatwoot.', 'data' => []];
         }
 
         $url = $this->baseUrl() . $path;

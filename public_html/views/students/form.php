@@ -84,7 +84,7 @@ if (!empty($student['enrolled_at'])) {
                     <input type="file" name="student_photo" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" <?= $photoFeatureAvailable ? '' : 'disabled'; ?>>
                     <p class="mt-1 text-xs text-slate-500">Formatos: PNG, JPG, JPEG ou WEBP (maximo 5MB).</p>
                     <?php if (!$photoFeatureAvailable): ?>
-                        <p class="mt-1 text-xs text-amber-700">Foto indisponivel no banco atual. Execute a migracao de foto de perfil para habilitar.</p>
+                        <p class="mt-1 text-xs text-amber-700">Foto indisponivel no banco atual. Execute a migração de foto de perfil para habilitar.</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -152,7 +152,7 @@ if (!empty($student['enrolled_at'])) {
 
             <?php if (!$financialPlanFeatureAvailable): ?>
                 <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                    Estrutura do plano financeiro ainda nao encontrada no banco. Execute a migration <code>migrations/20260512_student_financial_plan_itau_window.sql</code>.
+                    Estrutura do plano financeiro ainda não encontrada no banco. Execute a migration <code>migrations/20260512_student_financial_plan_itau_window.sql</code>.
                 </p>
             <?php else: ?>
                 <input type="hidden" name="financial_plan_generated_at" value="<?= e($financialPlanGeneratedAt); ?>">
@@ -191,7 +191,7 @@ if (!empty($student['enrolled_at'])) {
                     <label class="block">
                         <span class="mb-1 block text-sm font-medium">Forma de pagamento padrao</span>
                         <select name="financial_plan_payment_method_id" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" <?= $paymentMethodsAvailable ? '' : 'disabled'; ?>>
-                            <option value=""><?= $paymentMethodsAvailable ? 'Selecione...' : 'Nao disponivel'; ?></option>
+                            <option value=""><?= $paymentMethodsAvailable ? 'Selecione...' : 'Não disponível'; ?></option>
                             <?php foreach ($paymentMethods as $method): ?>
                                 <?php $methodName = trim((string) ($method['name'] ?? '')); ?>
                                 <?php if ($methodName === '') { continue; } ?>
@@ -209,7 +209,7 @@ if (!empty($student['enrolled_at'])) {
                     </label>
 
                     <label class="block md:col-span-2">
-                        <span class="mb-1 block text-sm font-medium">Geracao automatica</span>
+                        <span class="mb-1 block text-sm font-medium">Geração automatica</span>
                         <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                             <input type="checkbox" name="financial_plan_auto_generate" value="1" <?= $financialPlanAutoGenerate ? 'checked' : ''; ?>>
                             Gerar todas as faturas internas ao salvar o aluno
@@ -233,7 +233,7 @@ if (!empty($student['enrolled_at'])) {
         <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 lg:col-span-2">
             <h3 class="text-sm font-semibold text-slate-800">Escala pratica</h3>
             <?php if (!$practiceScheduleAvailable): ?>
-                <p class="mt-2 text-xs text-amber-700">Os campos da Escala Aluno ainda nao estao disponiveis no banco. Execute a migration do modulo para habilitar.</p>
+                <p class="mt-2 text-xs text-amber-700">Os campos da Escala Aluno ainda não estão disponíveis no banco. Execute a migration do módulo para habilitar.</p>
             <?php else: ?>
                 <div class="mt-3 grid gap-3 md:grid-cols-3">
                     <label class="block">
@@ -265,12 +265,12 @@ if (!empty($student['enrolled_at'])) {
         </div>
 
         <label class="block lg:col-span-2">
-            <span class="mb-1 block text-sm font-medium">Informacoes Adm (tags/flags)</span>
+            <span class="mb-1 block text-sm font-medium">Informações Adm (tags/flags)</span>
             <input type="text" name="admin_info" value="<?= e($student['admin_info'] ?? ''); ?>" placeholder="<?= e(implode(', ', $flags)); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
         </label>
 
         <label class="block lg:col-span-2">
-            <span class="mb-1 block text-sm font-medium">Observacoes internas</span>
+            <span class="mb-1 block text-sm font-medium">Observações internas</span>
             <textarea name="notes" rows="4" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"><?= e($student['notes'] ?? ''); ?></textarea>
         </label>
 
@@ -285,7 +285,7 @@ if (!empty($student['enrolled_at'])) {
 
             <?php if (!$portalAvailable): ?>
                 <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                    Estrutura do portal ainda nao encontrada no banco. Execute o `database.sql` atualizado para liberar esse cadastro.
+                    Estrutura do portal ainda não encontrada no banco. Execute o `database.sql` atualizado para liberar esse cadastro.
                 </p>
             <?php endif; ?>
 

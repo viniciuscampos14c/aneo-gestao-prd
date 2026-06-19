@@ -764,7 +764,7 @@ class StudentPortalModel extends BaseModel
                 ],
                 'module' => $selectedModule ? [
                     'id' => (int) ($selectedModule['id'] ?? 0),
-                    'title' => (string) ($selectedModule['title'] ?? 'Modulo atual'),
+                    'title' => (string) ($selectedModule['title'] ?? 'Módulo atual'),
                     'display_order' => (int) ($selectedModule['display_order'] ?? 0),
                     'completed_lessons' => (int) ($selectedModule['completed_lessons'] ?? 0),
                     'total_lessons' => (int) ($selectedModule['total_lessons'] ?? 0),
@@ -1417,7 +1417,7 @@ class StudentPortalModel extends BaseModel
     ): array {
         $result = [
             'ok' => false,
-            'message' => 'Nao foi possivel registrar o progresso.',
+            'message' => 'Não foi possível registrar o progresso.',
         ];
 
         if ($studentId <= 0 || $courseId <= 0 || $lessonId <= 0 || !$this->lmsFeatureAvailable()) {
@@ -1427,20 +1427,20 @@ class StudentPortalModel extends BaseModel
 
         $course = $this->findStudentCourse($studentId, $courseId);
         if (!$course) {
-            $result['message'] = 'Curso nao encontrado para sua matricula.';
+            $result['message'] = 'Curso não encontrado para sua matrícula.';
             return $result;
         }
 
         $lesson = $this->findStudentCourseLesson($studentId, $courseId, $lessonId);
         if (!$lesson) {
-            $result['message'] = 'Aula nao encontrada para este curso.';
+            $result['message'] = 'Aula não encontrada para este curso.';
             return $result;
         }
 
         $moduleId = (int) ($lesson['module_id'] ?? 0);
         $statusBefore = $this->moduleStatusMap($studentId, $courseId);
         if (!isset($statusBefore[$moduleId]) || empty($statusBefore[$moduleId]['is_unlocked'])) {
-            $result['message'] = 'Modulo ainda bloqueado. Conclua o modulo anterior primeiro.';
+            $result['message'] = 'Módulo ainda bloqueado. Conclua o módulo anterior primeiro.';
             return $result;
         }
 
@@ -1595,17 +1595,17 @@ class StudentPortalModel extends BaseModel
     {
         $result = [
             'ok' => false,
-            'message' => 'Nao foi possivel concluir a aula.',
+            'message' => 'Não foi possível concluir a aula.',
         ];
 
         if ($studentId <= 0 || $courseId <= 0 || $lessonId <= 0 || !$this->lmsFeatureAvailable()) {
-            $result['message'] = 'Funcionalidade de conclusao indisponivel.';
+            $result['message'] = 'Funcionalidade de conclusão indisponivel.';
             return $result;
         }
 
         $lesson = $this->findStudentCourseLesson($studentId, $courseId, $lessonId);
         if (!$lesson) {
-            $result['message'] = 'Aula nao encontrada para este curso.';
+            $result['message'] = 'Aula não encontrada para este curso.';
             return $result;
         }
 
@@ -1626,7 +1626,7 @@ class StudentPortalModel extends BaseModel
         $progress = $stmt->fetch() ?: null;
 
         if (!$progress || (int) ($progress['progress_percent'] ?? 0) < $threshold) {
-            $result['message'] = 'Esta aula ainda nao atingiu o percentual minimo para conclusao.';
+            $result['message'] = 'Esta aula ainda não atingiu o percentual mínimo para conclusão.';
             return $result;
         }
 

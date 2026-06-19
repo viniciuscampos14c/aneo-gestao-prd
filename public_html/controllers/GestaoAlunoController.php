@@ -825,11 +825,11 @@ class GestaoAlunoController extends BaseController
         $targetDir    = __DIR__ . '/../uploads/gestao_aluno';
 
         if (!is_dir($targetDir) && !mkdir($targetDir, 0755, true)) {
-            return ['ok' => false, 'message' => 'Nao foi possivel criar a pasta de anexos.'];
+            return ['ok' => false, 'message' => 'Não foi possível criar a pasta de anexos.'];
         }
 
         if (!is_writable($targetDir)) {
-            return ['ok' => false, 'message' => 'A pasta de anexos nao esta com permissao de escrita.'];
+            return ['ok' => false, 'message' => 'A pasta de anexos não esta com permissão de escrita.'];
         }
 
         $finalPath = $targetDir . '/' . $storedName;

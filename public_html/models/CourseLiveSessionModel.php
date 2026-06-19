@@ -290,7 +290,7 @@ class CourseLiveSessionModel extends BaseModel
                 ]));
 
                 if ($sessionId === false) {
-                    throw new RuntimeException('Nao foi possivel salvar uma das copias da aula global.');
+                    throw new RuntimeException('Não foi possível salvar uma das cópias da aula global.');
                 }
 
                 $created[] = [

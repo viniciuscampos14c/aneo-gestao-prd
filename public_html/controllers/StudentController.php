@@ -52,7 +52,7 @@ class StudentController extends BaseController
         $student = $this->students->find($id);
 
         if (!$student) {
-            $this->error('Aluno nao encontrado.');
+            $this->error('Aluno não encontrado.');
             $this->redirect('students');
         }
 
@@ -131,7 +131,7 @@ class StudentController extends BaseController
         $portal = $this->collectPortalData();
 
         if ($data['full_name'] === '') {
-            $this->error('Nome completo e obrigatorio.');
+            $this->error('Nome completo e obrigatório.');
             $this->redirect('students/create');
         }
 
@@ -151,7 +151,7 @@ class StudentController extends BaseController
                 $this->students->updateProfilePhoto($id, $photoPath);
             }
         } elseif (!empty($_FILES['student_photo']['name'])) {
-            $this->error('Foto do aluno indisponivel: execute a migracao de perfil de foto no banco.');
+            $this->error('Foto do aluno indisponivel: execute a migração de perfil de foto no banco.');
         }
 
         if (!$this->persistPortalData($id, $portal, null, 'students/edit&id=' . $id)) {
@@ -176,7 +176,7 @@ class StudentController extends BaseController
         $student = $this->students->find($id);
 
         if (!$student) {
-            $this->error('Aluno nao encontrado.');
+            $this->error('Aluno não encontrado.');
             $this->redirect('students');
         }
 
@@ -207,7 +207,7 @@ class StudentController extends BaseController
         $student = $this->students->find($id);
 
         if (!$student) {
-            $this->error('Aluno nao encontrado.');
+            $this->error('Aluno não encontrado.');
             $this->redirect('students');
         }
 
@@ -216,7 +216,7 @@ class StudentController extends BaseController
         $portalAccount = $this->students->findPortalAccount($id);
 
         if ($data['full_name'] === '') {
-            $this->error('Nome completo e obrigatorio.');
+            $this->error('Nome completo e obrigatório.');
             $this->redirect('students/edit&id=' . $id);
         }
 
@@ -238,7 +238,7 @@ class StudentController extends BaseController
         } else {
             $data['profile_photo'] = '';
             if (!empty($_FILES['student_photo']['name'])) {
-                $this->error('Foto do aluno indisponivel: execute a migracao de perfil de foto no banco.');
+                $this->error('Foto do aluno indisponivel: execute a migração de perfil de foto no banco.');
             }
         }
 
@@ -405,7 +405,7 @@ class StudentController extends BaseController
 
         $id = (int) post('student_id');
         if ($id <= 0 || empty($_FILES['document']['name'])) {
-            $this->error('Arquivo nao enviado.');
+            $this->error('Arquivo não enviado.');
             $this->redirect('students/show&id=' . $id);
         }
 
@@ -518,7 +518,7 @@ class StudentController extends BaseController
 
             $method = $this->finance->findPaymentMethod($paymentMethodId);
             if (!$method || (int) ($method['is_active'] ?? 0) !== 1) {
-                $this->error('Forma de pagamento padrao invalida ou inativa.');
+                $this->error('Forma de pagamento padrao inválida ou inativa.');
                 $this->redirect($redirectRoute);
                 return false;
             }
@@ -586,7 +586,7 @@ class StudentController extends BaseController
 
         $result = $this->finance->generateStudentFinancialPlan($studentId, (int) current_user()['id']);
         if (!($result['ok'] ?? false)) {
-            flash('error', (string) ($result['message'] ?? 'Nao foi possivel gerar o plano financeiro automaticamente.'));
+            flash('error', (string) ($result['message'] ?? 'Não foi possível gerar o plano financeiro automaticamente.'));
             return '';
         }
 
@@ -602,7 +602,7 @@ class StudentController extends BaseController
             $parts[] = $existing . ' parcela(s) ja existiam';
         }
         if ($failed > 0) {
-            flash('error', $failed . ' parcela(s) do plano nao puderam ser geradas automaticamente.');
+            flash('error', $failed . ' parcela(s) do plano não puderam ser geradas automaticamente.');
         }
 
         return $parts !== [] ? ' Plano financeiro: ' . implode(', ', $parts) . '.' : '';
@@ -647,7 +647,7 @@ class StudentController extends BaseController
         }
 
         if (!$this->students->portalFeatureAvailable()) {
-            $this->error('A tabela de acesso do portal do aluno nao existe. Execute o SQL atualizado antes de salvar esse acesso.');
+            $this->error('A tabela de acesso do portal do aluno não existe. Execute o SQL atualizado antes de salvar esse acesso.');
             $this->redirect($redirectRoute);
             return false;
         }
@@ -757,7 +757,7 @@ class StudentController extends BaseController
 
         $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         if (!in_array($extension, ['png', 'jpg', 'jpeg', 'webp'], true)) {
-            $this->error('Foto do aluno invalida. Use PNG, JPG, JPEG ou WEBP.');
+            $this->error('Foto do aluno inválida. Use PNG, JPG, JPEG ou WEBP.');
             return ($currentPhoto ?? '') !== '' ? $currentPhoto : null;
         }
 
@@ -777,7 +777,7 @@ class StudentController extends BaseController
         $targetPath = $targetDir . '/' . $storedFileName;
 
         if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $targetPath)) {
-            $this->error('Nao foi possivel salvar a foto do aluno.');
+            $this->error('Não foi possível salvar a foto do aluno.');
             return ($currentPhoto ?? '') !== '' ? $currentPhoto : null;
         }
 

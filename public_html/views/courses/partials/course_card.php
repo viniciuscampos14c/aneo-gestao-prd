@@ -31,11 +31,11 @@ $updatedAgo = $formatRelativeTime((string) ($row['updated_at'] ?? ''));
 
         <div class="grid grid-cols-3 gap-2 text-xs">
             <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
-                <p class="text-slate-400">Modulos</p>
+                <p class="text-slate-400">Módulos</p>
                 <p class="mt-1 text-sm font-semibold text-white"><?= (int) ($row['modules_total'] ?? 0); ?></p>
             </div>
             <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
-                <p class="text-slate-400">Matriculas</p>
+                <p class="text-slate-400">Matrículas</p>
                 <p class="mt-1 text-sm font-semibold text-white"><?= (int) ($row['enrollments_total'] ?? 0); ?></p>
             </div>
             <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
@@ -44,7 +44,7 @@ $updatedAgo = $formatRelativeTime((string) ($row['updated_at'] ?? ''));
             </div>
         </div>
 
-        <p class="text-xs text-slate-400">Atualizado ha <?= e($updatedAgo); ?></p>
+        <p class="text-xs text-slate-400">Atualizado há <?= e($updatedAgo); ?></p>
 
         <div class="space-y-2 border-t border-slate-800 pt-3">
             <div class="flex items-center gap-2">
@@ -97,11 +97,11 @@ $updatedAgo = $formatRelativeTime((string) ($row['updated_at'] ?? ''));
             </div>
 
             <div class="course-card-actions-grid">
-                <a href="<?= route('courses/edit&id=' . $courseId) . '#lms-builder'; ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Conteudo / Modulos" aria-label="Conteudo e modulos do curso">
+                <a href="<?= route('courses/edit&id=' . $courseId) . '#lms-builder'; ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Conteudo / Módulos" aria-label="Conteudo e módulos do curso">
                     Conteudo
                 </a>
-                <a href="<?= route('courses/enrollments&course_id=' . $courseId); ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Matriculas" aria-label="Abrir matriculas do curso">
-                    Matriculas
+                <a href="<?= route('courses/enrollments&course_id=' . $courseId); ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Matrículas" aria-label="Abrir matrículas do curso">
+                    Matrículas
                 </a>
                 <a href="<?= route('courses/exams&course_id=' . $courseId); ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Exames" aria-label="Abrir exames do curso">
                     Exames

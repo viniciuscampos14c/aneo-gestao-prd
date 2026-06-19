@@ -44,7 +44,7 @@ $sourceLabels = [
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            Estrutura de chamados indisponivel no banco. Execute as migracoes `migrations/20260309_support_tickets.sql` e `migrations/20260317_support_ticket_codes_aneo.sql`.
+            Estrutura de chamados indisponível no banco. Execute as migrações `migrations/20260309_support_tickets.sql` e `migrations/20260317_support_ticket_codes_aneo.sql`.
         </div>
     <?php endif; ?>
 
@@ -53,7 +53,7 @@ $sourceLabels = [
         <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
         <label class="block lg:col-span-3">
             <span class="mb-1 block text-sm font-medium">Assunto *</span>
-            <input type="text" name="subject" required placeholder="Ex: Nao consigo acessar a aula" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <input type="text" name="subject" required placeholder="Ex: Não consigo acessar a aula" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
         </label>
         <label class="block lg:col-span-2">
             <span class="mb-1 block text-sm font-medium">Prioridade</span>
@@ -64,7 +64,7 @@ $sourceLabels = [
             </select>
         </label>
         <label class="block lg:col-span-4">
-            <span class="mb-1 block text-sm font-medium">Descricao do problema *</span>
+            <span class="mb-1 block text-sm font-medium">Descrição do problema *</span>
             <textarea name="description" rows="4" required placeholder="Explique o problema com detalhes para o suporte." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
         </label>
         <div class="flex items-end">
@@ -74,7 +74,7 @@ $sourceLabels = [
 
     <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-5">
         <input type="hidden" name="route" value="student/requests">
-        <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descricao..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+        <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descrição..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
         <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="">Todos os status</option>
             <?php foreach ($statusLabels as $key => $label): ?>
@@ -84,7 +84,7 @@ $sourceLabels = [
         <div class="flex gap-2 md:col-span-2">
             <select name="per_page" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 20) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 20) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
@@ -128,7 +128,7 @@ $sourceLabels = [
                     <div>
                         <h3 class="text-base font-semibold text-slate-900"><?= e((string) ($row['subject'] ?? 'Chamado')); ?></h3>
                         <p class="text-xs text-slate-500">
-                            Codigo: <span class="font-semibold text-slate-700"><?= e($ticketCode); ?></span>
+                            Código: <span class="font-semibold text-slate-700"><?= e($ticketCode); ?></span>
                             | Aberto em <?= e((string) ($row['created_at'] ?? '')); ?>
                         </p>
                     </div>
@@ -157,7 +157,7 @@ $sourceLabels = [
                         <?php endif; ?>
                     </div>
                     <div>
-                        <p class="mb-1 text-xs uppercase tracking-wide text-slate-500">Historico de comentarios</p>
+                        <p class="mb-1 text-xs uppercase tracking-wide text-slate-500">Histórico de comentarios</p>
                         <div class="max-h-36 space-y-1 overflow-y-auto rounded-lg border border-slate-100 bg-slate-50 p-2">
                             <?php foreach ($comments as $comment): ?>
                                 <div class="rounded-md bg-white px-2 py-1.5 text-xs">
@@ -185,7 +185,7 @@ $sourceLabels = [
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> chamados | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> chamados | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'student/requests', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($meta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

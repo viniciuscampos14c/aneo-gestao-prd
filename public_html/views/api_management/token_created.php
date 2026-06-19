@@ -42,7 +42,7 @@
         <p class="mb-2 text-sm text-slate-600">Informe o token no header <code class="rounded bg-slate-100 px-1 font-mono text-xs">Authorization</code> de cada requisição:</p>
         <pre class="overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-emerald-300"><code>curl -H "Authorization: Bearer <?= e($rawToken); ?>" \
      "<?= e($apiUrl); ?>?r=students"</code></pre>
-        <p class="mt-3 text-xs text-slate-500">Para RD Station criar leads, use <code class="rounded bg-slate-100 px-1 font-mono">POST <?= e($apiUrl); ?>?r=leads</code> com permissao <code class="rounded bg-slate-100 px-1 font-mono">leads.create</code>.</p>
+        <p class="mt-3 text-xs text-slate-500">Para RD Station criar leads, use <code class="rounded bg-slate-100 px-1 font-mono">POST <?= e($apiUrl); ?>?r=leads</code> com permissão <code class="rounded bg-slate-100 px-1 font-mono">leads.create</code>.</p>
         <p class="mt-3 text-xs text-slate-400">Documentação completa em <a href="<?= route('api-management/manual'); ?>" class="text-cyan-600 hover:underline">Manual da API</a>.</p>
     </div>
 

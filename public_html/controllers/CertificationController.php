@@ -50,14 +50,14 @@ class CertificationController extends BaseController
 
         if ($selectedStudentId > 0) {
             if ($this->isTrialStudent($selectedStudentId)) {
-                $this->error('Alunos provenientes de degustacao nao aparecem no perfil certificador.');
+                $this->error('Alunos provenientes de degustação não aparecem no perfil certificador.');
                 $this->redirect('certification');
             }
 
             $selectedStudent = $this->students->find($selectedStudentId);
 
             if (!$selectedStudent) {
-                $this->error('Aluno nao encontrado para certificacao.');
+                $this->error('Aluno não encontrado para certificação.');
                 $this->redirect('certification');
             }
 
@@ -91,18 +91,18 @@ class CertificationController extends BaseController
 
         $studentId = (int) request('student_id', 0);
         if ($studentId <= 0) {
-            $this->error('Aluno invalido para emitir historico academico.');
+            $this->error('Aluno inválido para emitir histórico acadêmico.');
             $this->redirect('certification');
         }
 
         if ($this->isTrialStudent($studentId)) {
-            $this->error('Alunos provenientes de degustacao nao possuem historico disponivel neste perfil.');
+            $this->error('Alunos provenientes de degustação não possuem histórico disponível neste perfil.');
             $this->redirect('certification');
         }
 
         $student = $this->students->find($studentId);
         if (!$student) {
-            $this->error('Aluno nao encontrado para certificacao.');
+            $this->error('Aluno não encontrado para certificação.');
             $this->redirect('certification');
         }
 
@@ -112,7 +112,7 @@ class CertificationController extends BaseController
         [$terms, $summary] = $this->buildAcademicHistoryPayload($studentId, $profile, $courses, $history);
 
         $this->render('student_portal/academic_history', [
-            'title' => 'Historico Academico',
+            'title' => 'Histórico Acadêmico',
             'student' => $student,
             'profile' => $profile,
             'ra' => (string) ($summary['ra'] ?? ''),

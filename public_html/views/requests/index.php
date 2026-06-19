@@ -111,7 +111,7 @@ $queueLinks = [
             <input type="text" readonly value="<?= e((string) ($integration['local_webhook_url'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
             <button type="button" onclick="navigator.clipboard.writeText('<?= e((string) ($integration['local_webhook_url'] ?? '')); ?>')" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs hover:bg-slate-50">Copiar URL</button>
         </div>
-        <p class="mt-2 text-xs text-slate-500">URL configurada para envio externo: <?= e((string) ($integration['webhook_url'] ?? '')); ?><?= empty($integration['webhook_url']) ? ' (nao definida)' : ''; ?></p>
+        <p class="mt-2 text-xs text-slate-500">URL configurada para envio externo: <?= e((string) ($integration['webhook_url'] ?? '')); ?><?= empty($integration['webhook_url']) ? ' (não definida)' : ''; ?></p>
     </div>
 
     <?php if (!$featureAvailable): ?>
@@ -137,7 +137,7 @@ $queueLinks = [
                 </select>
             </label>
             <label class="block lg:col-span-5">
-                <span class="mb-1 block text-sm font-medium">Descricao do chamado *</span>
+                <span class="mb-1 block text-sm font-medium">Descrição do chamado *</span>
                 <textarea name="description" rows="4" required placeholder="Descreva o que esta acontecendo em detalhes." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
             </label>
             <label class="block lg:col-span-4">
@@ -153,7 +153,7 @@ $queueLinks = [
 
     <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-6">
         <input type="hidden" name="route" value="requests">
-        <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descricao..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+        <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descrição..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
         <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <option value="">Todos os status</option>
             <option value="pending" <?= (string) ($filters['status'] ?? '') === 'pending' ? 'selected' : ''; ?>>Pendentes (aberto + em andamento)</option>
@@ -180,7 +180,7 @@ $queueLinks = [
             </label>
             <select name="per_page" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
@@ -328,7 +328,7 @@ $queueLinks = [
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> chamados | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> chamados | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'requests', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($meta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

@@ -67,7 +67,7 @@ class GenericModuleController extends BaseController
             $this->items->create($module, $data, (int) current_user()['id']);
             $this->success('Registro criado em ' . $title . '.');
         } else {
-            $this->error('Titulo e obrigatorio.');
+            $this->error('Título e obrigatório.');
         }
 
         $this->redirect($module);
@@ -83,7 +83,7 @@ class GenericModuleController extends BaseController
         $row = $this->items->find($id);
 
         if (!$row || $row['module_name'] !== $module) {
-            $this->error('Registro nao encontrado.');
+            $this->error('Registro não encontrado.');
             $this->redirect($module);
         }
 

@@ -52,7 +52,7 @@ class ApiEndpointController extends BaseController
 
         $companyId = (int) ($data['company_id'] ?? 0);
         if ($companyId <= 0 || !$this->activeCompanyExists($companyId)) {
-            ApiAuth::abort(422, 'company_id nao corresponde a uma empresa ativa.');
+            ApiAuth::abort(422, 'company_id não corresponde a uma empresa ativa.');
         }
 
         $email = strtolower(trim((string) ($data['email'] ?? '')));
@@ -67,7 +67,7 @@ class ApiEndpointController extends BaseController
 
         $cpf = preg_replace('/\D/', '', (string) ($data['cpf'] ?? '')) ?: '';
         if (!$this->isValidCpf($cpf)) {
-            ApiAuth::abort(422, 'cpf invalido.');
+            ApiAuth::abort(422, 'cpf inválido.');
         }
 
         $birthDate = $this->validateIsoDate((string) ($data['birth_date'] ?? ''), 'birth_date');
@@ -153,7 +153,7 @@ class ApiEndpointController extends BaseController
 
         $student = $this->students->find($id);
         if (!$student) {
-            ApiAuth::abort(404, 'Aluno nao encontrado.');
+            ApiAuth::abort(404, 'Aluno não encontrado.');
         }
         $this->ok($student);
     }
@@ -184,7 +184,7 @@ class ApiEndpointController extends BaseController
 
         $student = $this->students->find($id);
         if (!$student) {
-            ApiAuth::abort(404, 'Aluno nao encontrado.');
+            ApiAuth::abort(404, 'Aluno não encontrado.');
         }
 
         $data = $this->parseBody();
@@ -217,7 +217,7 @@ class ApiEndpointController extends BaseController
 
         $student = $this->students->find($id);
         if (!$student) {
-            ApiAuth::abort(404, 'Aluno nao encontrado.');
+            ApiAuth::abort(404, 'Aluno não encontrado.');
         }
 
         $this->students->delete($id);
@@ -249,7 +249,7 @@ class ApiEndpointController extends BaseController
 
         $lead = $this->leads->find($id);
         if (!$lead) {
-            ApiAuth::abort(404, 'Lead nao encontrado.');
+            ApiAuth::abort(404, 'Lead não encontrado.');
         }
         $this->ok($lead);
     }
@@ -284,7 +284,7 @@ class ApiEndpointController extends BaseController
             if ($this->activeCompanyExists($requestedCompanyId)) {
                 return $requestedCompanyId;
             }
-            ApiAuth::abort(422, 'Empresa informada em company_id nao encontrada ou inativa.');
+            ApiAuth::abort(422, 'Empresa informada em company_id não encontrada ou inativa.');
         }
 
         $target = trim((string) ($data['uf'] ?? $data['state'] ?? $data['unit_name'] ?? ''));
@@ -302,7 +302,7 @@ class ApiEndpointController extends BaseController
             }
         }
 
-        ApiAuth::abort(422, 'Nao foi possivel identificar a unidade do lead. Envie company_id, uf, state ou unit_name valido.');
+        ApiAuth::abort(422, 'Não foi possível identificar a unidade do lead. Envie company_id, uf, state ou unit_name valido.');
     }
 
     private function activeCompanyExists(int $companyId): bool
@@ -348,7 +348,7 @@ class ApiEndpointController extends BaseController
 
         $lead = $this->leads->find($id);
         if (!$lead) {
-            ApiAuth::abort(404, 'Lead nao encontrado.');
+            ApiAuth::abort(404, 'Lead não encontrado.');
         }
 
         $data = $this->parseBody();
@@ -376,7 +376,7 @@ class ApiEndpointController extends BaseController
 
         $lead = $this->leads->find($id);
         if (!$lead) {
-            ApiAuth::abort(404, 'Lead nao encontrado.');
+            ApiAuth::abort(404, 'Lead não encontrado.');
         }
 
         $this->leads->delete($id);
@@ -409,7 +409,7 @@ class ApiEndpointController extends BaseController
 
         $invoice = $this->finance->findInvoice($id);
         if (!$invoice) {
-            ApiAuth::abort(404, 'Fatura nao encontrada.');
+            ApiAuth::abort(404, 'Fatura não encontrada.');
         }
         $this->ok($invoice);
     }
@@ -443,7 +443,7 @@ class ApiEndpointController extends BaseController
 
         $invoice = $this->finance->findInvoice($id);
         if (!$invoice) {
-            ApiAuth::abort(404, 'Fatura nao encontrada.');
+            ApiAuth::abort(404, 'Fatura não encontrada.');
         }
 
         $this->finance->deleteInvoice($id);
@@ -475,7 +475,7 @@ class ApiEndpointController extends BaseController
 
         $course = $this->courses->findCourse($id);
         if (!$course) {
-            ApiAuth::abort(404, 'Curso nao encontrado.');
+            ApiAuth::abort(404, 'Curso não encontrado.');
         }
         $this->ok($course);
     }
@@ -485,7 +485,7 @@ class ApiEndpointController extends BaseController
         ApiAuth::requirePermission($this->token, 'trial_accesses', 'search');
 
         if (!$this->courses->trialAccessFeatureAvailable()) {
-            ApiAuth::abort(409, 'Funcionalidade de degustacao indisponivel no banco.');
+            ApiAuth::abort(409, 'Funcionalidade de degustação indisponivel no banco.');
         }
 
         $perPage = min(200, max(1, (int) ($_GET['per_page'] ?? 50)));
@@ -500,12 +500,12 @@ class ApiEndpointController extends BaseController
         ApiAuth::requirePermission($this->token, 'trial_accesses', 'get');
 
         if (!$this->courses->trialAccessFeatureAvailable()) {
-            ApiAuth::abort(409, 'Funcionalidade de degustacao indisponivel no banco.');
+            ApiAuth::abort(409, 'Funcionalidade de degustação indisponivel no banco.');
         }
 
         $trialAccess = $this->courses->findTrialAccess($id);
         if (!$trialAccess) {
-            ApiAuth::abort(404, 'Acesso de degustacao nao encontrado.');
+            ApiAuth::abort(404, 'Acesso de degustação não encontrado.');
         }
 
         $this->ok($trialAccess);
@@ -516,7 +516,7 @@ class ApiEndpointController extends BaseController
         ApiAuth::requirePermission($this->token, 'trial_accesses', 'create');
 
         if (!$this->courses->trialAccessFeatureAvailable()) {
-            ApiAuth::abort(409, 'Funcionalidade de degustacao indisponivel no banco.');
+            ApiAuth::abort(409, 'Funcionalidade de degustação indisponivel no banco.');
         }
 
         $data = $this->parseBody();
@@ -565,7 +565,7 @@ class ApiEndpointController extends BaseController
 
         $user = $this->users->find($id);
         if (!$user) {
-            ApiAuth::abort(404, 'Usuario nao encontrado.');
+            ApiAuth::abort(404, 'Usuário não encontrado.');
         }
         $this->ok($user);
     }
@@ -628,7 +628,7 @@ class ApiEndpointController extends BaseController
 
         $ticket = $this->tickets->findTicket($id);
         if (!$ticket) {
-            ApiAuth::abort(404, 'Chamado nao encontrado.');
+            ApiAuth::abort(404, 'Chamado não encontrado.');
         }
         $this->ok($ticket);
     }
@@ -671,7 +671,7 @@ class ApiEndpointController extends BaseController
     {
         foreach ($fields as $field) {
             if (!isset($data[$field]) || trim((string) $data[$field]) === '') {
-                ApiAuth::abort(422, "Campo obrigatorio ausente: {$field}");
+                ApiAuth::abort(422, "Campo obrigatório ausente: {$field}");
             }
         }
     }

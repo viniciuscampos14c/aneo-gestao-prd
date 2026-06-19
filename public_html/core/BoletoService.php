@@ -66,7 +66,7 @@ class BoletoService
             return [
                 'sent' => false,
                 'status' => 'pending',
-                'message' => 'Integracao de boleto nao configurada. Registro pendente criado.',
+                'message' => 'Integração de boleto não configurada. Registro pendente criado.',
                 'external_id' => $existing['external_id'] ?? null,
                 'digitable_line' => $existing['digitable_line'] ?? null,
                 'barcode' => $existing['barcode'] ?? null,
@@ -82,7 +82,7 @@ class BoletoService
         return [
             'sent' => false,
             'status' => 'processing',
-            'message' => 'Integracao de boleto habilitada, aguardando implementacao do cliente API.',
+            'message' => 'Integração de boleto habilitada, aguardando implementacao do cliente API.',
             'external_id' => $existing['external_id'] ?? null,
             'digitable_line' => null,
             'barcode' => null,
@@ -101,7 +101,7 @@ class BoletoService
             return [
                 'sent' => false,
                 'status' => (string) ($bankSlip['status'] ?? 'pending'),
-                'message' => 'Integracao de boleto ainda nao configurada.',
+                'message' => 'Integração de boleto ainda não configurada.',
                 'external_id' => $bankSlip['external_id'] ?? null,
                 'digitable_line' => $bankSlip['digitable_line'] ?? null,
                 'barcode' => $bankSlip['barcode'] ?? null,

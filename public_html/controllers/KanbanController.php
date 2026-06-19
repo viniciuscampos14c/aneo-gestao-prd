@@ -34,20 +34,20 @@ class KanbanController extends BaseController
         $statusId = (int) post('status_id');
 
         if ($studentId <= 0 || $statusId <= 0) {
-            $this->json(['ok' => false, 'message' => 'Parametros invalidos.'], 422);
+            $this->json(['ok' => false, 'message' => 'Parametros inválidos.'], 422);
         }
 
         try {
             $status = $this->kanban->findStatus($statusId);
             if (!$status) {
-                $this->json(['ok' => false, 'message' => 'Status de destino nao encontrado.'], 404);
+                $this->json(['ok' => false, 'message' => 'Status de destino não encontrado.'], 404);
             }
 
             $this->kanban->moveStudent($studentId, $statusId, (int) current_user()['id']);
             $this->json(['ok' => true]);
         } catch (Throwable $e) {
             error_log('[KANBAN_MOVE_ERROR] ' . $e->getMessage());
-            $this->json(['ok' => false, 'message' => 'Nao foi possivel mover o card agora.'], 500);
+            $this->json(['ok' => false, 'message' => 'Não foi possível mover o card agora.'], 500);
         }
     }
 

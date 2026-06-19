@@ -68,12 +68,12 @@ class D4SignService
     public function uploadDocument(string $safeUuid, string $filePath, string $displayName): array
     {
         if (!is_file($filePath)) {
-            return ['ok' => false, 'message' => 'Arquivo local do contrato nao encontrado.', 'document_uuid' => null];
+            return ['ok' => false, 'message' => 'Arquivo local do contrato não encontrado.', 'document_uuid' => null];
         }
 
         $safeUuid = trim($safeUuid);
         if ($safeUuid === '') {
-            return ['ok' => false, 'message' => 'UUID do cofre D4Sign nao informado.', 'document_uuid' => null];
+            return ['ok' => false, 'message' => 'UUID do cofre D4Sign não informado.', 'document_uuid' => null];
         }
 
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
@@ -108,12 +108,12 @@ class D4SignService
     {
         $documentUuid = trim($documentUuid);
         if ($documentUuid === '') {
-            return ['ok' => false, 'message' => 'UUID do documento nao informado.', 'signer_key' => null];
+            return ['ok' => false, 'message' => 'UUID do documento não informado.', 'signer_key' => null];
         }
 
         $email = strtolower(trim((string) ($signer['email'] ?? '')));
         if ($email === '') {
-            return ['ok' => false, 'message' => 'Email do signatario nao informado.', 'signer_key' => null];
+            return ['ok' => false, 'message' => 'Email do signatário não informado.', 'signer_key' => null];
         }
 
         $payload = [
@@ -151,11 +151,11 @@ class D4SignService
     {
         $documentUuid = trim($documentUuid);
         if ($documentUuid === '') {
-            return ['ok' => false, 'message' => 'UUID do documento nao informado.'];
+            return ['ok' => false, 'message' => 'UUID do documento não informado.'];
         }
 
         $payload = [
-            'message' => $message !== '' ? $message : 'Contrato disponivel para assinatura eletronica.',
+            'message' => $message !== '' ? $message : 'Contrato disponível para assinatura eletrônica.',
             'skipemail' => '0',
         ];
 
@@ -172,7 +172,7 @@ class D4SignService
         $documentUuid = trim($documentUuid);
         $webhookUrl = trim($webhookUrl);
         if ($documentUuid === '' || $webhookUrl === '') {
-            return ['ok' => false, 'message' => 'Documento ou URL de webhook nao informados.'];
+            return ['ok' => false, 'message' => 'Documento ou URL de webhook não informados.'];
         }
 
         $response = $this->requestJson('POST', '/documents/' . rawurlencode($documentUuid) . '/webhooks', [
@@ -190,7 +190,7 @@ class D4SignService
     {
         $documentUuid = trim($documentUuid);
         if ($documentUuid === '') {
-            return ['ok' => false, 'message' => 'UUID do documento nao informado.', 'data' => []];
+            return ['ok' => false, 'message' => 'UUID do documento não informado.', 'data' => []];
         }
 
         $response = $this->requestJson('GET', '/documents/' . rawurlencode($documentUuid) . '/list');
@@ -227,7 +227,7 @@ class D4SignService
     {
         $documentUuid = trim($documentUuid);
         if ($documentUuid === '') {
-            return ['ok' => false, 'message' => 'UUID do documento nao informado.', 'urls' => [], 'data' => []];
+            return ['ok' => false, 'message' => 'UUID do documento não informado.', 'urls' => [], 'data' => []];
         }
 
         $path = '/documents/' . rawurlencode($documentUuid) . '/downloadlist';
@@ -259,7 +259,7 @@ class D4SignService
                 (string) ($postResponse['message'] ?? ''),
                 (string) ($postDownloadResponse['message'] ?? ''),
             ], static fn ($v) => trim((string) $v) !== ''));
-            $message = $parts !== [] ? implode(' | ', $parts) : 'D4Sign nao retornou URLs de download.';
+            $message = $parts !== [] ? implode(' | ', $parts) : 'D4Sign não retornou URLs de download.';
         }
 
         return [
@@ -317,7 +317,7 @@ class D4SignService
             $this->directDownloadUrls($documentUuid)
         )));
         if ($urls === []) {
-            return ['ok' => false, 'message' => 'D4Sign nao retornou URLs para download do assinado.', 'url' => null];
+            return ['ok' => false, 'message' => 'D4Sign não retornou URLs para download do assinado.', 'url' => null];
         }
 
         $errors = [];
@@ -353,11 +353,11 @@ class D4SignService
     {
         $url = trim($url);
         if ($url === '') {
-            return ['ok' => false, 'message' => 'URL de download nao informada.'];
+            return ['ok' => false, 'message' => 'URL de download não informada.'];
         }
 
         if (!function_exists('curl_init')) {
-            return ['ok' => false, 'message' => 'Extensao cURL indisponivel para baixar arquivo.'];
+            return ['ok' => false, 'message' => 'Extensão cURL indisponivel para baixar arquivo.'];
         }
 
         $dir = dirname($targetPath);
@@ -435,7 +435,7 @@ class D4SignService
     private function requestJson(string $method, string $path, ?array $payload = null, array $query = []): array
     {
         if (!function_exists('curl_init')) {
-            return ['ok' => false, 'status' => 0, 'message' => 'Extensao cURL indisponivel.', 'data' => []];
+            return ['ok' => false, 'status' => 0, 'message' => 'Extensão cURL indisponivel.', 'data' => []];
         }
 
         $method = strtoupper(trim($method));
@@ -471,7 +471,7 @@ class D4SignService
     private function requestMultipart(string $method, string $path, array $fields, array $query = []): array
     {
         if (!function_exists('curl_init')) {
-            return ['ok' => false, 'status' => 0, 'message' => 'Extensao cURL indisponivel.', 'data' => []];
+            return ['ok' => false, 'status' => 0, 'message' => 'Extensão cURL indisponivel.', 'data' => []];
         }
 
         $method = strtoupper(trim($method));
@@ -740,7 +740,7 @@ class D4SignService
 
                 return [
                     'ok' => true,
-                    'message' => 'Arquivo assinado baixado em ZIP (extensao ZipArchive indisponivel para extrair PDF).',
+                    'message' => 'Arquivo assinado baixado em ZIP (extensão ZipArchive indisponivel para extrair PDF).',
                     'stored_path' => $zipPath,
                     'file_extension' => 'zip',
                 ];
@@ -763,7 +763,7 @@ class D4SignService
             if ($extract['ok']) {
                 return [
                     'ok' => true,
-                    'message' => 'PDF assinado extraido de arquivo ZIP do D4Sign.',
+                    'message' => 'PDF assinado extraído de arquivo ZIP do D4Sign.',
                     'stored_path' => $targetPath,
                     'file_extension' => 'pdf',
                 ];
@@ -783,13 +783,13 @@ class D4SignService
             @unlink($targetPath);
         }
 
-        return ['ok' => false, 'message' => 'Arquivo retornado pelo D4Sign nao parece PDF assinado.'];
+        return ['ok' => false, 'message' => 'Arquivo retornado pelo D4Sign não parece PDF assinado.'];
     }
 
     private function extractPdfFromZip(string $zipPath, string $targetPdfPath): array
     {
         if (!class_exists('ZipArchive')) {
-            return ['ok' => false, 'message' => 'Extensao ZipArchive indisponivel para extrair PDF assinado.'];
+            return ['ok' => false, 'message' => 'Extensão ZipArchive indisponivel para extrair PDF assinado.'];
         }
 
         $zip = new ZipArchive();
@@ -826,7 +826,7 @@ class D4SignService
 
         if ($selectedIndex < 0) {
             $zip->close();
-            return ['ok' => false, 'message' => 'ZIP nao possui arquivos PDF para extracao.'];
+            return ['ok' => false, 'message' => 'ZIP não possui arquivos PDF para extração.'];
         }
 
         $content = $zip->getFromIndex($selectedIndex);
@@ -836,15 +836,15 @@ class D4SignService
         }
 
         if (file_put_contents($targetPdfPath, $content) === false) {
-            return ['ok' => false, 'message' => 'Falha ao gravar PDF assinado extraido do ZIP.'];
+            return ['ok' => false, 'message' => 'Falha ao gravar PDF assinado extraído do ZIP.'];
         }
 
         if (!$this->looksLikePdf($targetPdfPath)) {
             @unlink($targetPdfPath);
-            return ['ok' => false, 'message' => 'PDF extraido do ZIP parece invalido.'];
+            return ['ok' => false, 'message' => 'PDF extraído do ZIP parece inválido.'];
         }
 
-        return ['ok' => true, 'message' => 'PDF extraido com sucesso.'];
+        return ['ok' => true, 'message' => 'PDF extraído com sucesso.'];
     }
 
     private function setting(string $key, $default = null)

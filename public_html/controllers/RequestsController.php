@@ -85,7 +85,7 @@ class RequestsController extends BaseController
         $returnRoute = $this->resolveReturnRoute('requests');
 
         if (!$this->tickets->featureAvailable()) {
-            $this->error('Estrutura de chamados indisponivel. Execute a migracao de suporte.');
+            $this->error('Estrutura de chamados indisponivel. Execute a migração de suporte.');
             $this->redirect($returnRoute);
         }
 
@@ -94,7 +94,7 @@ class RequestsController extends BaseController
         $priority = $this->normalizePriority((string) post('priority', 'medium'));
 
         if ($subject === '' || $description === '') {
-            $this->error('Assunto e descricao sao obrigatorios.');
+            $this->error('Assunto e descrição são obrigatórios.');
             $this->redirect($returnRoute);
         }
 
@@ -108,14 +108,14 @@ class RequestsController extends BaseController
         ], (int) ($user['id'] ?? 0), 'internal');
 
         if ($ticketId <= 0) {
-            $this->error('Nao foi possivel criar o chamado.');
+            $this->error('Não foi possível criar o chamado.');
             $this->redirect($returnRoute);
         }
 
         $uploaded = $this->handlePrintUploads($ticketId, $_FILES['prints'] ?? null, (int) ($user['id'] ?? 0));
         $ticket = $this->tickets->findTicket($ticketId);
         if (!$ticket) {
-            $this->error('Chamado criado, mas nao foi possivel recarregar os dados.');
+            $this->error('Chamado criado, mas não foi possível recarregar os dados.');
             $this->redirect($returnRoute);
         }
 
@@ -139,7 +139,7 @@ class RequestsController extends BaseController
             $message .= ' ' . $uploaded . ' print(s) anexado(s).';
         }
         if (!$emailOk) {
-            $message .= ' Aviso: email nao enviado para ' . (string) config('support.notification_email', 'vinicius14c@hotmail.com') . '.';
+            $message .= ' Aviso: email não enviado para ' . (string) config('support.notification_email', 'vinicius14c@hotmail.com') . '.';
         }
         if (!$webhookSkipped && !$webhookOk) {
             $message .= ' Aviso: falha no envio para o site externo.';
@@ -166,7 +166,7 @@ class RequestsController extends BaseController
 
         $ticket = $this->tickets->findTicket($ticketId);
         if (!$ticket) {
-            $this->error('Chamado nao encontrado.');
+            $this->error('Chamado não encontrado.');
             $this->redirect($returnRoute);
         }
 
@@ -187,13 +187,13 @@ class RequestsController extends BaseController
         $statusNote = trim((string) post('status_note'));
 
         if ($ticketId <= 0) {
-            $this->error('Chamado invalido.');
+            $this->error('Chamado inválido.');
             $this->redirect($returnRoute);
         }
 
         $ticket = $this->tickets->findTicket($ticketId);
         if (!$ticket) {
-            $this->error('Chamado nao encontrado.');
+            $this->error('Chamado não encontrado.');
             $this->redirect($returnRoute);
         }
 
@@ -219,24 +219,24 @@ class RequestsController extends BaseController
         $note = trim((string) post('decision_note'));
 
         if ($ticketId <= 0) {
-            $this->error('Chamado invalido para decisao.');
+            $this->error('Chamado inválido para decisao.');
             $this->redirect($returnRoute);
         }
 
         $ticket = $this->tickets->findTicket($ticketId);
         if (!$ticket) {
-            $this->error('Chamado nao encontrado.');
+            $this->error('Chamado não encontrado.');
             $this->redirect($returnRoute);
         }
 
         if (!$this->tickets->isMobileNegotiationTicket($ticket)) {
-            $this->error('Este chamado nao pertence ao fluxo de negociacao do app.');
+            $this->error('Este chamado não pertence ao fluxo de negociacao do app.');
             $this->redirect($returnRoute);
         }
 
         $currentStatus = strtolower(trim((string) ($ticket['status'] ?? 'open')));
         if (!in_array($currentStatus, ['open', 'in_progress'], true)) {
-            $this->error('Esta negociacao ja foi finalizada anteriormente e nao pode ser processada novamente.');
+            $this->error('Esta negociacao ja foi finalizada anteriormente e não pode ser processada novamente.');
             $this->redirect($returnRoute);
         }
 
@@ -253,7 +253,7 @@ class RequestsController extends BaseController
         ];
 
         if (!isset($statusMap[$decision])) {
-            $this->error('Acao de decisao invalida.');
+            $this->error('Acao de decisao inválida.');
             $this->redirect($returnRoute);
         }
 
@@ -265,7 +265,7 @@ class RequestsController extends BaseController
 
             $payload = $this->parseMobileNegotiationPayload($ticket);
             if (!$payload['ok']) {
-                $this->error((string) ($payload['message'] ?? 'Nao foi possivel interpretar os dados da negociacao no chamado.'));
+                $this->error((string) ($payload['message'] ?? 'Não foi possível interpretar os dados da negociacao no chamado.'));
                 $this->redirect($returnRoute);
             }
 
@@ -288,7 +288,7 @@ class RequestsController extends BaseController
             );
 
             if (!$result['ok']) {
-                $this->error((string) ($result['message'] ?? 'Nao foi possivel aplicar a negociacao no financeiro.'));
+                $this->error((string) ($result['message'] ?? 'Não foi possível aplicar a negociacao no financeiro.'));
                 $this->redirect($returnRoute);
             }
 
@@ -314,7 +314,7 @@ class RequestsController extends BaseController
             $this->success(
                 'Negociacao aprovada com sucesso. '
                 . (int) ($result['renegotiated_invoices_count'] ?? 0)
-                . ' titulo(s) renegociado(s) e '
+                . ' título(s) renegociado(s) e '
                 . count((array) ($result['new_invoice_ids'] ?? []))
                 . ' fatura(s) nova(s) criada(s).'
             );
@@ -356,7 +356,7 @@ class RequestsController extends BaseController
         if ($configuredToken !== '' && !hash_equals($configuredToken, $providedToken)) {
             $this->json([
                 'ok' => false,
-                'message' => 'Token invalido para webhook de chamados.',
+                'message' => 'Token inválido para webhook de chamados.',
             ], 401);
         }
 
@@ -380,7 +380,7 @@ class RequestsController extends BaseController
         if ($companyId <= 0) {
             $this->json([
                 'ok' => false,
-                'message' => 'Empresa destino nao encontrada para webhook.',
+                'message' => 'Empresa destino não encontrada para webhook.',
             ], 422);
         }
 
@@ -389,7 +389,7 @@ class RequestsController extends BaseController
         if ($subject === '' || $description === '') {
             $this->json([
                 'ok' => false,
-                'message' => 'Assunto e descricao sao obrigatorios.',
+                'message' => 'Assunto e descrição são obrigatórios.',
             ], 422);
         }
 
@@ -528,7 +528,7 @@ class RequestsController extends BaseController
         }
 
         if ($description === '') {
-            return ['ok' => false, 'message' => 'Descricao do chamado vazia para leitura da negociacao.'];
+            return ['ok' => false, 'message' => 'Descrição do chamado vazia para leitura da negociacao.'];
         }
 
         $studentId = 0;
@@ -536,7 +536,7 @@ class RequestsController extends BaseController
             $studentId = (int) ($matchStudent[1] ?? 0);
         }
         if ($studentId <= 0) {
-            return ['ok' => false, 'message' => 'Nao foi possivel identificar o ID do aluno na negociacao.'];
+            return ['ok' => false, 'message' => 'Não foi possível identificar o ID do aluno na negociacao.'];
         }
 
         $installments = 0;
@@ -562,7 +562,7 @@ class RequestsController extends BaseController
             }
         }
         if ($installments <= 0) {
-            return ['ok' => false, 'message' => 'Nao foi possivel identificar o parcelamento da negociacao.'];
+            return ['ok' => false, 'message' => 'Não foi possível identificar o parcelamento da negociacao.'];
         }
 
         $firstDueDate = '';
@@ -576,7 +576,7 @@ class RequestsController extends BaseController
             }
         }
         if ($firstDueDate === '') {
-            return ['ok' => false, 'message' => 'Nao foi possivel identificar o primeiro vencimento da negociacao.'];
+            return ['ok' => false, 'message' => 'Não foi possível identificar o primeiro vencimento da negociacao.'];
         }
 
         $negotiatedTotal = 0.0;
@@ -590,7 +590,7 @@ class RequestsController extends BaseController
             $negotiatedTotal = round($installmentValue * $installments, 2);
         }
         if ($negotiatedTotal <= 0) {
-            return ['ok' => false, 'message' => 'Nao foi possivel identificar o valor total negociado.'];
+            return ['ok' => false, 'message' => 'Não foi possível identificar o valor total negociado.'];
         }
 
         $mode = str_starts_with($subject, 'aditivo financeiro -') ? 'aditivo' : 'negociacao';

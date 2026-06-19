@@ -4,7 +4,7 @@
 /** @var array  $filters         filtros ativos */
 /** @var bool   $zoomConfigured  credenciais Zoom cadastradas */
 
-$newId = (int) get('new_id');
+$newId = (int) request('new_id');
 
 function ls_url(array $filters, int $page = 1): string {
     $params = ['route' => 'courses/live-sessions'];

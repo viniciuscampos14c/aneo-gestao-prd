@@ -34,9 +34,9 @@ $user = current_user();
 $company = current_company();
 $isProfessor = is_professor();
 $isCertificador = is_certificador();
-$homeRoute = route($isProfessor ? 'students' : default_admin_route());
+$homeRoute = route(default_admin_route());
 $menu = [
-    ['module' => $isProfessor ? 'students' : 'dashboard', 'label' => $isProfessor ? 'Inicio' : 'Dashboard', 'icon' => 'chart-bar', 'route' => $isProfessor ? 'students' : 'dashboard'],
+    ['module' => 'dashboard', 'label' => $isProfessor ? 'Início' : 'Dashboard', 'icon' => 'chart-bar', 'route' => 'dashboard'],
     ['module' => 'certification', 'label' => 'Certificacao', 'icon' => 'clipboard-document-list', 'route' => 'certification'],
     ['module' => 'gda', 'label' => 'Gestão do Aluno', 'icon' => 'user-group', 'route' => 'gestao-aluno'],
     ['module' => 'students', 'label' => 'Alunos', 'icon' => 'users', 'route' => 'students', 'hide_for_professor' => true],
@@ -45,6 +45,7 @@ $menu = [
     ['module' => 'leads', 'label' => 'Leads', 'icon' => 'sparkles', 'route' => 'leads'],
     ['module' => 'chatwoot', 'label' => 'Atendimento', 'icon' => 'chat-bubble-left-right', 'route' => 'chatwoot', 'hidden' => !((bool) config('chatwoot.show_in_menu', false))],
     ['module' => 'courses', 'label' => 'Cursos EAD', 'icon' => 'academic-cap', 'route' => 'courses'],
+    ['module' => 'courses', 'label' => 'Dúvidas dos Alunos', 'icon' => 'question-mark-circle', 'route' => 'courses/questions', 'hidden' => !$isProfessor],
     ['module' => 'signatures', 'label' => 'Assinaturas', 'icon' => 'document-check', 'route' => 'signatures'],
     ['module' => 'arsenal', 'label' => 'Arsenal Digital', 'icon' => 'book-open', 'route' => 'arsenal'],
     ['module' => 'requests', 'label' => 'Solicitações', 'icon' => 'inbox-arrow-down', 'route' => 'requests'],
@@ -59,7 +60,7 @@ try {
         }
     }
 } catch (Throwable $e) {
-    // Se o banco ainda nao tem as tabelas de modulos, apenas nao exibe menus dinamicos.
+    // Se o banco ainda não tem as tabelas de módulos, apenas não exibe menus dinamicos.
 }
 
 $financeMenu = [
@@ -82,12 +83,12 @@ foreach ($financeItemsVisible as $financeItem) {
 }
 
 $cadastroMenu = [
-    ['module' => 'users', 'label' => 'Usuarios', 'icon' => 'users', 'route' => 'users'],
+    ['module' => 'users', 'label' => 'Usuários', 'icon' => 'users', 'route' => 'users'],
     ['module' => 'companies', 'label' => 'Empresas', 'icon' => 'building-office', 'route' => 'companies'],
     ['module' => 'companies', 'label' => 'SMTP Email', 'icon' => 'envelope', 'route' => 'companies/smtp'],
     ['module' => 'student_schedule.manage', 'label' => 'Unidades / Hospitais', 'icon' => 'building-library', 'route' => 'practice-units'],
     ['module' => 'data_imports', 'label' => 'Importação de Dados', 'icon' => 'inbox-arrow-down', 'route' => 'data-imports'],
-    ['module' => 'system_modules', 'label' => 'Modulos do Sistema', 'icon' => 'archive-box', 'route' => 'system-modules'],
+    ['module' => 'system_modules', 'label' => 'Módulos do Sistema', 'icon' => 'archive-box', 'route' => 'system-modules'],
 ];
 
 try {
@@ -97,7 +98,7 @@ try {
         }
     }
 } catch (Throwable $e) {
-    // Mantem o menu base caso o runtime de modulos ainda nao esteja pronto.
+    // Mantem o menu base caso o runtime de módulos ainda não esteja pronto.
 }
 
 if (has_permission('automations')) {
@@ -150,7 +151,7 @@ $payableDueAlerts = isset($payableDueAlerts) && is_array($payableDueAlerts) ? $p
 $payableDueAlertCount = (int) ($payableDueAlertCount ?? count($payableDueAlerts));
 
 if ($isProfessor || $isCertificador) {
-    // Perfis dedicados nao devem receber alertas financeiros/administrativos.
+    // Perfis dedicados não devem receber alertas financeiros/administrativos.
     $mobileNegotiationAlerts = [];
     $mobileNegotiationAlertCount = 0;
     $reenrollmentAlerts = [];
@@ -202,7 +203,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
         <div class="flex h-16 items-center justify-between border-b border-slate-800 px-6 admin-sidebar-head">
             <div class="admin-sidebar-brand">
                 <p class="text-xs uppercase tracking-[0.2em] text-cyan-400">ANEO</p>
-                <h1 class="text-lg font-semibold admin-sidebar-brand-title">Gestao Integrada</h1>
+                <h1 class="text-lg font-semibold admin-sidebar-brand-title">Gestão Integrada</h1>
             </div>
             <button class="lg:hidden" data-sidebar-close>
                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -345,7 +346,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                         data-static-alert-keys="<?= e(json_encode($staticAdminAlertKeys)); ?>"
                         data-mobile-neg-queue="<?= e($exchangeAlertCount > 0 ? $exchangeQueueRoute : ($reenrollmentAlertCount > 0 ? $reenrollmentQueueRoute : ($payableDueAlertCount > 0 ? $payableQueueRoute : $mobileQueueRoute))); ?>"
                         class="relative rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                        title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificacoes administrativas'; ?>">
+                        title="<?= $isProfessor ? 'Alertas dos alunos' : 'Notificações administrativas'; ?>">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
                     <?php if ($adminAlertCount > 0): ?>
                         <span data-admin-alert-badge class="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white"><?= (int) min(99, $adminAlertCount); ?></span>
@@ -398,7 +399,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
             <div class="admin-alert-modal-head flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <div>
                     <h3 class="text-lg font-semibold text-indigo-700"><?= $isProfessor ? 'Alertas dos alunos' : 'Alertas administrativos'; ?></h3>
-                    <p class="text-xs text-slate-500"><?= $isProfessor ? 'Acompanhe solicitacoes ligadas aos alunos.' : 'Solicitacoes dos alunos e pendencias operacionais que exigem atencao da equipe.'; ?></p>
+                    <p class="text-xs text-slate-500"><?= $isProfessor ? 'Acompanhe solicitações ligadas aos alunos.' : 'Solicitações dos alunos e pendências operacionais que exigem atenção da equipe.'; ?></p>
                 </div>
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">Fechar</button>
             </div>
@@ -406,26 +407,28 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                 <?php if ($exchangeAlerts !== []): ?>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
-                            <h4 class="text-sm font-semibold text-slate-800">Solicitacoes de intercambio</h4>
+                            <h4 class="text-sm font-semibold text-slate-800">Solicitações de intercâmbio</h4>
                             <span class="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-700"><?= (int) $exchangeAlertCount; ?> pendente(s)</span>
                         </div>
                         <?php foreach ($exchangeAlerts as $alert): ?>
                             <?php
                             $desiredMonth = trim((string) ($alert['desired_month'] ?? ''));
                             $desiredMonthLabel = $desiredMonth;
-                            if ($desiredMonth !== '' && preg_match('/^(\d{4})-(\d{2})$/', $desiredMonth, $matches)) {
+                            if ($desiredMonth !== '' && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $desiredMonth, $matches)) {
+                                $desiredMonthLabel = $matches[3] . '/' . $matches[2] . '/' . $matches[1];
+                            } elseif ($desiredMonth !== '' && preg_match('/^(\d{4})-(\d{2})$/', $desiredMonth, $matches)) {
                                 $desiredMonthLabel = $matches[2] . '/' . $matches[1];
                             }
                             ?>
                             <article class="admin-alert-card admin-alert-card-exchange rounded-xl border px-4 py-3 text-sm">
-                                <p class="admin-alert-card-title font-semibold"><?= e((string) ($alert['student_name'] ?? 'Solicitacao de intercambio')); ?></p>
+                                <p class="admin-alert-card-title font-semibold"><?= e((string) ($alert['student_name'] ?? 'Solicitação de intercâmbio')); ?></p>
                                 <p class="admin-alert-card-copy mt-1 text-xs">
                                     Destino: <?= e((string) ($alert['target_unit'] ?? '-')); ?>
                                     <?php if (trim((string) ($alert['current_unit'] ?? '')) !== ''): ?>
                                         | Atual: <?= e((string) $alert['current_unit']); ?>
                                     <?php endif; ?>
                                     <?php if ($desiredMonthLabel !== ''): ?>
-                                        | Mes desejado: <?= e($desiredMonthLabel); ?>
+                                        | Data pretendida: <?= e($desiredMonthLabel); ?>
                                     <?php endif; ?>
                                 </p>
                                 <p class="admin-alert-card-meta mt-1 text-[11px]">Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?></p>
@@ -437,7 +440,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                 <?php if ($reenrollmentAlerts !== []): ?>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
-                            <h4 class="text-sm font-semibold text-slate-800">Rematriculas confirmadas</h4>
+                            <h4 class="text-sm font-semibold text-slate-800">Rematrículas confirmadas</h4>
                             <span class="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700"><?= (int) $reenrollmentAlertCount; ?> nova(s)</span>
                         </div>
                         <?php foreach ($reenrollmentAlerts as $alert): ?>
@@ -460,7 +463,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                                     </span>
                                 </div>
                                 <p class="admin-alert-card-copy mt-1 text-xs">
-                                    Periodo: <?= e($periodLabel); ?>
+                                    Período: <?= e($periodLabel); ?>
                                     | Confirmado em: <?= e($confirmedLabel); ?>
                                 </p>
                                 <p class="admin-alert-card-meta mt-1 text-[11px]">Aluno: <?= e((string) ($alert['student_email'] ?? '-')); ?></p>
@@ -482,7 +485,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                             $dueDateLabel = $dueDateRaw !== '' && strtotime($dueDateRaw) !== false ? date('d/m/Y', strtotime($dueDateRaw)) : '-';
                             if ($daysUntilDue < 0) {
                                 $payableTone = 'overdue';
-                                $payableStatusLabel = 'Vencido ha ' . abs($daysUntilDue) . ' dia(s)';
+                                $payableStatusLabel = 'Vencido há ' . abs($daysUntilDue) . ' dia(s)';
                             } elseif ($daysUntilDue === 0) {
                                 $payableTone = 'today';
                                 $payableStatusLabel = 'Vence hoje';
@@ -501,7 +504,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                                     | Vencimento: <?= e($dueDateLabel); ?>
                                     | Saldo: <?= e(format_currency((float) ($alert['outstanding_amount'] ?? 0))); ?>
                                 </p>
-                                <p class="admin-alert-card-meta mt-1 text-[11px]">Codigo: <?= e((string) ($alert['payable_number'] ?? ('#' . (int) ($alert['id'] ?? 0)))); ?></p>
+                                <p class="admin-alert-card-meta mt-1 text-[11px]">Código: <?= e((string) ($alert['payable_number'] ?? ('#' . (int) ($alert['id'] ?? 0)))); ?></p>
                             </article>
                         <?php endforeach; ?>
                     </div>
@@ -510,7 +513,7 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                 <?php if ($mobileNegotiationAlerts !== []): ?>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
-                            <h4 class="text-sm font-semibold text-slate-800">Negociacoes do app</h4>
+                            <h4 class="text-sm font-semibold text-slate-800">Negociações do app</h4>
                             <span class="rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-semibold text-indigo-700"><?= (int) $mobileNegotiationAlertCount; ?> alerta(s)</span>
                         </div>
                         <?php foreach ($mobileNegotiationAlerts as $alert): ?>
@@ -522,9 +525,9 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
                             }
                             ?>
                             <article class="admin-alert-card rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm">
-                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Negociacao financeira')); ?></p>
+                                <p class="font-semibold text-slate-800"><?= e((string) ($alert['subject'] ?? 'Negociação financeira')); ?></p>
                                 <p class="mt-1 text-xs text-slate-600">
-                                    Codigo: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
+                                    Código: <?= e($ticketCode !== '' ? $ticketCode : ('#' . $ticketId)); ?>
                                     | Status: <?= e((string) ($alert['status'] ?? 'open')); ?>
                                     | Recebido em: <?= e((string) ($alert['created_at'] ?? '')); ?>
                                 </p>
@@ -536,16 +539,16 @@ $payableQueueRoute = route('finance/payables&period=custom&start_date=' . date('
             <div class="admin-alert-modal-foot flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
                 <button type="button" data-mobile-neg-close class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Dispensar</button>
                 <?php if ($exchangeAlerts !== []): ?>
-                    <a href="<?= e($exchangeQueueRoute); ?>" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Abrir intercambios</a>
+                    <a href="<?= e($exchangeQueueRoute); ?>" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100">Abrir intercâmbios</a>
                 <?php endif; ?>
                 <?php if ($reenrollmentAlerts !== []): ?>
-                    <a href="<?= e($reenrollmentQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Abrir rematriculas</a>
+                    <a href="<?= e($reenrollmentQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Abrir rematrículas</a>
                 <?php endif; ?>
                 <?php if ($payableDueAlerts !== []): ?>
                     <a href="<?= e($payableQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100">Abrir contas a pagar</a>
                 <?php endif; ?>
                 <?php if ($mobileNegotiationAlerts !== []): ?>
-                    <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociacoes</a>
+                    <a href="<?= e($mobileQueueRoute); ?>" data-mobile-neg-open-queue class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Abrir fila de negociações</a>
                 <?php endif; ?>
             </div>
         </div>

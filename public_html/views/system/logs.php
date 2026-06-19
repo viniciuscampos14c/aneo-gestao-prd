@@ -82,13 +82,13 @@ $roleBadgeClass = static function (?string $role): string {
 
     <?php if (!$logsAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Tabela de auditoria nao encontrada. Execute a migration <code>migrations/20260315_system_audit_logs.sql</code>.
+            Tabela de auditoria não encontrada. Execute a migration <code>migrations/20260315_system_audit_logs.sql</code>.
         </div>
     <?php endif; ?>
 
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <article class="system-logs-kpi system-logs-kpi-total rounded-xl border border-slate-200 bg-white p-4">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Registros (pagina)</p>
+            <p class="text-xs uppercase tracking-wide text-slate-500">Registros (página)</p>
             <p class="mt-2 text-2xl font-semibold"><?= (int) $rowsOnPage; ?></p>
         </article>
         <article class="system-logs-kpi system-logs-kpi-create rounded-xl border border-slate-200 bg-white p-4">
@@ -112,10 +112,10 @@ $roleBadgeClass = static function (?string $role): string {
     <form method="get" action="index.php" class="system-logs-filters grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
         <input type="hidden" name="route" value="system/logs">
 
-        <input type="text" name="q" value="<?= e((string) ($filters['q'] ?? '')); ?>" placeholder="Buscar por usuario, modulo, acao..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+        <input type="text" name="q" value="<?= e((string) ($filters['q'] ?? '')); ?>" placeholder="Buscar por usuário, módulo, acao..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
 
         <select name="module" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            <option value="">Todos os modulos</option>
+            <option value="">Todos os módulos</option>
             <?php foreach ($modules as $module): ?>
                 <option value="<?= e((string) $module); ?>" <?= (string) ($filters['module'] ?? '') === (string) $module ? 'selected' : ''; ?>><?= e((string) $module); ?></option>
             <?php endforeach; ?>
@@ -146,7 +146,7 @@ $roleBadgeClass = static function (?string $role): string {
 
         <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <?php foreach ($paginationOptions as $opt): ?>
-                <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
             <?php endforeach; ?>
         </select>
 
@@ -158,10 +158,10 @@ $roleBadgeClass = static function (?string $role): string {
             <thead>
                 <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                     <th class="px-3 py-3">Data/Hora</th>
-                    <th class="px-3 py-3">Usuario</th>
+                    <th class="px-3 py-3">Usuário</th>
                     <th class="px-3 py-3">Perfil</th>
                     <th class="px-3 py-3">Empresa</th>
-                    <th class="px-3 py-3">Modulo</th>
+                    <th class="px-3 py-3">Módulo</th>
                     <th class="px-3 py-3">Acao</th>
                     <th class="px-3 py-3">Registro</th>
                     <th class="px-3 py-3">Alteracoes</th>
@@ -212,7 +212,7 @@ $roleBadgeClass = static function (?string $role): string {
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'system/logs', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($meta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>">

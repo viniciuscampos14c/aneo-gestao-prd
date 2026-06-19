@@ -44,7 +44,7 @@
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Atribuido</span>
             <select name="assigned_to" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <option value="">Nao atribuido</option>
+                <option value="">Não atribuido</option>
                 <?php foreach ($users as $user): ?>
                     <option value="<?= (int) $user['id']; ?>" <?= (string) ($lead['assigned_to'] ?? '') === (string) $user['id'] ? 'selected' : ''; ?>><?= e($user['name']); ?></option>
                 <?php endforeach; ?>
@@ -89,7 +89,7 @@
 
     <?php if (!empty($lead['id'])): ?>
         <section class="rounded-xl border border-slate-200 bg-white p-4">
-            <h3 class="mb-3 text-lg font-semibold">Historico de Interacoes</h3>
+            <h3 class="mb-3 text-lg font-semibold">Histórico de Interacoes</h3>
 
             <form method="post" action="<?= route('leads/history/store'); ?>" class="mb-4 flex gap-2">
                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">

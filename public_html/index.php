@@ -31,6 +31,7 @@ $financeAutomation = new FinanceAutomationController();
 $adminAi = new AdminAiController();
 $studentAuth = new StudentAuthController();
 $studentPortal = new StudentPortalController();
+$courseQuestions = new CourseQuestionController();
 $arsenal = new ArsenalController();
 $practiceUnits = class_exists('PracticeUnitController') ? new PracticeUnitController() : null;
 $banks = class_exists('BanksController') ? new BanksController() : null;
@@ -59,6 +60,8 @@ $router->get('student/schedule', fn () => $studentPortal->schedule());
 $router->post('student/alerts/read', fn () => $studentPortal->markAlertsRead());
 $router->get('student/courses', fn () => $studentPortal->courses());
 $router->get('student/course', fn () => $studentPortal->course());
+$router->get('student/questions', fn () => $courseQuestions->studentIndex());
+$router->post('student/questions/store', fn () => $courseQuestions->studentStore());
 $router->get('student/calendar', fn () => $studentPortal->calendar());
 $router->get('student/live', fn () => $studentPortal->live());
 $router->get('student/materials', fn () => $studentPortal->materials());
@@ -289,6 +292,9 @@ $router->post('courses/exams/external-link/deactivate', fn () => $courses->deact
 
 $router->get('courses/comments', fn () => $courses->comments());
 $router->post('courses/comments/store', fn () => $courses->storeComment());
+$router->get('courses/questions', fn () => $courseQuestions->professorIndex());
+$router->post('courses/questions/reply', fn () => $courseQuestions->professorReply());
+$router->post('courses/questions/resolve', fn () => $courseQuestions->professorResolve());
 
 // Aulas Online (Zoom)
 $router->get('courses/live-sessions',              fn () => $liveSessions->index());

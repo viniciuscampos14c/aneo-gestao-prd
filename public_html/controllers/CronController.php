@@ -32,12 +32,12 @@ class CronController extends BaseController
     {
         require_auth();
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            $this->json(['ok' => false, 'message' => 'Metodo invalido.'], 405);
+            $this->json(['ok' => false, 'message' => 'Metodo inválido.'], 405);
         }
 
         $jobKey = trim((string) ($_POST['job'] ?? ''));
         if ($jobKey === '') {
-            $this->json(['ok' => false, 'message' => 'job_key nao informado.'], 400);
+            $this->json(['ok' => false, 'message' => 'job_key não informado.'], 400);
         }
 
         $result = $this->runner->run($jobKey);
@@ -54,7 +54,7 @@ class CronController extends BaseController
         $offset = max(0, (int) ($_GET['offset'] ?? 0));
 
         if ($jobKey === '') {
-            $this->json(['ok' => false, 'message' => 'job_key nao informado.'], 400);
+            $this->json(['ok' => false, 'message' => 'job_key não informado.'], 400);
         }
 
         $logs = $this->runner->logs($jobKey, $limit, $offset);
@@ -66,14 +66,14 @@ class CronController extends BaseController
     {
         require_auth();
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            $this->json(['ok' => false, 'message' => 'Metodo invalido.'], 405);
+            $this->json(['ok' => false, 'message' => 'Metodo inválido.'], 405);
         }
 
         $jobKey  = trim((string) ($_POST['job'] ?? ''));
         $enabled = (bool) (int) ($_POST['enabled'] ?? 1);
 
         if ($jobKey === '') {
-            $this->json(['ok' => false, 'message' => 'job_key nao informado.'], 400);
+            $this->json(['ok' => false, 'message' => 'job_key não informado.'], 400);
         }
 
         $this->runner->setEnabled($jobKey, $enabled);

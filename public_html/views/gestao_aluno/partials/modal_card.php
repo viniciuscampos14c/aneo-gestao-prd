@@ -27,9 +27,9 @@
 <template id="gdaTplModalContent">
 <div>
 
-    <!-- Painel: Informacoes -->
+    <!-- Painel: Informações -->
     <div class="gda-tab-panel active" data-panel="info">
-        <h4 class="gda-section-title">Informacoes</h4>
+        <h4 class="gda-section-title">Informações</h4>
         <div class="grid gap-3 text-sm md:grid-cols-2">
             <div><span class="text-slate-400 text-xs">Nome</span><br><strong id="mdInfoNome"></strong></div>
             <div><span class="text-slate-400 text-xs">CPF</span><br><span id="mdInfoCpf" class="text-slate-700"></span></div>
@@ -77,7 +77,7 @@
                 <button id="mdMetaCoverClear" class="gda-btn gda-btn-default gda-btn-sm ml-2">Remover</button>
             </div>
             <div>
-                <label class="text-xs text-slate-500 font-semibold block mb-1">Responsavel</label>
+                <label class="text-xs text-slate-500 font-semibold block mb-1">Responsável</label>
                 <select id="mdMetaAssigned" class="gda-input gda-select text-sm">
                     <option value="">- Nenhum -</option>
                 </select>
@@ -92,12 +92,12 @@
         </div>
     </div>
 
-    <!-- Painel: Descricao -->
-    <div class="gda-tab-panel" data-panel="descricao">
-        <h4 class="gda-section-title">Descricao</h4>
-        <textarea id="mdDesc" rows="8" class="gda-input text-sm w-full" placeholder="Escreva uma descricao para o aluno..."></textarea>
+    <!-- Painel: Descrição -->
+    <div class="gda-tab-panel" data-panel="descrição">
+        <h4 class="gda-section-title">Descrição</h4>
+        <textarea id="mdDesc" rows="8" class="gda-input text-sm w-full" placeholder="Escreva uma descrição para o aluno..."></textarea>
         <div class="mt-2">
-            <button id="mdDescSave" class="gda-btn gda-btn-primary text-sm">Salvar Descricao</button>
+            <button id="mdDescSave" class="gda-btn gda-btn-primary text-sm">Salvar Descrição</button>
         </div>
     </div>
 
@@ -133,22 +133,22 @@
         </div>
     </div>
 
-    <!-- Painel: Historico -->
-    <div class="gda-tab-panel" data-panel="historico">
-        <h4 class="gda-section-title">Historico</h4>
+    <!-- Painel: Histórico -->
+    <div class="gda-tab-panel" data-panel="histórico">
+        <h4 class="gda-section-title">Histórico</h4>
         <div id="mdHistoryList" class="flex flex-col"></div>
     </div>
 
     <!-- Painel: Membros -->
     <div class="gda-tab-panel" data-panel="membros">
         <h4 class="gda-section-title">Membros</h4>
-        <p class="text-xs text-slate-400 mb-3">Usuarios vinculados a este card:</p>
+        <p class="text-xs text-slate-400 mb-3">Usuários vinculados a este card:</p>
         <div id="mdMembersList" class="flex flex-col gap-2 mb-4"></div>
         <div>
             <label class="text-xs text-slate-500 font-semibold block mb-1">Adicionar membro</label>
             <div class="flex gap-2">
                 <select id="mdMemberSelect" class="gda-input gda-select text-sm flex-1">
-                    <option value="">Selecionar usuario...</option>
+                    <option value="">Selecionar usuário...</option>
                 </select>
                 <button id="mdMemberAdd" class="gda-btn gda-btn-primary text-sm">Adicionar</button>
             </div>

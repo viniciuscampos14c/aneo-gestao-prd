@@ -33,7 +33,7 @@
                 <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                     <th class="px-3 py-3">Curso</th>
                     <th class="px-3 py-3">Status</th>
-                    <th class="px-3 py-3">Inicio</th>
+                    <th class="px-3 py-3">Início</th>
                     <th class="px-3 py-3">Conclusao</th>
                     <th class="px-3 py-3">Progresso</th>
                 </tr>

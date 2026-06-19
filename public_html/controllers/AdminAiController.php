@@ -68,7 +68,7 @@ class AdminAiController extends BaseController
         $sessionParam = $returnRoute === 'help' ? 'chat_session_id' : 'session_id';
 
         if (!$this->chat->featureAvailable()) {
-            $this->error('Historico de chat indisponivel. Execute a migracao 20260310_admin_ai_chat.sql.');
+            $this->error('Histórico de chat indisponivel. Execute a migração 20260310_admin_ai_chat.sql.');
             $this->redirect($returnRoute);
         }
 
@@ -80,7 +80,7 @@ class AdminAiController extends BaseController
 
         $sessionId = $this->chat->createSession($userId, $title);
         if ($sessionId <= 0) {
-            $this->error('Nao foi possivel criar o chat no momento.');
+            $this->error('Não foi possível criar o chat no momento.');
             $this->redirect($returnRoute);
         }
 
@@ -156,7 +156,7 @@ class AdminAiController extends BaseController
 
             if (!($ai['ok'] ?? false)) {
                 $fallback = true;
-                $rawReason = (string) ($ai['message'] ?? 'Nao foi possivel consultar o provedor de IA.');
+                $rawReason = (string) ($ai['message'] ?? 'Não foi possível consultar o provedor de IA.');
                 $warning = $this->shouldExposeWarning($rawReason) ? $rawReason : null;
                 $answer = $this->buildFallbackAnswer($question, $context, $rawReason);
             } else {
@@ -443,7 +443,7 @@ class AdminAiController extends BaseController
         if ($asksReceivable) {
             $openInvoices = (int) ($summary['open_invoices'] ?? 0);
             $openBalance = (float) ($summary['open_balance'] ?? 0);
-            return 'No momento, ha ' . $openInvoices . ' conta(s) a receber em aberto, totalizando R$ '
+            return 'No momento, há ' . $openInvoices . ' conta(s) a receber em aberto, totalizando R$ '
                 . number_format($openBalance, 2, ',', '.') . '.';
         }
 
@@ -468,7 +468,7 @@ class AdminAiController extends BaseController
         if ($asksLargestOpenInvoices) {
             $largestOpenInvoices = is_array($matches['maiores_faturas_em_aberto'] ?? null) ? $matches['maiores_faturas_em_aberto'] : [];
             if ($largestOpenInvoices === []) {
-                return 'Nao encontrei faturas em aberto para listar no momento.';
+                return 'Não encontrei faturas em aberto para listar no momento.';
             }
 
             $lines = ['Maiores faturas em aberto agora:'];
@@ -497,7 +497,7 @@ class AdminAiController extends BaseController
             $pendingAditivos = (int) ($summary['pending_mobile_aditivos'] ?? 0);
 
             if ($pendingTotal <= 0) {
-                return 'No momento nao ha fluxos mobile de negociacao ou aditivo pendentes.';
+                return 'No momento não há fluxos mobile de negociacao ou aditivo pendentes.';
             }
 
             return 'Temos ' . $pendingTotal . ' fluxo(s) mobile pendente(s): '
@@ -518,7 +518,7 @@ class AdminAiController extends BaseController
             $openLeadValue = (float) ($summary['open_lead_value'] ?? 0);
             $priorityLeads = is_array($matches['leads_comerciais_prioritarios'] ?? null) ? $matches['leads_comerciais_prioritarios'] : [];
             if ($priorityLeads === []) {
-                return 'No comercial, o foco imediato sao ' . $leadsWithoutContact . ' lead(s) sem contato recente, com pipeline em aberto de R$ '
+                return 'No comercial, o foco imediato são ' . $leadsWithoutContact . ' lead(s) sem contato recente, com pipeline em aberto de R$ '
                     . number_format($openLeadValue, 2, ',', '.') . '.';
             }
 
@@ -558,7 +558,7 @@ class AdminAiController extends BaseController
         if ($asksLeadContact) {
             $leads = is_array($matches['leads'] ?? null) ? $matches['leads'] : [];
             if ($leads === []) {
-                return 'Nao encontrei leads com esse criterio de contato na base interna.';
+                return 'Não encontrei leads com esse criterio de contato na base interna.';
             }
 
             $names = [];
@@ -571,7 +571,7 @@ class AdminAiController extends BaseController
             $names = array_values(array_unique($names));
             $preview = implode(', ', array_slice($names, 0, 5));
             if ($preview === '') {
-                $preview = 'sem nomes disponiveis';
+                $preview = 'sem nomes disponíveis';
             }
 
             $asksNames = str_contains($normalized, 'qual')
@@ -625,7 +625,7 @@ class AdminAiController extends BaseController
                 if ($supportInProgress > 0) {
                     return 'Sim. Temos ' . $supportInProgress . ' ticket(s) de suporte em andamento.';
                 }
-                return 'Nao. No momento nao ha tickets de suporte em andamento.';
+                return 'Não. No momento não há tickets de suporte em andamento.';
             }
 
             if ($asksResolved) {
@@ -644,7 +644,7 @@ class AdminAiController extends BaseController
         if ($asksCourseEnrollments) {
             $enrollments = is_array($matches['course_enrollments'] ?? null) ? $matches['course_enrollments'] : [];
             if ($enrollments === []) {
-                return 'Nao encontrei alunos matriculados para esse curso no banco interno.';
+                return 'Não encontrei alunos matriculados para esse curso no banco interno.';
             }
 
             $byCourse = [];
@@ -665,7 +665,7 @@ class AdminAiController extends BaseController
             }
 
             if ($byCourse === []) {
-                return 'Encontrei registros de matricula, mas sem nomes de alunos para exibir.';
+                return 'Encontrei registros de matrícula, mas sem nomes de alunos para exibir.';
             }
 
             $courseNames = array_keys($byCourse);
@@ -710,7 +710,7 @@ class AdminAiController extends BaseController
             && (str_contains($normalized, 'chamad') || str_contains($normalized, 'nome'));
         if ($isNameLookup) {
             if ($students === []) {
-                return 'Nao encontrei aluno com esse nome na base interna.';
+                return 'Não encontrei aluno com esse nome na base interna.';
             }
 
             $names = [];

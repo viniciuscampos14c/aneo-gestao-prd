@@ -69,7 +69,7 @@ if ($statusKey === 'active') {
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <p class="text-xs uppercase tracking-[0.16em] text-slate-500">Empresa Selecionada</p>
-                        <h3 class="text-lg font-semibold text-slate-800"><?= e($companyName !== '' ? $companyName : 'Nao informada'); ?></h3>
+                        <h3 class="text-lg font-semibold text-slate-800"><?= e($companyName !== '' ? $companyName : 'Não informada'); ?></h3>
                     </div>
                     <span class="rounded-full px-3 py-1 text-xs font-semibold <?= $statusBadge; ?>"><?= e($statusLabel); ?></span>
                 </div>
@@ -104,12 +104,12 @@ if ($statusKey === 'active') {
 
             <div class="rounded-xl border border-slate-200 bg-white p-5">
                 <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-600">Modelo Atual</h4>
-                <p class="mt-2 text-sm text-slate-600">Chave fixa anual. Ao trocar a chave no <code>config.php</code>, voce emite um novo ciclo.</p>
+                <p class="mt-2 text-sm text-slate-600">Chave fixa anual. Ao trocar a chave no <code>config.php</code>, você emite um novo ciclo.</p>
                 <div class="mt-3 space-y-2 text-xs text-slate-600">
                     <?php foreach ($configuredKeyLabels as $item): ?>
                         <div class="rounded border border-slate-200 bg-slate-50 px-2 py-1">
                             <p class="font-semibold text-slate-700"><?= e((string) ($item['label'] ?? 'Licenca fixa')); ?></p>
-                            <p>Duracao: <?= (int) ($item['duration_days'] ?? 365); ?> dias</p>
+                            <p>Duração: <?= (int) ($item['duration_days'] ?? 365); ?> dias</p>
                         </div>
                     <?php endforeach; ?>
                     <?php if ($configuredKeyLabels === []): ?>
@@ -145,14 +145,14 @@ if ($statusKey === 'active') {
         </form>
 
         <div class="rounded-xl border border-slate-200 bg-white p-5">
-            <h4 class="text-lg font-semibold">Historico de Licencas</h4>
+            <h4 class="text-lg font-semibold">Histórico de Licencas</h4>
             <div class="mt-3 overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                             <th class="px-3 py-2">Data</th>
                             <th class="px-3 py-2">Acao</th>
-                            <th class="px-3 py-2">Usuario</th>
+                            <th class="px-3 py-2">Usuário</th>
                             <th class="px-3 py-2">Licenca</th>
                             <th class="px-3 py-2">Validade</th>
                             <th class="px-3 py-2">Obs.</th>
@@ -177,7 +177,7 @@ if ($statusKey === 'active') {
                         <?php endforeach; ?>
                         <?php if ($licenseHistory === []): ?>
                             <tr>
-                                <td colspan="6" class="px-3 py-4 text-center text-slate-500">Sem historico de ativacoes para esta empresa.</td>
+                                <td colspan="6" class="px-3 py-4 text-center text-slate-500">Sem histórico de ativacoes para esta empresa.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

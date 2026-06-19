@@ -1,6 +1,6 @@
 <?php
 /**
- * Template HTML para e-mails de avaliacao.
+ * Template HTML para e-mails de avaliação.
  *
  * Variaveis esperadas:
  *   string $studentName
@@ -23,26 +23,27 @@ $isExternal = !empty($isExternal);
 $companyName = trim((string) ($companyName ?? 'ANEO'));
 $studentName = trim((string) ($studentName ?? 'Aluno'));
 $courseName = trim((string) ($courseName ?? 'Curso'));
-$examTitle = trim((string) ($examTitle ?? 'Avaliacao'));
+$examTitle = trim((string) ($examTitle ?? 'Avaliação'));
 $dateLabel = trim((string) ($dateLabel ?? 'sem data definida'));
 $portalUrl = trim((string) ($portalUrl ?? ''));
 $logoUrl = trim((string) ($logoUrl ?? ''));
 $scoreLabel = trim((string) ($scoreLabel ?? ''));
 $passingScoreLabel = trim((string) ($passingScoreLabel ?? ''));
 $resultStatus = (string) ($resultStatus ?? '');
+$resultStatusLabel = $resultStatus === 'approved' ? 'Aprovado(a)' : 'Necessita revisao';
 
 $accent = $isResult ? '#10b981' : '#0ea5e9';
 $accentDark = $isResult ? '#047857' : '#0284c7';
 $statusLabel = $isResult
     ? ($resultStatus === 'approved' ? 'Resultado aprovado' : 'Resultado publicado')
-    : ($isExternal ? 'Prova externa liberada' : 'Nova avaliacao disponivel');
+    : ($isExternal ? 'Prova externa liberada' : 'Nova avaliação disponível');
 $headline = $isResult
     ? 'Seu resultado foi publicado'
-    : 'Uma nova avaliacao foi publicada para voce';
+    : 'Uma nova avaliação foi publicada para você';
 $intro = $isResult
     ? 'Confira abaixo o resumo do resultado e acesse o portal do aluno para ver os detalhes.'
     : ($isExternal
-        ? 'A avaliacao possui link externo e deve ser aberta pelo portal do aluno.'
+        ? 'A avaliação possui link externo e deve ser aberta pelo portal do aluno.'
         : 'Acesse o portal do aluno para responder dentro do prazo definido pela equipe.');
 ?>
 <!DOCTYPE html>
@@ -100,7 +101,7 @@ $intro = $isResult
                       <td style="font-size:14px;color:#1e293b;font-weight:600;"><?= htmlspecialchars($courseName); ?></td>
                     </tr>
                     <tr>
-                      <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;padding-bottom:2px;">Avaliacao</td>
+                      <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;padding-bottom:2px;">Avaliação</td>
                       <td style="font-size:14px;color:#1e293b;"><?= htmlspecialchars($examTitle); ?></td>
                     </tr>
                     <?php if (!$isResult): ?>
@@ -110,7 +111,7 @@ $intro = $isResult
                       </tr>
                       <tr>
                         <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Formato</td>
-                        <td style="font-size:14px;color:#1e293b;"><?= htmlspecialchars($isExternal ? 'Prova externa' : 'Avaliacao interna'); ?></td>
+                        <td style="font-size:14px;color:#1e293b;"><?= htmlspecialchars($isExternal ? 'Prova externa' : 'Avaliação interna'); ?></td>
                       </tr>
                     <?php else: ?>
                       <tr>
@@ -120,6 +121,10 @@ $intro = $isResult
                       <tr>
                         <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Nota minima</td>
                         <td style="font-size:14px;color:#1e293b;"><?= htmlspecialchars($passingScoreLabel); ?></td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</td>
+                        <td style="font-size:14px;color:<?= $resultStatus === 'approved' ? '#047857' : '#b45309'; ?>;font-weight:700;"><?= htmlspecialchars($resultStatusLabel); ?></td>
                       </tr>
                     <?php endif; ?>
                   </table>
@@ -140,7 +145,7 @@ $intro = $isResult
             <?php endif; ?>
 
             <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
-              Esta mensagem foi gerada automaticamente pelo sistema ANEO. Em caso de duvidas, fale com a equipe da escola.
+              Esta mensagem foi gerada automaticamente pelo sistema ANEO. Em caso de dúvidas, fale com a equipe da escola.
             </p>
           </td>
         </tr>
@@ -148,7 +153,7 @@ $intro = $isResult
         <tr>
           <td style="background-color:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center;">
             <p style="margin:0 0 4px;font-size:12px;color:#94a3b8;"><?= htmlspecialchars($companyName); ?></p>
-            <p style="margin:0;font-size:11px;color:#cbd5e1;">Este e-mail foi gerado automaticamente. Por favor, nao responda.</p>
+            <p style="margin:0;font-size:11px;color:#cbd5e1;">Este e-mail foi gerado automaticamente. Por favor, não responda.</p>
           </td>
         </tr>
       </table>

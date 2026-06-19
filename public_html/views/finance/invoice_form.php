@@ -23,7 +23,7 @@ $isEdit = !empty($isEdit);
 
         <?php if (!$paymentMethodsAvailable): ?>
             <div class="lg:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                O cadastro de formas de pagamento ainda nao esta disponivel neste banco. Execute a migration
+                O cadastro de formas de pagamento ainda não esta disponível neste banco. Execute a migration
                 <code>migrations/20260424_finance_payment_methods.sql</code>.
             </div>
         <?php endif; ?>
@@ -41,7 +41,7 @@ $isEdit = !empty($isEdit);
         <label class="block">
             <span class="mb-1 block text-sm font-medium">Forma de pagamento *</span>
             <select name="payment_method_id" <?= $paymentMethodsAvailable ? 'required' : ''; ?> class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <option value=""><?= $paymentMethodsAvailable ? 'Selecione...' : 'Nao disponivel'; ?></option>
+                <option value=""><?= $paymentMethodsAvailable ? 'Selecione...' : 'Não disponível'; ?></option>
                 <?php foreach ($paymentMethods as $method): ?>
                     <?php
                     $methodId = (int) ($method['id'] ?? 0);
@@ -104,7 +104,7 @@ $isEdit = !empty($isEdit);
             <p>Parcelamentos como 36x ou 48x devem ser configurados no cadastro do aluno para gerar todas as faturas internas e deixar a emissao do Itau apenas na janela de 10 dias.</p>
             <?php if ($isEdit): ?>
                 <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                    Esta tela fica disponivel apenas para administradores.
+                    Esta tela fica disponível apenas para administradores.
                 </div>
             <?php endif; ?>
         </div>

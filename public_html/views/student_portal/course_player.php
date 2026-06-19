@@ -15,7 +15,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <h2 class="student-course-player-title text-2xl font-semibold"><?= e((string) ($course['name'] ?? 'Curso')); ?></h2>
-            <p class="student-course-player-subtitle text-sm text-slate-500">Trilha por modulos com bloqueio de ordem e regra minima de 70% por aula em video.</p>
+            <p class="student-course-player-subtitle text-sm text-slate-500">Trilha por módulos com bloqueio de ordem e regra minima de 70% por aula em video.</p>
         </div>
         <a href="<?= route('student/courses'); ?>" class="student-course-player-back rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50">Voltar para Meus Cursos</a>
     </div>
@@ -23,13 +23,13 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
     <div class="student-course-player-progress rounded-xl border border-slate-200 bg-white p-4">
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
             <p class="student-course-player-progress-label font-medium text-slate-700">Progresso do curso: <span id="course-progress-label"><?= $progressPercent; ?>%</span></p>
-            <p class="student-course-player-progress-meta text-slate-500">Aulas obrigatorias concluidas: <?= (int) ($summary['required_completed_lessons'] ?? 0); ?>/<?= (int) ($summary['required_lessons'] ?? 0); ?></p>
+            <p class="student-course-player-progress-meta text-slate-500">Aulas obrigatórias concluídas: <?= (int) ($summary['required_completed_lessons'] ?? 0); ?>/<?= (int) ($summary['required_lessons'] ?? 0); ?></p>
         </div>
         <div class="student-course-player-progress-track mt-2 h-2 rounded-full bg-slate-200">
             <div id="course-progress-bar" class="h-2 rounded-full <?= $courseCompleted ? 'bg-emerald-600' : 'bg-cyan-600'; ?>" style="width: <?= $progressPercent; ?>%"></div>
         </div>
         <p class="student-course-player-progress-note mt-2 text-xs <?= $courseCompleted ? 'text-emerald-700' : 'text-slate-500'; ?>">
-            <?= $courseCompleted ? 'Curso concluido.' : 'Cada aula exige progresso minimo (padrao 70%) para liberar o proximo modulo.'; ?>
+            <?= $courseCompleted ? 'Curso concluido.' : 'Cada aula exige progresso minimo (padrao 70%) para liberar o próximo módulo.'; ?>
         </p>
     </div>
 
@@ -53,8 +53,8 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                                 <div class="min-w-0">
                                     <p class="student-module-title text-base font-bold leading-snug text-slate-900"><?= e((string) $module['title']); ?></p>
                                     <p class="student-module-count mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                        <?= $moduleLessonCount; ?> aula(s)<?= $moduleRequiredCount > 0 ? ' | ' . $moduleRequiredCount . ' obrigatoria(s)' : ''; ?>
-                                        <?= $moduleCompletedCount > 0 ? ' | ' . $moduleCompletedCount . ' concluida(s)' : ''; ?>
+                                        <?= $moduleLessonCount; ?> aula(s)<?= $moduleRequiredCount > 0 ? ' | ' . $moduleRequiredCount . ' obrigatória(s)' : ''; ?>
+                                        <?= $moduleCompletedCount > 0 ? ' | ' . $moduleCompletedCount . ' concluída(s)' : ''; ?>
                                     </p>
                                 </div>
                             </div>
@@ -88,7 +88,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                                             <?= (int) ($lesson['progress_percent'] ?? 0); ?>%
                                         </span>
                                     </div>
-                                    <p class="student-lesson-meta mt-1 text-[11px] text-slate-500">Minimo: <?= (int) ($lesson['min_progress_percent'] ?? 70); ?>%<?= !empty($lesson['is_required']) ? ' | obrigatoria' : ' | opcional'; ?></p>
+                                    <p class="student-lesson-meta mt-1 text-[11px] text-slate-500">Minimo: <?= (int) ($lesson['min_progress_percent'] ?? 70); ?>%<?= !empty($lesson['is_required']) ? ' | obrigatória' : ' | opcional'; ?></p>
                                 </a>
                             <?php else: ?>
                                 <div class="student-lesson-card-locked rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
@@ -98,7 +98,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                         <?php endforeach; ?>
 
                         <?php if ($moduleLessons === []): ?>
-                            <p class="student-module-empty rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500">Sem aulas neste modulo.</p>
+                            <p class="student-module-empty rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500">Sem aulas neste módulo.</p>
                         <?php endif; ?>
                     </div>
                 </details>
@@ -106,7 +106,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
 
             <?php if ($modules === []): ?>
                 <article class="student-module-no-data rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-                    Este curso ainda nao possui modulos/aulas cadastrados.
+                    Este curso ainda não possui módulos/aulas cadastrados.
                 </article>
             <?php endif; ?>
         </aside>
@@ -164,9 +164,9 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                                 <p class="font-medium text-slate-700">Progresso da aula: <span id="lesson-progress-label"><?= (int) ($selectedLesson['progress_percent'] ?? 0); ?>%</span></p>
                                 <p id="lesson-status-label" class="text-xs <?= !empty($selectedLesson['is_completed']) ? 'text-emerald-700' : 'text-slate-500'; ?>">
                                     <?php if (!empty($selectedLesson['is_completed'])): ?>
-                                        Aula concluida.
+                                        Aula concluída.
                                     <?php elseif (!empty($selectedLesson['ready_to_complete'])): ?>
-                                        Percentual minimo atingido. Confirme a conclusao da aula.
+                                        Percentual mínimo atingido. Confirme a conclusão da aula.
                                     <?php else: ?>
                                         Assista no minimo <?= (int) ($selectedLesson['min_progress_percent'] ?? 70); ?>% para concluir.
                                     <?php endif; ?>
@@ -182,10 +182,10 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                                     class="rounded-lg px-3 py-2 text-sm font-semibold <?= !empty($selectedLesson['is_completed']) ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : (!empty($selectedLesson['ready_to_complete']) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-slate-200 bg-white text-slate-400'); ?>"
                                     <?= (!empty($selectedLesson['is_completed']) || !empty($selectedLesson['ready_to_complete'])) ? '' : 'disabled'; ?>
                                 >
-                                    <?= !empty($selectedLesson['is_completed']) ? 'Aula concluida' : 'Confirmar conclusao'; ?>
+                                    <?= !empty($selectedLesson['is_completed']) ? 'Aula concluída' : 'Confirmar conclusão'; ?>
                                 </button>
                                 <p id="lesson-complete-help" class="text-xs text-slate-500">
-                                    <?= !empty($selectedLesson['is_completed']) ? 'A aula ja foi validada no seu progresso.' : 'O check sera liberado apos atingir o percentual minimo exigido.'; ?>
+                                    <?= !empty($selectedLesson['is_completed']) ? 'A aula já foi validada no seu progresso.' : 'O check será liberado após atingir o percentual mínimo exigido.'; ?>
                                 </p>
                             </div>
                         </div>
@@ -196,9 +196,40 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                     </div>
                 <?php else: ?>
                     <div class="student-stage-empty rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                        Nenhuma aula disponivel para abrir agora. Finalize os modulos anteriores para liberar os proximos.
+                        Nenhuma aula disponível para abrir agora. Finalize os módulos anteriores para liberar os próximos.
                     </div>
                 <?php endif; ?>
+            </section>
+
+            <section class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">Enviar dúvida ao professor</h3>
+                        <p class="text-sm text-slate-500">A pergunta ficará vinculada a este curso<?= $selectedLesson ? ' e à aula aberta' : ''; ?>.</p>
+                    </div>
+                    <a href="<?= route('student/questions'); ?>" class="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100">
+                        Ver minhas dúvidas
+                    </a>
+                </div>
+
+                <form method="post" action="<?= route('student/questions/store'); ?>" class="mt-4 grid gap-4">
+                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                    <input type="hidden" name="course_id" value="<?= (int) ($course['course_id'] ?? 0); ?>">
+                    <input type="hidden" name="lesson_id" value="<?= (int) ($selectedLesson['id'] ?? 0); ?>">
+                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">
+                        Assunto
+                        <input type="text" name="subject" maxlength="180" required class="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100" placeholder="Ex.: Dúvida sobre o conteúdo da aula">
+                    </label>
+                    <label class="grid gap-1.5 text-sm font-medium text-slate-700">
+                        Sua dúvida
+                        <textarea name="message" rows="4" required class="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100" placeholder="Explique sua dúvida para o professor."></textarea>
+                    </label>
+                    <div>
+                        <button type="submit" class="rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
+                            Enviar ao professor
+                        </button>
+                    </div>
+                </form>
             </section>
 
             <?php if ($courseCommentsFeatureAvailable): ?>
@@ -206,7 +237,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-900">Mural do curso</h3>
-                            <p class="text-sm text-slate-500">Recados e orientacoes publicados pela equipe administrativa deste curso.</p>
+                            <p class="text-sm text-slate-500">Recados e orientações publicados pela equipe administrativa deste curso.</p>
                         </div>
                         <span class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">
                             <?= count($courseComments); ?> comentario(s)
@@ -228,7 +259,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
 
                         <?php if ($courseComments === []): ?>
                             <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                                Ainda nao ha comentarios publicados para este curso.
+                                Ainda não há comentarios publicados para este curso.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -303,16 +334,16 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         }
         if (lessonStatusLabel) {
             lessonStatusLabel.textContent = completed
-                ? 'Aula concluida.'
+                ? 'Aula concluída.'
                 : (readyToComplete
-                    ? 'Percentual minimo atingido. Confirme a conclusao da aula.'
+                    ? 'Percentual mínimo atingido. Confirme a conclusão da aula.'
                     : 'Assista no minimo ' + requiredPercent + '% para concluir.');
             lessonStatusLabel.classList.toggle('text-emerald-700', completed);
             lessonStatusLabel.classList.toggle('text-slate-500', !completed);
         }
         if (completeButton) {
             completeButton.disabled = !completed && !readyToComplete;
-            completeButton.textContent = completed ? 'Aula concluida' : 'Confirmar conclusao';
+            completeButton.textContent = completed ? 'Aula concluída' : 'Confirmar conclusão';
             completeButton.className = completed
                 ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700'
                 : (readyToComplete
@@ -324,7 +355,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                 ? 'A aula ja foi validada no seu progresso.'
                 : (readyToComplete
                     ? 'Clique no check para confirmar que assistiu a aula.'
-                    : 'O check sera liberado apos atingir o percentual minimo exigido.');
+                    : 'O check será liberado após atingir o percentual mínimo exigido.');
         }
     };
 
@@ -342,7 +373,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         if (state.completeInFlight || state.completed || !state.readyToComplete) {
             return;
         }
-        if (!window.confirm('Confirmar que voce assistiu a aula e deseja concluir este conteudo?')) {
+        if (!window.confirm('Confirmar que você assistiu a aula e deseja concluir este conteudo?')) {
             return;
         }
 
@@ -539,16 +570,16 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         }
         if (lessonStatusLabel) {
             lessonStatusLabel.textContent = completed
-                ? 'Aula concluida.'
+                ? 'Aula concluída.'
                 : (readyToComplete
-                    ? 'Percentual minimo atingido. Confirme a conclusao da aula.'
+                    ? 'Percentual mínimo atingido. Confirme a conclusão da aula.'
                     : 'Assista no minimo ' + requiredPct + '% para concluir.');
             lessonStatusLabel.classList.toggle('text-emerald-700', completed);
             lessonStatusLabel.classList.toggle('text-slate-500', !completed);
         }
         if (completeButton) {
             completeButton.disabled = !completed && !readyToComplete;
-            completeButton.textContent = completed ? 'Aula concluida' : 'Confirmar conclusao';
+            completeButton.textContent = completed ? 'Aula concluída' : 'Confirmar conclusão';
             completeButton.className = completed
                 ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700'
                 : (readyToComplete
@@ -560,7 +591,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                 ? 'A aula ja foi validada no seu progresso.'
                 : (readyToComplete
                     ? 'Clique no check para confirmar que assistiu a aula.'
-                    : 'O check sera liberado apos atingir o percentual minimo exigido.');
+                    : 'O check será liberado após atingir o percentual mínimo exigido.');
         }
     };
 
@@ -572,7 +603,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
 
     const confirmCompletion = async () => {
         if (state.completeInFlight || state.completed || !state.readyToComplete) { return; }
-        if (!window.confirm('Confirmar que voce assistiu a aula e deseja concluir este conteudo?')) {
+        if (!window.confirm('Confirmar que você assistiu a aula e deseja concluir este conteudo?')) {
             return;
         }
 

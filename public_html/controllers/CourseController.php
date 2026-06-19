@@ -98,7 +98,7 @@ class CourseController extends BaseController
         $course = $this->courses->findCourse($id);
 
         if (!$course) {
-            $this->error('Curso nao encontrado.');
+            $this->error('Curso não encontrado.');
             $this->redirect('courses');
         }
 
@@ -131,7 +131,7 @@ class CourseController extends BaseController
         $course = $this->courses->findCourse($id);
 
         if (!$course) {
-            $this->error('Curso nao encontrado.');
+            $this->error('Curso não encontrado.');
             $this->redirect('courses');
         }
 
@@ -165,7 +165,7 @@ class CourseController extends BaseController
         $id = (int) request('id');
         $course = $this->courses->findCourse($id);
         if (!$course) {
-            $this->error('Curso nao encontrado.');
+            $this->error('Curso não encontrado.');
             $this->redirect('courses');
         }
 
@@ -185,7 +185,7 @@ class CourseController extends BaseController
         $id = (int) post('id');
         $newId = $this->courses->duplicateCourse($id, (int) current_user()['id']);
         if ($newId <= 0) {
-            $this->error('Nao foi possivel duplicar o curso.');
+            $this->error('Não foi possível duplicar o curso.');
             $this->redirect('courses');
         }
 
@@ -202,7 +202,7 @@ class CourseController extends BaseController
         $id = (int) post('id');
         $status = trim((string) post('status'));
         if (!$this->courses->updateCourseStatus($id, $status)) {
-            $this->error('Nao foi possivel atualizar o status do curso.');
+            $this->error('Não foi possível atualizar o status do curso.');
             $this->redirect('courses');
         }
 
@@ -223,7 +223,7 @@ class CourseController extends BaseController
 
         $courseId = (int) request('id');
         if ($courseId <= 0 || !$this->courses->findCourse($courseId)) {
-            $this->error('Curso nao encontrado.');
+            $this->error('Curso não encontrado.');
             $this->redirect('courses');
         }
 
@@ -247,19 +247,19 @@ class CourseController extends BaseController
         $uploadId = (int) post('upload_id');
 
         if ($courseId <= 0 || $uploadId <= 0) {
-            $this->error('Material invalido.');
+            $this->error('Material inválido.');
             $this->redirect('courses');
         }
 
         $course = $this->courses->findCourse($courseId);
         if (!$course) {
-            $this->error('Curso nao encontrado.');
+            $this->error('Curso não encontrado.');
             $this->redirect('courses');
         }
 
         $material = $this->courses->findCourseMaterial($uploadId);
         if (!$material || (int) $material['entity_id'] !== $courseId) {
-            $this->error('Arquivo nao encontrado para este curso.');
+            $this->error('Arquivo não encontrado para este curso.');
             $this->redirect('courses/edit&id=' . $courseId);
         }
 
@@ -278,12 +278,12 @@ class CourseController extends BaseController
 
         $courseId = (int) post('course_id');
         if ($courseId <= 0) {
-            $this->error('Curso invalido para cadastro de modulo.');
+            $this->error('Curso inválido para cadastro de módulo.');
             $this->redirect('courses');
         }
 
         if (!$this->courses->lmsFeatureAvailable()) {
-            $this->error('LMS modular nao habilitado no banco. Execute a migracao de trilha de aulas.');
+            $this->error('LMS modular não habilitado no banco. Execute a migração de trilha de aulas.');
             $this->redirect('courses/edit&id=' . $courseId);
         }
 
@@ -295,9 +295,9 @@ class CourseController extends BaseController
         ], (int) current_user()['id']);
 
         if ($moduleId > 0) {
-            $this->success('Modulo criado com sucesso.');
+            $this->success('Módulo criado com sucesso.');
         } else {
-            $this->error('Nao foi possivel criar o modulo. Verifique os dados obrigatorios.');
+            $this->error('Não foi possível criar o módulo. Verifique os dados obrigatórios.');
         }
 
         $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
@@ -312,7 +312,7 @@ class CourseController extends BaseController
         $courseId = (int) post('course_id');
         $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $moduleId <= 0) {
-            $this->error('Modulo invalido.');
+            $this->error('Módulo inválido.');
             $this->redirect('courses');
         }
 
@@ -324,9 +324,9 @@ class CourseController extends BaseController
         ]);
 
         if ($ok) {
-            $this->success('Modulo atualizado.');
+            $this->success('Módulo atualizado.');
         } else {
-            $this->error('Nao foi possivel atualizar o modulo.');
+            $this->error('Não foi possível atualizar o módulo.');
         }
 
         $this->redirect('courses/edit&id=' . $courseId);
@@ -341,14 +341,14 @@ class CourseController extends BaseController
         $courseId = (int) post('course_id');
         $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $moduleId <= 0) {
-            $this->error('Modulo invalido.');
+            $this->error('Módulo inválido.');
             $this->redirect('courses');
         }
 
         if ($this->courses->deleteCourseModule($moduleId)) {
-            $this->success('Modulo removido.');
+            $this->success('Módulo removido.');
         } else {
-            $this->error('Nao foi possivel remover o modulo.');
+            $this->error('Não foi possível remover o módulo.');
         }
 
         $this->redirect('courses/edit&id=' . $courseId);
@@ -363,12 +363,12 @@ class CourseController extends BaseController
         $courseId = (int) post('course_id');
         $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $moduleId <= 0) {
-            $this->error('Aula invalida.');
+            $this->error('Aula inválida.');
             $this->redirect('courses');
         }
 
         if (!$this->courses->lmsFeatureAvailable()) {
-            $this->error('LMS modular nao habilitado no banco. Execute a migracao de trilha de aulas.');
+            $this->error('LMS modular não habilitado no banco. Execute a migração de trilha de aulas.');
             $this->redirect('courses/edit&id=' . $courseId);
         }
 
@@ -386,7 +386,7 @@ class CourseController extends BaseController
         if ($lessonId > 0) {
             $this->success('Aula criada com sucesso.');
         } else {
-            $this->error('Nao foi possivel criar a aula. Verifique titulo e URL do video.');
+            $this->error('Não foi possível criar a aula. Verifique título e URL do video.');
         }
 
         $this->redirect('courses/edit&id=' . $courseId);
@@ -402,7 +402,7 @@ class CourseController extends BaseController
         $lessonId = (int) post('lesson_id');
         $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $lessonId <= 0) {
-            $this->error('Aula invalida.');
+            $this->error('Aula inválida.');
             $this->redirect('courses');
         }
 
@@ -420,7 +420,7 @@ class CourseController extends BaseController
         if ($ok) {
             $this->success('Aula atualizada.');
         } else {
-            $this->error('Nao foi possivel atualizar a aula.');
+            $this->error('Não foi possível atualizar a aula.');
         }
 
         $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
@@ -436,14 +436,14 @@ class CourseController extends BaseController
         $lessonId = (int) post('lesson_id');
         $moduleId = (int) post('module_id');
         if ($courseId <= 0 || $lessonId <= 0) {
-            $this->error('Aula invalida.');
+            $this->error('Aula inválida.');
             $this->redirect('courses');
         }
 
         if ($this->courses->deleteCourseLesson($lessonId)) {
             $this->success('Aula removida.');
         } else {
-            $this->error('Nao foi possivel remover a aula.');
+            $this->error('Não foi possível remover a aula.');
         }
 
         $this->redirect('courses/edit&id=' . $courseId . '&lms_module=' . $moduleId);
@@ -513,7 +513,7 @@ class CourseController extends BaseController
         $allStudents = $this->students->list([], 1000, 1);
 
         $this->render('courses/enrollments', [
-            'title' => 'Matriculas',
+            'title' => 'Matrículas',
             'rows' => $result['rows'],
             'meta' => $result['meta'],
             'courses' => $allCourses['rows'],
@@ -539,9 +539,9 @@ class CourseController extends BaseController
 
         if ($data['student_id'] > 0 && $data['course_id'] > 0) {
             $this->courses->createEnrollment($data, (int) current_user()['id']);
-            $this->success('Matricula criada.');
+            $this->success('Matrícula criada.');
         } else {
-            $this->error('Aluno e curso sao obrigatorios.');
+            $this->error('Aluno e curso são obrigatórios.');
         }
 
         $this->redirect('courses/enrollments');
@@ -582,7 +582,7 @@ class CourseController extends BaseController
         csrf_validate();
 
         if (!$this->courses->trialAccessFeatureAvailable()) {
-            $this->error('Funcionalidade de degustacao indisponivel no banco. Execute a migracao correspondente.');
+            $this->error('Funcionalidade de degustação indisponivel no banco. Execute a migração correspondente.');
             $this->redirect('courses/trial-access');
         }
 
@@ -600,8 +600,8 @@ class CourseController extends BaseController
                 'action' => 'create',
                 'entity_type' => 'course_trial_access',
                 'entity_id' => (int) ($created['id'] ?? 0),
-                'entity_label' => (string) ($created['student_name'] ?? 'Aluno degustacao'),
-                'description' => 'Acesso de degustacao criado para curso EAD.',
+                'entity_label' => (string) ($created['student_name'] ?? 'Aluno degustação'),
+                'description' => 'Acesso de degustação criado para curso EAD.',
                 'before' => [],
                 'after' => [
                     'student_id' => (int) ($created['student_id'] ?? 0),
@@ -621,7 +621,7 @@ class CourseController extends BaseController
             $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
 
             $this->success(
-                'Acesso de degustacao criado com sucesso. Login: '
+                'Acesso de degustação criado com sucesso. Login: '
                 . (string) ($created['portal_login'] ?? '')
                 . ' | Senha: '
                 . (string) ($created['portal_password'] ?? '')
@@ -630,7 +630,7 @@ class CourseController extends BaseController
                 . '.'
             );
         } catch (Throwable $e) {
-            $this->error('Falha ao criar acesso de degustacao: ' . $e->getMessage());
+            $this->error('Falha ao criar acesso de degustação: ' . $e->getMessage());
         }
 
         $this->redirect('courses/trial-access');
@@ -643,24 +643,24 @@ class CourseController extends BaseController
         csrf_validate();
 
         if (!$this->courses->trialAccessFeatureAvailable()) {
-            $this->error('Funcionalidade de degustacao indisponivel no banco.');
+            $this->error('Funcionalidade de degustação indisponivel no banco.');
             $this->redirect('courses/trial-access');
         }
 
         $trialAccessId = (int) post('id');
         if ($trialAccessId <= 0) {
-            $this->error('Acesso de degustacao invalido.');
+            $this->error('Acesso de degustação inválido.');
             $this->redirect('courses/trial-access');
         }
 
         $before = $this->courses->findTrialAccess($trialAccessId);
         if (!$before) {
-            $this->error('Acesso de degustacao nao encontrado.');
+            $this->error('Acesso de degustação não encontrado.');
             $this->redirect('courses/trial-access');
         }
 
         if (!$this->courses->revokeTrialAccess($trialAccessId)) {
-            $this->error('Nao foi possivel revogar o acesso de degustacao.');
+            $this->error('Não foi possível revogar o acesso de degustação.');
             $this->redirect('courses/trial-access');
         }
 
@@ -672,8 +672,8 @@ class CourseController extends BaseController
             'action' => 'revoke',
             'entity_type' => 'course_trial_access',
             'entity_id' => $trialAccessId,
-            'entity_label' => (string) ($before['student_name'] ?? 'Aluno degustacao'),
-            'description' => 'Acesso de degustacao revogado.',
+            'entity_label' => (string) ($before['student_name'] ?? 'Aluno degustação'),
+            'description' => 'Acesso de degustação revogado.',
             'before' => [
                 'status' => (string) ($before['status'] ?? 'active'),
             ],
@@ -688,7 +688,7 @@ class CourseController extends BaseController
             ],
         ]);
 
-        $this->success('Acesso de degustacao revogado.');
+        $this->success('Acesso de degustação revogado.');
         $this->redirect('courses/trial-access');
     }
 
@@ -769,7 +769,7 @@ class CourseController extends BaseController
         $questionsPayload = $this->normalizeExamQuestionsFromPost();
 
         if ($data['course_id'] <= 0 || $data['title'] === '') {
-            $this->error('Curso e titulo sao obrigatorios.');
+            $this->error('Curso e título são obrigatórios.');
             $this->redirect('courses/exams');
         }
 
@@ -784,7 +784,7 @@ class CourseController extends BaseController
 
         if ($examKind === 'external') {
             if (!$this->courses->externalExamFeatureAvailable()) {
-                $this->error('Prova externa nao habilitada no banco. Execute a migracao correspondente.');
+                $this->error('Prova externa não habilitada no banco. Execute a migração correspondente.');
                 $this->redirect('courses/exams');
             }
 
@@ -805,7 +805,7 @@ class CourseController extends BaseController
 
                 foreach ($externalTargetStudentIds as $studentId) {
                     if (!$this->courses->isStudentEnrolledInCourse($studentId, $data['course_id'])) {
-                        $this->error('Um dos alunos selecionados nao esta matriculado (ativo/concluido) no curso escolhido.');
+                        $this->error('Um dos alunos selecionados não esta matriculado (ativo/concluido) no curso escolhido.');
                         $this->redirect('courses/exams');
                     }
                 }
@@ -817,7 +817,7 @@ class CourseController extends BaseController
 
             if ($deliveryScope === 'student') {
                 if (!$this->courses->internalExamAudienceFeatureAvailable()) {
-                    $this->error('Direcionamento individual de prova interna indisponivel nesta base. Execute a migracao de publico interno de provas.');
+                    $this->error('Direcionamento individual de prova interna indisponivel nesta base. Execute a migração de publico interno de provas.');
                     $this->redirect('courses/exams');
                 }
 
@@ -828,7 +828,7 @@ class CourseController extends BaseController
 
                 foreach ($targetStudentIds as $studentId) {
                     if (!$this->courses->isStudentEnrolledInCourse($studentId, $data['course_id'])) {
-                        $this->error('Um dos alunos selecionados nao esta matriculado (ativo/concluido) no curso escolhido.');
+                        $this->error('Um dos alunos selecionados não esta matriculado (ativo/concluido) no curso escolhido.');
                         $this->redirect('courses/exams');
                     }
                 }
@@ -847,7 +847,7 @@ class CourseController extends BaseController
 
         $examId = $this->courses->createExam($data, (int) current_user()['id']);
         if ($examId <= 0) {
-            $this->error('Curso invalido para esta empresa.');
+            $this->error('Curso inválido para esta empresa.');
             $this->redirect('courses/exams');
         }
 
@@ -874,7 +874,7 @@ class CourseController extends BaseController
                     $this->notifyStudentsAboutPublishedExam($examId, $externalTargetStudentIds, true, $externalUrl);
                     $this->success("Prova externa criada e vinculada para {$linkedCount} aluno(s).");
                 } else {
-                    $this->error('Prova externa criada, mas nao foi possivel salvar os vinculos individuais.');
+                    $this->error('Prova externa criada, mas não foi possível salvar os vinculos individuais.');
                 }
 
                 $this->redirect('courses/exams');
@@ -888,7 +888,7 @@ class CourseController extends BaseController
                 $this->notifyStudentsAboutPublishedExam($examId, [], true, $externalUrl);
                 $this->success("Prova externa criada e vinculada para {$linkedTotal} aluno(s) do curso.");
             } elseif ($eligibleTotal <= 0) {
-                $this->success('Prova externa criada. Ainda nao ha alunos ativos/concluidos matriculados neste curso.');
+                $this->success('Prova externa criada. Ainda não há alunos ativos/concluidos matriculados neste curso.');
             } else {
                 $this->error('Prova externa criada, mas houve falha ao gerar os vinculos dos alunos.');
             }
@@ -922,7 +922,7 @@ class CourseController extends BaseController
 
             $audienceMessage = $linkedCount > 0
                 ? "Prova interna criada e enviada para {$linkedCount} aluno(s)."
-                : 'Prova interna criada. Nao foi possivel aplicar o direcionamento individual.';
+                : 'Prova interna criada. Não foi possível aplicar o direcionamento individual.';
             if ($linkedCount > 0) {
                 $this->notifyStudentsAboutPublishedExam($examId, $targetStudentIds, false, null);
             }
@@ -936,7 +936,7 @@ class CourseController extends BaseController
                 }
                 $audienceMessage = "Prova interna criada e enviada para {$linkedTotal} aluno(s) matriculado(s) no curso.";
             } else {
-                $audienceMessage = 'Prova interna criada. Ainda nao ha alunos ativos/concluidos matriculados neste curso.';
+                $audienceMessage = 'Prova interna criada. Ainda não há alunos ativos/concluidos matriculados neste curso.';
             }
         } else {
             $this->notifyStudentsAboutPublishedExam($examId, [], false, null);
@@ -979,7 +979,7 @@ class CourseController extends BaseController
         ];
 
         if ($data['exam_id'] <= 0 || $data['student_id'] <= 0) {
-            $this->error('Exame e aluno sao obrigatorios.');
+            $this->error('Exame e aluno são obrigatórios.');
             $this->redirect('courses/exams');
         }
 
@@ -1031,7 +1031,7 @@ class CourseController extends BaseController
         $submissionId = (int) request('id', 0);
         $submission = $this->courses->findExamSubmission($submissionId);
         if ($submission === null) {
-            $this->error('Entrega de prova nao encontrada.');
+            $this->error('Entrega de prova não encontrada.');
             $this->redirect('courses/exams/submissions');
         }
 
@@ -1053,7 +1053,7 @@ class CourseController extends BaseController
         $submissionId = (int) post('submission_id');
         $submission = $this->courses->findExamSubmission($submissionId);
         if ($submission === null) {
-            $this->error('Entrega de prova nao encontrada para correcao.');
+            $this->error('Entrega de prova não encontrada para correcao.');
             $this->redirect('courses/exams/submissions');
         }
 
@@ -1067,7 +1067,7 @@ class CourseController extends BaseController
         ];
 
         if ($data['exam_id'] <= 0 || $data['student_id'] <= 0) {
-            $this->error('Entrega invalida para publicacao de nota.');
+            $this->error('Entrega inválida para publicação de nota.');
             $this->redirect('courses/exams/submissions');
         }
 
@@ -1084,7 +1084,7 @@ class CourseController extends BaseController
         csrf_validate();
 
         if (!$this->courses->externalExamFeatureAvailable()) {
-            $this->error('Prova externa nao habilitada no banco. Execute a migracao correspondente.');
+            $this->error('Prova externa não habilitada no banco. Execute a migração correspondente.');
             $this->redirect('courses/exams');
         }
 
@@ -1095,7 +1095,7 @@ class CourseController extends BaseController
         $dueAt = $this->normalizeDateTime((string) post('due_at'));
 
         if ($examId <= 0 || $externalUrl === '') {
-            $this->error('Exame e URL externa sao obrigatorios.');
+            $this->error('Exame e URL externa são obrigatórios.');
             $this->redirect('courses/exams');
         }
 
@@ -1114,7 +1114,7 @@ class CourseController extends BaseController
         if ($deliveryScope === 'course') {
             $result = $this->courses->upsertExternalExamLinksForExamCourse($payload, (int) current_user()['id']);
             if (!$result['ok']) {
-                $this->error('Nao foi possivel vincular a prova externa em massa. Verifique o exame e as matriculas do curso.');
+                $this->error('Não foi possível vincular a prova externa em massa. Verifique o exame e as matrículas do curso.');
                 $this->redirect('courses/exams');
             }
 
@@ -1142,7 +1142,7 @@ class CourseController extends BaseController
         if ($ok) {
             $this->success('Vinculo de prova externa salvo para o aluno.');
         } else {
-            $this->error('Nao foi possivel salvar o vinculo. Verifique se o aluno esta matriculado no curso da prova.');
+            $this->error('Não foi possível salvar o vinculo. Verifique se o aluno esta matriculado no curso da prova.');
         }
 
         $this->redirect('courses/exams');
@@ -1155,20 +1155,20 @@ class CourseController extends BaseController
         csrf_validate();
 
         if (!$this->courses->externalExamFeatureAvailable()) {
-            $this->error('Prova externa nao habilitada no banco.');
+            $this->error('Prova externa não habilitada no banco.');
             $this->redirect('courses/exams');
         }
 
         $linkId = (int) post('id');
         if ($linkId <= 0) {
-            $this->error('Vinculo de prova externa invalido.');
+            $this->error('Vinculo de prova externa inválido.');
             $this->redirect('courses/exams');
         }
 
         if ($this->courses->deactivateExternalExamLink($linkId)) {
             $this->success('Vinculo de prova externa desativado.');
         } else {
-            $this->error('Nao foi possivel desativar o vinculo.');
+            $this->error('Não foi possível desativar o vinculo.');
         }
 
         $this->redirect('courses/exams');
@@ -1214,10 +1214,10 @@ class CourseController extends BaseController
                 }
                 $this->success($message);
             } else {
-                $this->error('Curso invalido para esta empresa.');
+                $this->error('Curso inválido para esta empresa.');
             }
         } else {
-            $this->error('Curso e comentario sao obrigatorios.');
+            $this->error('Curso e comentario são obrigatórios.');
         }
 
         $this->redirect('courses/comments');
@@ -1241,7 +1241,7 @@ class CourseController extends BaseController
         $courses = $this->calendar->listCoursesForActivities($companyId);
 
         $this->render('courses/calendar', [
-            'title' => 'Agenda Academica',
+            'title' => 'Agenda Acadêmica',
             'fromDate' => $fromDate,
             'toDate' => $toDate,
             'events' => $events,
@@ -1260,7 +1260,7 @@ class CourseController extends BaseController
         csrf_validate();
 
         if (!$this->calendar->featureAvailable()) {
-            $this->error('Agenda academica nao habilitada no banco. Execute a migracao correspondente.');
+            $this->error('Agenda acadêmica não habilitada no banco. Execute a migração correspondente.');
             $this->redirect('courses/calendar');
         }
 
@@ -1274,7 +1274,7 @@ class CourseController extends BaseController
         ];
 
         if ($data['course_id'] <= 0 || $data['title'] === '' || !$data['due_datetime']) {
-            $this->error('Curso, titulo e prazo da atividade sao obrigatorios.');
+            $this->error('Curso, título e prazo da atividade são obrigatórios.');
             $this->redirect('courses/calendar');
         }
 
@@ -1286,9 +1286,9 @@ class CourseController extends BaseController
         $activityId = $this->calendar->createActivity($data, (int) current_user()['id'], $companyId);
         if ($activityId > 0) {
             $this->calendar->processAutomaticReminders(45, $companyId);
-            $this->success('Atividade cadastrada e calendario atualizado.');
+            $this->success('Atividade cadastrada e calendário atualizado.');
         } else {
-            $this->error('Nao foi possivel cadastrar a atividade.');
+            $this->error('Não foi possível cadastrar a atividade.');
         }
 
         $this->redirect('courses/calendar');
@@ -1305,7 +1305,7 @@ class CourseController extends BaseController
             $this->calendar->deleteActivity($activityId, (int) (current_company_id() ?? 0));
             $this->success('Atividade removida.');
         } else {
-            $this->error('Atividade invalida.');
+            $this->error('Atividade inválida.');
         }
 
         $this->redirect('courses/calendar');
@@ -1420,7 +1420,7 @@ class CourseController extends BaseController
             $rows
         )));
         if (count($questionTypes) > 1) {
-            $errors[] = 'Crie a prova somente com questoes objetivas ou somente com questoes dissertativas. Nao misture os dois tipos na mesma prova.';
+            $errors[] = 'Crie a prova somente com questões objetivas ou somente com questões dissertativas. Não misture os dois tipos na mesma prova.';
         }
 
         return ['rows' => $rows, 'errors' => $errors];
@@ -1582,7 +1582,7 @@ class CourseController extends BaseController
             return;
         }
 
-        $examTitle = trim((string) ($exam['title'] ?? 'Avaliacao'));
+        $examTitle = trim((string) ($exam['title'] ?? 'Avaliação'));
         $courseName = trim((string) ($exam['course_name'] ?? 'Curso'));
         $scheduledAt = trim((string) ($exam['scheduled_at'] ?? ''));
         $dateLabel = $scheduledAt !== '' ? date('d/m/Y H:i', strtotime($scheduledAt)) : 'sem data definida';
@@ -1597,15 +1597,15 @@ class CourseController extends BaseController
             }
 
             $message = $isExternal
-                ? sprintf('A prova externa %s foi liberada. Abra o portal para acessar o link da avaliacao.', $examTitle)
-                : sprintf('A avaliacao %s foi publicada para o curso %s em %s.', $examTitle, $courseName, $dateLabel);
+                ? sprintf('A prova externa %s foi liberada. Abra o portal para acessar o link da avaliação.', $examTitle)
+                : sprintf('A avaliação %s foi publicada para o curso %s em %s.', $examTitle, $courseName, $dateLabel);
 
             if ($this->portal->studentPortalNotificationsFeatureAvailable()) {
                 $this->portal->createPortalNotification([
                     'company_id' => $companyId,
                     'student_id' => $studentId,
                     'notification_type' => 'exam_published',
-                    'title' => $isExternal ? 'Nova prova externa disponivel' : 'Nova avaliacao disponivel',
+                    'title' => $isExternal ? 'Nova prova externa disponível' : 'Nova avaliação disponível',
                     'message' => $message,
                     'link_url' => route('student/exams'),
                     'meta' => [
@@ -1629,7 +1629,7 @@ class CourseController extends BaseController
                     'portalUrl' => $this->absoluteUrl(route('student/exams')),
                 ]);
 
-                $this->emails->send($studentEmail, 'Nova avaliacao disponivel | ' . $courseName, $body, [
+                $this->emails->send($studentEmail, 'Nova avaliação disponível | ' . $courseName, $body, [
                     'company_id' => $companyId,
                     'is_html' => true,
                 ]);
@@ -1653,7 +1653,7 @@ class CourseController extends BaseController
         $companyId = (int) ($recipient['company_id'] ?? 0);
         $studentEmail = trim((string) ($recipient['student_email'] ?? ''));
         $studentName = trim((string) ($recipient['student_name'] ?? 'Aluno'));
-        $examTitle = trim((string) ($exam['title'] ?? 'Avaliacao'));
+        $examTitle = trim((string) ($exam['title'] ?? 'Avaliação'));
         $courseName = trim((string) ($exam['course_name'] ?? 'Curso'));
         $passingScore = (float) ($exam['passing_score'] ?? 0);
 
@@ -1662,7 +1662,7 @@ class CourseController extends BaseController
                 'company_id' => $companyId,
                 'student_id' => $studentId,
                 'notification_type' => 'exam_result',
-                'title' => 'Resultado de avaliacao publicado',
+                'title' => 'Resultado de avaliação publicado',
                 'message' => sprintf(
                     '%s: sua nota em %s foi %s de %s.',
                     $courseName,
@@ -1695,7 +1695,7 @@ class CourseController extends BaseController
                 'resultStatus' => $score >= $passingScore ? 'approved' : 'failed',
             ]);
 
-            $this->emails->send($studentEmail, 'Resultado de avaliacao publicado | ' . $courseName, $body, [
+            $this->emails->send($studentEmail, 'Resultado de avaliação publicado | ' . $courseName, $body, [
                 'company_id' => $companyId,
                 'is_html' => true,
             ]);

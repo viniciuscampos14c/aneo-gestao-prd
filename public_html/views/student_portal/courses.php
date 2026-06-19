@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="student-courses-title text-2xl font-semibold">Meus Cursos</h2>
-            <p class="student-courses-subtitle text-sm text-slate-500">Cursos publicados vinculados a sua matricula.</p>
+            <p class="student-courses-subtitle text-sm text-slate-500">Cursos publicados vinculados a sua matrícula.</p>
         </div>
     </div>
 
@@ -26,7 +26,7 @@
 
                 <div class="mt-4 space-y-2">
                     <div class="student-courses-progress-meta flex items-center justify-between text-xs text-slate-500">
-                        <span>Status da matricula: <?= e($course['enrollment_status']); ?></span>
+                        <span>Status da matrícula: <?= e($course['enrollment_status']); ?></span>
                         <span><?= (int) $course['progress_percent']; ?>%</span>
                     </div>
                     <div class="student-courses-progress-track h-2 rounded-full bg-slate-200">
@@ -47,7 +47,7 @@
 
                 <?php if (!empty($course['live_link'])): ?>
                     <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <p class="student-courses-live-label text-slate-500">Aula ao vivo: <?= !empty($course['live_datetime']) ? e(date('d/m/Y H:i', strtotime((string) $course['live_datetime']))) : 'sem horario'; ?></p>
+                        <p class="student-courses-live-label text-slate-500">Aula ao vivo: <?= !empty($course['live_datetime']) ? e(date('d/m/Y H:i', strtotime((string) $course['live_datetime']))) : 'sem horário'; ?></p>
                         <a href="<?= e($course['live_link']); ?>" target="_blank" rel="noopener" class="student-courses-live-cta rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 font-medium text-cyan-700 hover:bg-cyan-100">Entrar na aula</a>
                     </div>
                 <?php endif; ?>

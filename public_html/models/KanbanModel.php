@@ -120,7 +120,7 @@ class KanbanModel extends BaseModel
         $row = $current->fetch();
 
         if (!$row) {
-            throw new RuntimeException('Aluno nao encontrado para mover no Kanban.');
+            throw new RuntimeException('Aluno não encontrado para mover no Kanban.');
         }
 
         $currentStatusId = $row['kanban_status_id'] !== null ? (int) $row['kanban_status_id'] : null;

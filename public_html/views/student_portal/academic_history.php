@@ -120,8 +120,8 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
 <section class="space-y-4">
     <div class="no-print flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <div>
-            <h2 class="text-2xl font-semibold">Historico Academico</h2>
-            <p class="text-sm text-slate-500">Resumo academico consolidado por curso, pronto para impressao em A4.</p>
+            <h2 class="text-2xl font-semibold">Histórico Acadêmico</h2>
+            <p class="text-sm text-slate-500">Resumo acadêmico consolidado por curso, pronto para impressao em A4.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="<?= e($backRoute); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"><?= e($backLabel); ?></a>
@@ -131,9 +131,9 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
 
     <article id="academic-history-paper" class="transcript-paper rounded-none bg-white p-5 text-slate-900">
         <header class="border-b-2 border-slate-900 pb-3 text-center">
-            <p class="text-xs font-semibold uppercase tracking-[0.12em]">ANEO - Gestao Integrada</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.12em]">ANEO - Gestão Integrada</p>
             <p class="text-sm font-semibold uppercase"><?= e($companyName !== '' ? $companyName : 'Instituicao de Ensino'); ?></p>
-            <h1 class="text-3xl font-bold uppercase tracking-wide">Historico Escolar</h1>
+            <h1 class="text-3xl font-bold uppercase tracking-wide">Histórico Escolar</h1>
             <p class="mt-1 text-[11px]"><?= e($issuedByLabel); ?><?= e($issuedAtLabel); ?>.</p>
         </header>
 
@@ -172,7 +172,7 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
 
         <?php foreach ($terms as $term): ?>
             <section class="mt-4">
-                <div class="transcript-subtitle"><?= e((string) ($term['term_label'] ?? 'Periodo')); ?></div>
+                <div class="transcript-subtitle"><?= e((string) ($term['term_label'] ?? 'Período')); ?></div>
                 <table class="transcript-table">
                     <thead>
                         <tr>
@@ -181,7 +181,7 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
                             <th style="width: 12%">C/H</th>
                             <th style="width: 14%">Media Final</th>
                             <th style="width: 10%">Faltas</th>
-                            <th style="width: 18%">Situacao Final</th>
+                            <th style="width: 18%">Situação Final</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -247,9 +247,9 @@ $issuedByLabel = trim((string) ($issuedByLabel ?? 'Documento emitido automaticam
         </section>
 
         <footer class="mt-5 border-t-2 border-slate-900 pt-3 text-[11px]">
-            <p><strong>Descricao:</strong> Historico escolar consolidado para comprovacao academica interna da ANEO, com os resultados finais registrados no sistema.</p>
+            <p><strong>Descrição:</strong> Histórico escolar consolidado para comprovacao acadêmica interna da ANEO, com os resultados finais registrados no sistema.</p>
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                <div class="border border-dashed border-slate-900 p-5 text-center uppercase tracking-wide">Assinatura Responsavel ANEO</div>
+                <div class="border border-dashed border-slate-900 p-5 text-center uppercase tracking-wide">Assinatura Responsável ANEO</div>
                 <div class="border border-dashed border-slate-900 p-5 text-center uppercase tracking-wide">Carimbo Oficial ANEO</div>
             </div>
         </footer>

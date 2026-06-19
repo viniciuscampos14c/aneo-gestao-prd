@@ -21,7 +21,9 @@ $slabel = $statusLabels[$st] ?? $st;
 
 $dm = (string) ($request['desired_month'] ?? '');
 $dmFmt = '';
-if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
+if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dm, $m)) {
+    $dmFmt = $m[3] . '/' . $m[2] . '/' . $m[1];
+} elseif ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
     $months = ['', 'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     $dmFmt = ($months[(int) $m[2]] ?? $m[2]) . ' de ' . $m[1];
 }
@@ -82,7 +84,7 @@ $dateFmt = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '-';
                 <dd class="col-span-2 font-semibold text-sky-700"><?= e((string) ($request['target_unit'] ?? '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">
-                <dt class="font-medium text-slate-500">Mes desejado</dt>
+                <dt class="font-medium text-slate-500">Data pretendida</dt>
                 <dd class="col-span-2 text-slate-800"><?= e($dmFmt !== '' ? $dmFmt : ($dm !== '' ? $dm : '-')); ?></dd>
             </div>
             <div class="grid grid-cols-3 px-6 py-3 text-sm">

@@ -15,7 +15,7 @@ $formButton = $isEditing ? 'Salvar alteracoes' : 'Salvar unidade';
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Modulo de unidades/hospitais indisponivel no banco. Execute a migration <code>migrations/20260505_student_duty_schedule.sql</code>.
+            Módulo de unidades/hospitais indisponivel no banco. Execute a migration <code>migrations/20260505_student_duty_schedule.sql</code>.
         </div>
     <?php else: ?>
         <div class="grid gap-6 xl:grid-cols-[1.05fr_1.95fr]">

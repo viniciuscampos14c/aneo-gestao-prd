@@ -25,7 +25,7 @@ class AutomationWebhookController extends BaseController
         if ($configuredToken !== '' && !hash_equals($configuredToken, $providedToken)) {
             $this->json([
                 'ok' => false,
-                'message' => 'Token invalido para webhook de automacao.',
+                'message' => 'Token inválido para webhook de automacao.',
             ], 401);
         }
 
@@ -56,7 +56,7 @@ class AutomationWebhookController extends BaseController
             $this->json([
                 'ok' => true,
                 'activated' => false,
-                'message' => 'Regras de ativacao ainda nao atendidas.',
+                'message' => 'Regras de ativacao ainda não atendidas.',
                 'required' => 'payment_status aprovado + contract_status assinado, ou force_activate=true',
                 'received' => [
                     'payment_status' => $paymentStatus,
@@ -70,7 +70,7 @@ class AutomationWebhookController extends BaseController
 
             $company = $this->findCompany($companyId);
             if (!$company) {
-                throw new RuntimeException('Empresa nao encontrada para automacao.');
+                throw new RuntimeException('Empresa não encontrada para automacao.');
             }
             if ((int) ($company['is_active'] ?? 0) !== 1) {
                 throw new RuntimeException('Empresa inativa. Ative a empresa para processar a automacao.');
@@ -78,7 +78,7 @@ class AutomationWebhookController extends BaseController
 
             $lead = $this->findLead($companyId, $leadId);
             if (!$lead) {
-                throw new RuntimeException('Lead nao encontrado para a empresa informada.');
+                throw new RuntimeException('Lead não encontrado para a empresa informada.');
             }
 
             $studentCreated = false;
@@ -274,7 +274,7 @@ class AutomationWebhookController extends BaseController
             ':email_primary' => (string) ($lead['email'] ?? ''),
             ':phone' => (string) ($lead['phone'] ?? ''),
             ':admin_info' => 'Convertido do lead #' . (int) ($lead['id'] ?? 0),
-            ':notes' => 'Origem lead: ' . ((string) ($lead['source'] ?? '') !== '' ? (string) $lead['source'] : 'Nao informado'),
+            ':notes' => 'Origem lead: ' . ((string) ($lead['source'] ?? '') !== '' ? (string) $lead['source'] : 'Não informado'),
             ':kanban_status_id' => $defaultKanban,
             ':created_by' => $actorId,
             ':created_at' => $now,
@@ -361,7 +361,7 @@ class AutomationWebhookController extends BaseController
     private function ensureEnrollment(int $companyId, int $studentId, int $courseId, string $status, ?int $actorId): array
     {
         if (!$this->courseBelongsCompany($courseId, $companyId)) {
-            throw new RuntimeException('Curso informado nao pertence a empresa ativa.');
+            throw new RuntimeException('Curso informado não pertence a empresa ativa.');
         }
 
         $existing = $this->db->prepare('SELECT id, status
@@ -449,7 +449,7 @@ class AutomationWebhookController extends BaseController
     private function upsertPortalAccount(int $companyId, int $studentId, string $login, string $password, bool $isActive): array
     {
         if (!$this->tableExists('student_portal_accounts')) {
-            throw new RuntimeException('Tabela student_portal_accounts nao existe. Execute a migracao de portal do aluno.');
+            throw new RuntimeException('Tabela student_portal_accounts não existe. Execute a migração de portal do aluno.');
         }
 
         $student = $this->db->prepare('SELECT id, email_primary
@@ -464,7 +464,7 @@ class AutomationWebhookController extends BaseController
         $studentRow = $student->fetch();
 
         if (!$studentRow) {
-            throw new RuntimeException('Aluno nao encontrado para criar acesso de portal.');
+            throw new RuntimeException('Aluno não encontrado para criar acesso de portal.');
         }
 
         $normalizedLogin = trim($login);

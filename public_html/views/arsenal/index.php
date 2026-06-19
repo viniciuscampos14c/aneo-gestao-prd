@@ -68,7 +68,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
 
     <?php if (!$featureAvailable): ?>
         <article class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            Estrutura do Arsenal indisponivel no banco. Execute a migracao `migrations/20260313_arsenal_digital.sql`.
+            Estrutura do Arsenal indisponivel no banco. Execute a migração `migrations/20260313_arsenal_digital.sql`.
         </article>
     <?php endif; ?>
 
@@ -80,7 +80,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
                     <input type="hidden" name="id" value="<?= (int) $editingItem['id']; ?>">
                 <?php endif; ?>
                 <label class="block lg:col-span-3">
-                    <span class="mb-1 block text-sm font-medium">Titulo *</span>
+                    <span class="mb-1 block text-sm font-medium">Título *</span>
                     <input type="text" name="title" required value="<?= e((string) ($editingItem['title'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </label>
                 <label class="block lg:col-span-2">
@@ -133,7 +133,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
                 </label>
 
                 <label class="block lg:col-span-4">
-                    <span class="mb-1 block text-sm font-medium">Descricao</span>
+                    <span class="mb-1 block text-sm font-medium">Descrição</span>
                     <input type="text" name="description" value="<?= e((string) ($editingItem['description'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </label>
                 <label id="arsenal-file-wrapper" class="block lg:col-span-2">
@@ -159,7 +159,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
         <form method="get" action="index.php" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-6">
             <input type="hidden" name="route" value="arsenal">
             <input type="hidden" name="tab" value="items">
-            <input type="text" name="q" value="<?= e($itemFilters['q'] ?? ''); ?>" placeholder="Buscar por titulo, descricao ou arquivo..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+            <input type="text" name="q" value="<?= e($itemFilters['q'] ?? ''); ?>" placeholder="Buscar por título, descrição ou arquivo..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
             <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <option value="">Todos status</option>
                 <?php foreach ($statusLabels as $value => $label): ?>
@@ -189,7 +189,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
             <div class="flex gap-2">
                 <select name="per_page" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <?php foreach ($paginationOptions as $opt): ?>
-                        <option value="<?= (int) $opt; ?>" <?= (int) ($itemsMeta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                        <option value="<?= (int) $opt; ?>" <?= (int) ($itemsMeta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                     <?php endforeach; ?>
                 </select>
                 <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
@@ -262,7 +262,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p>Total: <?= (int) ($itemsMeta['total'] ?? 0); ?> registros | Pagina <?= (int) ($itemsMeta['page'] ?? 1); ?>/<?= (int) ($itemsMeta['pages'] ?? 1); ?></p>
+            <p>Total: <?= (int) ($itemsMeta['total'] ?? 0); ?> registros | Página <?= (int) ($itemsMeta['page'] ?? 1); ?>/<?= (int) ($itemsMeta['pages'] ?? 1); ?></p>
             <div class="flex gap-2">
                 <?php for ($p = 1; $p <= (int) ($itemsMeta['pages'] ?? 1); $p++): ?>
                     <a href="index.php?<?= build_query(['route' => 'arsenal', 'tab' => 'items', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($itemsMeta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
@@ -276,7 +276,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
             <form method="post" action="<?= route('arsenal/category/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-5">
                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                 <input type="text" name="name" required placeholder="Nome da categoria" class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
-                <input type="text" name="description" placeholder="Descricao" class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+                <input type="text" name="description" placeholder="Descrição" class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
                 <button class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Criar categoria</button>
             </form>
         <?php endif; ?>
@@ -286,7 +286,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
                 <thead>
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th class="px-3 py-3">Nome</th>
-                        <th class="px-3 py-3">Descricao</th>
+                        <th class="px-3 py-3">Descrição</th>
                         <th class="px-3 py-3">Itens</th>
                         <th class="px-3 py-3">Status</th>
                         <th class="px-3 py-3">Acoes</th>
@@ -492,7 +492,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
             </select>
             <select name="log_per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) ($accessMeta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) ($accessMeta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
@@ -532,7 +532,7 @@ $publishEndInput = !empty($editingItem['publish_end_at']) ? date('Y-m-d\TH:i', s
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p>Total: <?= (int) ($accessMeta['total'] ?? 0); ?> registros | Pagina <?= (int) ($accessMeta['page'] ?? 1); ?>/<?= (int) ($accessMeta['pages'] ?? 1); ?></p>
+            <p>Total: <?= (int) ($accessMeta['total'] ?? 0); ?> registros | Página <?= (int) ($accessMeta['page'] ?? 1); ?>/<?= (int) ($accessMeta['pages'] ?? 1); ?></p>
             <div class="flex gap-2">
                 <?php for ($p = 1; $p <= (int) ($accessMeta['pages'] ?? 1); $p++): ?>
                     <a href="index.php?<?= build_query(['route' => 'arsenal', 'tab' => 'access', 'log_page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($accessMeta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

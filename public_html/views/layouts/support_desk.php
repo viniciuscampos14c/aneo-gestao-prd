@@ -46,7 +46,7 @@ $logoBuild = '20260512-brand-kit-v1';
                     </a>
                     <div>
                         <p class="text-xs uppercase tracking-[0.18em] text-cyan-600">Central Tecnica</p>
-                        <h1 class="text-sm font-semibold text-slate-800">Administracao de Chamados</h1>
+                        <h1 class="text-sm font-semibold text-slate-800">Administração de Chamados</h1>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">

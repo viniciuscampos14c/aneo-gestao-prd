@@ -27,7 +27,7 @@ foreach ($leadPipeline as $row) {
     <div class="dashboard-preview-content space-y-6">
         <div>
             <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Painel executivo</p>
-            <h2 class="dashboard-preview-title mt-2 text-4xl font-semibold">Visao Geral</h2>
+            <h2 class="dashboard-preview-title mt-2 text-4xl font-semibold">Visão Geral</h2>
             <p class="dashboard-preview-subtitle mt-2 text-sm">Resumo operacional, comercial e financeiro.</p>
         </div>
 
@@ -83,16 +83,16 @@ foreach ($leadPipeline as $row) {
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-100">BI Gerencial</h3>
-                    <p class="dashboard-preview-bi-muted text-sm">Indicadores executivos para decisao rapida no perfil administrativo.</p>
+                    <p class="dashboard-preview-bi-muted text-sm">Indicadores executivos para decisão rápida no perfil administrativo.</p>
                 </div>
                 <?php if (has_permission('finance')): ?>
-                    <a href="<?= route('finance/reports'); ?>" class="dashboard-preview-btn-link rounded-lg px-3 py-2 text-sm transition">Abrir Relatorios Financeiros</a>
+                    <a href="<?= route('finance/reports'); ?>" class="dashboard-preview-btn-link rounded-lg px-3 py-2 text-sm transition">Abrir Relatórios Financeiros</a>
                 <?php endif; ?>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
                 <article class="dashboard-preview-bi-card p-3">
-                    <p class="dashboard-preview-bi-title text-xs uppercase">Conversao Leads</p>
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Conversão de Leads</p>
                     <p class="mt-1 text-2xl font-semibold text-indigo-300"><?= e(number_format((float) ($biOverview['leads_conversion_rate'] ?? 0), 2, ',', '.')); ?>%</p>
                     <p class="dashboard-preview-bi-muted text-xs"><?= (int) ($biOverview['leads_converted'] ?? 0); ?> de <?= (int) ($biOverview['leads_total'] ?? 0); ?> leads</p>
                 </article>
@@ -105,17 +105,17 @@ foreach ($leadPipeline as $row) {
                     <p class="mt-1 text-2xl font-semibold text-cyan-300"><?= e(format_currency((float) ($biOverview['revenue_forecast_30d'] ?? 0))); ?></p>
                 </article>
                 <article class="dashboard-preview-bi-card p-3">
-                    <p class="dashboard-preview-bi-title text-xs uppercase">Inadimplencia</p>
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Inadimplência</p>
                     <p class="mt-1 text-2xl font-semibold text-rose-300"><?= e(number_format((float) ($biOverview['delinquency_rate'] ?? 0), 2, ',', '.')); ?>%</p>
                     <p class="dashboard-preview-bi-muted text-xs">Vencido: <?= e(format_currency((float) ($biOverview['overdue_amount'] ?? 0))); ?></p>
                 </article>
                 <article class="dashboard-preview-bi-card p-3">
-                    <p class="dashboard-preview-bi-title text-xs uppercase">Progresso Medio</p>
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Progresso Médio</p>
                     <p class="mt-1 text-2xl font-semibold text-slate-100"><?= e(number_format((float) ($biOverview['enrollments_avg_progress'] ?? 0), 1, ',', '.')); ?>%</p>
-                    <p class="dashboard-preview-bi-muted text-xs">Matriculas</p>
+                    <p class="dashboard-preview-bi-muted text-xs">Matrículas</p>
                 </article>
                 <article class="dashboard-preview-bi-card p-3">
-                    <p class="dashboard-preview-bi-title text-xs uppercase">Aprovacao Provas</p>
+                    <p class="dashboard-preview-bi-title text-xs uppercase">Aprovação em Provas</p>
                     <p class="mt-1 text-2xl font-semibold text-amber-300"><?= e(number_format((float) ($biOverview['exam_approval_rate'] ?? 0), 2, ',', '.')); ?>%</p>
                     <p class="dashboard-preview-bi-muted text-xs">Resultados: <?= (int) ($biOverview['exam_results_total'] ?? 0); ?></p>
                 </article>
@@ -123,7 +123,7 @@ foreach ($leadPipeline as $row) {
 
             <div class="mt-5 grid gap-4 xl:grid-cols-2">
                 <section class="dashboard-preview-section p-4">
-                    <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-200">Faturado x Recebido (ultimos 6 meses)</h4>
+                    <h4 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-200">Faturado x Recebido (últimos 6 meses)</h4>
                     <div class="space-y-3">
                         <?php foreach ($monthlySeries as $month): ?>
                             <?php
@@ -148,7 +148,7 @@ foreach ($leadPipeline as $row) {
                             </div>
                         <?php endforeach; ?>
                         <?php if ($monthlySeries === []): ?>
-                            <p class="dashboard-preview-bi-muted text-sm">Sem dados mensais suficientes para exibir a serie.</p>
+                            <p class="dashboard-preview-bi-muted text-sm">Sem dados mensais suficientes para exibir a série.</p>
                         <?php endif; ?>
                     </div>
                 </section>
@@ -160,9 +160,9 @@ foreach ($leadPipeline as $row) {
                             <thead>
                                 <tr class="text-left text-xs uppercase tracking-wide">
                                     <th class="px-2 py-2">Curso</th>
-                                    <th class="px-2 py-2">Matriculas</th>
-                                    <th class="px-2 py-2">Progresso medio</th>
-                                    <th class="px-2 py-2">Aprovacao</th>
+                                    <th class="px-2 py-2">Matrículas</th>
+                                    <th class="px-2 py-2">Progresso médio</th>
+                                    <th class="px-2 py-2">Aprovação</th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -108,7 +108,7 @@ class ArsenalController extends BaseController
         csrf_validate();
 
         if (!$this->arsenal->featureAvailable()) {
-            $this->error('Modulo Arsenal indisponivel no banco. Execute a migracao 20260313_arsenal_digital.sql.');
+            $this->error('Módulo Arsenal indisponivel no banco. Execute a migração 20260313_arsenal_digital.sql.');
             $this->redirect('arsenal');
         }
 
@@ -141,7 +141,7 @@ class ArsenalController extends BaseController
         try {
             $id = $this->arsenal->createItem($data, (int) current_user()['id']);
             if ($id <= 0) {
-                $this->error('Nao foi possivel criar item do Arsenal.');
+                $this->error('Não foi possível criar item do Arsenal.');
                 $this->redirect('arsenal&tab=items');
             }
         } catch (Throwable $e) {
@@ -165,7 +165,7 @@ class ArsenalController extends BaseController
         $id = (int) post('id');
         $item = $this->arsenal->findItem($id);
         if (!$item) {
-            $this->error('Item do Arsenal nao encontrado.');
+            $this->error('Item do Arsenal não encontrado.');
             $this->redirect('arsenal&tab=items');
         }
 
@@ -242,7 +242,7 @@ class ArsenalController extends BaseController
         $id = (int) post('id');
         $item = $this->arsenal->findItem($id);
         if (!$item) {
-            $this->error('Item nao encontrado para exclusao.');
+            $this->error('Item não encontrado para exclusão.');
             $this->redirect('arsenal&tab=items');
         }
 
@@ -263,13 +263,13 @@ class ArsenalController extends BaseController
         csrf_validate();
 
         if (!$this->arsenal->featureAvailable()) {
-            $this->error('Modulo Arsenal indisponivel no banco.');
+            $this->error('Módulo Arsenal indisponivel no banco.');
             $this->redirect('arsenal&tab=categories');
         }
 
         $name = trim((string) post('name'));
         if ($name === '') {
-            $this->error('Nome da categoria e obrigatorio.');
+            $this->error('Nome da categoria e obrigatório.');
             $this->redirect('arsenal&tab=categories');
         }
 
@@ -296,13 +296,13 @@ class ArsenalController extends BaseController
         $id = (int) post('id');
         $category = $this->arsenal->findCategory($id);
         if (!$category) {
-            $this->error('Categoria nao encontrada.');
+            $this->error('Categoria não encontrada.');
             $this->redirect('arsenal&tab=categories');
         }
 
         $name = trim((string) post('name'));
         if ($name === '') {
-            $this->error('Nome da categoria e obrigatorio.');
+            $this->error('Nome da categoria e obrigatório.');
             $this->redirect('arsenal&tab=categories');
         }
 
@@ -328,7 +328,7 @@ class ArsenalController extends BaseController
 
         $id = (int) post('id');
         if ($id <= 0) {
-            $this->error('Categoria invalida.');
+            $this->error('Categoria inválida.');
             $this->redirect('arsenal&tab=categories');
         }
 
@@ -348,17 +348,17 @@ class ArsenalController extends BaseController
         $item = $this->arsenal->findItem($itemId);
 
         if (!$item) {
-            $this->error('Item do Arsenal nao encontrado.');
+            $this->error('Item do Arsenal não encontrado.');
             $this->redirect('arsenal&tab=bindings');
         }
 
         if ((string) ($item['visibility_scope'] ?? '') !== 'course') {
-            $this->error('Esse item nao utiliza vinculacao por curso.');
+            $this->error('Esse item não utiliza vinculação por curso.');
             $this->redirect('arsenal&tab=bindings&item_id=' . $itemId);
         }
 
         if ($courseId <= 0 || !$this->arsenal->addCourseBinding($itemId, $courseId)) {
-            $this->error('Nao foi possivel vincular curso ao item.');
+            $this->error('Não foi possível vincular curso ao item.');
             $this->redirect('arsenal&tab=bindings&item_id=' . $itemId);
         }
 
@@ -375,7 +375,7 @@ class ArsenalController extends BaseController
         $itemId = (int) post('item_id');
         $courseId = (int) post('course_id');
         if ($itemId <= 0 || $courseId <= 0) {
-            $this->error('Dados invalidos para desvinculo.');
+            $this->error('Dados inválidos para desvinculo.');
             $this->redirect('arsenal&tab=bindings');
         }
 
@@ -395,17 +395,17 @@ class ArsenalController extends BaseController
         $item = $this->arsenal->findItem($itemId);
 
         if (!$item) {
-            $this->error('Item do Arsenal nao encontrado.');
+            $this->error('Item do Arsenal não encontrado.');
             $this->redirect('arsenal&tab=bindings');
         }
 
         if ((string) ($item['visibility_scope'] ?? '') !== 'student') {
-            $this->error('Esse item nao utiliza vinculacao por aluno.');
+            $this->error('Esse item não utiliza vinculação por aluno.');
             $this->redirect('arsenal&tab=bindings&item_id=' . $itemId);
         }
 
         if ($studentId <= 0 || !$this->arsenal->addStudentBinding($itemId, $studentId)) {
-            $this->error('Nao foi possivel vincular aluno ao item.');
+            $this->error('Não foi possível vincular aluno ao item.');
             $this->redirect('arsenal&tab=bindings&item_id=' . $itemId);
         }
 
@@ -422,7 +422,7 @@ class ArsenalController extends BaseController
         $itemId = (int) post('item_id');
         $studentId = (int) post('student_id');
         if ($itemId <= 0 || $studentId <= 0) {
-            $this->error('Dados invalidos para desvinculo.');
+            $this->error('Dados inválidos para desvinculo.');
             $this->redirect('arsenal&tab=bindings');
         }
 
@@ -439,7 +439,7 @@ class ArsenalController extends BaseController
         $id = (int) request('id');
         $item = $this->arsenal->findItem($id);
         if (!$item) {
-            $this->error('Item do Arsenal nao encontrado.');
+            $this->error('Item do Arsenal não encontrado.');
             $this->redirect('arsenal&tab=items');
         }
 
@@ -447,7 +447,7 @@ class ArsenalController extends BaseController
         if ($materialType === 'link') {
             $url = trim((string) ($item['external_url'] ?? ''));
             if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
-                $this->error('URL externa invalida para este item.');
+                $this->error('URL externa inválida para este item.');
                 $this->redirect('arsenal&tab=items');
             }
 
@@ -458,7 +458,7 @@ class ArsenalController extends BaseController
         $relativePath = trim((string) ($item['file_path'] ?? ''));
         $fullPath = $this->resolveArsenalFilePath($relativePath);
         if ($fullPath === null || !is_file($fullPath)) {
-            $this->error('Arquivo nao encontrado no servidor.');
+            $this->error('Arquivo não encontrado no servidor.');
             $this->redirect('arsenal&tab=items');
         }
 
@@ -501,25 +501,25 @@ class ArsenalController extends BaseController
     private function validateItemData(array $data): ?string
     {
         if (trim((string) ($data['title'] ?? '')) === '') {
-            return 'Titulo do item e obrigatorio.';
+            return 'Título do item e obrigatório.';
         }
 
         if (!in_array((string) ($data['material_type'] ?? ''), ['file', 'link'], true)) {
-            return 'Tipo de material invalido.';
+            return 'Tipo de material inválido.';
         }
 
         if (!in_array((string) ($data['visibility_scope'] ?? ''), ['global', 'course', 'student'], true)) {
-            return 'Escopo de visibilidade invalido.';
+            return 'Escopo de visibilidade inválido.';
         }
 
         if (!in_array((string) ($data['status'] ?? ''), ['draft', 'published', 'archived'], true)) {
-            return 'Status do item invalido.';
+            return 'Status do item inválido.';
         }
 
         $start = trim((string) ($data['publish_start_at'] ?? ''));
         $end = trim((string) ($data['publish_end_at'] ?? ''));
         if ($start !== '' && $end !== '' && strtotime($start) > strtotime($end)) {
-            return 'Data inicial de publicacao nao pode ser maior que a data final.';
+            return 'Data inicial de publicação não pode ser maior que a data final.';
         }
 
         if ((string) ($data['material_type'] ?? '') === 'link') {
@@ -545,7 +545,7 @@ class ArsenalController extends BaseController
 
         $size = (int) ($file['size'] ?? 0);
         if ($size <= 0) {
-            return ['ok' => false, 'message' => 'Arquivo invalido para upload.'];
+            return ['ok' => false, 'message' => 'Arquivo inválido para upload.'];
         }
 
         if ($size > (100 * 1024 * 1024)) {
@@ -556,7 +556,7 @@ class ArsenalController extends BaseController
         $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'txt', 'mp4', 'mp3', 'png', 'jpg', 'jpeg', 'webp'];
         if (!in_array($extension, $allowed, true)) {
-            return ['ok' => false, 'message' => 'Extensao nao permitida no Arsenal.'];
+            return ['ok' => false, 'message' => 'Extensão não permitida no Arsenal.'];
         }
 
         $targetDir = __DIR__ . '/../uploads/arsenal';
@@ -569,7 +569,7 @@ class ArsenalController extends BaseController
         $finalPath = $targetDir . '/' . $storedName;
 
         if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $finalPath)) {
-            return ['ok' => false, 'message' => 'Nao foi possivel salvar arquivo no servidor.'];
+            return ['ok' => false, 'message' => 'Não foi possível salvar arquivo no servidor.'];
         }
 
         return [

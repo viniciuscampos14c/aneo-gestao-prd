@@ -3,14 +3,14 @@
 class DashboardController extends BaseController
 {
     private DashboardModel $model;
-    private StudentModel $students;
+    private ProfessorDashboardModel $professorDashboard;
     private AcademicCalendarModel $calendar;
     private FinanceNotificationModel $financeNotifications;
 
     public function __construct()
     {
         $this->model = new DashboardModel();
-        $this->students = new StudentModel();
+        $this->professorDashboard = new ProfessorDashboardModel();
         $this->calendar = new AcademicCalendarModel();
         $this->financeNotifications = new FinanceNotificationModel();
     }
@@ -22,8 +22,12 @@ class DashboardController extends BaseController
 
         if (is_professor()) {
             $this->render('dashboard/professor', [
-                'title' => 'Inicio do Professor',
-                'studentStats' => $this->students->stats(),
+                'title' => 'Início do Professor',
+                'overview' => $this->professorDashboard->overview(),
+                'coursePerformance' => $this->professorDashboard->coursePerformance(),
+                'studentsAtRisk' => $this->professorDashboard->studentsAtRisk(),
+                'upcomingEvents' => $this->professorDashboard->upcomingEvents(),
+                'recentComments' => $this->professorDashboard->recentComments(),
             ]);
             return;
         }

@@ -57,7 +57,7 @@ $sourceLabels = [
 
     <form method="get" action="support.php" class="support-filter-form grid gap-3 rounded-2xl border border-white/70 bg-white/65 p-4 md:grid-cols-7 shadow-sm backdrop-blur-md">
         <input type="hidden" name="route" value="support">
-        <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descricao..." class="support-field rounded-xl border border-white/80 bg-white/80 px-3 py-2 text-sm text-slate-700 outline-none md:col-span-2 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
+        <input type="text" name="q" value="<?= e($filters['q'] ?? ''); ?>" placeholder="Buscar por codigo, assunto ou descrição..." class="support-field rounded-xl border border-white/80 bg-white/80 px-3 py-2 text-sm text-slate-700 outline-none md:col-span-2 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
         <select name="company_id" class="support-select rounded-xl border border-white/80 bg-white/80 px-3 py-2 text-sm text-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
             <option value="0">Todas as empresas</option>
             <?php foreach ($companies as $company): ?>
@@ -89,7 +89,7 @@ $sourceLabels = [
         <div class="flex gap-2">
             <select name="per_page" class="support-select w-full rounded-xl border border-white/80 bg-white/80 px-3 py-2 text-sm text-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="support-btn-primary rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:from-cyan-700 hover:to-blue-700">Filtrar</button>
@@ -269,7 +269,7 @@ $sourceLabels = [
     </div>
 
     <div class="support-footer flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> chamados | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+        <p>Total: <?= (int) ($meta['total'] ?? 0); ?> chamados | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                 <a href="support.php?<?= build_query(['route' => 'support', 'page' => $p]); ?>" class="support-page-link rounded-xl px-3 py-1 <?= $p === (int) ($meta['page'] ?? 1) ? 'support-page-link-active bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow' : 'border border-white/80 bg-white/80 text-slate-700 backdrop-blur-sm hover:bg-white'; ?>"><?= $p; ?></a>

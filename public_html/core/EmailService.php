@@ -15,7 +15,7 @@ class EmailService
         if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
             return [
                 'ok' => false,
-                'message' => 'Destinatario de e-mail invalido.',
+                'message' => 'Destinatário de e-mail inválido.',
             ];
         }
 
@@ -141,7 +141,7 @@ class EmailService
         if (!function_exists('mail')) {
             return [
                 'ok' => false,
-                'message' => 'Funcao mail() indisponivel no servidor e SMTP nao configurado.',
+                'message' => 'Funcao mail() indisponivel no servidor e SMTP não configurado.',
             ];
         }
 
@@ -210,7 +210,7 @@ class EmailService
             fclose($socket);
             return [
                 'ok' => false,
-                'message' => 'SMTP nao respondeu com saudacao valida: ' . $this->sanitizeSmtpResponse($response),
+                'message' => 'SMTP não respondeu com saudação valida: ' . $this->sanitizeSmtpResponse($response),
             ];
         }
 
@@ -232,7 +232,7 @@ class EmailService
                 fclose($socket);
                 return [
                     'ok' => false,
-                    'message' => 'Nao foi possivel iniciar criptografia TLS no SMTP.',
+                    'message' => 'Não foi possível iniciar criptografia TLS no SMTP.',
                 ];
             }
 
@@ -247,7 +247,7 @@ class EmailService
                 fclose($socket);
                 return [
                     'ok' => false,
-                    'message' => 'Usuario e senha SMTP devem ser informados juntos.',
+                    'message' => 'Usuário e senha SMTP devem ser informados juntos.',
                 ];
             }
 

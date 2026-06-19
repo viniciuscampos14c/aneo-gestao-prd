@@ -313,11 +313,11 @@ class PayableModel extends BaseModel
 
         $payable = $this->find($payableId);
         if (!$payable) {
-            return ['ok' => false, 'message' => 'Conta a pagar nao encontrada.'];
+            return ['ok' => false, 'message' => 'Conta a pagar não encontrada.'];
         }
 
         if ((string) ($payable['status'] ?? '') === 'cancelled') {
-            return ['ok' => false, 'message' => 'Contas canceladas nao podem ser editadas.'];
+            return ['ok' => false, 'message' => 'Contas canceladas não podem ser editadas.'];
         }
 
         $amount = (float) ($data['amount'] ?? 0);
@@ -327,7 +327,7 @@ class PayableModel extends BaseModel
         }
 
         if ($amount + 0.0001 < $paidAmount) {
-            return ['ok' => false, 'message' => 'O novo valor nao pode ser menor que o total ja pago.'];
+            return ['ok' => false, 'message' => 'O novo valor não pode ser menor que o total já pago.'];
         }
 
         $requestedStatus = strtolower(trim((string) ($data['status'] ?? 'open')));
@@ -388,7 +388,7 @@ class PayableModel extends BaseModel
         ]);
 
         if (!$ok) {
-            return ['ok' => false, 'message' => 'Nao foi possivel atualizar a conta a pagar.'];
+            return ['ok' => false, 'message' => 'Não foi possível atualizar a conta a pagar.'];
         }
 
         return ['ok' => true, 'message' => 'Conta a pagar atualizada com sucesso.'];
@@ -402,16 +402,16 @@ class PayableModel extends BaseModel
 
         $payable = $this->find($payableId);
         if (!$payable) {
-            return ['ok' => false, 'message' => 'Conta a pagar nao encontrada.'];
+            return ['ok' => false, 'message' => 'Conta a pagar não encontrada.'];
         }
 
         $status = (string) ($payable['status'] ?? '');
         if ($status === 'cancelled') {
-            return ['ok' => false, 'message' => 'Esta conta ja esta cancelada.'];
+            return ['ok' => false, 'message' => 'Esta conta já esta cancelada.'];
         }
 
         if ((float) ($payable['paid_amount'] ?? 0) > 0) {
-            return ['ok' => false, 'message' => 'Nao e permitido cancelar contas com pagamento registrado.'];
+            return ['ok' => false, 'message' => 'Não e permitido cancelar contas com pagamento registrado.'];
         }
 
         $stmt = $this->db->prepare('UPDATE payables
@@ -429,7 +429,7 @@ class PayableModel extends BaseModel
         ]);
 
         if (!$ok) {
-            return ['ok' => false, 'message' => 'Nao foi possivel cancelar a conta a pagar.'];
+            return ['ok' => false, 'message' => 'Não foi possível cancelar a conta a pagar.'];
         }
 
         return ['ok' => true, 'message' => 'Conta a pagar cancelada com sucesso.'];
@@ -443,7 +443,7 @@ class PayableModel extends BaseModel
 
         $referenceDate = trim($referenceDate);
         if ($referenceDate === '' || strtotime($referenceDate) === false) {
-            return ['ok' => false, 'message' => 'Data de referencia invalida.', 'created' => 0, 'existing' => 0];
+            return ['ok' => false, 'message' => 'Data de referência inválida.', 'created' => 0, 'existing' => 0];
         }
 
         $companyId = $this->companyId();
@@ -459,56 +459,9 @@ class PayableModel extends BaseModel
         $created = 0;
         $existing = 0;
         foreach ($stmt->fetchAll() as $template) {
-            $interval = $this->normalizeRecurrenceInterval((string) ($template['recurrence_interval'] ?? 'monthly'));
-            $stepMonths = $this->recurrenceIntervalMonths($interval);
-            $templateDueDate = (string) ($template['due_date'] ?? '');
-            if ($templateDueDate === '' || strtotime($templateDueDate) === false) {
-                continue;
-            }
-
-            $endDate = $referenceDate;
-            $until = trim((string) ($template['recurrence_until'] ?? ''));
-            if ($until !== '' && strtotime($until) !== false && strtotime($until) < strtotime($endDate)) {
-                $endDate = $until;
-            }
-
-            $occurrence = 1;
-            while (true) {
-                $dueDate = $this->addMonthsPreservingDay($templateDueDate, $stepMonths * $occurrence);
-                if (strtotime($dueDate) > strtotime($endDate)) {
-                    break;
-                }
-
-                if ($this->recurringPayableExists((int) $template['id'], $dueDate)) {
-                    $existing++;
-                    $occurrence++;
-                    continue;
-                }
-
-                $competenceDate = null;
-                if (!empty($template['competence_date']) && strtotime((string) $template['competence_date']) !== false) {
-                    $competenceDate = $this->addMonthsPreservingDay((string) $template['competence_date'], $stepMonths * $occurrence);
-                }
-
-                $this->create([
-                    'supplier_id' => (int) $template['supplier_id'],
-                    'payment_method_id' => !empty($template['payment_method_id']) ? (int) $template['payment_method_id'] : null,
-                    'payable_number' => $this->buildRecurringPayableNumber((string) $template['payable_number'], $dueDate),
-                    'description' => (string) $template['description'],
-                    'category' => (string) ($template['category'] ?? ''),
-                    'competence_date' => $competenceDate,
-                    'due_date' => $dueDate,
-                    'amount' => (float) $template['amount'],
-                    'status' => 'open',
-                    'notes' => (string) ($template['notes'] ?? ''),
-                    'is_recurring' => 0,
-                    'recurrence_interval' => $interval,
-                    'recurrence_until' => $until !== '' ? $until : null,
-                    'recurrence_parent_id' => (int) $template['id'],
-                ], $createdBy);
-                $created++;
-                $occurrence++;
-            }
+            $result = $this->createRecurringOccurrences($template, $referenceDate, $createdBy);
+            $created += (int) ($result['created'] ?? 0);
+            $existing += (int) ($result['existing'] ?? 0);
         }
 
         return [
@@ -516,6 +469,44 @@ class PayableModel extends BaseModel
             'message' => $created . ' conta(s) recorrente(s) gerada(s).',
             'created' => $created,
             'existing' => $existing,
+        ];
+    }
+
+    public function generateRecurringPayablesForTemplate(int $templateId, string $referenceDate, int $createdBy): array
+    {
+        if (!$this->tableExists() || !$this->recurrenceColumnsAvailable()) {
+            return ['ok' => false, 'message' => 'Estrutura de recorrencia indisponivel no banco.', 'created' => 0, 'existing' => 0];
+        }
+
+        $referenceDate = trim($referenceDate);
+        if ($templateId <= 0 || $referenceDate === '' || strtotime($referenceDate) === false) {
+            return ['ok' => false, 'message' => 'Despesa fixa ou data de referência inválida.', 'created' => 0, 'existing' => 0];
+        }
+
+        $stmt = $this->db->prepare("SELECT *
+            FROM payables
+            WHERE company_id = :company_id
+              AND id = :id
+              AND is_recurring = 1
+              AND recurrence_parent_id IS NULL
+              AND status <> 'cancelled'
+            LIMIT 1");
+        $stmt->execute([
+            ':company_id' => $this->companyId(),
+            ':id' => $templateId,
+        ]);
+
+        $template = $stmt->fetch();
+        if (!$template) {
+            return ['ok' => false, 'message' => 'Despesa fixa não encontrada para gerar recorrências.', 'created' => 0, 'existing' => 0];
+        }
+
+        $result = $this->createRecurringOccurrences($template, $referenceDate, $createdBy);
+        return [
+            'ok' => true,
+            'message' => (int) ($result['created'] ?? 0) . ' conta(s) recorrente(s) gerada(s).',
+            'created' => (int) ($result['created'] ?? 0),
+            'existing' => (int) ($result['existing'] ?? 0),
         ];
     }
 
@@ -640,16 +631,16 @@ class PayableModel extends BaseModel
 
         $payable = $this->find($payableId);
         if (!$payable) {
-            return ['ok' => false, 'message' => 'Conta a pagar nao encontrada.'];
+            return ['ok' => false, 'message' => 'Conta a pagar não encontrada.'];
         }
 
         if (in_array((string) ($payable['status'] ?? ''), ['paid', 'cancelled'], true)) {
-            return ['ok' => false, 'message' => 'Esta conta nao aceita novas baixas.'];
+            return ['ok' => false, 'message' => 'Esta conta não aceita novas baixas.'];
         }
 
         $outstanding = max(0, (float) ($payable['amount'] ?? 0) - (float) ($payable['paid_amount'] ?? 0));
         if ($amount <= 0 || $amount > $outstanding + 0.0001) {
-            return ['ok' => false, 'message' => 'Valor de baixa invalido para o saldo atual.'];
+            return ['ok' => false, 'message' => 'Valor de baixa inválido para o saldo atual.'];
         }
 
         $companyId = $this->companyId();
@@ -702,7 +693,7 @@ class PayableModel extends BaseModel
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
             }
-            return ['ok' => false, 'message' => 'Nao foi possivel registrar a baixa.'];
+            return ['ok' => false, 'message' => 'Não foi possível registrar a baixa.'];
         }
     }
 
@@ -773,6 +764,64 @@ class PayableModel extends BaseModel
         $base = trim($baseNumber) !== '' ? trim($baseNumber) : 'PAGAR';
         $base = substr($base, 0, 53);
         return $base . '-' . $suffix;
+    }
+
+    private function createRecurringOccurrences(array $template, string $referenceDate, int $createdBy): array
+    {
+        $interval = $this->normalizeRecurrenceInterval((string) ($template['recurrence_interval'] ?? 'monthly'));
+        $stepMonths = $this->recurrenceIntervalMonths($interval);
+        $templateDueDate = (string) ($template['due_date'] ?? '');
+        if ($templateDueDate === '' || strtotime($templateDueDate) === false) {
+            return ['created' => 0, 'existing' => 0];
+        }
+
+        $endDate = $referenceDate;
+        $until = trim((string) ($template['recurrence_until'] ?? ''));
+        if ($until !== '' && strtotime($until) !== false && strtotime($until) < strtotime($endDate)) {
+            $endDate = $until;
+        }
+
+        $created = 0;
+        $existing = 0;
+        $occurrence = 1;
+        while (true) {
+            $dueDate = $this->addMonthsPreservingDay($templateDueDate, $stepMonths * $occurrence);
+            if (strtotime($dueDate) > strtotime($endDate)) {
+                break;
+            }
+
+            if ($this->recurringPayableExists((int) $template['id'], $dueDate)) {
+                $existing++;
+                $occurrence++;
+                continue;
+            }
+
+            $competenceDate = null;
+            if (!empty($template['competence_date']) && strtotime((string) $template['competence_date']) !== false) {
+                $competenceDate = $this->addMonthsPreservingDay((string) $template['competence_date'], $stepMonths * $occurrence);
+            }
+
+            $this->create([
+                'supplier_id' => (int) $template['supplier_id'],
+                'payment_method_id' => !empty($template['payment_method_id']) ? (int) $template['payment_method_id'] : null,
+                'payable_number' => $this->buildRecurringPayableNumber((string) $template['payable_number'], $dueDate),
+                'description' => (string) $template['description'],
+                'category' => (string) ($template['category'] ?? ''),
+                'competence_date' => $competenceDate,
+                'due_date' => $dueDate,
+                'amount' => (float) $template['amount'],
+                'status' => 'open',
+                'notes' => (string) ($template['notes'] ?? ''),
+                'is_recurring' => 0,
+                'recurrence_interval' => $interval,
+                'recurrence_until' => $until !== '' ? $until : null,
+                'recurrence_parent_id' => (int) $template['id'],
+            ], $createdBy);
+            $created++;
+            $occurrence++;
+        }
+
+        return ['created' => $created, 'existing' => $existing];
     }
 
     private function addMonthsPreservingDay(string $date, int $months): string

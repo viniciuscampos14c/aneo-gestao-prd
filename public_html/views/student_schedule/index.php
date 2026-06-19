@@ -18,7 +18,7 @@ $canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorV
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Modulo indisponivel no banco. Execute a migration <code>migrations/20260505_student_duty_schedule.sql</code>.
+            Módulo indisponivel no banco. Execute a migration <code>migrations/20260505_student_duty_schedule.sql</code>.
         </div>
     <?php else: ?>
         <div class="grid gap-6 xl:grid-cols-[1.1fr_1.9fr]">
@@ -70,7 +70,7 @@ $canManageSchedule = has_permission('student_schedule.manage') && !$isProfessorV
             <div class="space-y-4">
                 <form method="get" action="<?= route('escala-aluno'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
                     <input type="hidden" name="route" value="escala-aluno">
-                    <input type="text" name="q" value="<?= e((string) ($filters['q'] ?? '')); ?>" placeholder="Buscar titulo ou unidade..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
+                    <input type="text" name="q" value="<?= e((string) ($filters['q'] ?? '')); ?>" placeholder="Buscar título ou unidade..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-2">
                     <select name="unit_id" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                         <option value="">Todas as unidades</option>
                         <?php foreach ($units as $unit): ?>

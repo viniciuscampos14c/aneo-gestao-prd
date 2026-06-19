@@ -87,7 +87,7 @@ class FinanceController extends BaseController
         }
 
         $this->render('finance/reports', [
-            'title' => 'Relatorios Financeiros',
+            'title' => 'Relatórios Financeiros',
             'tab' => $tab,
             'filters' => $filters,
             'overview' => $overview,
@@ -133,7 +133,7 @@ class FinanceController extends BaseController
             fputcsv($out, ['NF-e com falha', $overview['nfe']['failed']], ';');
         } elseif ($tab === 'receipts') {
             $rows = $this->finance->reportReceipts($filters, 100000, 1)['rows'];
-            fputcsv($out, ['ID', 'Referencia', 'Data', 'Metodo', 'Valor', 'Aplicado', 'Faturas', 'Alunos', 'Observacoes'], ';');
+            fputcsv($out, ['ID', 'Referência', 'Data', 'Método', 'Valor', 'Aplicado', 'Faturas', 'Alunos', 'Observações'], ';');
             foreach ($rows as $row) {
                 fputcsv($out, [
                     $row['id'],
@@ -168,7 +168,7 @@ class FinanceController extends BaseController
             }
         } elseif ($tab === 'payables') {
             $rows = $this->finance->reportPayables($filters, 100000, 1)['rows'];
-            fputcsv($out, ['ID', 'Numero', 'Fornecedor', 'Descricao', 'Categoria', 'Competencia', 'Vencimento', 'Valor', 'Pago', 'Saldo', 'Status', 'Data baixa', 'Metodo'], ';');
+            fputcsv($out, ['ID', 'Número', 'Fornecedor', 'Descrição', 'Categoria', 'Competência', 'Vencimento', 'Valor', 'Pago', 'Saldo', 'Status', 'Data baixa', 'Método'], ';');
             foreach ($rows as $row) {
                 fputcsv($out, [
                     $row['id'],
@@ -218,7 +218,7 @@ class FinanceController extends BaseController
             }
         } elseif ($tab === 'fiscal') {
             $rows = $this->finance->reportFiscal($filters, 100000, 1)['rows'];
-            fputcsv($out, ['ID', 'Fatura', 'Aluno', 'Valor', 'Status fatura', 'Data baixa', 'Provider', 'Status NF', 'Numero NF', 'ID Externo', 'Ultima tentativa', 'Emitida em', 'Erro'], ';');
+            fputcsv($out, ['ID', 'Fatura', 'Aluno', 'Valor', 'Status fatura', 'Data baixa', 'Provider', 'Status NF', 'Número NF', 'ID Externo', 'Última tentativa', 'Emitida em', 'Erro'], ';');
             foreach ($rows as $row) {
                 fputcsv($out, [
                     $row['id'],
@@ -311,23 +311,23 @@ class FinanceController extends BaseController
     public function itauWebhook(): void
     {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            $this->json(['ok' => false, 'message' => 'Metodo invalido.'], 405);
+            $this->json(['ok' => false, 'message' => 'Método inválido.'], 405);
         }
 
         $rawBody = (string) file_get_contents('php://input');
         $payload = json_decode($rawBody, true);
         if (!is_array($payload)) {
-            $this->json(['ok' => false, 'message' => 'Payload JSON invalido.'], 400);
+            $this->json(['ok' => false, 'message' => 'Payload JSON inválido.'], 400);
         }
 
         $providedToken = $this->itauWebhookTokenFromRequest($payload);
         if ($providedToken === '') {
-            $this->json(['ok' => false, 'message' => 'Token do webhook Itau obrigatorio.'], 401);
+            $this->json(['ok' => false, 'message' => 'Token do webhook Itau obrigatório.'], 401);
         }
 
         $companyIds = (new CompanyIntegrationModel())->findCompanyIdsByToken('itau', 'webhook_token', $providedToken);
         if ($companyIds === []) {
-            $this->json(['ok' => false, 'message' => 'Token do webhook Itau invalido.'], 401);
+            $this->json(['ok' => false, 'message' => 'Token do webhook Itau inválido.'], 401);
         }
 
         $lastResult = null;
@@ -344,7 +344,7 @@ class FinanceController extends BaseController
         }
 
         $this->json(
-            $lastResult ?: ['ok' => false, 'message' => 'Boleto nao encontrado para o webhook Itau.'],
+            $lastResult ?: ['ok' => false, 'message' => 'Boleto não encontrado para o webhook Itau.'],
             422
         );
     }
@@ -367,7 +367,7 @@ class FinanceController extends BaseController
             'action' => 'issue_due_bank_slips',
             'entity_type' => 'invoice_batch',
             'entity_id' => null,
-            'entity_label' => 'Emissao automatica de boletos Itau',
+            'entity_label' => 'Emissao automática de boletos Itau',
             'description' => (string) ($result['message'] ?? 'Processamento da fila de boletos.'),
             'before' => $before,
             'after' => $result,
@@ -376,7 +376,7 @@ class FinanceController extends BaseController
         ]);
 
         if (!($result['ok'] ?? false)) {
-            $this->error((string) ($result['message'] ?? 'Nao foi possivel emitir os boletos da janela.'));
+            $this->error((string) ($result['message'] ?? 'Não foi possível emitir os boletos da janela.'));
             $this->redirect('finance/invoices');
         }
 
@@ -430,7 +430,7 @@ class FinanceController extends BaseController
         $invoiceId = (int) request('id');
         $invoice = $this->finance->findInvoice($invoiceId);
         if (!$invoice) {
-            $this->error('Fatura nao encontrada para edicao.');
+            $this->error('Fatura não encontrada para edicao.');
             $this->redirect('finance/invoices');
         }
 
@@ -479,7 +479,7 @@ class FinanceController extends BaseController
 
             $method = $this->finance->findPaymentMethod($data['payment_method_id']);
             if (!$method || (int) ($method['is_active'] ?? 0) !== 1) {
-                $this->error('Forma de pagamento invalida ou inativa.');
+                $this->error('Forma de pagamento inválida ou inativa.');
                 $this->redirect('finance/invoices/create');
             }
         } else {
@@ -509,7 +509,7 @@ class FinanceController extends BaseController
         $invoiceId = (int) request('id');
         $invoice = $this->finance->findInvoice($invoiceId);
         if (!$invoice) {
-            $this->error('Fatura nao encontrada.');
+            $this->error('Fatura não encontrada.');
             $this->redirect('finance/invoices');
         }
 
@@ -540,7 +540,7 @@ class FinanceController extends BaseController
 
             $method = $this->finance->findPaymentMethod($data['payment_method_id']);
             if (!$method || (int) ($method['is_active'] ?? 0) !== 1) {
-                $this->error('Forma de pagamento invalida ou inativa.');
+                $this->error('Forma de pagamento inválida ou inativa.');
                 $this->redirect('finance/invoices/edit&id=' . $invoiceId);
             }
         } else {
@@ -555,7 +555,7 @@ class FinanceController extends BaseController
         $before = $this->invoiceSnapshot($invoice);
         $result = $this->finance->updateInvoice($invoiceId, $data, (int) current_user()['id']);
         if (!($result['ok'] ?? false)) {
-            $this->error((string) ($result['message'] ?? 'Nao foi possivel atualizar a fatura.'));
+            $this->error((string) ($result['message'] ?? 'Não foi possível atualizar a fatura.'));
             $this->redirect('finance/invoices/edit&id=' . $invoiceId);
         }
 
@@ -667,7 +667,7 @@ class FinanceController extends BaseController
         header('Content-Disposition: attachment; filename=faturas_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['ID', 'Numero', 'Parcela', 'Aluno', 'Vencimento', 'Quantia', 'Pago', 'Status', 'Forma de Pagamento', 'Data Baixa', 'Boleto Status', 'Boleto ID Externo', 'Link Boleto', 'NF Status', 'Imposto', 'Projeto', 'Tags'], ';');
+        fputcsv($out, ['ID', 'Número', 'Parcela', 'Aluno', 'Vencimento', 'Quantia', 'Pago', 'Status', 'Forma de Pagamento', 'Data Baixa', 'Boleto Status', 'Boleto ID Externo', 'Link Boleto', 'NF Status', 'Imposto', 'Projeto', 'Tags'], ';');
 
         foreach ($result['rows'] as $row) {
             fputcsv($out, [
@@ -805,7 +805,7 @@ class FinanceController extends BaseController
 
             $selectedMethod = $this->finance->findPaymentMethod($paymentMethodId);
             if (!$selectedMethod || (int) ($selectedMethod['is_active'] ?? 0) !== 1) {
-                $this->error('Forma de pagamento invalida ou inativa.');
+                $this->error('Forma de pagamento inválida ou inativa.');
                 $this->redirect('finance/payments');
             }
 
@@ -834,7 +834,7 @@ class FinanceController extends BaseController
         );
 
         if ($paymentId <= 0) {
-            $this->error('Nao foi possivel registrar pagamento.');
+            $this->error('Não foi possível registrar pagamento.');
             $this->redirect('finance/payments');
         }
 
@@ -911,7 +911,7 @@ class FinanceController extends BaseController
         $createdBy = (int) (current_user()['id'] ?? 0);
         $id = $this->paymentMethods->createManual($companyId, $name, $channel, $createdBy);
         if ($id <= 0) {
-            $this->error('Nao foi possivel salvar a forma de pagamento.');
+            $this->error('Não foi possível salvar a forma de pagamento.');
             $this->redirect('finance/payment-methods');
         }
 
@@ -950,13 +950,13 @@ class FinanceController extends BaseController
 
         $before = $this->paymentMethods->find($companyId, $id);
         if (!$before) {
-            $this->error('Forma de pagamento nao encontrada.');
+            $this->error('Forma de pagamento não encontrada.');
             $this->redirect('finance/payment-methods');
         }
 
         $ok = $this->paymentMethods->setActive($companyId, $id, $setActive, $changedBy);
         if (!$ok) {
-            $this->error('Nao foi possivel atualizar o status da forma de pagamento.');
+            $this->error('Não foi possível atualizar o status da forma de pagamento.');
             $this->redirect('finance/payment-methods');
         }
 
@@ -1043,7 +1043,7 @@ class FinanceController extends BaseController
         $createdBy = (int) (current_user()['id'] ?? 0);
         $id = $this->suppliers->create($companyId, $data, $createdBy);
         if ($id <= 0) {
-            $this->error('Nao foi possivel salvar o fornecedor.');
+            $this->error('Não foi possível salvar o fornecedor.');
             $this->redirect('finance/suppliers');
         }
 
@@ -1082,13 +1082,13 @@ class FinanceController extends BaseController
 
         $before = $this->suppliers->find($companyId, $id);
         if (!$before) {
-            $this->error('Fornecedor nao encontrado.');
+            $this->error('Fornecedor não encontrado.');
             $this->redirect('finance/suppliers');
         }
 
         $ok = $this->suppliers->setActive($companyId, $id, $setActive, $changedBy);
         if (!$ok) {
-            $this->error('Nao foi possivel atualizar o fornecedor.');
+            $this->error('Não foi possível atualizar o fornecedor.');
             $this->redirect('finance/suppliers');
         }
 
@@ -1163,7 +1163,7 @@ class FinanceController extends BaseController
         $data = $this->collectPayablePayload();
 
         if ($data['supplier_id'] <= 0 || $data['description'] === '' || $data['payable_number'] === '' || $data['due_date'] === '' || $data['amount'] <= 0) {
-            $this->error('Preencha fornecedor, numero, descricao, vencimento e valor.');
+            $this->error('Preencha fornecedor, numero, descrição, vencimento e valor.');
             $this->redirect('finance/payables');
         }
 
@@ -1175,13 +1175,13 @@ class FinanceController extends BaseController
 
         $supplier = $this->suppliers->find((int) (current_company_id() ?? 0), $data['supplier_id']);
         if (!$supplier || (int) ($supplier['is_active'] ?? 0) !== 1) {
-            $this->error('Fornecedor invalido ou inativo.');
+            $this->error('Fornecedor inválido ou inativo.');
             $this->redirect('finance/payables');
         }
 
         $id = $this->payables->create($data, (int) (current_user()['id'] ?? 0));
         if ($id <= 0) {
-            $this->error('Nao foi possivel salvar a conta a pagar.');
+            $this->error('Não foi possível salvar a conta a pagar.');
             $this->redirect('finance/payables');
         }
 
@@ -1202,7 +1202,7 @@ class FinanceController extends BaseController
         if (!empty($data['is_recurring']) && $data['recurrence_until'] !== '') {
             $recurrence = $this->payables->generateRecurringPayablesForTemplate($id, $data['recurrence_until'], (int) (current_user()['id'] ?? 0));
             if (!($recurrence['ok'] ?? false)) {
-                $this->error((string) ($recurrence['message'] ?? 'Conta salva, mas nao foi possivel gerar as recorrencias.'));
+                $this->error((string) ($recurrence['message'] ?? 'Conta salva, mas não foi possível gerar as recorrencias.'));
                 $this->redirect('finance/payables');
             }
 
@@ -1210,7 +1210,7 @@ class FinanceController extends BaseController
             $existing = (int) ($recurrence['existing'] ?? 0);
             $message .= ' ' . $created . ' recorrencia(s) futura(s) gerada(s).';
             if ($existing > 0) {
-                $message .= ' ' . $existing . ' ja existia(m).';
+                $message .= ' ' . $existing . ' já existia(m).';
             }
         }
 
@@ -1232,13 +1232,13 @@ class FinanceController extends BaseController
         $payableId = (int) post('payable_id');
         $before = $this->payableSnapshotById($payableId);
         if (!$before) {
-            $this->error('Conta a pagar nao encontrada.');
+            $this->error('Conta a pagar não encontrada.');
             $this->redirect('finance/payables');
         }
 
         $data = $this->collectPayablePayload();
         if ($data['supplier_id'] <= 0 || $data['description'] === '' || $data['payable_number'] === '' || $data['due_date'] === '' || $data['amount'] <= 0) {
-            $this->error('Preencha fornecedor, numero, descricao, vencimento e valor.');
+            $this->error('Preencha fornecedor, numero, descrição, vencimento e valor.');
             $this->redirect('finance/payables');
         }
 
@@ -1250,13 +1250,13 @@ class FinanceController extends BaseController
 
         $supplier = $this->suppliers->find((int) (current_company_id() ?? 0), $data['supplier_id']);
         if (!$supplier || (int) ($supplier['is_active'] ?? 0) !== 1) {
-            $this->error('Fornecedor invalido ou inativo.');
+            $this->error('Fornecedor inválido ou inativo.');
             $this->redirect('finance/payables');
         }
 
         $result = $this->payables->update($payableId, $data, (int) (current_user()['id'] ?? 0));
         if (!($result['ok'] ?? false)) {
-            $this->error((string) ($result['message'] ?? 'Nao foi possivel atualizar a conta a pagar.'));
+            $this->error((string) ($result['message'] ?? 'Não foi possível atualizar a conta a pagar.'));
             $this->redirect('finance/payables');
         }
 
@@ -1345,13 +1345,13 @@ class FinanceController extends BaseController
         $payableId = (int) post('payable_id');
         $before = $this->payableSnapshotById($payableId);
         if (!$before) {
-            $this->error('Conta a pagar nao encontrada.');
+            $this->error('Conta a pagar não encontrada.');
             $this->redirect('finance/payables');
         }
 
         $result = $this->payables->cancel($payableId, (int) (current_user()['id'] ?? 0));
         if (!($result['ok'] ?? false)) {
-            $this->error((string) ($result['message'] ?? 'Nao foi possivel cancelar a conta a pagar.'));
+            $this->error((string) ($result['message'] ?? 'Não foi possível cancelar a conta a pagar.'));
             $this->redirect('finance/payables');
         }
 
@@ -1410,7 +1410,7 @@ class FinanceController extends BaseController
         ]);
 
         if (!($result['ok'] ?? false)) {
-            $this->error((string) ($result['message'] ?? 'Nao foi possivel gerar as despesas fixas.'));
+            $this->error((string) ($result['message'] ?? 'Não foi possível gerar as despesas fixas.'));
             $this->redirect('finance/payables');
         }
 
@@ -1434,14 +1434,14 @@ class FinanceController extends BaseController
         $payableId = (int) post('payable_id');
         $before = $this->payableSnapshotById($payableId);
         if (!$before) {
-            $this->error('Conta a pagar nao encontrada.');
+            $this->error('Conta a pagar não encontrada.');
             $this->redirect('finance/payables');
         }
 
         $attachmentType = $this->normalizePayableAttachmentType((string) post('attachment_type', 'outro'));
         $upload = $this->handlePayableAttachmentUpload($_FILES['attachment_file'] ?? null);
         if (!($upload['ok'] ?? false)) {
-            $this->error((string) ($upload['message'] ?? 'Nao foi possivel anexar o arquivo.'));
+            $this->error((string) ($upload['message'] ?? 'Não foi possível anexar o arquivo.'));
             $this->redirect('finance/payables');
         }
 
@@ -1457,7 +1457,7 @@ class FinanceController extends BaseController
 
         if ($attachmentId <= 0) {
             $this->safeRemovePayableAttachmentFile((string) ($upload['file_path'] ?? ''));
-            $this->error('Nao foi possivel registrar o anexo da conta.');
+            $this->error('Não foi possível registrar o anexo da conta.');
             $this->redirect('finance/payables');
         }
 
@@ -1493,13 +1493,13 @@ class FinanceController extends BaseController
         $attachmentId = (int) post('attachment_id');
         $before = $this->payables->findAttachment($attachmentId);
         if (!$before) {
-            $this->error('Anexo nao encontrado.');
+            $this->error('Anexo não encontrado.');
             $this->redirect('finance/payables');
         }
 
         $ok = $this->payables->deleteAttachment($attachmentId);
         if (!$ok) {
-            $this->error('Nao foi possivel remover o anexo.');
+            $this->error('Não foi possível remover o anexo.');
             $this->redirect('finance/payables');
         }
 
@@ -1529,14 +1529,14 @@ class FinanceController extends BaseController
         $attachment = $this->payables->findAttachment($attachmentId);
         if (!$attachment) {
             http_response_code(404);
-            echo 'Anexo nao encontrado.';
+            echo 'Anexo não encontrado.';
             return;
         }
 
         $fullPath = $this->resolvePayableAttachmentPath((string) ($attachment['file_path'] ?? ''));
         if (!$fullPath || !is_file($fullPath)) {
             http_response_code(404);
-            echo 'Arquivo nao encontrado.';
+            echo 'Arquivo não encontrado.';
             return;
         }
 
@@ -1774,12 +1774,12 @@ class FinanceController extends BaseController
         }
 
         if (!is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
-            return ['ok' => false, 'message' => 'Arquivo invalido para upload.'];
+            return ['ok' => false, 'message' => 'Arquivo inválido para upload.'];
         }
 
         $size = (int) ($file['size'] ?? 0);
         if ($size <= 0) {
-            return ['ok' => false, 'message' => 'Arquivo vazio ou invalido.'];
+            return ['ok' => false, 'message' => 'Arquivo vazio ou inválido.'];
         }
 
         if ($size > (20 * 1024 * 1024)) {
@@ -1790,16 +1790,16 @@ class FinanceController extends BaseController
         $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $allowed = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'txt'];
         if (!in_array($extension, $allowed, true)) {
-            return ['ok' => false, 'message' => 'Extensao nao permitida para anexos financeiros.'];
+            return ['ok' => false, 'message' => 'Extensão não permitida para anexos financeiros.'];
         }
 
         $targetDir = __DIR__ . '/../uploads/payables';
         if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true)) {
-            return ['ok' => false, 'message' => 'Nao foi possivel criar a pasta de anexos.'];
+            return ['ok' => false, 'message' => 'Não foi possível criar a pasta de anexos.'];
         }
 
         if (!is_writable($targetDir)) {
-            return ['ok' => false, 'message' => 'A pasta de anexos nao esta com permissao de escrita.'];
+            return ['ok' => false, 'message' => 'A pasta de anexos não esta com permissão de escrita.'];
         }
 
         $safeOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
@@ -1807,7 +1807,7 @@ class FinanceController extends BaseController
         $finalPath = $targetDir . '/' . $storedName;
 
         if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $finalPath)) {
-            return ['ok' => false, 'message' => 'Nao foi possivel salvar o arquivo no servidor.'];
+            return ['ok' => false, 'message' => 'Não foi possível salvar o arquivo no servidor.'];
         }
 
         return [

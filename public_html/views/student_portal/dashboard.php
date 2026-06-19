@@ -23,7 +23,7 @@ $hasFocusCourse = !empty($learningFocus['has_course']) && $focusCourse;
 ?>
 <section class="space-y-6">
     <div class="rounded-2xl border border-sky-100 bg-white/80 p-5">
-        <h2 class="text-2xl font-semibold">Ola, <?= e($student['name']); ?></h2>
+        <h2 class="text-2xl font-semibold">Olá, <?= e($student['name']); ?></h2>
         <p class="text-sm text-slate-500">Esse e seu painel de estudos.</p>
     </div>
 
@@ -58,7 +58,7 @@ $hasFocusCourse = !empty($learningFocus['has_course']) && $focusCourse;
                         </p>
                     <?php else: ?>
                         <h3 class="student-focus-title mt-3 text-2xl font-semibold">Sua trilha comeca aqui</h3>
-                        <p class="student-focus-copy mt-2 text-sm text-cyan-100">Assim que houver curso com modulos, ele aparece aqui como atalho principal.</p>
+                        <p class="student-focus-copy mt-2 text-sm text-cyan-100">Assim que houver curso com módulos, ele aparece aqui como atalho principal.</p>
                     <?php endif; ?>
                 </div>
                 <div class="student-focus-progress-card rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-right">
@@ -82,18 +82,18 @@ $hasFocusCourse = !empty($learningFocus['has_course']) && $focusCourse;
         </article>
 
         <article class="student-focus-panel rounded-2xl border border-sky-100 bg-white/90 p-5">
-            <p class="student-focus-panel-eyebrow text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Modulo atual</p>
+            <p class="student-focus-panel-eyebrow text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Módulo atual</p>
             <?php if ($focusModule): ?>
-                <h3 class="student-focus-panel-title mt-3 text-lg font-semibold text-slate-900"><?= e((string) ($focusModule['title'] ?? 'Modulo atual')); ?></h3>
+                <h3 class="student-focus-panel-title mt-3 text-lg font-semibold text-slate-900"><?= e((string) ($focusModule['title'] ?? 'Módulo atual')); ?></h3>
                 <p class="student-focus-panel-copy mt-2 text-sm text-slate-500">
-                    <?= (int) ($focusModule['completed_lessons'] ?? 0); ?>/<?= (int) ($focusModule['total_lessons'] ?? 0); ?> aula(s) concluidas
+                    <?= (int) ($focusModule['completed_lessons'] ?? 0); ?>/<?= (int) ($focusModule['total_lessons'] ?? 0); ?> aula(s) concluída(s)
                 </p>
                 <p class="student-focus-note mt-4 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-                    Concluir este modulo libera naturalmente a proxima etapa da trilha.
+                    Concluir este módulo libera naturalmente a proxima etapa da trilha.
                 </p>
             <?php else: ?>
-                <h3 class="student-focus-panel-title mt-3 text-lg font-semibold text-slate-900">Nenhum modulo ativo</h3>
-                <p class="student-focus-panel-copy mt-2 text-sm text-slate-500">Quando voce iniciar um curso modular, acompanhamos seu ponto atual aqui.</p>
+                <h3 class="student-focus-panel-title mt-3 text-lg font-semibold text-slate-900">Nenhum módulo ativo</h3>
+                <p class="student-focus-panel-copy mt-2 text-sm text-slate-500">Quando você iniciar um curso modular, acompanhamos seu ponto atual aqui.</p>
             <?php endif; ?>
         </article>
     </div>
@@ -119,11 +119,11 @@ $hasFocusCourse = !empty($learningFocus['has_course']) && $focusCourse;
 
         <section class="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
             <div class="mb-3 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-sky-900">Calendario de provas</h3>
+                <h3 class="text-lg font-semibold text-sky-900">Calendário de provas</h3>
                 <a href="<?= route('student/exams'); ?>" class="text-sm text-sky-700 hover:underline">Abrir avaliacoes</a>
             </div>
             <?php if (!$scheduleEnabled): ?>
-                <p class="text-sm text-slate-600">Datas de provas ainda nao foram habilitadas pela equipe administrativa.</p>
+                <p class="text-sm text-slate-600">Datas de provas ainda não foram habilitadas pela equipe administrativa.</p>
             <?php else: ?>
                 <div class="space-y-2 text-sm">
                     <?php foreach ($upcomingExams as $exam): ?>
@@ -142,7 +142,7 @@ $hasFocusCourse = !empty($learningFocus['has_course']) && $focusCourse;
         <section class="rounded-xl border border-slate-200 bg-white/90 p-4">
             <div class="mb-3 flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Ultimas avaliacoes</h3>
-                <a href="<?= route('student/exams'); ?>" class="text-sm text-cyan-700 hover:underline">Ver historico</a>
+                <a href="<?= route('student/exams'); ?>" class="text-sm text-cyan-700 hover:underline">Ver histórico</a>
             </div>
             <div class="space-y-2 text-sm">
                 <?php foreach ($recentResults as $result): ?>

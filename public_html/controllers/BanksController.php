@@ -70,13 +70,13 @@ class BanksController extends BaseController
         csrf_validate();
 
         if (!$this->integrations->tableExists()) {
-            $this->error('Tabela company_integrations nao existe. Execute a migration de fase 2.');
+            $this->error('Tabela company_integrations não existe. Execute a migration de fase 2.');
             $this->redirect('banks/itau');
         }
 
         $companyId = (int) (current_company_id() ?? 0);
         if ($companyId <= 0) {
-            $this->error('Nenhuma empresa selecionada na sessao.');
+            $this->error('Nenhuma empresa selecionada na sessão.');
             $this->redirect('banks/itau');
         }
 
@@ -107,13 +107,13 @@ class BanksController extends BaseController
             'entity_type'  => 'bank_integration',
             'entity_id'    => $companyId,
             'entity_label' => 'Itaú',
-            'description'  => 'Configuracao do Banco Itau atualizada.',
+            'description'  => 'Configuração do Banco Itau atualizada.',
             'before'       => [],
             'after'        => ['enabled' => $collected['enabled']],
             'company_id'   => $companyId,
         ]);
 
-        $this->success('Configuracao do Itau salva com sucesso.');
+        $this->success('Configuração do Itau salva com sucesso.');
         $this->redirect('banks/itau');
     }
 
@@ -139,7 +139,7 @@ class BanksController extends BaseController
             $service = new ItauService($companyId);
 
             if (!$service->isEnabled()) {
-                echo json_encode(['ok' => false, 'message' => 'Integração Itau nao esta ativada para esta empresa.']);
+                echo json_encode(['ok' => false, 'message' => 'Integração Itau não esta ativada para esta empresa.']);
                 return;
             }
 

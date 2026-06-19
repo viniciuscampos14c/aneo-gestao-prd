@@ -60,12 +60,12 @@ if ($webhookToken !== '') {
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            A tabela `chatwoot_links` ainda nao existe neste banco. Execute a migracao `migrations/20260304_chatwoot_links.sql`.
+            A tabela `chatwoot_links` ainda não existe neste banco. Execute a migração `migrations/20260304_chatwoot_links.sql`.
         </div>
     <?php endif; ?>
     <?php if (empty($flowFeatureAvailable)): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            A tabela `chatwoot_flow_sessions` ainda nao existe neste banco. Execute a migracao `migrations/20260304_chatwoot_flow_sessions.sql`.
+            A tabela `chatwoot_flow_sessions` ainda não existe neste banco. Execute a migração `migrations/20260304_chatwoot_flow_sessions.sql`.
         </div>
     <?php endif; ?>
 
@@ -96,7 +96,7 @@ if ($webhookToken !== '') {
             </select>
             <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Filtrar</button>
@@ -193,7 +193,7 @@ if ($webhookToken !== '') {
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'chatwoot', 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

@@ -24,7 +24,7 @@ foreach ($courseModules as $module) {
 }
 $formatLessonDuration = static function (int $seconds): string {
     if ($seconds <= 0) {
-        return 'sem duracao';
+        return 'sem duração';
     }
     $minutes = (int) ceil($seconds / 60);
     if ($minutes < 60) {
@@ -63,7 +63,7 @@ $formatLessonDuration = static function (int $seconds): string {
         </label>
 
         <label class="block lg:col-span-2">
-            <span class="mb-1 block text-sm font-medium">Descricao</span>
+            <span class="mb-1 block text-sm font-medium">Descrição</span>
             <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"><?= e($course['description'] ?? ''); ?></textarea>
         </label>
 
@@ -78,7 +78,7 @@ $formatLessonDuration = static function (int $seconds): string {
         </label>
 
         <label class="block">
-            <span class="mb-1 block text-sm font-medium">Situacao</span>
+            <span class="mb-1 block text-sm font-medium">Situação</span>
             <select name="status" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <option value="draft" <?= ($course['status'] ?? 'draft') === 'draft' ? 'selected' : ''; ?>>Rascunho</option>
                 <option value="published" <?= ($course['status'] ?? '') === 'published' ? 'selected' : ''; ?>>Publicado</option>
@@ -91,7 +91,7 @@ $formatLessonDuration = static function (int $seconds): string {
         </label>
 
         <label class="block lg:col-span-2">
-            <span class="mb-1 block text-sm font-medium">Grade (modulos/aulas)</span>
+            <span class="mb-1 block text-sm font-medium">Grade (módulos/aulas)</span>
             <textarea name="curriculum" rows="3" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"><?= e($course['curriculum'] ?? ''); ?></textarea>
         </label>
 
@@ -111,12 +111,12 @@ $formatLessonDuration = static function (int $seconds): string {
         </label>
 
         <label class="block">
-            <span class="mb-1 block text-sm font-medium">ID da reuniao</span>
+            <span class="mb-1 block text-sm font-medium">ID da reunião</span>
             <input type="text" name="live_meeting_id" value="<?= e($course['live_meeting_id'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
         </label>
 
         <label class="block">
-            <span class="mb-1 block text-sm font-medium">Data e horario da aula</span>
+            <span class="mb-1 block text-sm font-medium">Data e horário da aula</span>
             <input type="datetime-local" name="live_datetime" value="<?= e(isset($course['live_datetime']) ? str_replace(' ', 'T', substr((string) $course['live_datetime'], 0, 16)) : ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
         </label>
 
@@ -165,11 +165,11 @@ $formatLessonDuration = static function (int $seconds): string {
                 <div>
                     <p class="admin-lms-builder-eyebrow text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">Builder EAD</p>
                     <h3 class="admin-lms-builder-title mt-2 text-xl font-semibold">Trilha LMS</h3>
-                    <p class="admin-lms-builder-copy mt-1 max-w-2xl text-sm text-cyan-100">Monte a jornada do aluno por modulos, aulas obrigatorias e criterios de conclusao automatica.</p>
+                    <p class="admin-lms-builder-copy mt-1 max-w-2xl text-sm text-cyan-100">Monte a jornada do aluno por módulos, aulas obrigatórias e criterios de conclusao automatica.</p>
                 </div>
                 <?php if ($lmsFeatureAvailable && $course): ?>
                     <span class="admin-lms-builder-pill inline-flex items-center rounded-full border border-cyan-300/40 bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
-                        <?= count($courseModules); ?> modulo(s) configurado(s)
+                        <?= count($courseModules); ?> módulo(s) configurado(s)
                     </span>
                 <?php endif; ?>
             </div>
@@ -177,7 +177,7 @@ $formatLessonDuration = static function (int $seconds): string {
             <?php if ($lmsFeatureAvailable && $course): ?>
                 <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="admin-lms-kpi-card rounded-2xl border border-white/10 bg-white/10 p-3">
-                        <p class="admin-lms-kpi-label text-xs uppercase tracking-wide text-cyan-100">Modulos ativos</p>
+                        <p class="admin-lms-kpi-label text-xs uppercase tracking-wide text-cyan-100">Módulos ativos</p>
                         <p class="admin-lms-kpi-value mt-1 text-2xl font-semibold"><?= $lmsActiveModules; ?>/<?= count($courseModules); ?></p>
                     </div>
                     <div class="admin-lms-kpi-card rounded-2xl border border-white/10 bg-white/10 p-3">
@@ -200,7 +200,7 @@ $formatLessonDuration = static function (int $seconds): string {
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h3 class="admin-lms-section-title text-sm font-semibold text-slate-800">Estrutura do curso</h3>
-                <p class="admin-lms-section-copy mt-1 text-xs text-slate-500">Use esta area como quadro de montagem: uma etapa por modulo, aulas em sequencia e regras de conclusao por video.</p>
+                <p class="admin-lms-section-copy mt-1 text-xs text-slate-500">Use esta area como quadro de montagem: uma etapa por módulo, aulas em sequencia e regras de conclusao por video.</p>
             </div>
             <?php if ($lmsFeatureAvailable && $course): ?>
                 <span class="admin-lms-status-pill inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -214,12 +214,12 @@ $formatLessonDuration = static function (int $seconds): string {
                 Execute a migration de LMS para habilitar esta area: <code>migrations/20260317_lms_learning_path.sql</code>.
             </div>
         <?php elseif (!$course): ?>
-            <p class="text-xs text-slate-500">Salve o curso primeiro para cadastrar modulos e aulas.</p>
+            <p class="text-xs text-slate-500">Salve o curso primeiro para cadastrar módulos e aulas.</p>
         <?php else: ?>
             <div class="admin-lms-help-strip mb-4 grid gap-2 rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 text-xs text-cyan-800 md:grid-cols-3">
-                <p><span class="font-semibold">Passo 1:</span> Crie o modulo com nome e ordem.</p>
-                <p><span class="font-semibold">Passo 2:</span> Dentro do modulo, cadastre as aulas com URL do video.</p>
-                <p><span class="font-semibold">Passo 3:</span> Marque como obrigatoria/ativa e salve.</p>
+                <p><span class="font-semibold">Passo 1:</span> Crie o módulo com nome e ordem.</p>
+                <p><span class="font-semibold">Passo 2:</span> Dentro do módulo, cadastre as aulas com URL do video.</p>
+                <p><span class="font-semibold">Passo 3:</span> Marque como obrigatória/ativa e salve.</p>
             </div>
 
             <form method="post" action="<?= route('courses/modules/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-12">
@@ -227,8 +227,8 @@ $formatLessonDuration = static function (int $seconds): string {
                 <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
 
                 <label class="block lg:col-span-5">
-                    <span class="mb-1 block text-xs font-semibold text-slate-700">Nome do modulo *</span>
-                    <input type="text" name="title" required placeholder="Ex: Modulo 1 - Fundamentos" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <span class="mb-1 block text-xs font-semibold text-slate-700">Nome do módulo *</span>
+                    <input type="text" name="title" required placeholder="Ex: Módulo 1 - Fundamentos" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                 </label>
 
                 <label class="block lg:col-span-2">
@@ -239,14 +239,14 @@ $formatLessonDuration = static function (int $seconds): string {
                 <div class="flex items-end gap-3 lg:col-span-5">
                     <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
                         <input type="checkbox" name="is_active" value="1" checked>
-                        Modulo ativo
+                        Módulo ativo
                     </label>
-                    <button class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800">Criar modulo</button>
+                    <button class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800">Criar módulo</button>
                 </div>
 
                 <label class="block lg:col-span-12">
-                    <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao do modulo (opcional)</span>
-                    <textarea name="description" rows="2" placeholder="Ex: Objetivos e resumo deste modulo." class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
+                    <span class="mb-1 block text-xs font-semibold text-slate-700">Descrição do módulo (opcional)</span>
+                    <textarea name="description" rows="2" placeholder="Ex: Objetivos e resumo deste módulo." class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
                 </label>
             </form>
 
@@ -272,9 +272,9 @@ $formatLessonDuration = static function (int $seconds): string {
                                         <?= (int) ($module['display_order'] ?? ($moduleIndex + 1)); ?>
                                     </span>
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-900"><?= e((string) ($module['title'] ?? 'Sem titulo')); ?></p>
+                                        <p class="text-sm font-semibold text-slate-900"><?= e((string) ($module['title'] ?? 'Sem título')); ?></p>
                                         <p class="text-xs text-slate-500">
-                                            <?= $moduleLessonCount; ?> aula(s) | <?= $moduleRequiredLessons; ?> obrigatoria(s) | <?= e($formatLessonDuration($moduleDurationSeconds)); ?>
+                                            <?= $moduleLessonCount; ?> aula(s) | <?= $moduleRequiredLessons; ?> obrigatória(s) | <?= e($formatLessonDuration($moduleDurationSeconds)); ?>
                                         </p>
                                     </div>
                                 </div>
@@ -298,7 +298,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                 <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
 
                                 <label class="block lg:col-span-5">
-                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Nome do modulo *</span>
+                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Nome do módulo *</span>
                                     <input type="text" name="title" required value="<?= e((string) $module['title']); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                                 </label>
 
@@ -310,27 +310,27 @@ $formatLessonDuration = static function (int $seconds): string {
                                 <div class="flex items-end gap-3 lg:col-span-5">
                                     <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700">
                                         <input type="checkbox" name="is_active" value="1" <?= !empty($module['is_active']) ? 'checked' : ''; ?>>
-                                        Modulo ativo
+                                        Módulo ativo
                                     </label>
-                                    <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-100">Salvar modulo</button>
+                                    <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-100">Salvar módulo</button>
                                 </div>
 
                                 <label class="block lg:col-span-12">
-                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao (opcional)</span>
+                                    <span class="mb-1 block text-xs font-semibold text-slate-700">Descrição (opcional)</span>
                                     <textarea name="description" rows="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"><?= e((string) ($module['description'] ?? '')); ?></textarea>
                                 </label>
                             </form>
 
-                            <form method="post" action="<?= route('courses/modules/delete'); ?>" onsubmit="return confirm('Remover modulo e todas as aulas?');" class="flex justify-end">
+                            <form method="post" action="<?= route('courses/modules/delete'); ?>" onsubmit="return confirm('Remover módulo e todas as aulas?');" class="flex justify-end">
                                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                 <input type="hidden" name="course_id" value="<?= (int) $course['id']; ?>">
                                 <input type="hidden" name="module_id" value="<?= (int) $module['id']; ?>">
-                                <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir modulo</button>
+                                <button class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-100">Excluir módulo</button>
                             </form>
 
                             <div class="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                 <div class="flex items-center justify-between gap-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Aulas deste modulo</p>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Aulas deste módulo</p>
                                     <span class="text-xs text-slate-500"><?= $moduleLessonCount; ?> item(ns)</span>
                                 </div>
 
@@ -357,7 +357,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                             <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id']; ?>">
 
                                             <label class="block lg:col-span-3">
-                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Titulo da aula *</span>
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Título da aula *</span>
                                                 <input type="text" name="title" required value="<?= e((string) $lesson['title']); ?>" placeholder="Ex: Aula 1" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                                             </label>
 
@@ -367,7 +367,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                             </label>
 
                                             <label class="block lg:col-span-1">
-                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Duracao (s)</span>
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Duração (s)</span>
                                                 <input type="number" name="duration_seconds" min="0" value="<?= (int) ($lesson['duration_seconds'] ?? 0); ?>" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                                             </label>
 
@@ -393,7 +393,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                             </div>
 
                                             <label class="block lg:col-span-9">
-                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao da aula (opcional)</span>
+                                                <span class="mb-1 block text-xs font-semibold text-slate-700">Descrição da aula (opcional)</span>
                                                 <textarea name="description" rows="2" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"><?= e((string) ($lesson['description'] ?? '')); ?></textarea>
                                             </label>
 
@@ -428,7 +428,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                     </label>
 
                                     <label class="block lg:col-span-1">
-                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Duracao (s)</span>
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Duração (s)</span>
                                         <input type="number" name="duration_seconds" min="0" placeholder="0" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                                     </label>
 
@@ -454,7 +454,7 @@ $formatLessonDuration = static function (int $seconds): string {
                                     </div>
 
                                     <label class="block lg:col-span-9">
-                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Descricao da nova aula (opcional)</span>
+                                        <span class="mb-1 block text-xs font-semibold text-slate-700">Descrição da nova aula (opcional)</span>
                                         <textarea name="description" rows="2" placeholder="Resumo rapido do que sera ensinado." class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
                                     </label>
 
@@ -468,7 +468,7 @@ $formatLessonDuration = static function (int $seconds): string {
                 <?php endforeach; ?>
 
                 <?php if ($courseModules === []): ?>
-                    <p class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500">Nenhum modulo cadastrado ainda. Comece criando o primeiro modulo acima.</p>
+                    <p class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500">Nenhum módulo cadastrado ainda. Comece criando o primeiro módulo acima.</p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -518,7 +518,7 @@ $formatLessonDuration = static function (int $seconds): string {
                         <input type="checkbox" name="is_global" value="1" class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
                         <span>
                             <strong class="block text-sm">Aula global para todas as unidades deste curso</strong>
-                            O sistema criara uma unica reuniao Zoom e vinculara o mesmo link aos cursos equivalentes das empresas ativas.
+                            O sistema criara uma unica reunião Zoom e vinculara o mesmo link aos cursos equivalentes das empresas ativas.
                         </span>
                     </label>
 

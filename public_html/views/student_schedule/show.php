@@ -32,6 +32,12 @@ $canExportSchedule = has_permission('student_schedule.export');
                     <input type="hidden" name="id" value="<?= (int) $schedule['id']; ?>">
                     <button class="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Publicar</button>
                 </form>
+            <?php elseif ($canManageSchedule && $status === 'published'): ?>
+                <form method="post" action="<?= route('escala-aluno/publish'); ?>" onsubmit="return confirm('Republicar avisos desta escala para os alunos alocados?');">
+                    <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                    <input type="hidden" name="id" value="<?= (int) $schedule['id']; ?>">
+                    <button class="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700">Republicar avisos</button>
+                </form>
             <?php endif; ?>
             <?php if ($canManageSchedule && $status !== 'archived'): ?>
                 <form method="post" action="<?= route('escala-aluno/archive'); ?>" onsubmit="return confirm('Encerrar esta escala? Ela ficara bloqueada para edicao ate ser desarquivada.');">
@@ -62,10 +68,14 @@ $canExportSchedule = has_permission('student_schedule.export');
     <?php if ($canManageSchedule && $status !== 'archived'): ?>
         <div class="rounded-xl border border-slate-200 bg-white p-4">
             <div class="mb-3">
-                <h3 class="text-lg font-semibold">Gerar semanas</h3>
-                <p class="text-xs text-slate-500">Se voce regenerar as semanas, as alocacoes atuais serao substituidas.</p>
+                <h3 class="text-lg font-semibold"><?= $weeksByMonth === [] ? 'Gerar semanas' : 'Atualizar grade preservando alunos'; ?></h3>
+                <p class="text-xs text-slate-500">
+                    <?= $weeksByMonth === []
+                        ? 'Gere a grade inicial e depois edite as vagas de cada semana conforme necessario.'
+                        : 'Atualiza as semanas e vagas sem remover alunos alocados. Para tirar um aluno, use Remover diretamente na semana.'; ?>
+                </p>
             </div>
-            <form method="post" action="<?= route('escala-aluno/weeks/generate'); ?>" class="grid gap-3 md:grid-cols-4">
+            <form method="post" action="<?= route('escala-aluno/weeks/generate'); ?>" class="grid gap-3 md:grid-cols-4" <?= $weeksByMonth !== [] ? "onsubmit=\"return confirm('Atualizar a grade vai preservar alunos ja alocados e apenas criar/atualizar semanas e vagas. Se alguma semana com aluno sair do periodo, o sistema vai bloquear. Deseja continuar?');\"" : ''; ?>>
                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                 <input type="hidden" name="schedule_id" value="<?= (int) $schedule['id']; ?>">
                 <label class="block">
@@ -81,7 +91,7 @@ $canExportSchedule = has_permission('student_schedule.export');
                     <input type="number" min="0" name="r1_slots" value="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </label>
                 <div class="flex items-end">
-                    <button class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Gerar grade</button>
+                    <button class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"><?= $weeksByMonth === [] ? 'Gerar grade' : 'Atualizar grade'; ?></button>
                 </div>
             </form>
         </div>
@@ -128,16 +138,17 @@ $canExportSchedule = has_permission('student_schedule.export');
                                     <p class="font-semibold"><?= e(date('d', strtotime((string) $week['start_date'])) . ' a ' . date('d', strtotime((string) $week['end_date']))); ?></p>
                                     <p class="mt-1 text-xs text-slate-500"><?= e(date('d/m', strtotime((string) $week['start_date'])) . ' - ' . date('d/m', strtotime((string) $week['end_date']))); ?></p>
                                     <?php if ($canManageSchedule && $status !== 'archived'): ?>
-                                        <form method="post" action="<?= route('escala-aluno/weeks/update'); ?>" class="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white p-2">
+                                        <form method="post" action="<?= route('escala-aluno/weeks/update'); ?>" class="mt-3 space-y-2 rounded-lg border border-cyan-200 bg-cyan-50/40 p-2">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="week_id" value="<?= (int) $week['id']; ?>">
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-cyan-700">Editar semana / vagas adicionais</p>
                                             <div class="grid gap-2 md:grid-cols-3">
                                                 <input type="number" min="0" name="r3_slots" value="<?= (int) $week['r3_slots']; ?>" class="rounded border border-slate-200 px-2 py-1 text-xs" placeholder="R3">
                                                 <input type="number" min="0" name="r2_slots" value="<?= (int) $week['r2_slots']; ?>" class="rounded border border-slate-200 px-2 py-1 text-xs" placeholder="R2">
                                                 <input type="number" min="0" name="r1_slots" value="<?= (int) $week['r1_slots']; ?>" class="rounded border border-slate-200 px-2 py-1 text-xs" placeholder="R1">
                                             </div>
                                             <textarea name="notes" rows="2" class="w-full rounded border border-slate-200 px-2 py-1 text-xs" placeholder="Observacao da semana..."><?= e((string) ($week['notes'] ?? '')); ?></textarea>
-                                            <button class="w-full rounded border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50">Salvar semana</button>
+                                            <button class="w-full rounded border border-cyan-300 bg-white px-2 py-1 text-xs font-semibold text-cyan-800 hover:bg-cyan-50">Salvar vagas da semana</button>
                                         </form>
                                     <?php elseif (!empty($week['notes'])): ?>
                                         <div class="mt-3 rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-600">
@@ -207,7 +218,7 @@ $canExportSchedule = has_permission('student_schedule.export');
                                                     <?php if ($pendingOptions !== []): ?>
                                                         Nenhum <?= e($group); ?> elegivel nesta semana. <?= count($pendingOptions); ?> aluno(s) deste nivel ainda aguardam os 40 dias.
                                                     <?php else: ?>
-                                                        Nenhum aluno <?= e($group); ?> disponivel para esta semana nesta unidade.
+                                                        Nenhum aluno <?= e($group); ?> disponível para esta semana nesta unidade.
                                                     <?php endif; ?>
                                                 </div>
                                             <?php endif; ?>

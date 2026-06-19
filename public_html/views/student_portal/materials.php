@@ -11,7 +11,7 @@ foreach ($uploads as $file) {
 <section class="space-y-6">
     <div>
         <h2 class="text-2xl font-semibold">Materiais</h2>
-        <p class="text-sm text-slate-500">Conteudo e anexos liberados nos cursos matriculados.</p>
+        <p class="text-sm text-slate-500">Conteúdo e anexos liberados nos cursos matriculados.</p>
     </div>
 
     <div class="space-y-4">
@@ -50,7 +50,7 @@ foreach ($uploads as $file) {
 
         <?php if ($courses === []): ?>
             <article class="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-                Nenhum material disponivel, pois voce ainda nao possui cursos publicados matriculados.
+                Nenhum material disponível, pois você ainda não possui cursos publicados matriculados.
             </article>
         <?php endif; ?>
     </div>

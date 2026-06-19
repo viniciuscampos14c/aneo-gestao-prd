@@ -45,9 +45,21 @@ if ($isEdit && !empty($session['scheduled_at'])) {
             <input type="hidden" name="id" value="<?= (int) $session['id']; ?>">
         <?php endif; ?>
 
+        <?php if (!$isEdit): ?>
+            <label class="course-live-global-option flex gap-3 rounded-lg border px-3 py-3 text-sm">
+                <input type="checkbox" name="is_global" value="1" class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
+                <span>
+                    <strong class="block">Aula global para todas as unidades deste curso</strong>
+                    <span class="course-live-global-help mt-1 block text-xs">
+                        Selecione abaixo um curso-base. O sistema criara uma unica reunião Zoom e vinculara o mesmo link aos cursos equivalentes das empresas ativas.
+                    </span>
+                </span>
+            </label>
+        <?php endif; ?>
+
         <!-- Curso -->
         <label class="block">
-            <span class="mb-1 block text-sm font-medium text-slate-700">Curso <span class="text-rose-500">*</span></span>
+            <span class="mb-1 block text-sm font-medium text-slate-700">Curso-base <span class="text-rose-500">*</span></span>
             <select name="course_id" required
                     class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
                 <option value="">Selecione o curso</option>

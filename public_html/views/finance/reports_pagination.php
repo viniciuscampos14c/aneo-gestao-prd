@@ -14,7 +14,7 @@ $start = max(1, $page - 2);
 $end = min($pages, $page + 2);
 ?>
 <div class="finance-reports-pagination flex flex-wrap items-center justify-between gap-3 text-sm">
-    <p>Total: <?= $total; ?> registros | Pagina <?= $page; ?>/<?= $pages; ?></p>
+    <p>Total: <?= $total; ?> registros | Página <?= $page; ?>/<?= $pages; ?></p>
     <?php if ($pages > 1): ?>
         <div class="flex flex-wrap gap-2">
             <?php if ($page > 1): ?>
@@ -40,7 +40,7 @@ $end = min($pages, $page + 2);
             <?php endif; ?>
 
             <?php if ($page < $pages): ?>
-                <a href="index.php?<?= http_build_query(array_merge($queryBase, ['page' => $page + 1])); ?>" class="finance-reports-page-link rounded border border-slate-200 bg-white px-3 py-1 hover:bg-slate-50">Proxima</a>
+                <a href="index.php?<?= http_build_query(array_merge($queryBase, ['page' => $page + 1])); ?>" class="finance-reports-page-link rounded border border-slate-200 bg-white px-3 py-1 hover:bg-slate-50">Próxima</a>
             <?php endif; ?>
         </div>
     <?php endif; ?>

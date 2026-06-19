@@ -56,7 +56,7 @@ class FiscalInvoiceService
             return [
                 'sent' => false,
                 'status' => 'pending',
-                'message' => 'Integracao fiscal nao configurada. Registro pendente criado.',
+                'message' => 'Integração fiscal não configurada. Registro pendente criado.',
                 'external_id' => null,
                 'number' => null,
                 'response_payload' => null,
@@ -66,7 +66,7 @@ class FiscalInvoiceService
         return [
             'sent' => false,
             'status' => 'pending',
-            'message' => 'Integracao fiscal habilitada, aguardando implementacao do cliente API.',
+            'message' => 'Integração fiscal habilitada, aguardando implementacao do cliente API.',
             'external_id' => null,
             'number' => null,
             'response_payload' => null,

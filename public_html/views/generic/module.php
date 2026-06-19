@@ -205,7 +205,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
 
             <?php if (!$helpAiHistoryAvailable): ?>
                 <div class="ai-jully-warning rounded-xl px-3 py-2 text-sm">
-                    Historico de conversas indisponivel. Execute a migracao <code>migrations/20260310_admin_ai_chat.sql</code>.
+                    Histórico de conversas indisponivel. Execute a migração <code>migrations/20260310_admin_ai_chat.sql</code>.
                 </div>
             <?php endif; ?>
 
@@ -275,7 +275,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
                         <?php if ($helpAiMessages === []): ?>
                             <div id="help-ai-empty" class="ai-jully-empty-state rounded-xl px-4 py-6 text-sm">
                                 Pergunte algo como:
-                                <br>- Qual e o saldo vencido hoje e quantos alunos estao em atraso?
+                                <br>- Qual e o saldo vencido hoje e quantos alunos estão em atraso?
                                 <br>- Temos negociacoes ou aditivos mobile pendentes?
                                 <br>- Quais leads o comercial precisa atacar primeiro?
                             </div>
@@ -308,15 +308,15 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold"><?= e($title); ?></h2>
-                <p class="text-sm text-slate-500">Modulo estrutural (CRUD basico com status, responsavel, prioridade e observacoes).</p>
+                <p class="text-sm text-slate-500">Módulo estrutural (CRUD básico com status, responsável, prioridade e observações).</p>
             </div>
         </div>
 
         <?php if ($canManage): ?>
             <form method="post" action="<?= route($module . '/store'); ?>" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-5">
                 <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-                <input type="text" name="title" required placeholder="Titulo" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <input type="text" name="responsible" placeholder="Responsavel" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <input type="text" name="title" required placeholder="Título" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <input type="text" name="responsible" placeholder="Responsável" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="aberto">Aberto</option>
                     <option value="em_andamento">Em andamento</option>
@@ -332,7 +332,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
                 <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Adicionar</button>
 
                 <input type="date" name="due_date" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <input type="text" name="notes" placeholder="Observacoes" class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-3">
+                <input type="text" name="notes" placeholder="Observações" class="rounded-lg border border-slate-200 px-3 py-2 text-sm md:col-span-3">
             </form>
         <?php endif; ?>
 
@@ -348,7 +348,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
             </select>
             <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) $meta['per_page'] === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <button class="rounded-lg border border-slate-200 px-4 py-2 text-sm hover:bg-slate-50">Filtrar</button>
@@ -388,12 +388,12 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
                             </div>
                     <?php else: ?>
                         <div class="grid gap-2 md:grid-cols-3">
-                            <p><strong>Titulo:</strong> <?= e($row['title']); ?></p>
+                            <p><strong>Título:</strong> <?= e($row['title']); ?></p>
                             <p><strong>Status:</strong> <?= e($row['status']); ?></p>
                             <p><strong>Prioridade:</strong> <?= e($row['priority']); ?></p>
-                            <p><strong>Responsavel:</strong> <?= e($row['responsible']); ?></p>
+                            <p><strong>Responsável:</strong> <?= e($row['responsible']); ?></p>
                             <p><strong>Prazo:</strong> <?= e($row['due_date']); ?></p>
-                            <p class="md:col-span-3"><strong>Observacoes:</strong> <?= e($row['notes']); ?></p>
+                            <p class="md:col-span-3"><strong>Observações:</strong> <?= e($row['notes']); ?></p>
                         </div>
                     <?php endif; ?>
                 </article>
@@ -405,7 +405,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+            <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
             <div class="flex gap-2">
                 <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                     <a href="index.php?<?= build_query(['route' => $module, 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
@@ -541,7 +541,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
             const payload = await response.json();
             if (!response.ok || !payload || !payload.ok) {
                 const err = payload && payload.message ? payload.message : 'Falha ao consultar assistente.';
-                appendMessage('assistant', 'Erro: ' + err, { warning: 'Nao foi possivel concluir a consulta.' });
+                appendMessage('assistant', 'Erro: ' + err, { warning: 'Não foi possível concluir a consulta.' });
                 return;
             }
 
@@ -559,7 +559,7 @@ $helpAiModel = trim((string) ($helpAi['ai_model'] ?? ''));
             });
         } catch (error) {
             appendMessage('assistant', 'Erro de rede ao consultar o assistente.', {
-                warning: 'Verifique conexao e configuracao da API.'
+                warning: 'Verifique conexao e configuração da API.'
             });
         } finally {
             submitBtn.disabled = false;

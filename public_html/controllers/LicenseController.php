@@ -57,7 +57,7 @@ class LicenseController extends BaseController
         $companyId = (int) post('company_id');
         $company = $companyId > 0 ? $this->companies->find($companyId) : null;
         if (!$company) {
-            $this->error('Empresa invalida para ativar licenca.');
+            $this->error('Empresa inválida para ativar licenca.');
             $this->redirect('companies/license');
         }
 

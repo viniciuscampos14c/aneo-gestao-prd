@@ -62,7 +62,7 @@ class LeadController extends BaseController
 
         $data = $this->collectFormData();
         if ($data['full_name'] === '') {
-            $this->error('Nome e obrigatorio.');
+            $this->error('Nome e obrigatório.');
             $this->redirect('leads/create');
         }
 
@@ -80,7 +80,7 @@ class LeadController extends BaseController
         $lead = $this->leads->find($id);
 
         if (!$lead) {
-            $this->error('Lead nao encontrado.');
+            $this->error('Lead não encontrado.');
             $this->redirect('leads');
         }
 
@@ -104,7 +104,7 @@ class LeadController extends BaseController
         $lead = $this->leads->find($id);
 
         if (!$lead) {
-            $this->error('Lead nao encontrado.');
+            $this->error('Lead não encontrado.');
             $this->redirect('leads');
         }
 
@@ -189,7 +189,7 @@ class LeadController extends BaseController
         $lead = $this->leads->find($id);
 
         if (!$lead) {
-            $this->error('Lead nao encontrado.');
+            $this->error('Lead não encontrado.');
             $this->redirect('leads');
         }
 

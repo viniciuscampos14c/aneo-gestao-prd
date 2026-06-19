@@ -31,7 +31,7 @@ class CronRunner
     public function run(string $jobKey): array
     {
         if (!isset($this->jobs[$jobKey])) {
-            return ['ok' => false, 'message' => "Job '{$jobKey}' nao encontrado."];
+            return ['ok' => false, 'message' => "Job '{$jobKey}' não encontrado."];
         }
 
         if (!$this->isEnabled($jobKey)) {
@@ -125,6 +125,10 @@ class CronRunner
         $this->jobs['signatures_sync'] = function (): array {
             return $this->jobSignaturesSync();
         };
+
+        $this->jobs['mobile_agreement_access_guard'] = function (): array {
+            return $this->jobMobileAgreementAccessGuard();
+        };
     }
 
     // -----------------------------------------------------------------
@@ -159,19 +163,24 @@ class CronRunner
             "SELECT DISTINCT i.company_id
              FROM invoices i
              INNER JOIN payment_methods pm ON pm.id = i.payment_method_id AND pm.company_id = i.company_id
+             INNER JOIN company_integrations ci
+                ON ci.company_id = i.company_id
+               AND ci.integration_key = 'itau'
+               AND ci.is_enabled = 1
              WHERE i.status IN ('open','partial','overdue')
                AND pm.mode = 'integrated'
                AND pm.provider_key = 'itau'
+               AND pm.is_active = 1
              ORDER BY i.company_id ASC"
         );
 
         if (!$stmt) {
-            return ['ok' => true, 'message' => 'Nenhuma empresa elegivel para emissao automatica de boletos.'];
+            return ['ok' => true, 'message' => 'Nenhuma empresa elegível para emissao automatica de boletos.'];
         }
 
         $companies = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         if ($companies === []) {
-            return ['ok' => true, 'message' => 'Nenhuma empresa elegivel para emissao automatica de boletos.'];
+            return ['ok' => true, 'message' => 'Nenhuma empresa elegível para emissao automatica de boletos.'];
         }
 
         $processed = 0;
@@ -185,7 +194,7 @@ class CronRunner
                 continue;
             }
 
-            $result = (new FinanceModel($companyId))->issueDueBankSlips(0, 10);
+            $result = (new FinanceModel())->useCompany($companyId)->issueDueBankSlips(0, 10);
             $processed += (int) ($result['processed'] ?? 0);
             $issued += (int) ($result['issued'] ?? 0);
             $pending += (int) ($result['pending'] ?? 0);
@@ -203,17 +212,18 @@ class CronRunner
      */
     private function jobBoletoSync(): array
     {
-        if (!config('boleto.enabled', false)) {
-            return ['ok' => true, 'message' => 'Boleto nao configurado — job ignorado.'];
-        }
-
-        // Busca boletos pendentes de todas as empresas
         $stmt = $this->db->query(
             "SELECT bs.id AS slip_id, bs.invoice_id, i.company_id
              FROM bank_slips bs
              INNER JOIN invoices i ON i.id = bs.invoice_id
-             WHERE bs.status IN ('pending','processing')
-             ORDER BY bs.created_at ASC
+             INNER JOIN company_integrations ci
+                ON ci.company_id = i.company_id
+               AND ci.integration_key = 'itau'
+               AND ci.is_enabled = 1
+             WHERE bs.provider = 'itau'
+               AND bs.status IN ('pending','processing','issued','registered','overdue')
+               AND i.status IN ('open','partial','overdue')
+             ORDER BY COALESCE(bs.last_attempt_at, bs.created_at) ASC
              LIMIT 100"
         );
 
@@ -232,7 +242,7 @@ class CronRunner
                 continue;
             }
 
-            $result = (new FinanceModel($companyId))->syncBankSlipStatus((int) $row['invoice_id'], 0);
+            $result = (new FinanceModel())->useCompany($companyId)->syncBankSlipStatus((int) $row['invoice_id'], 0);
             if ($result['ok'] ?? false) {
                 $synced++;
             } else {
@@ -316,6 +326,55 @@ class CronRunner
         $msg   = "Assinaturas verificadas: {$total}. Atualizadas: {$synced}. Erros: {$errors}.";
 
         return ['ok' => $errors === 0, 'message' => $msg];
+    }
+
+    /**
+     * Job: bloqueia novamente o portal do aluno se acordo mobile nao tiver baixa apos 3 dias.
+     */
+    private function jobMobileAgreementAccessGuard(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT DISTINCT company_id
+             FROM invoices
+             WHERE tags LIKE '%Acordo mobile%'
+                OR project_name LIKE 'Negociacao financeiro (App Diretoria)%'
+                OR project_name LIKE 'Aditivo financeiro (App Diretoria)%'
+             ORDER BY company_id ASC"
+        );
+
+        if (!$stmt) {
+            return ['ok' => true, 'message' => 'Nenhum acordo mobile encontrado para monitoramento.'];
+        }
+
+        $companies = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        if ($companies === []) {
+            return ['ok' => true, 'message' => 'Nenhum acordo mobile encontrado para monitoramento.'];
+        }
+
+        $checked = 0;
+        $blocked = 0;
+        $errors = 0;
+
+        foreach ($companies as $companyId) {
+            $companyId = (int) $companyId;
+            if ($companyId <= 0) {
+                continue;
+            }
+
+            try {
+                $result = (new FinanceModel())->useCompany($companyId)->enforceMobileAgreementAccessGracePeriod(3);
+                $checked += (int) ($result['checked'] ?? 0);
+                $blocked += (int) ($result['blocked'] ?? 0);
+            } catch (Throwable $e) {
+                $errors++;
+                error_log('[MOBILE_AGREEMENT_ACCESS_GUARD_ERROR] company_id=' . $companyId . ' ' . $e->getMessage());
+            }
+        }
+
+        return [
+            'ok' => $errors === 0,
+            'message' => "Acordos avaliados: {$checked}. Acessos bloqueados: {$blocked}. Erros: {$errors}.",
+        ];
     }
 
     // -----------------------------------------------------------------

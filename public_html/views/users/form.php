@@ -23,7 +23,7 @@ $availableCompanies = $availableCompanies ?? [];
                 <input type="text" name="name" required value="<?= e($userData['name'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <label class="block">
-                <span class="mb-1 block text-sm">Usuario *</span>
+                <span class="mb-1 block text-sm">Usuário *</span>
                 <input type="text" name="username" required value="<?= e($userData['username'] ?? ''); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <label class="block">
@@ -55,7 +55,7 @@ $availableCompanies = $availableCompanies ?? [];
             <div class="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="text-lg font-semibold">Empresas com acesso</h3>
-                    <p class="text-xs text-slate-500">Selecione os CNPJs que este usuario podera acessar.</p>
+                    <p class="text-xs text-slate-500">Selecione os CNPJs que este usuário podera acessar.</p>
                 </div>
                 <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                     <?php foreach ($availableCompanies as $company): ?>
@@ -111,7 +111,7 @@ $availableCompanies = $availableCompanies ?? [];
 
         <div class="flex gap-2">
             <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
-                <?= $isEdit ? 'Salvar alteracoes' : 'Criar usuario'; ?>
+                <?= $isEdit ? 'Salvar alteracoes' : 'Criar usuário'; ?>
             </button>
             <a href="<?= route('users'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Cancelar</a>
         </div>

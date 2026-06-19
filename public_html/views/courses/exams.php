@@ -81,21 +81,21 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
     <?php if (!$scheduleEnabled): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Calendario de provas desativado nesta base. Execute a migracao
+            Calendário de provas desativado nesta base. Execute a migração
             <code>migrations/20260305_exam_schedule_calendar.sql</code> para habilitar o campo de data.
         </div>
     <?php endif; ?>
 
     <?php if (!$externalFeatureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Vinculo de prova externa por aluno indisponivel nesta base. Execute a migracao
+            Vinculo de prova externa por aluno indisponivel nesta base. Execute a migração
             <code>migrations/20260317_professor_external_exam_links.sql</code>.
         </div>
     <?php endif; ?>
 
     <?php if (!$internalAudienceFeatureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Direcionamento de prova interna (aluno especifico/turma) indisponivel nesta base. Execute a migracao
+            Direcionamento de prova interna (aluno especifico/turma) indisponivel nesta base. Execute a migração
             <code>migrations/20260427_exam_internal_audience.sql</code>.
         </div>
     <?php endif; ?>
@@ -131,7 +131,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
     <section class="courses-exams-calendar rounded-xl border border-sky-800 bg-slate-900/85 p-4 shadow-sm">
         <div class="mb-3 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-sky-100">Calendario de Provas (proximos 90 dias)</h3>
+            <h3 class="text-lg font-semibold text-sky-100">Calendário de Provas (próximos 90 dias)</h3>
             <span class="rounded-full border border-sky-700 bg-sky-950/80 px-3 py-1 text-xs font-semibold text-sky-200"><?= count($upcomingExams); ?> agendada(s)</span>
         </div>
         <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -143,7 +143,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 </article>
             <?php endforeach; ?>
             <?php if ($upcomingExams === []): ?>
-                <p class="md:col-span-2 xl:col-span-3 text-sm text-slate-300">Nenhuma prova agendada para os proximos dias.</p>
+                <p class="md:col-span-2 xl:col-span-3 text-sm text-slate-300">Nenhuma prova agendada para os próximos dias.</p>
             <?php endif; ?>
         </div>
     </section>
@@ -151,7 +151,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     <section class="rounded-xl border border-slate-200 bg-white p-4">
         <div class="mb-4">
             <h3 class="text-lg font-semibold text-slate-900">Criar prova interna</h3>
-            <p class="text-sm text-slate-500">Fluxo para montar a avaliacao no proprio sistema e liberar para o curso ou para um aluno especifico.</p>
+            <p class="text-sm text-slate-500">Fluxo para montar a avaliação no proprio sistema e liberar para o curso ou para um aluno especifico.</p>
         </div>
 
         <form method="post" action="<?= route('courses/exams/store'); ?>" class="space-y-4" id="internal-exam-form">
@@ -170,8 +170,8 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 </div>
 
                 <div class="lg:col-span-2">
-                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Titulo da prova *</label>
-                    <input type="text" name="title" required placeholder="Ex.: Avaliacao Modulo 1" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Título da prova *</label>
+                    <input type="text" name="title" required placeholder="Ex.: Avaliação Módulo 1" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </div>
 
                 <div>
@@ -185,8 +185,8 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 </div>
 
                 <div class="lg:col-span-3">
-                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Descricao</label>
-                    <input type="text" name="description" placeholder="Contexto da avaliacao (opcional)" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Descrição</label>
+                    <input type="text" name="description" placeholder="Contexto da avaliação (opcional)" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </div>
 
                 <div class="lg:col-span-3">
@@ -257,8 +257,8 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     </div>
 
                     <div class="lg:col-span-2">
-                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Titulo da prova *</label>
-                        <input type="text" name="title" required placeholder="Ex.: Prova Externa Modulo 2" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/20">
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Título da prova *</label>
+                        <input type="text" name="title" required placeholder="Ex.: Prova Externa Módulo 2" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/20">
                     </div>
 
                     <div>
@@ -272,7 +272,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     </div>
 
                     <div class="lg:col-span-3">
-                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Descricao</label>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Descrição</label>
                         <input type="text" name="description" placeholder="Resumo da prova externa (opcional)" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/20">
                     </div>
 
@@ -327,9 +327,9 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Correcao e publicacao</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">Correcao e publicação</p>
                 <h3 class="mt-1 text-xl font-semibold text-slate-900">Lancamento de notas</h3>
-                <p class="mt-1 max-w-3xl text-sm text-slate-500">Registre a nota final de provas dissertativas ou ajuste resultados ja publicados. Ao salvar, o aluno passa a ver a nota no historico academico.</p>
+                <p class="mt-1 max-w-3xl text-sm text-slate-500">Registre a nota final de provas dissertativas ou ajuste resultados ja publicados. Ao salvar, o aluno passa a ver a nota no histórico acadêmico.</p>
             </div>
             <span class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">Objetivas podem sair automaticamente</span>
         </div>
@@ -340,14 +340,14 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
             <div id="exam-result-edit-summary" class="hidden lg:col-span-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 <p class="font-semibold">Modo edicao protegido</p>
-                <p class="mt-1 text-xs text-amber-800">Curso, avaliacao e aluno ficam travados durante a edicao para evitar alteracao no registro errado.</p>
+                <p class="mt-1 text-xs text-amber-800">Curso, avaliação e aluno ficam travados durante a edicao para evitar alteracao no registro errado.</p>
                 <div class="mt-3 grid gap-3 md:grid-cols-3">
                     <div>
                         <span class="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">Curso</span>
                         <span id="exam-result-edit-course" class="block text-sm font-medium text-amber-950">-</span>
                     </div>
                     <div>
-                        <span class="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">Avaliacao</span>
+                        <span class="block text-[11px] font-semibold uppercase tracking-wide text-amber-700">Avaliação</span>
                         <span id="exam-result-edit-exam" class="block text-sm font-medium text-amber-950">-</span>
                     </div>
                     <div>
@@ -358,9 +358,9 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             </div>
 
             <div class="lg:col-span-2">
-                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Avaliacao *</label>
+                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Avaliação *</label>
                 <select name="exam_id" id="exam-result-exam" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                    <option value="">Selecione a avaliacao...</option>
+                    <option value="">Selecione a avaliação...</option>
                     <?php foreach ($rows as $exam): ?>
                         <?php $dateLabel = !empty($exam['scheduled_at']) ? date('d/m/Y H:i', strtotime((string) $exam['scheduled_at'])) : 'sem data'; ?>
                         <option value="<?= (int) $exam['id']; ?>"><?= e($exam['title']); ?> (<?= e($exam['course_name']); ?> | <?= e($dateLabel); ?>)</option>
@@ -461,7 +461,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     </article>
                 <?php endforeach; ?>
                 <?php if ($recentResults === []): ?>
-                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Nenhum resultado de avaliacao registrado ate o momento.</div>
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Nenhum resultado de avaliação registrado ate o momento.</div>
                 <?php endif; ?>
             </div>
         </div>
@@ -469,7 +469,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4">
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Consolidado</p>
-                <h3 class="mt-1 text-lg font-semibold text-slate-900">Resumo por avaliacao</h3>
+                <h3 class="mt-1 text-lg font-semibold text-slate-900">Resumo por avaliação</h3>
                 <p class="text-sm text-slate-500">Leitura rapida de aprovacao por prova.</p>
             </div>
             <div class="space-y-3">
@@ -500,7 +500,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 <?php endforeach; ?>
                 <?php if ($resultsByExamRows === []): ?>
                     <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                        Os resultados por avaliacao aparecerao aqui assim que as primeiras notas forem registradas.
+                        Os resultados por avaliação aparecerao aqui assim que as primeiras notas forem registradas.
                     </div>
                 <?php endif; ?>
             </div>
@@ -543,7 +543,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                                     <?php if (!empty($link['due_at'])): ?>
                                         <?= e(date('d/m/Y H:i', strtotime((string) $link['due_at']))); ?>
                                     <?php else: ?>
-                                        <span class="text-xs text-slate-500">Nao definido</span>
+                                        <span class="text-xs text-slate-500">Não definido</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-3 py-2">
@@ -595,9 +595,9 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                         <th class="px-3 py-3">ID</th>
                         <th class="px-3 py-3">Data da prova</th>
                         <th class="px-3 py-3">Curso</th>
-                        <th class="px-3 py-3">Titulo</th>
+                        <th class="px-3 py-3">Título</th>
                         <th class="px-3 py-3">Tipo</th>
-                        <th class="px-3 py-3">Descricao</th>
+                        <th class="px-3 py-3">Descrição</th>
                         <th class="px-3 py-3">Nota minima</th>
                         <th class="px-3 py-3">Publico</th>
                         <th class="px-3 py-3">Links externos</th>
@@ -621,7 +621,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                                 <?php if (!empty($row['scheduled_at'])): ?>
                                     <span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700"><?= e(date('d/m/Y H:i', strtotime((string) $row['scheduled_at']))); ?></span>
                                 <?php else: ?>
-                                    <span class="text-xs text-slate-500">Nao definida</span>
+                                    <span class="text-xs text-slate-500">Não definida</span>
                                 <?php endif; ?>
                             </td>
                             <td class="px-3 py-3"><?= e($row['course_name']); ?></td>
@@ -678,7 +678,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     </section>
 
     <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+        <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
         <div class="flex gap-2">
             <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                 <a href="index.php?<?= build_query(['route' => 'courses/exams', 'page' => $p, 'course_id' => $currentCourseFilter]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>
@@ -890,7 +890,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
                 if (resultForm) {
                     resultForm.addEventListener('submit', () => {
-                        // Campos disabled nao sao enviados no POST; reabilitamos no submit sem abrir a UX para troca manual.
+                        // Campos disabled não são enviados no POST; reabilitamos no submit sem abrir a UX para troca manual.
                         resultExamField.disabled = false;
                         resultStudentField.disabled = false;
                     });

@@ -69,18 +69,18 @@ $initialsFromName = static function (string $name): string {
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Area administrativa</p>
-                <h2 class="users-preview-title mt-2 text-4xl font-semibold">Gerenciamento de Usuarios</h2>
-                <p class="users-preview-subtitle mt-2 text-sm">Fase inicial da nova interface visual no modulo de usuarios.</p>
+                <h2 class="users-preview-title mt-2 text-4xl font-semibold">Gerenciamento de Usuários</h2>
+                <p class="users-preview-subtitle mt-2 text-sm">Fase inicial da nova interface visual no módulo de usuários.</p>
             </div>
             <a href="<?= route('users/create'); ?>" class="users-preview-btn-primary rounded-xl px-4 py-2 text-sm font-semibold">
-                + Novo Usuario
+                + Novo Usuário
             </a>
         </div>
 
         <div class="grid gap-3 lg:grid-cols-5">
             <article class="users-preview-kpi rounded-2xl p-4">
                 <div class="mb-3 flex items-center justify-between">
-                    <span class="users-preview-kpi-label text-xs uppercase tracking-[0.16em]">Usuarios</span>
+                    <span class="users-preview-kpi-label text-xs uppercase tracking-[0.16em]">Usuários</span>
                     <span class="users-preview-kpi-pill rounded-full px-2 py-0.5 text-[11px] font-semibold">Total</span>
                 </div>
                 <p class="users-preview-kpi-value text-3xl font-semibold"><?= (int) $totalUsers; ?></p>
@@ -93,7 +93,7 @@ $initialsFromName = static function (string $name): string {
                     <span class="users-preview-kpi-pill rounded-full px-2 py-0.5 text-[11px] font-semibold">Ativos</span>
                 </div>
                 <p class="users-preview-kpi-value text-3xl font-semibold"><?= (int) $activeUsers; ?></p>
-                <p class="users-preview-subtitle text-sm">Nesta pagina</p>
+                <p class="users-preview-subtitle text-sm">Nesta página</p>
             </article>
 
             <article class="users-preview-kpi rounded-2xl p-4">
@@ -102,7 +102,7 @@ $initialsFromName = static function (string $name): string {
                     <span class="users-preview-kpi-pill rounded-full px-2 py-0.5 text-[11px] font-semibold">Inativos</span>
                 </div>
                 <p class="users-preview-kpi-value text-3xl font-semibold"><?= (int) $inactiveUsers; ?></p>
-                <p class="users-preview-subtitle text-sm">Nesta pagina</p>
+                <p class="users-preview-subtitle text-sm">Nesta página</p>
             </article>
 
             <?php foreach ($roleCards as $card): ?>
@@ -112,7 +112,7 @@ $initialsFromName = static function (string $name): string {
                         <span class="users-preview-kpi-pill rounded-full px-2 py-0.5 text-[11px] font-semibold"><?= e($card['label']); ?></span>
                     </div>
                     <p class="users-preview-kpi-value text-3xl font-semibold"><?= (int) $card['count']; ?></p>
-                    <p class="users-preview-subtitle text-sm">Nesta pagina</p>
+                    <p class="users-preview-subtitle text-sm">Nesta página</p>
                 </article>
             <?php endforeach; ?>
         </div>
@@ -127,7 +127,7 @@ $initialsFromName = static function (string $name): string {
                     type="text"
                     name="q"
                     value="<?= e($currentQuery); ?>"
-                    placeholder="Buscar por nome, email ou usuario..."
+                    placeholder="Buscar por nome, email ou usuário..."
                     class="users-preview-filter-input w-full rounded-xl px-3 py-2 text-sm outline-none focus:border-cyan-400"
                 >
             </label>
@@ -143,10 +143,10 @@ $initialsFromName = static function (string $name): string {
             </label>
 
             <label class="md:col-span-2">
-                <span class="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Pagina</span>
+                <span class="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Página</span>
                 <select name="per_page" class="users-preview-filter-select w-full rounded-xl px-3 py-2 text-sm outline-none focus:border-cyan-400">
                     <?php foreach ($paginationOptions as $opt): ?>
-                        <option value="<?= (int) $opt; ?>" <?= $currentPerPage === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                        <option value="<?= (int) $opt; ?>" <?= $currentPerPage === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -161,7 +161,7 @@ $initialsFromName = static function (string $name): string {
             </div>
 
             <div class="md:col-span-12 flex flex-wrap items-center justify-between gap-2 pt-1">
-                <p class="users-preview-subtitle text-xs">Use os filtros para acompanhar permissao, atividade e volume de contas.</p>
+                <p class="users-preview-subtitle text-xs">Use os filtros para acompanhar permissão, atividade e volume de contas.</p>
                 <button class="users-preview-btn-primary rounded-xl px-4 py-2 text-sm font-semibold">Aplicar Filtros</button>
             </div>
         </form>
@@ -171,7 +171,7 @@ $initialsFromName = static function (string $name): string {
                 <thead class="users-preview-table-head">
                     <tr class="text-left">
                         <th class="px-4 py-3">Colaborador</th>
-                        <th class="px-3 py-3">Usuario</th>
+                        <th class="px-3 py-3">Usuário</th>
                         <th class="px-3 py-3">Perfil</th>
                         <th class="px-3 py-3">Status</th>
                         <th class="px-3 py-3">Ultimo login</th>
@@ -220,7 +220,7 @@ $initialsFromName = static function (string $name): string {
                                     </form>
 
                                     <?php if ((int) current_user()['id'] !== (int) $row['id']): ?>
-                                        <form method="post" action="<?= route('users/delete'); ?>" onsubmit="return confirm('Excluir usuario?');">
+                                        <form method="post" action="<?= route('users/delete'); ?>" onsubmit="return confirm('Excluir usuário?');">
                                             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
                                             <input type="hidden" name="id" value="<?= (int) $row['id']; ?>">
                                             <button class="users-preview-action users-preview-action-danger rounded-lg px-2.5 py-1 text-xs font-semibold">Excluir</button>
@@ -232,7 +232,7 @@ $initialsFromName = static function (string $name): string {
                     <?php endforeach; ?>
                     <?php if ($rows === []): ?>
                         <tr class="users-preview-row">
-                            <td colspan="7" class="px-4 py-8 text-center text-slate-400">Nenhum usuario encontrado para os filtros selecionados.</td>
+                            <td colspan="7" class="px-4 py-8 text-center text-slate-400">Nenhum usuário encontrado para os filtros selecionados.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -240,7 +240,7 @@ $initialsFromName = static function (string $name): string {
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p class="text-slate-300">Total: <?= (int) ($meta['total'] ?? 0); ?> | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+            <p class="text-slate-300">Total: <?= (int) ($meta['total'] ?? 0); ?> | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
             <div class="flex flex-wrap gap-2">
                 <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                     <?php

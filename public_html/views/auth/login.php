@@ -10,7 +10,7 @@
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Kanban financeiro com arrastar e soltar</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Pipeline de leads customizavel</div>
             <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Faturas, pagamentos e recorrencia</div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Cursos EAD e matriculas</div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-4">Cursos EAD e matrículas</div>
         </div>
     </section>
 
@@ -30,7 +30,7 @@
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
 
             <label class="block">
-                <span class="mb-1 block text-sm text-slate-300">Usuario ou Email</span>
+                <span class="mb-1 block text-sm text-slate-300">Usuário ou Email</span>
                 <input type="text" name="login" required class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-400" placeholder="admin@aneo.local">
             </label>
 
@@ -42,7 +42,7 @@
             <button type="submit" class="w-full rounded-lg bg-cyan-600 px-4 py-2 font-medium text-white hover:bg-cyan-500">Entrar</button>
         </form>
 
-        <p class="mt-4 text-xs text-slate-400">Seed padrao: usuario <code>admin</code> / senha <code>admin123</code>.</p>
+        <p class="mt-4 text-xs text-slate-400">Seed padrao: usuário <code>admin</code> / senha <code>admin123</code>.</p>
         <a href="<?= route('student/login'); ?>" class="mt-3 inline-flex text-xs text-cyan-300 hover:text-cyan-200">Entrar no portal do aluno</a>
     </section>
 </div>

@@ -44,7 +44,7 @@ function csrf_validate(): void
         $token = $_POST['_csrf'] ?? '';
         if (!$token || !hash_equals($_SESSION['_csrf_token'] ?? '', $token)) {
             if (basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === 'support.php') {
-                flash('error', 'Sessao expirada. Atualize a pagina e tente novamente.');
+                flash('error', 'Sessao expirada. Atualize a página e tente novamente.');
                 $route = trim((string) ($_GET['route'] ?? ''), '/');
                 $fallbackRoute = $route === 'support/login' ? 'support/login' : 'support';
                 header('Location: support.php?route=' . rawurlencode($fallbackRoute));
@@ -52,7 +52,7 @@ function csrf_validate(): void
             }
 
             http_response_code(419);
-            exit('Token CSRF invalido. Atualize a pagina e tente novamente.');
+            exit('Token CSRF inválido. Atualize a página e tente novamente.');
         }
     }
 }
@@ -270,7 +270,7 @@ function default_admin_route(): string
     }
 
     if (is_professor()) {
-        return 'students';
+        return 'dashboard';
     }
 
     if (is_certificador()) {
@@ -324,7 +324,7 @@ function require_auth(): void
 function require_permission(string $module): void
 {
     if (!has_permission($module)) {
-        flash('error', 'Voce nao possui permissao para este modulo.');
+        flash('error', 'Voce não possui permissão para este módulo.');
         redirect(default_admin_route());
     }
 }
@@ -402,7 +402,32 @@ function require_student_auth(): void
         redirect('student/login');
     }
 
+    enforce_student_portal_account_active();
+
     enforce_student_trial_access(parse_route());
+}
+
+function enforce_student_portal_account_active(): void
+{
+    $student = current_student();
+    if (!is_array($student)) {
+        return;
+    }
+
+    $accountId = (int) ($student['account_id'] ?? 0);
+    $studentId = (int) ($student['id'] ?? 0);
+    if ($accountId <= 0 || $studentId <= 0) {
+        unset($_SESSION['student']);
+        flash('error', 'Sessao do aluno inválida. Entre novamente.');
+        redirect('student/login');
+    }
+
+    $portal = new StudentPortalModel();
+    if (!$portal->accountIsActive($accountId, $studentId)) {
+        unset($_SESSION['student']);
+        flash('error', 'Seu acesso ao portal esta temporariamente bloqueado. Procure o administrativo da sua unidade.');
+        redirect('student/login');
+    }
 }
 
 function enforce_student_trial_access(?string $route = null): void
@@ -444,21 +469,21 @@ function enforce_student_trial_access(?string $route = null): void
 
     if ($status === 'revoked') {
         unset($_SESSION['student']);
-        flash('error', 'Este acesso de degustacao foi revogado pelo administrador.');
+        flash('error', 'Este acesso de degustação foi revogado pelo administrador.');
         redirect('student/login');
     }
 
     if ($status === 'expired') {
         unset($_SESSION['student']);
         $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
-        flash('error', 'Este acesso de degustacao expirou. O dia liberado foi ' . $formattedDate . '.');
+        flash('error', 'Este acesso de degustação expirou. O dia liberado foi ' . $formattedDate . '.');
         redirect('student/login');
     }
 
     if ($accessDate === '' || $accessDate !== $today || empty($trial['allowed_today'])) {
         unset($_SESSION['student']);
         $formattedDate = $accessDate !== '' ? date('d/m/Y', strtotime($accessDate)) : '-';
-        flash('error', 'Acesso de degustacao permitido apenas em ' . $formattedDate . '.');
+        flash('error', 'Acesso de degustação permitido apenas em ' . $formattedDate . '.');
         redirect('student/login');
     }
 
@@ -471,7 +496,7 @@ function enforce_student_trial_access(?string $route = null): void
     ];
 
     if (!in_array($route, $allowedRoutes, true)) {
-        flash('error', 'Acesso de degustacao permite apenas aula ao vivo do curso liberado.');
+        flash('error', 'Acesso de degustação permite apenas aula ao vivo do curso liberado.');
         redirect('student/live');
     }
 }
@@ -518,7 +543,7 @@ function redirect(string $path): void
     echo '<title>Redirecionando...</title>';
     echo '</head><body>';
     echo '<script>window.location.replace(' . json_encode($target, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . ');</script>';
-    echo '<p>Redirecionando... <a href="' . e($target) . '">Clique aqui se a pagina nao abrir automaticamente</a>.</p>';
+    echo '<p>Redirecionando... <a href="' . e($target) . '">Clique aqui se a página não abrir automaticamente</a>.</p>';
     echo '</body></html>';
     exit;
 }
@@ -530,7 +555,7 @@ function view(string $view, array $data = [], string $layout = 'layouts/app'): v
 
     if (!is_file($viewPath)) {
         http_response_code(500);
-        exit('View nao encontrada: ' . e($view));
+        exit('View não encontrada: ' . e($view));
     }
 
     extract($data, EXTR_SKIP);

@@ -234,7 +234,7 @@ $gdaInitials = static function (?string $name): string {
                                             <?php } ?>
                                         </span>
                                     <?php } elseif (!empty($s['assigned_name'])) { ?>
-                                        <span class="gda-card-members" title="<?= e('Responsavel: ' . $s['assigned_name']) ?>">
+                                        <span class="gda-card-members" title="<?= e('Responsável: ' . $s['assigned_name']) ?>">
                                             <span class="gda-avatar gda-member-avatar">
                                                 <?= e($gdaInitials($s['assigned_name'])) ?>
                                             </span>

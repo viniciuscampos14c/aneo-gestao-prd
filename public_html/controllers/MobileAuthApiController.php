@@ -19,12 +19,12 @@ class MobileAuthApiController extends BaseController
         $requestedCompanyId = (int) ($payload['company_id'] ?? 0);
 
         if ($login === '' || $password === '') {
-            ApiAuth::abort(422, 'Informe usuario/email e senha.');
+            ApiAuth::abort(422, 'Informe usuário/email e senha.');
         }
 
         $user = $this->users->findByLogin($login);
         if (!$user || !$this->isValidPassword($user, $password)) {
-            ApiAuth::abort(401, 'Credenciais invalidas.');
+            ApiAuth::abort(401, 'Credenciais inválidas.');
         }
 
         if ($this->isLegacyPasswordHash($user, $password)) {
@@ -37,7 +37,7 @@ class MobileAuthApiController extends BaseController
 
         $companies = $this->users->companiesForUser((int) $user['id']);
         if ($companies === []) {
-            ApiAuth::abort(403, 'Usuario sem empresa vinculada.');
+            ApiAuth::abort(403, 'Usuário sem empresa vinculada.');
         }
 
         if ($requestedCompanyId <= 0 && count($companies) > 1) {
@@ -53,7 +53,7 @@ class MobileAuthApiController extends BaseController
 
         $company = $this->resolveCompany($companies, $requestedCompanyId);
         if ($company === null) {
-            ApiAuth::abort(403, 'Empresa invalida para este usuario.');
+            ApiAuth::abort(403, 'Empresa inválida para este usuário.');
         }
 
         $permissions = $this->defaultMobilePermissions();

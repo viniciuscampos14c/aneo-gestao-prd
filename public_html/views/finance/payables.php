@@ -87,7 +87,7 @@ $paginationBase = [
             </select>
             <input type="date" name="start_date" value="<?= e((string) ($filters['start_date'] ?? '')); ?>" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <input type="date" name="end_date" value="<?= e((string) ($filters['end_date'] ?? '')); ?>" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            <input type="text" name="q" value="<?= e((string) ($filters['q'] ?? '')); ?>" placeholder="Buscar numero, descricao ou categoria..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <input type="text" name="q" value="<?= e((string) ($filters['q'] ?? '')); ?>" placeholder="Buscar numero, descrição ou categoria..." class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
             <select name="supplier_id" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <option value="">Todos os fornecedores</option>
                 <?php foreach ($suppliers as $supplier): ?>
@@ -102,7 +102,7 @@ $paginationBase = [
             </select>
             <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <div class="flex gap-2 xl:col-span-7">
@@ -137,7 +137,7 @@ $paginationBase = [
                 </select>
             </label>
             <label class="block xl:col-span-2">
-                <span class="mb-1 block text-sm font-medium">Descricao *</span>
+                <span class="mb-1 block text-sm font-medium">Descrição *</span>
                 <input type="text" name="description" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Ex.: Licenca Zoom, hospedagem, consultoria, aluguel...">
             </label>
             <label class="block">
@@ -178,7 +178,7 @@ $paginationBase = [
                 </select>
             </label>
             <label class="block xl:col-span-2">
-                <span class="mb-1 block text-sm font-medium">Observacoes</span>
+                <span class="mb-1 block text-sm font-medium">Observações</span>
                 <input type="text" name="notes" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <?php if ($recurrenceAvailable): ?>
@@ -216,7 +216,7 @@ $paginationBase = [
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th class="px-3 py-3">Numero</th>
                         <th class="px-3 py-3">Fornecedor</th>
-                        <th class="px-3 py-3">Descricao</th>
+                        <th class="px-3 py-3">Descrição</th>
                         <th class="px-3 py-3">Vencimento</th>
                         <th class="px-3 py-3">Valor</th>
                         <th class="px-3 py-3">Pago</th>
@@ -302,7 +302,7 @@ $paginationBase = [
                                             <button class="rounded border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs text-cyan-700 hover:bg-cyan-100">Registrar baixa</button>
                                         </form>
                                     <?php else: ?>
-                                        <span class="text-xs text-slate-400">Sem baixa disponivel</span>
+                                        <span class="text-xs text-slate-400">Sem baixa disponível</span>
                                     <?php endif; ?>
 
                                     <?php if ($canEdit): ?>
@@ -326,7 +326,7 @@ $paginationBase = [
                                                         </select>
                                                     </label>
                                                     <label class="block md:col-span-2">
-                                                        <span class="mb-1 block font-medium">Descricao</span>
+                                                        <span class="mb-1 block font-medium">Descrição</span>
                                                         <input type="text" name="description" required value="<?= e((string) ($row['description'] ?? '')); ?>" class="w-full rounded border border-slate-200 bg-white px-2 py-1.5">
                                                     </label>
                                                     <label class="block">
@@ -364,7 +364,7 @@ $paginationBase = [
                                                         </select>
                                                     </label>
                                                     <label class="block md:col-span-2">
-                                                        <span class="mb-1 block font-medium">Observacoes</span>
+                                                        <span class="mb-1 block font-medium">Observações</span>
                                                         <input type="text" name="notes" value="<?= e((string) ($row['notes'] ?? '')); ?>" class="w-full rounded border border-slate-200 bg-white px-2 py-1.5">
                                                     </label>
                                                     <?php if ($recurrenceAvailable && !$isRecurringGenerated): ?>
@@ -400,7 +400,7 @@ $paginationBase = [
                                                         <button class="rounded border border-rose-200 bg-rose-50 px-3 py-1.5 font-semibold text-rose-700 hover:bg-rose-100">Cancelar conta</button>
                                                     </form>
                                                 <?php else: ?>
-                                                    <p class="text-slate-500">Cancelamento disponivel apenas para contas sem pagamento registrado.</p>
+                                                    <p class="text-slate-500">Cancelamento disponível apenas para contas sem pagamento registrado.</p>
                                                 <?php endif; ?>
                                             </div>
                                         </details>
@@ -482,7 +482,7 @@ $paginationBase = [
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+            <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
             <div class="flex gap-2">
                 <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                     <a href="index.php?<?= http_build_query($paginationBase + ['page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($meta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

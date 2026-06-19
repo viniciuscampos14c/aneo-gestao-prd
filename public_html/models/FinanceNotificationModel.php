@@ -15,7 +15,7 @@ class FinanceNotificationModel extends BaseModel
                 'sent' => 0,
                 'failed' => 1,
                 'skipped' => 0,
-                'message' => 'Tipo de notificacao financeira invalido.',
+                'message' => 'Tipo de notificação financeira inválido.',
             ];
         }
 
@@ -30,7 +30,7 @@ class FinanceNotificationModel extends BaseModel
                 'sent' => 0,
                 'failed' => 0,
                 'skipped' => 1,
-                'message' => 'Estrutura de log financeiro ainda nao esta pronta para este tipo de notificacao.',
+                'message' => 'Estrutura de log financeiro ainda não esta pronta para este tipo de notificação.',
             ];
         }
 
@@ -42,7 +42,7 @@ class FinanceNotificationModel extends BaseModel
                 'sent' => 0,
                 'failed' => 1,
                 'skipped' => 0,
-                'message' => 'Fatura nao encontrada para notificacao.',
+                'message' => 'Fatura não encontrada para notificação.',
             ];
         }
 

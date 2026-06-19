@@ -20,10 +20,10 @@ class CourseLiveSessionController extends BaseController
 
         $companyId = (int) current_company_id();
         $filters   = [
-            'course_id' => (int) get('course_id'),
-            'status'    => get('status') ?: '',
+            'course_id' => (int) request('course_id'),
+            'status'    => request('status') ?: '',
         ];
-        $page    = max(1, (int) (get('page') ?: 1));
+        $page    = max(1, (int) (request('page') ?: 1));
         $perPage = 20;
 
         $sessions = $this->model->list($companyId, $filters, $perPage, $page);
@@ -119,7 +119,7 @@ class CourseLiveSessionController extends BaseController
         if ($isGlobal) {
             $targets = $this->model->equivalentPublishedCoursesForGlobal($courseId, $companyId);
             if ($targets === []) {
-                flash('error', 'Reuniao criada no Zoom, mas nao encontramos cursos equivalentes publicados para vincular a aula global.');
+                flash('error', 'Reunião criada no Zoom, mas não encontramos cursos equivalentes publicados para vincular a aula global.');
                 $this->redirect($fallback);
                 return;
             }
@@ -139,7 +139,7 @@ class CourseLiveSessionController extends BaseController
                     'global_session_uuid' => $this->generateGlobalSessionUuid(),
                 ]);
             } catch (Throwable $e) {
-                flash('error', 'Reuniao criada no Zoom, mas nao foi possivel salvar a aula global no ERP: ' . $e->getMessage());
+                flash('error', 'Reunião criada no Zoom, mas não foi possível salvar a aula global no ERP: ' . $e->getMessage());
                 $this->redirect($fallback);
                 return;
             }
@@ -207,7 +207,7 @@ class CourseLiveSessionController extends BaseController
             $meeting
         );
 
-        $message = 'Reuniao criada com sucesso! Meeting ID: ' . $meeting['meeting_id'];
+        $message = 'Reunião criada com sucesso! Meeting ID: ' . $meeting['meeting_id'];
         if (($notifySummary['total'] ?? 0) > 0) {
             $message .= ' | Alertas enviados: ' . (int) ($notifySummary['sent'] ?? 0) . '/' . (int) ($notifySummary['total'] ?? 0) . '.';
         }
@@ -231,7 +231,7 @@ class CourseLiveSessionController extends BaseController
         require_permission('courses');
 
         $companyId = (int) current_company_id();
-        $id        = (int) get('id');
+        $id        = (int) request('id');
 
         $session = $this->model->findById($id, $companyId);
         if ($session === null) {
@@ -332,7 +332,7 @@ class CourseLiveSessionController extends BaseController
             if ($affected > 0) {
                 flash('success', 'Aula global cancelada com sucesso em ' . $affected . ' unidade(s).');
             } else {
-                flash('error', 'Nao foi possivel cancelar a aula global.');
+                flash('error', 'Não foi possível cancelar a aula global.');
             }
 
             $dest = $redirectTo !== '' ? $redirectTo : 'courses/live-sessions';
@@ -534,7 +534,7 @@ class CourseLiveSessionController extends BaseController
             $ctaButton = '<p style="margin:18px 0 0 0;">'
                 . '<a href="' . $safeJoinUrl . '" target="_blank" rel="noopener" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">Entrar na aula ao vivo</a>'
                 . '</p>';
-            $ctaFallback = '<p style="margin:12px 0 0 0;font-size:12px;color:#64748b;">Se o botao nao abrir, copie e cole no navegador:<br>'
+            $ctaFallback = '<p style="margin:12px 0 0 0;font-size:12px;color:#64748b;">Se o botão não abrir, copie e cole no navegador:<br>'
                 . '<a href="' . $safeJoinUrl . '" target="_blank" rel="noopener" style="color:#0284c7;word-break:break-all;">' . $safeJoinUrl . '</a></p>';
         }
 
@@ -558,7 +558,7 @@ class CourseLiveSessionController extends BaseController
             '<h1 style="margin:8px 0 0 0;font-size:24px;line-height:1.3;color:#ffffff;">Nova aula ao vivo agendada</h1>',
             '</td></tr>',
             '<tr><td style="padding:24px;">',
-            '<p style="margin:0 0 10px 0;font-size:15px;line-height:1.6;color:#1e293b;">Ola, <strong>' . $safeStudentName . '</strong>.</p>',
+            '<p style="margin:0 0 10px 0;font-size:15px;line-height:1.6;color:#1e293b;">Olá, <strong>' . $safeStudentName . '</strong>.</p>',
             '<p style="margin:0 0 16px 0;font-size:14px;line-height:1.6;color:#334155;">Uma nova aula foi criada no seu curso. Confira os dados abaixo:</p>',
             '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">',
             '<tr>',
@@ -566,15 +566,15 @@ class CourseLiveSessionController extends BaseController
             '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeCourseName . '</td>',
             '</tr>',
             '<tr>',
-            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Titulo da aula</td>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Título da aula</td>',
             '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeSessionTitle . '</td>',
             '</tr>',
             '<tr>',
-            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Data e horario</td>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Data e horário</td>',
             '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeScheduledLabel . ' (Brasilia)</td>',
             '</tr>',
             '<tr>',
-            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Duracao</td>',
+            '<td style="padding:10px 14px;font-size:12px;font-weight:700;color:#334155;width:38%;border-bottom:1px solid #e2e8f0;">Duração</td>',
             '<td style="padding:10px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;">' . $safeDurationLabel . '</td>',
             '</tr>',
             '<tr>',
@@ -592,8 +592,8 @@ class CourseLiveSessionController extends BaseController
             '</table>',
             $ctaButton,
             $ctaFallback,
-            '<p style="margin:16px 0 0 0;font-size:13px;line-height:1.6;color:#475569;">Voce tambem pode consultar em <strong>Portal do Aluno > Aulas ao Vivo</strong>.</p>',
-            '<p style="margin:18px 0 0 0;font-size:11px;color:#94a3b8;">Mensagem automatica do sistema ANEO. Nao responda este e-mail.</p>',
+            '<p style="margin:16px 0 0 0;font-size:13px;line-height:1.6;color:#475569;">Voce também pode consultar em <strong>Portal do Aluno > Aulas ao Vivo</strong>.</p>',
+            '<p style="margin:18px 0 0 0;font-size:11px;color:#94a3b8;">Mensagem automática do sistema ANEO. Não responda este e-mail.</p>',
             '</td></tr>',
             '</table>',
             '</td></tr>',

@@ -36,7 +36,7 @@ $studentRa = trim((string) ($summary['ra'] ?? ''));
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Alunos</h3>
-                    <span class="text-xs text-slate-400"><?= count($students); ?> na pagina</span>
+                    <span class="text-xs text-slate-400"><?= count($students); ?> na página</span>
                 </div>
 
                 <?php foreach ($students as $student): ?>
@@ -68,7 +68,7 @@ $studentRa = trim((string) ($summary['ra'] ?? ''));
                             <p class="mt-1 text-sm text-slate-500">RA <?= e($studentRa !== '' ? $studentRa : '-'); ?> | Status <?= e($studentStatus !== '' ? $studentStatus : '-'); ?></p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <a href="<?= route('certification/academic-history&student_id=' . $selectedStudentId); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Historico academico</a>
+                            <a href="<?= route('certification/academic-history&student_id=' . $selectedStudentId); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Histórico acadêmico</a>
                         </div>
                         <div class="grid min-w-[220px] grid-cols-2 gap-3 text-sm">
                             <div class="rounded-xl bg-slate-50 p-3">
@@ -150,7 +150,7 @@ $studentRa = trim((string) ($summary['ra'] ?? ''));
             <?php else: ?>
                 <section class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
                     <h3 class="text-xl font-semibold text-slate-900">Selecione um aluno</h3>
-                    <p class="mt-2 text-sm text-slate-500">Assim que voce escolher um aluno, esta area mostrara documentos, curriculo e acesso ao historico academico.</p>
+                    <p class="mt-2 text-sm text-slate-500">Assim que você escolher um aluno, esta area mostrara documentos, curriculo e acesso ao histórico acadêmico.</p>
                 </section>
             <?php endif; ?>
         </div>

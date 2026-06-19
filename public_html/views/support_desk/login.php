@@ -4,7 +4,7 @@
         <p class="text-xs uppercase tracking-[0.25em] text-cyan-300">ANEO</p>
         <h1 class="mt-3 text-3xl font-semibold leading-tight">Central Tecnica de Chamados</h1>
         <p class="mt-3 text-sm text-blue-100/90">
-            Portal isolado para a equipe tecnica atender, comentar e atualizar os chamados abertos pelo administrativo usando usuarios cadastrados no modulo Usuarios.
+            Portal isolado para a equipe tecnica atender, comentar e atualizar os chamados abertos pelo administrativo usando usuários cadastrados no módulo Usuários.
         </p>
         <div class="mt-6 rounded-xl border border-blue-700/60 bg-blue-950/70 p-4 text-sm text-blue-100">
             URL de acesso: <span class="font-semibold text-cyan-300">support.php</span>
@@ -25,7 +25,7 @@
         <form action="support.php?route=support/login" method="post" class="mt-6 space-y-4">
             <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
             <label class="block">
-                <span class="mb-1 block text-sm text-blue-100">Usuario ou Email</span>
+                <span class="mb-1 block text-sm text-blue-100">Usuário ou Email</span>
                 <input
                     type="text"
                     name="username"

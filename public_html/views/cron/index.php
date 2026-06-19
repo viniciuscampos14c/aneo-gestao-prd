@@ -22,7 +22,7 @@ $hasToken = $token !== '';
             <button type="button" onclick="copyCronCmd()" class="cron-admin-copy-btn ml-auto flex-shrink-0 rounded bg-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-600">Copiar</button>
         </div>
         <?php if (!$hasToken): ?>
-            <p class="cron-admin-guide-warning mt-2 font-semibold text-amber-700">Token nao configurado. Defina <code>cron.secret_token</code> em <code>config.local.php</code>.</p>
+            <p class="cron-admin-guide-warning mt-2 font-semibold text-amber-700">Token não configurado. Defina <code>cron.secret_token</code> em <code>config.local.php</code>.</p>
         <?php endif; ?>
     </div>
 
@@ -31,10 +31,10 @@ $hasToken = $token !== '';
             <thead class="cron-admin-thead bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                     <th class="px-4 py-3 text-left">Job</th>
-                    <th class="px-4 py-3 text-left">Descricao</th>
+                    <th class="px-4 py-3 text-left">Descrição</th>
                     <th class="px-4 py-3 text-center">Status</th>
                     <th class="px-4 py-3 text-left">Ultima execucao</th>
-                    <th class="px-4 py-3 text-left">Duracao</th>
+                    <th class="px-4 py-3 text-left">Duração</th>
                     <th class="px-4 py-3 text-left">Ultima mensagem</th>
                     <th class="px-4 py-3 text-center">Ativo</th>
                     <th class="px-4 py-3 text-center">Acoes</th>
@@ -82,7 +82,7 @@ $hasToken = $token !== '';
                                 class="cron-toggle-btn <?= $enabled ? 'cron-toggle-on' : 'cron-toggle-off'; ?>"
                                 id="toggle-<?= $jobKey; ?>"
                             >
-                                <?= $enabled ? 'Sim' : 'Nao'; ?>
+                                <?= $enabled ? 'Sim' : 'Não'; ?>
                             </button>
                         </td>
                         <td class="px-4 py-3 text-center">
@@ -191,7 +191,7 @@ function toggleJob(jobKey, enable) {
                 btn.setAttribute('onclick', "toggleJob('" + jobKey + "', 0)");
             } else {
                 btn.className = 'cron-toggle-btn cron-toggle-off';
-                btn.textContent = 'Nao';
+                btn.textContent = 'Não';
                 btn.setAttribute('onclick', "toggleJob('" + jobKey + "', 1)");
             }
         });
@@ -218,7 +218,7 @@ function showLogs(jobKey) {
                 + '<th class="px-3 py-2 text-left">Inicio</th>'
                 + '<th class="px-3 py-2 text-left">Fim</th>'
                 + '<th class="px-3 py-2 text-center">Status</th>'
-                + '<th class="px-3 py-2 text-right">Duracao</th>'
+                + '<th class="px-3 py-2 text-right">Duração</th>'
                 + '<th class="px-3 py-2 text-left">Mensagem</th>'
                 + '</tr></thead><tbody>';
             data.data.forEach(function(row) {

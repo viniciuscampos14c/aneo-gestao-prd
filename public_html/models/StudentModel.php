@@ -580,7 +580,7 @@ class StudentModel extends BaseModel
             ':phone' => $lead['phone'],
             ':admin_info' => 'Convertido do lead #' . $lead['id'],
             ':ra' => $this->resolveStudentRa('', $companyId),
-            ':notes' => 'Origem lead: ' . ($lead['source'] ?: 'Nao informado'),
+            ':notes' => 'Origem lead: ' . ($lead['source'] ?: 'Não informado'),
             ':kanban_status_id' => $statusId,
             ':created_by' => $createdBy,
             ':created_at' => $now,

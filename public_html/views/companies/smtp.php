@@ -26,7 +26,7 @@ foreach ($companyOptions as $option) {
 
     <?php if (!$integrationAvailable): ?>
         <div class="companies-smtp-alert rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            A tabela <code>company_integrations</code> nao foi encontrada. Execute a migration <code>migrations/20260306_phase2_company_isolation_integrations.sql</code>.
+            A tabela <code>company_integrations</code> não foi encontrada. Execute a migration <code>migrations/20260306_phase2_company_isolation_integrations.sql</code>.
         </div>
     <?php endif; ?>
 
@@ -59,7 +59,7 @@ foreach ($companyOptions as $option) {
             <input type="hidden" name="company_id" value="<?= $selectedCompanyId; ?>">
 
             <div class="companies-smtp-selected rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                Empresa selecionada: <span class="font-semibold text-slate-700"><?= e($selectedCompanyName !== '' ? $selectedCompanyName : 'Nao informada'); ?></span>
+                Empresa selecionada: <span class="font-semibold text-slate-700"><?= e($selectedCompanyName !== '' ? $selectedCompanyName : 'Não informada'); ?></span>
             </div>
 
             <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -90,7 +90,7 @@ foreach ($companyOptions as $option) {
                     <input type="number" name="smtp_timeout" min="5" max="120" value="<?= e((string) ($smtpSettings['timeout'] ?? '20')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </label>
                 <label class="block">
-                    <span class="mb-1 block text-sm">Usuario SMTP</span>
+                    <span class="mb-1 block text-sm">Usuário SMTP</span>
                     <input type="text" name="smtp_username" value="<?= e((string) ($smtpSettings['username'] ?? '')); ?>" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 </label>
                 <label class="block">
@@ -116,11 +116,11 @@ foreach ($companyOptions as $option) {
             </div>
 
             <div class="companies-smtp-tip rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
-                Dica: para Gmail/Outlook corporativo use porta 587 com TLS. Se o provedor exigir autenticacao, preencha usuario e senha.
+                Dica: para Gmail/Outlook corporativo use porta 587 com TLS. Se o provedor exigir autenticacao, preencha usuário e senha.
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <button class="companies-smtp-save-btn rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" <?= $integrationAvailable ? '' : 'disabled'; ?>>Salvar configuracao SMTP</button>
+                <button class="companies-smtp-save-btn rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800" <?= $integrationAvailable ? '' : 'disabled'; ?>>Salvar configuração SMTP</button>
                 <button type="submit" formaction="<?= route('companies/smtp/test'); ?>" formmethod="post" class="companies-smtp-test-btn rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-100">Enviar e-mail de teste</button>
                 <a href="<?= route('companies'); ?>" class="companies-smtp-back-btn rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm hover:bg-slate-50">Voltar para Empresas</a>
             </div>

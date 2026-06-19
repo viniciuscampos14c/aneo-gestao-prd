@@ -18,8 +18,8 @@ $statusBadge = [
     'rejected' => 'bg-rose-100 text-rose-700',
 ];
 
-// Mês mínimo = próximo mês
-$minMonth = date('Y-m', strtotime('+1 month'));
+// Data minima = 1 mes a partir de hoje, para a equipe ter tempo de organizacao.
+$minExchangeDate = (new DateTimeImmutable('today'))->modify('+1 month')->format('Y-m-d');
 ?>
 <section class="student-exchange-shell space-y-8 max-w-2xl mx-auto">
 
@@ -111,15 +111,18 @@ $minMonth = date('Y-m', strtotime('+1 month'));
                 <?php endif; ?>
             </div>
 
-            <!-- Mês desejado -->
+            <!-- Data pretendida -->
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1" for="desired_month">
-                    Mês que deseja realizar o intercâmbio <span class="text-rose-500">*</span>
+                    Data que pretende realizar o intercâmbio <span class="text-rose-500">*</span>
                 </label>
-                <input type="month" id="desired_month" name="desired_month"
-                       min="<?= e($minMonth); ?>"
+                <input type="date" id="desired_month" name="desired_month"
+                       min="<?= e($minExchangeDate); ?>"
                        required
                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                <p class="mt-1 text-xs text-slate-400">
+                    As datas ficam liberadas somente a partir de <?= e(date('d/m/Y', strtotime($minExchangeDate))); ?>.
+                </p>
             </div>
 
             <!-- Meses cursando -->
@@ -156,7 +159,7 @@ $minMonth = date('Y-m', strtotime('+1 month'));
                     <tr>
                         <th class="px-4 py-3 text-left">Data</th>
                         <th class="px-4 py-3 text-left">Destino</th>
-                        <th class="px-4 py-3 text-left">Mês desejado</th>
+                        <th class="px-4 py-3 text-left">Data pretendida</th>
                         <th class="px-4 py-3 text-center">Status</th>
                     </tr>
                 </thead>
@@ -168,7 +171,9 @@ $minMonth = date('Y-m', strtotime('+1 month'));
                         $slabel = $statusLabels[$st] ?? $st;
                         $dm     = (string) ($req['desired_month'] ?? '');
                         $dmFmt  = '';
-                        if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
+                        if ($dm !== '' && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dm, $m)) {
+                            $dmFmt = $m[3] . '/' . $m[2] . '/' . $m[1];
+                        } elseif ($dm !== '' && preg_match('/^(\d{4})-(\d{2})$/', $dm, $m)) {
                             $months = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
                                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
                             $dmFmt = ($months[(int) $m[2]] ?? $m[2]) . '/' . $m[1];

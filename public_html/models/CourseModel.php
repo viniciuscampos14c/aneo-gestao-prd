@@ -1212,12 +1212,12 @@ class CourseModel extends BaseModel
     public function createTrialAccess(array $data, int $createdBy): array
     {
         if (!$this->hasTrialAccessTable()) {
-            throw new RuntimeException('Tabela de degustacao nao encontrada no banco.');
+            throw new RuntimeException('Tabela de degustação não encontrada no banco.');
         }
 
         $companyId = $this->companyId();
         if ($companyId <= 0) {
-            throw new RuntimeException('Empresa atual nao definida.');
+            throw new RuntimeException('Empresa atual não definida.');
         }
 
         $studentName = trim((string) ($data['student_name'] ?? ''));
@@ -1227,20 +1227,20 @@ class CourseModel extends BaseModel
         $accessDate = $this->normalizeDate((string) ($data['access_date'] ?? ''));
 
         if ($studentName === '') {
-            throw new RuntimeException('Nome do aluno obrigatorio.');
+            throw new RuntimeException('Nome do aluno obrigatório.');
         }
 
         if ($courseId <= 0 || !$this->findCourse($courseId)) {
-            throw new RuntimeException('Curso invalido para esta empresa.');
+            throw new RuntimeException('Curso inválido para esta empresa.');
         }
 
         if ($accessDate === null) {
-            throw new RuntimeException('Data de acesso invalida.');
+            throw new RuntimeException('Data de acesso inválida.');
         }
 
         $course = $this->findCourse($courseId);
         if (!$course) {
-            throw new RuntimeException('Curso nao encontrado.');
+            throw new RuntimeException('Curso não encontrado.');
         }
 
         $login = $this->generateTrialPortalLogin($studentName);

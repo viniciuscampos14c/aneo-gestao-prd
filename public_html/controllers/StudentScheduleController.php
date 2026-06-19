@@ -160,9 +160,10 @@ class StudentScheduleController extends BaseController
             return;
         }
 
+        $wasPublished = (string) ($schedule['status'] ?? '') === 'published';
         $this->schedules->setScheduleStatus((int) $schedule['id'], 'published');
         $notificationSummary = $this->notifyPublishedSchedule((int) $schedule['id']);
-        $message = 'Escala publicada.';
+        $message = $wasPublished ? 'Avisos da escala republicados.' : 'Escala publicada.';
         if ($notificationSummary['portal_created'] > 0 || $notificationSummary['email_sent'] > 0) {
             $message .= sprintf(
                 ' Avisos enviados: %d no portal e %d por e-mail.',
@@ -170,7 +171,7 @@ class StudentScheduleController extends BaseController
                 $notificationSummary['email_sent']
             );
             if ($notificationSummary['email_failed'] > 0) {
-                $message .= ' Alguns e-mails nao puderam ser enviados.';
+                $message .= ' Alguns e-mails não puderam ser enviados.';
             }
         }
         $this->success($message);
@@ -264,6 +265,7 @@ class StudentScheduleController extends BaseController
         if ($r3Slots + $r2Slots + $r1Slots <= 0) {
             $this->error('Defina ao menos uma vaga por semana.');
             $this->redirect('escala-aluno/show&id=' . (int) $schedule['id']);
+            return;
         }
 
         $weeks = [];
@@ -291,8 +293,23 @@ class StudentScheduleController extends BaseController
             $cursor = $weekEnd->modify('+1 day');
         }
 
-        $this->schedules->replaceWeeks((int) $schedule['id'], $weeks);
-        $this->success('Semanas geradas com sucesso. Alocacoes anteriores foram substituidas.');
+        try {
+            $summary = $this->schedules->syncWeeksPreservingAssignments((int) $schedule['id'], $weeks);
+            $message = sprintf(
+                'Grade atualizada preservando alocacoes. Semanas criadas: %d. Semanas atualizadas: %d.',
+                (int) ($summary['created'] ?? 0),
+                (int) ($summary['updated'] ?? 0)
+            );
+            if ((int) ($summary['deleted_empty'] ?? 0) > 0) {
+                $message .= ' Semanas vazias removidas: ' . (int) $summary['deleted_empty'] . '.';
+            }
+            if ((string) ($schedule['status'] ?? '') === 'published') {
+                $message .= ' Use Republicar avisos se quiser reenviar comunicados.';
+            }
+            $this->success($message);
+        } catch (RuntimeException $e) {
+            $this->error($e->getMessage());
+        }
         $this->redirect('escala-aluno/show&id=' . (int) $schedule['id']);
     }
 
@@ -304,7 +321,7 @@ class StudentScheduleController extends BaseController
         $weekId = (int) post('week_id');
         $week = $this->schedules->findWeek($weekId);
         if (!$week) {
-            $this->error('Semana nao encontrada.');
+            $this->error('Semana não encontrada.');
             $this->redirect('escala-aluno');
         }
 
@@ -314,14 +331,34 @@ class StudentScheduleController extends BaseController
             return;
         }
 
-        $this->schedules->updateWeek($weekId, [
+        $data = [
             'r3_slots' => max(0, (int) post('r3_slots', 0)),
             'r2_slots' => max(0, (int) post('r2_slots', 0)),
             'r1_slots' => max(0, (int) post('r1_slots', 0)),
             'notes' => trim((string) post('notes')),
-        ]);
+        ];
 
-        $this->success('Semana atualizada.');
+        $assigned = $this->schedules->assignmentCountsForWeek($weekId);
+        foreach (['R3' => 'r3_slots', 'R2' => 'r2_slots', 'R1' => 'r1_slots'] as $group => $field) {
+            if ($data[$field] < ($assigned[$group] ?? 0)) {
+                $this->error(sprintf(
+                    'Não é possível reduzir %s para %d vaga(s), pois já existem %d aluno(s) alocados. Remova alunos antes de reduzir.',
+                    $group,
+                    $data[$field],
+                    (int) ($assigned[$group] ?? 0)
+                ));
+                $this->redirect('escala-aluno/show&id=' . (int) $week['schedule_id']);
+                return;
+            }
+        }
+
+        $this->schedules->updateWeek($weekId, $data);
+
+        $message = 'Semana atualizada.';
+        if ((string) ($week['status'] ?? '') === 'published') {
+            $message .= ' A escala publicada já reflete a alteração no portal; use Republicar avisos se quiser reenviar comunicados.';
+        }
+        $this->success($message);
         $this->redirect('escala-aluno/show&id=' . (int) $week['schedule_id']);
     }
 
@@ -336,7 +373,7 @@ class StudentScheduleController extends BaseController
 
         $week = $this->schedules->findWeek($weekId);
         if (!$week) {
-            $this->error('Semana da escala nao encontrada.');
+            $this->error('Semana da escala não encontrada.');
             $this->redirect('escala-aluno');
         }
 
@@ -346,14 +383,14 @@ class StudentScheduleController extends BaseController
             if ((string) ($week['status'] ?? '') === 'published') {
                 $notificationResult = $this->notifyScheduledStudent($weekId, $studentId, $slotGroup);
                 if ($notificationResult['email_failed']) {
-                    $message .= ' A notificacao apareceu no portal, mas o e-mail nao foi enviado.';
+                    $message .= ' A notificação apareceu no portal, mas o e-mail não foi enviado.';
                 } elseif ($notificationResult['email_sent']) {
                     $message .= ' Notificacao enviada no portal e por e-mail.';
                 } elseif ($notificationResult['portal_created']) {
                     $message .= ' Notificacao criada no portal do aluno.';
                 }
             } else {
-                $message .= ' Como a escala ainda esta em rascunho, o aluno nao foi notificado.';
+                $message .= ' Como a escala ainda esta em rascunho, o aluno não foi notificado.';
             }
             $this->success($message);
         } catch (RuntimeException $e) {
@@ -370,7 +407,7 @@ class StudentScheduleController extends BaseController
 
         $week = $this->schedules->findWeek((int) post('week_id'));
         if (!$week) {
-            $this->error('Semana da escala nao encontrada.');
+            $this->error('Semana da escala não encontrada.');
             $this->redirect('escala-aluno');
         }
 
@@ -381,7 +418,11 @@ class StudentScheduleController extends BaseController
         }
 
         $this->schedules->deleteAssignment((int) post('assignment_id'));
-        $this->success('Aluno removido da semana.');
+        $message = 'Aluno removido da semana.';
+        if ((string) ($week['status'] ?? '') === 'published') {
+            $message .= ' O portal do aluno já foi atualizado; use Republicar avisos se quiser reenviar comunicados da escala.';
+        }
+        $this->success($message);
         $this->redirect('escala-aluno/show&id=' . (int) $week['schedule_id']);
     }
 
@@ -446,7 +487,7 @@ class StudentScheduleController extends BaseController
         }
 
         if ($data['title'] === '') {
-            return 'Informe o titulo da escala.';
+            return 'Informe o título da escala.';
         }
 
         if ($data['start_date'] === '' || $data['end_date'] === '') {
@@ -454,7 +495,7 @@ class StudentScheduleController extends BaseController
         }
 
         if ($data['end_date'] < $data['start_date']) {
-            return 'A data final nao pode ser menor que a data inicial.';
+            return 'A data final não pode ser menor que a data inicial.';
         }
 
         return null;
@@ -466,7 +507,7 @@ class StudentScheduleController extends BaseController
             return;
         }
 
-        $this->error('Modulo Escala Aluno indisponivel no banco. Execute a migration 20260505_student_duty_schedule.sql.');
+        $this->error('Módulo Escala Aluno indisponivel no banco. Execute a migration 20260505_student_duty_schedule.sql.');
         $this->redirect($redirectRoute);
     }
 
@@ -475,7 +516,7 @@ class StudentScheduleController extends BaseController
         $this->ensureFeatureAvailable('escala-aluno');
         $schedule = $this->schedules->findSchedule($id);
         if (!$schedule) {
-            $this->error('Escala nao encontrada.');
+            $this->error('Escala não encontrada.');
             $this->redirect('escala-aluno');
             return null;
         }
@@ -538,7 +579,7 @@ class StudentScheduleController extends BaseController
         if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
             $result = $this->emails->send(
                 $studentEmail,
-                'Nova escala publicada para voce | ' . $unitName,
+                'Nova escala publicada para você | ' . $unitName,
                 $this->buildScheduleAssignmentEmailHtml(
                     $studentName,
                     $scheduleTitle,
@@ -618,7 +659,7 @@ class StudentScheduleController extends BaseController
         if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
             $result = $this->emails->send(
                 $studentEmail,
-                'Nova escala publicada para voce | ' . $unitName,
+                'Nova escala publicada para você | ' . $unitName,
                 $this->buildScheduleAssignmentEmailHtml(
                     $studentName,
                     $scheduleTitle,
@@ -680,7 +721,7 @@ class StudentScheduleController extends BaseController
                         <td style="background-color:#082f49;border-radius:18px 18px 0 0;padding:28px 30px 26px 30px;">
                             <p style="margin:0 0 8px 0;font-size:12px;line-height:1.2;letter-spacing:3px;text-transform:uppercase;color:#67e8f9;font-weight:700;">ANEO</p>
                             <h1 style="margin:0;font-size:26px;line-height:1.25;color:#ffffff;font-weight:700;">Voce foi escalado(a)</h1>
-                            <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:#d9efff;">Ola, {$studentName}. Sua escala foi atualizada e ja esta disponivel no portal do aluno.</p>
+                            <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:#d9efff;">Olá, {$studentName}. Sua escala foi atualizada e já esta disponível no portal do aluno.</p>
                         </td>
                     </tr>
                     <tr>
@@ -728,7 +769,7 @@ class StudentScheduleController extends BaseController
                                                 </td>
                                             </tr>
                                         </table>
-                                        <p style="margin:14px 0 0 0;font-size:12px;line-height:1.5;color:#64748b;">Se o botao nao abrir, copie e cole este endereco no navegador:<br><a href="{$scheduleUrl}" style="color:#0284c7;text-decoration:underline;word-break:break-all;">{$scheduleUrl}</a></p>
+                                        <p style="margin:14px 0 0 0;font-size:12px;line-height:1.5;color:#64748b;">Se o botão não abrir, copie e cole este endereço no navegador:<br><a href="{$scheduleUrl}" style="color:#0284c7;text-decoration:underline;word-break:break-all;">{$scheduleUrl}</a></p>
                                     </td>
                                 </tr>
                             </table>
@@ -736,7 +777,7 @@ class StudentScheduleController extends BaseController
                     </tr>
                     <tr>
                         <td style="background-color:#f8fbfe;border:1px solid #d7e4ef;border-top:0;border-radius:0 0 18px 18px;padding:18px 30px;">
-                            <p style="margin:0;font-size:12px;line-height:1.5;color:#64748b;">Mensagem automatica do sistema ANEO. Consulte o portal do aluno para confirmar todos os detalhes da sua escala.</p>
+                            <p style="margin:0;font-size:12px;line-height:1.5;color:#64748b;">Mensagem automática do sistema ANEO. Consulte o portal do aluno para confirmar todos os detalhes da sua escala.</p>
                         </td>
                     </tr>
                 </table>

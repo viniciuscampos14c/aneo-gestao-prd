@@ -30,7 +30,7 @@ class SupportDeskController extends BaseController
         csrf_validate();
 
         if (!(bool) config('support_desk.enabled', false)) {
-            flash('error', 'Portal tecnico desativado na configuracao.');
+            flash('error', 'Portal técnico desativado na configuração.');
             $this->redirectTo('support/login');
         }
 
@@ -38,7 +38,7 @@ class SupportDeskController extends BaseController
         $password = (string) post('password');
 
         if ($login === '' || $password === '') {
-            flash('error', 'Informe usuario ou email e senha.');
+            flash('error', 'Informe usuário ou email e senha.');
             $this->redirectTo('support/login');
         }
 
@@ -49,7 +49,7 @@ class SupportDeskController extends BaseController
         }
 
         if (!$user || !$validPassword) {
-            flash('error', 'Credenciais invalidas.');
+            flash('error', 'Credenciais inválidas.');
             $this->redirectTo('support/login');
         }
 
@@ -63,7 +63,7 @@ class SupportDeskController extends BaseController
 
         $permissionKeys = $this->users->permissionKeys((int) $user['id']);
         if (!$this->hasDeskPermission((string) ($user['role'] ?? ''), $permissionKeys)) {
-            flash('error', 'Usuario sem permissao para a central tecnica. Libere `support.desk` ou `requests.manage`.');
+            flash('error', 'Usuário sem permissão para a central técnica. Libere `support.desk` ou `requests.manage`.');
             $this->redirectTo('support/login');
         }
 
@@ -74,7 +74,7 @@ class SupportDeskController extends BaseController
         ), fn ($id) => $id > 0)));
 
         if ($companyIds === []) {
-            flash('error', 'Usuario sem empresa vinculada. Vincule ao menos um CNPJ.');
+            flash('error', 'Usuário sem empresa vinculada. Vincule ao menos um CNPJ.');
             $this->redirectTo('support/login');
         }
 
@@ -95,14 +95,14 @@ class SupportDeskController extends BaseController
             ':id' => (int) $user['id'],
         ]);
 
-        flash('success', 'Acesso liberado na central tecnica.');
+        flash('success', 'Acesso liberado na central técnica.');
         $this->redirectTo('support');
     }
 
     public function logout(): void
     {
         unset($_SESSION['support_desk_auth']);
-        flash('success', 'Sessao da central tecnica encerrada.');
+        flash('success', 'Sessao da central técnica encerrada.');
         $this->redirectTo('support/login');
     }
 
@@ -166,14 +166,14 @@ class SupportDeskController extends BaseController
 
         $ticket = $this->tickets->findTicketAny($ticketId);
         if (!$ticket || !$this->canAccessTicket((int) ($ticket['company_id'] ?? 0))) {
-            flash('error', 'Chamado nao encontrado para as empresas permitidas.');
+            flash('error', 'Chamado não encontrado para as empresas permitidas.');
             $this->redirectTo('support');
         }
 
         $author = trim((string) ($auth['name'] ?? '')) !== '' ? (string) $auth['name'] : (string) ($auth['username'] ?? 'suporte');
         $this->tickets->addCommentAny($ticketId, '[Suporte ' . $author . '] ' . $comment, (int) ($auth['id'] ?? 0));
 
-        flash('success', 'Comentario registrado na central tecnica.');
+        flash('success', 'Comentario registrado na central técnica.');
         $this->redirectTo('support');
     }
 
@@ -192,13 +192,13 @@ class SupportDeskController extends BaseController
         }
 
         if ($ticketId <= 0) {
-            flash('error', 'Chamado invalido.');
+            flash('error', 'Chamado inválido.');
             $this->redirectTo('support');
         }
 
         $ticket = $this->tickets->findTicketAny($ticketId);
         if (!$ticket || !$this->canAccessTicket((int) ($ticket['company_id'] ?? 0))) {
-            flash('error', 'Chamado nao encontrado para as empresas permitidas.');
+            flash('error', 'Chamado não encontrado para as empresas permitidas.');
             $this->redirectTo('support');
         }
 
@@ -213,7 +213,7 @@ class SupportDeskController extends BaseController
             $this->notifyStudentAboutResolvedTicket($ticket, $statusNote);
         }
 
-        flash('success', 'Status atualizado pela central tecnica.');
+        flash('success', 'Status atualizado pela central técnica.');
         $this->redirectTo('support');
     }
 
@@ -334,12 +334,12 @@ class SupportDeskController extends BaseController
 
         $auth = $this->authUser();
         if (!$auth || !$this->hasDeskPermission((string) ($auth['role'] ?? ''), (array) ($auth['permission_keys'] ?? []))) {
-            flash('error', 'Sessao sem permissao para a central tecnica.');
+            flash('error', 'Sessao sem permissão para a central técnica.');
             $this->redirectTo('support/logout');
         }
 
         if ($this->allowedCompanyIds() === []) {
-            flash('error', 'Usuario sem empresas vinculadas para atendimento.');
+            flash('error', 'Usuário sem empresas vinculadas para atendimento.');
             $this->redirectTo('support/logout');
         }
     }

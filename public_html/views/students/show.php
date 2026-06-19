@@ -80,7 +80,7 @@ if (!empty($student['enrolled_at'])) {
                     <dt class="text-slate-500">Portal do aluno</dt>
                     <dd class="font-medium">
                         <?php if (!$portalAvailable): ?>
-                            Nao configurado no banco
+                            Não configurado no banco
                         <?php elseif (!$portalAccount): ?>
                             Sem acesso cadastrado
                         <?php else: ?>
@@ -91,10 +91,10 @@ if (!empty($student['enrolled_at'])) {
                 </div>
             </dl>
             <?php if (!$practiceScheduleAvailable): ?>
-                <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">Os dados da Escala Aluno ainda nao estao disponiveis no banco.</p>
+                <p class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">Os dados da Escala Aluno ainda não estão disponíveis no banco.</p>
             <?php endif; ?>
-            <p class="mt-4 text-sm"><strong>Informacoes Adm:</strong> <?= e($student['admin_info']); ?></p>
-            <p class="mt-2 text-sm"><strong>Observacoes:</strong> <?= nl2br(e($student['notes'])); ?></p>
+            <p class="mt-4 text-sm"><strong>Informações Adm:</strong> <?= e($student['admin_info']); ?></p>
+            <p class="mt-2 text-sm"><strong>Observações:</strong> <?= nl2br(e($student['notes'])); ?></p>
         </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-4">
@@ -122,7 +122,7 @@ if (!empty($student['enrolled_at'])) {
 
     <div class="grid gap-6 xl:grid-cols-2">
         <section class="rounded-xl border border-slate-200 bg-white p-4">
-            <h3 class="mb-4 text-lg font-semibold">Historico Financeiro</h3>
+            <h3 class="mb-4 text-lg font-semibold">Histórico Financeiro</h3>
             <div class="space-y-2 text-sm">
                 <?php foreach ($financeHistory as $row): ?>
                     <div class="rounded-lg border border-slate-100 px-3 py-2">
@@ -137,7 +137,7 @@ if (!empty($student['enrolled_at'])) {
         </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-4">
-            <h3 class="mb-4 text-lg font-semibold">Historico de Status (Kanban)</h3>
+            <h3 class="mb-4 text-lg font-semibold">Histórico de Status (Kanban)</h3>
             <div class="space-y-2 text-sm">
                 <?php foreach ($kanbanHistory as $row): ?>
                     <div class="rounded-lg border border-slate-100 px-3 py-2">
@@ -146,7 +146,7 @@ if (!empty($student['enrolled_at'])) {
                     </div>
                 <?php endforeach; ?>
                 <?php if ($kanbanHistory === []): ?>
-                    <p class="text-slate-500">Sem historico de status.</p>
+                    <p class="text-slate-500">Sem histórico de status.</p>
                 <?php endif; ?>
             </div>
         </section>

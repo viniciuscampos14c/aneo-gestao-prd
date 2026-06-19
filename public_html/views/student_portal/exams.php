@@ -6,20 +6,20 @@ $calendarRows = $examCalendar ?? [];
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h2 class="text-2xl font-semibold">Avaliacoes</h2>
-            <p class="text-sm text-slate-500">Responda provas internas, acesse provas externas e acompanhe seu historico.</p>
+            <p class="text-sm text-slate-500">Responda provas internas, acesse provas externas e acompanhe seu histórico.</p>
         </div>
         <a href="<?= route('student/academic-history'); ?>" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Historico Academico
+            Histórico Acadêmico
         </a>
     </div>
 
     <section class="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
         <div class="mb-3 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-sky-900">Calendario das proximas provas</h3>
+            <h3 class="text-lg font-semibold text-sky-900">Calendário das proximas provas</h3>
             <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-sky-700"><?= count($calendarRows); ?> agendada(s)</span>
         </div>
         <?php if (!$scheduleEnabled): ?>
-            <p class="text-sm text-slate-600">A equipe ainda nao habilitou o calendario de provas neste ambiente.</p>
+            <p class="text-sm text-slate-600">A equipe ainda não habilitou o calendário de provas neste ambiente.</p>
         <?php else: ?>
             <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 <?php foreach ($calendarRows as $calendarExam): ?>
@@ -37,13 +37,13 @@ $calendarRows = $examCalendar ?? [];
     </section>
 
     <section class="rounded-xl border border-slate-200 bg-white/90 p-4">
-        <h3 class="mb-3 text-lg font-semibold">Provas disponiveis para responder</h3>
+        <h3 class="mb-3 text-lg font-semibold">Provas disponíveis para responder</h3>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th class="px-3 py-2">Curso</th>
-                        <th class="px-3 py-2">Avaliacao</th>
+                        <th class="px-3 py-2">Avaliação</th>
                         <th class="px-3 py-2">Data da prova</th>
                         <th class="px-3 py-2">Questoes</th>
                         <th class="px-3 py-2">Status</th>
@@ -70,7 +70,7 @@ $calendarRows = $examCalendar ?? [];
                                 <?php if ($scheduledTs !== false): ?>
                                     <span class="inline-flex rounded-full border border-sky-400 bg-sky-200 px-2 py-1 text-xs font-semibold text-sky-950"><?= e(date('d/m/Y H:i', $scheduledTs)); ?></span>
                                 <?php else: ?>
-                                    <span class="text-xs text-slate-500">Nao definida</span>
+                                    <span class="text-xs text-slate-500">Não definida</span>
                                 <?php endif; ?>
                                 <?php if ($externalDueAt !== ''): ?>
                                     <p class="mt-1 text-xs text-slate-500">Prazo externo: <?= e(date('d/m/Y H:i', strtotime($externalDueAt))); ?></p>
@@ -139,14 +139,14 @@ $calendarRows = $examCalendar ?? [];
     </section>
 
     <section class="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 class="mb-3 text-lg font-semibold">Historico de Avaliacoes</h3>
+        <h3 class="mb-3 text-lg font-semibold">Histórico de Avaliacoes</h3>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                         <th class="px-3 py-3">Data</th>
                         <th class="px-3 py-3">Curso</th>
-                        <th class="px-3 py-3">Avaliacao</th>
+                        <th class="px-3 py-3">Avaliação</th>
                         <th class="px-3 py-3">Nota minima</th>
                         <th class="px-3 py-3">Sua nota</th>
                         <th class="px-3 py-3">Status</th>
@@ -170,7 +170,7 @@ $calendarRows = $examCalendar ?? [];
                     <?php endforeach; ?>
                     <?php if ($rows === []): ?>
                         <tr>
-                            <td colspan="6" class="px-3 py-8 text-center text-slate-500">Nenhum resultado de avaliacao registrado.</td>
+                            <td colspan="6" class="px-3 py-8 text-center text-slate-500">Nenhum resultado de avaliação registrado.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

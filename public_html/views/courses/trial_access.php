@@ -12,7 +12,7 @@ $today = date('Y-m-d');
 
     <?php if (!$featureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Funcionalidade nao habilitada no banco. Execute a migration
+            Funcionalidade não habilitada no banco. Execute a migration
             <code>migrations/20260316_courses_trial_access.sql</code>.
         </div>
     <?php else: ?>
@@ -107,7 +107,7 @@ $today = date('Y-m-d');
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p>Total: <?= (int) $meta['total']; ?> registros | Pagina <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
+            <p>Total: <?= (int) $meta['total']; ?> registros | Página <?= (int) $meta['page']; ?>/<?= (int) $meta['pages']; ?></p>
             <div class="flex gap-2">
                 <?php for ($p = 1; $p <= (int) $meta['pages']; $p++): ?>
                     <a href="index.php?<?= build_query(['route' => 'courses/trial-access', 'per_page' => (int) $meta['per_page'], 'page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) $meta['page'] ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

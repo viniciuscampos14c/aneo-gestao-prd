@@ -26,6 +26,9 @@ $periodEndFmt   = isset($period['period_end'])   ? $fmtDate($period['period_end'
 $studentName    = trim((string) ($student['name'] ?? $student['full_name'] ?? ''));
 $studentEmail   = trim((string) ($student['email_primary'] ?? $student['email'] ?? ''));
 $studentUnit    = trim((string) ($student['company_name'] ?? ''));
+$whatsappPhone  = '5561984264485';
+$whatsappMessage = trim('Olá, sou ' . ($studentName !== '' ? $studentName : 'aluno ANEO') . ' e preciso de apoio para regularizar minha situação financeira e concluir a rematrícula.');
+$whatsappUrl = 'https://wa.me/' . $whatsappPhone . '?text=' . rawurlencode($whatsappMessage);
 ?>
 
 <section class="student-reenroll-shell max-w-2xl mx-auto space-y-8">
@@ -155,6 +158,13 @@ $studentUnit    = trim((string) ($student['company_name'] ?? ''));
                     Procure o administrativo da sua unidade e regularize sua situação financeira.
                     Assim que as faturas forem quitadas, você poderá confirmar sua rematrícula normalmente.
                 </p>
+                <a
+                    href="<?= e($whatsappUrl); ?>"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto">
+                    Entrar em contato pelo WhatsApp
+                </a>
             </div>
         </div>
     <?php endif; ?>

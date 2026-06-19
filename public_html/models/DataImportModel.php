@@ -416,6 +416,7 @@ class DataImportModel extends BaseModel
                 $values[] = ':residency_level';
             }
 
+            $payload['ra'] = $this->resolveStudentRa((string) ($payload['ra'] ?? ''), $companyId);
             $params = $this->studentSqlParams($payload, $companyId, $statusId, $supportsPhoto, $supportsCity, $supportsPractice);
             $params[':created_by'] = $createdBy > 0 ? $createdBy : null;
             $params[':created_at'] = now();
@@ -1308,6 +1309,16 @@ class DataImportModel extends BaseModel
         }
 
         return $params;
+    }
+
+    private function resolveStudentRa(string $ra, int $companyId): string
+    {
+        $ra = trim($ra);
+        if ($ra !== '') {
+            return $ra;
+        }
+
+        return StudentRaGenerator::nextForCompany($this->db, $companyId) ?? '';
     }
 
     private function defaultKanbanStatusId(): ?int

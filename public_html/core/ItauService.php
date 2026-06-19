@@ -77,7 +77,7 @@ class ItauService
             return [
                 'sent'             => false,
                 'status'           => 'pending',
-                'message'          => 'Integracao Itau nao configurada. Registro pendente criado.',
+                'message'          => 'Integração Itau não configurada. Registro pendente criado.',
                 'external_id'      => $existing['external_id'] ?? null,
                 'nosso_numero'     => $existing['nosso_numero'] ?? null,
                 'digitable_line'   => $existing['digitable_line'] ?? null,
@@ -141,7 +141,7 @@ class ItauService
             return [
                 'sent'           => false,
                 'status'         => (string) ($bankSlip['status'] ?? 'pending'),
-                'message'        => 'Integracao Itau nao configurada.',
+                'message'        => 'Integração Itau não configurada.',
                 'external_id'    => $bankSlip['external_id'] ?? null,
                 'nosso_numero'   => $bankSlip['nosso_numero'] ?? null,
                 'digitable_line' => $bankSlip['digitable_line'] ?? null,
@@ -169,7 +169,7 @@ class ItauService
             return [
                 'sent'             => false,
                 'status'           => (string) ($bankSlip['status'] ?? 'pending'),
-                'message'          => 'Nosso numero ou ID beneficiario nao configurado para consulta.',
+                'message'          => 'Nosso número ou ID beneficiário não configurado para consulta.',
                 'external_id'      => $bankSlip['external_id'] ?? null,
                 'nosso_numero'     => $bankSlip['nosso_numero'] ?? null,
                 'digitable_line'   => $bankSlip['digitable_line'] ?? null,
@@ -286,11 +286,11 @@ class ItauService
         $idBeneficiario = (string) $this->setting('id_beneficiario', '');
 
         if ($idBeneficiario === '') {
-            return ['ok' => false, 'message' => 'ID Beneficiario nao configurado.'];
+            return ['ok' => false, 'message' => 'ID Beneficiário não configurado.'];
         }
 
         if (!filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
-            return ['ok' => false, 'message' => 'URL do webhook invalida.'];
+            return ['ok' => false, 'message' => 'URL do webhook inválida.'];
         }
 
         $response = $this->callApi('PUT', '/boletoscash/v2/webhooks/' . $idBeneficiario, [

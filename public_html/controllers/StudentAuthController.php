@@ -31,13 +31,13 @@ class StudentAuthController extends BaseController
         }
 
         if (!$this->portal->portalFeatureAvailable()) {
-            $this->error('Portal do aluno ainda nao configurado no banco. Execute o SQL atualizado.');
+            $this->error('Portal do aluno ainda não configurado no banco. Execute o SQL atualizado.');
             $this->redirect('student/login');
         }
 
         $account = $this->portal->findAccountByLogin($login);
         if (!$account || (int) $account['is_active'] !== 1 || (int) $account['student_is_active'] !== 1) {
-            $this->error('Acesso do aluno invalido ou inativo.');
+            $this->error('Acesso do aluno inválido ou inativo.');
             $this->redirect('student/login');
         }
 
@@ -45,7 +45,7 @@ class StudentAuthController extends BaseController
             || hash_equals((string) $account['password_hash'], $password);
 
         if (!$validPassword) {
-            $this->error('Credenciais invalidas.');
+            $this->error('Credenciais inválidas.');
             $this->redirect('student/login');
         }
 
@@ -56,16 +56,16 @@ class StudentAuthController extends BaseController
             $status = trim((string) ($trialContext['status'] ?? ''));
 
             if ($status === 'revoked') {
-                $this->error('Este acesso de degustacao foi revogado pelo administrador.');
+                $this->error('Este acesso de degustação foi revogado pelo administrador.');
                 $this->redirect('student/login');
             }
 
             if ($status === 'expired') {
-                $this->error('Este acesso de degustacao expirou. O dia liberado foi ' . $formattedDate . '.');
+                $this->error('Este acesso de degustação expirou. O dia liberado foi ' . $formattedDate . '.');
                 $this->redirect('student/login');
             }
 
-            $this->error('Acesso de degustacao permitido apenas em ' . $formattedDate . '.');
+            $this->error('Acesso de degustação permitido apenas em ' . $formattedDate . '.');
             $this->redirect('student/login');
         }
 
@@ -113,7 +113,7 @@ class StudentAuthController extends BaseController
     {
         unset($_SESSION['student']);
         session_regenerate_id(true);
-        $this->success('Sessao do aluno encerrada.');
+        $this->success('Sessão do aluno encerrada.');
         $this->redirect('student/login');
     }
 }

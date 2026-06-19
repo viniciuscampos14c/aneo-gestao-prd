@@ -68,7 +68,7 @@ class ChatwootController extends BaseController
 
         $student = $this->students->find($studentId);
         if (!$student) {
-            $this->error('Aluno nao encontrado para abrir conversa.');
+            $this->error('Aluno não encontrado para abrir conversa.');
             $this->redirect($returnRoute);
         }
 
@@ -95,7 +95,7 @@ class ChatwootController extends BaseController
 
         $lead = $this->leads->find($leadId);
         if (!$lead) {
-            $this->error('Lead nao encontrado para abrir conversa.');
+            $this->error('Lead não encontrado para abrir conversa.');
             $this->redirect($returnRoute);
         }
 
@@ -162,7 +162,7 @@ class ChatwootController extends BaseController
         ], $existing);
 
         if (!$result['ok']) {
-            $this->error($result['message'] ?: 'Nao foi possivel abrir conversa no Chatwoot.');
+            $this->error($result['message'] ?: 'Não foi possível abrir conversa no Chatwoot.');
             if (!empty($result['conversation_url']) && filter_var($result['conversation_url'], FILTER_VALIDATE_URL)) {
                 header('Location: ' . $result['conversation_url']);
                 exit;

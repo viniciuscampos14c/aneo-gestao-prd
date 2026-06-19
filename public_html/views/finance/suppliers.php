@@ -37,7 +37,7 @@ $paginationBase = [
             </select>
             <select name="per_page" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
                 <?php foreach ($paginationOptions as $opt): ?>
-                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/pagina</option>
+                    <option value="<?= (int) $opt; ?>" <?= (int) ($meta['per_page'] ?? 50) === (int) $opt ? 'selected' : ''; ?>><?= (int) $opt; ?>/página</option>
                 <?php endforeach; ?>
             </select>
             <div class="flex gap-2 md:col-span-4 xl:col-span-6">
@@ -59,7 +59,7 @@ $paginationBase = [
             </label>
             <label class="block">
                 <span class="mb-1 block text-sm font-medium">Contato</span>
-                <input type="text" name="contact_name" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Nome do responsavel">
+                <input type="text" name="contact_name" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Nome do responsável">
             </label>
             <label class="block">
                 <span class="mb-1 block text-sm font-medium">Email</span>
@@ -90,8 +90,8 @@ $paginationBase = [
                 <input type="text" name="bank_account" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
             </label>
             <label class="block xl:col-span-3">
-                <span class="mb-1 block text-sm font-medium">Observacoes</span>
-                <input type="text" name="notes" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Categoria, contrato, vencimento padrao, observacoes internas...">
+                <span class="mb-1 block text-sm font-medium">Observações</span>
+                <input type="text" name="notes" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Categoria, contrato, vencimento padrao, observações internas...">
             </label>
             <label class="flex items-center gap-2 pt-7 text-sm">
                 <input type="checkbox" name="is_active" value="1" checked>
@@ -154,7 +154,7 @@ $paginationBase = [
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Pagina <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
+            <p>Total: <?= (int) ($meta['total'] ?? 0); ?> registros | Página <?= (int) ($meta['page'] ?? 1); ?>/<?= (int) ($meta['pages'] ?? 1); ?></p>
             <div class="flex gap-2">
                 <?php for ($p = 1; $p <= (int) ($meta['pages'] ?? 1); $p++): ?>
                     <a href="index.php?<?= http_build_query($paginationBase + ['page' => $p]); ?>" class="rounded px-3 py-1 <?= $p === (int) ($meta['page'] ?? 1) ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white hover:bg-slate-50'; ?>"><?= $p; ?></a>

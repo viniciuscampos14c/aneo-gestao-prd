@@ -31,7 +31,7 @@ class UserController extends BaseController
         $result = $this->users->list($filters, $perPage, $page);
 
         $this->render('users/index', [
-            'title' => 'Administracao de Usuarios',
+            'title' => 'Administração de Usuários',
             'filters' => $filters,
             'rows' => $result['rows'],
             'meta' => $result['meta'],
@@ -50,7 +50,7 @@ class UserController extends BaseController
         $selectedCompanyIds = $currentCompanyId !== null ? [$currentCompanyId] : [];
 
         $this->render('users/form', [
-            'title' => 'Novo Usuario',
+            'title' => 'Novo Usuário',
             'action' => route('users/store'),
             'userData' => null,
             'selectedPermissions' => array_keys($this->permissionCatalog()['all']),
@@ -76,7 +76,7 @@ class UserController extends BaseController
         try {
             $id = $this->users->createUser($data['payload'], $data['permissions'], $data['company_ids']);
         } catch (PDOException $e) {
-            $this->error('Nao foi possivel criar usuario. Verifique email/usuario duplicado.');
+            $this->error('Não foi possível criar usuário. Verifique email/usuário duplicado.');
             $this->redirect('users/create');
         }
 
@@ -86,13 +86,13 @@ class UserController extends BaseController
             'action' => 'create',
             'entity_type' => 'user',
             'entity_id' => $id,
-            'entity_label' => (string) ($after['name'] ?? 'Usuario #' . $id),
-            'description' => 'Usuario criado.',
+            'entity_label' => (string) ($after['name'] ?? 'Usuário #' . $id),
+            'description' => 'Usuário criado.',
             'before' => [],
             'after' => $after,
         ]);
 
-        $this->success('Usuario criado #' . $id . '.');
+        $this->success('Usuário criado #' . $id . '.');
         $this->redirect('users');
     }
 
@@ -105,7 +105,7 @@ class UserController extends BaseController
         $userData = $this->users->findForEdit($id);
 
         if (!$userData) {
-            $this->error('Usuario nao encontrado.');
+            $this->error('Usuário não encontrado.');
             $this->redirect('users');
         }
 
@@ -114,7 +114,7 @@ class UserController extends BaseController
         $selectedCompanyIds = $this->users->companyIdsForUser($id);
 
         $this->render('users/form', [
-            'title' => 'Editar Usuario',
+            'title' => 'Editar Usuário',
             'action' => route('users/update&id=' . $id),
             'userData' => $userData,
             'selectedPermissions' => $selected,
@@ -136,7 +136,7 @@ class UserController extends BaseController
         $before = $existing ? $this->userSnapshot($id) : null;
 
         if (!$existing) {
-            $this->error('Usuario nao encontrado.');
+            $this->error('Usuário não encontrado.');
             $this->redirect('users');
         }
 
@@ -149,7 +149,7 @@ class UserController extends BaseController
         try {
             $this->users->updateUser($id, $data['payload'], $data['permissions'], $data['company_ids']);
         } catch (PDOException $e) {
-            $this->error('Nao foi possivel atualizar usuario. Verifique email/usuario duplicado.');
+            $this->error('Não foi possível atualizar usuário. Verifique email/usuário duplicado.');
             $this->redirect('users/edit&id=' . $id);
         }
 
@@ -168,13 +168,13 @@ class UserController extends BaseController
             'action' => 'update',
             'entity_type' => 'user',
             'entity_id' => $id,
-            'entity_label' => (string) ($after['name'] ?? ($before['name'] ?? ('Usuario #' . $id))),
-            'description' => 'Usuario atualizado.',
+            'entity_label' => (string) ($after['name'] ?? ($before['name'] ?? ('Usuário #' . $id))),
+            'description' => 'Usuário atualizado.',
             'before' => $before,
             'after' => $after,
         ]);
 
-        $this->success('Usuario atualizado.');
+        $this->success('Usuário atualizado.');
         $this->redirect('users');
     }
 
@@ -192,7 +192,7 @@ class UserController extends BaseController
         }
 
         if ($id === (int) current_user()['id'] && $active === 0) {
-            $this->error('Nao e permitido inativar seu proprio usuario.');
+            $this->error('Não e permitido inativar seu próprio usuário.');
             $this->redirect('users');
         }
 
@@ -205,13 +205,13 @@ class UserController extends BaseController
             'action' => 'toggle',
             'entity_type' => 'user',
             'entity_id' => $id,
-            'entity_label' => (string) ($after['name'] ?? ($before['name'] ?? ('Usuario #' . $id))),
-            'description' => (int) $active === 1 ? 'Usuario ativado.' : 'Usuario inativado.',
+            'entity_label' => (string) ($after['name'] ?? ($before['name'] ?? ('Usuário #' . $id))),
+            'description' => (int) $active === 1 ? 'Usuário ativado.' : 'Usuário inativado.',
             'before' => $before,
             'after' => $after,
         ]);
 
-        $this->success('Status do usuario atualizado.');
+        $this->success('Status do usuário atualizado.');
         $this->redirect('users');
     }
 
@@ -228,7 +228,7 @@ class UserController extends BaseController
         }
 
         if ($id === (int) current_user()['id']) {
-            $this->error('Nao e permitido excluir seu proprio usuario.');
+            $this->error('Não e permitido excluir seu próprio usuário.');
             $this->redirect('users');
         }
 
@@ -240,13 +240,13 @@ class UserController extends BaseController
             'action' => 'delete',
             'entity_type' => 'user',
             'entity_id' => $id,
-            'entity_label' => (string) ($before['name'] ?? ('Usuario #' . $id)),
-            'description' => 'Usuario removido.',
+            'entity_label' => (string) ($before['name'] ?? ('Usuário #' . $id)),
+            'description' => 'Usuário removido.',
             'before' => $before,
             'after' => [],
         ]);
 
-        $this->success('Usuario removido.');
+        $this->success('Usuário removido.');
         $this->redirect('users');
     }
 
@@ -264,7 +264,7 @@ class UserController extends BaseController
         ];
 
         if ($payload['name'] === '' || $payload['username'] === '' || $payload['email'] === '') {
-            return ['error' => 'Nome, usuario e email sao obrigatorios.'];
+            return ['error' => 'Nome, usuário e e-mail são obrigatórios.'];
         }
 
         if (!filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
@@ -272,7 +272,7 @@ class UserController extends BaseController
         }
 
         if (!in_array($payload['role'], $roles, true)) {
-            return ['error' => 'Perfil de usuario invalido.'];
+            return ['error' => 'Perfil de usuário inválido.'];
         }
 
         if (!$isUpdate && strlen($payload['password']) < 6) {
@@ -286,7 +286,7 @@ class UserController extends BaseController
         $permissions = $this->sanitizePermissionKeys((array) post('permissions', []));
         if ($payload['role'] === 'suporte' && $permissions === []) {
             if ($isUpdate) {
-                return ['error' => 'Selecione ao menos uma permissao para o usuario de suporte.'];
+                return ['error' => 'Selecione ao menos uma permissão para o usuário de suporte.'];
             }
             $permissions = array_keys($this->permissionCatalog()['all']);
         }
@@ -298,7 +298,7 @@ class UserController extends BaseController
         $companyIds = $this->normalizeCompanyIds((array) post('company_ids', []));
         $availableCompanies = $this->users->listActiveCompanies();
         if ($availableCompanies !== [] && $companyIds === []) {
-            return ['error' => 'Selecione ao menos uma empresa para este usuario.'];
+            return ['error' => 'Selecione ao menos uma empresa para este usuário.'];
         }
 
         return [

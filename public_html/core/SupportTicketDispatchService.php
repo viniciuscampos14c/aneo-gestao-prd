@@ -16,7 +16,7 @@ class SupportTicketDispatchService
         if ($to === '') {
             return [
                 'ok' => false,
-                'message' => 'Email de notificacao nao configurado.',
+                'message' => 'Email de notificação não configurado.',
             ];
         }
 
@@ -34,7 +34,7 @@ class SupportTicketDispatchService
             'Email solicitante: ' . (string) ($author['email'] ?? ($ticket['requester_email'] ?? '-')),
             'Criado em: ' . (string) ($ticket['created_at'] ?? now()),
             '',
-            'Descricao:',
+            'Descrição:',
             (string) ($ticket['description'] ?? ''),
         ];
 

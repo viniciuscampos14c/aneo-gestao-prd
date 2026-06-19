@@ -9,19 +9,19 @@ class DataImportController extends BaseController
     private array $types = [
         'students' => [
             'label' => 'Alunos completos',
-            'description' => 'Cadastro academico, financeiro basico, escala pratica e acesso ao portal.',
+            'description' => 'Cadastro acadêmico, financeiro básico, escala pratica e acesso ao portal.',
         ],
         'courses_ead' => [
-            'label' => 'Cursos EAD com modulos e aulas',
-            'description' => 'Cria ou atualiza cursos, categorias, modulos e aulas em video.',
+            'label' => 'Cursos EAD com módulos e aulas',
+            'description' => 'Cria ou atualiza cursos, categorias, módulos e aulas em video.',
         ],
         'professors' => [
             'label' => 'Professores',
-            'description' => 'Cria ou atualiza usuarios do sistema com perfil de professor.',
+            'description' => 'Cria ou atualiza usuários do sistema com perfil de professor.',
         ],
         'admin_users' => [
-            'label' => 'Usuarios administrativos',
-            'description' => 'Cria ou atualiza usuarios admin/suporte e vincula as filiais existentes.',
+            'label' => 'Usuários administrativos',
+            'description' => 'Cria ou atualiza usuários admin/suporte e vincula as filiais existentes.',
         ],
         'practice_units' => [
             'label' => 'Unidades / Hospitais',
@@ -72,7 +72,7 @@ class DataImportController extends BaseController
         $type = (string) request('type', '');
         if (!isset($this->types[$type])) {
             http_response_code(404);
-            exit('Modelo nao encontrado.');
+            exit('Modelo não encontrado.');
         }
 
         $filename = match ($type) {
@@ -109,7 +109,7 @@ class DataImportController extends BaseController
 
         $type = (string) post('import_type', '');
         if (!isset($this->types[$type])) {
-            $this->error('Tipo de importacao invalido.');
+            $this->error('Tipo de importacao inválido.');
             $this->redirect('data-imports');
         }
 
@@ -127,7 +127,7 @@ class DataImportController extends BaseController
 
         $storedPath = $this->storeUploadedCsv($_FILES['csv_file'], $type);
         if ($storedPath === null) {
-            $this->error('Nao foi possivel salvar o arquivo enviado.');
+            $this->error('Não foi possível salvar o arquivo enviado.');
             $this->redirect('data-imports');
         }
 
@@ -170,12 +170,12 @@ class DataImportController extends BaseController
         $batchId = (int) post('batch_id', 0);
         $batch = $this->imports->findBatch($batchId);
         if (!$batch) {
-            $this->error('Lote de importacao nao encontrado.');
+            $this->error('Lote de importacao não encontrado.');
             $this->redirect('data-imports');
         }
 
         if ((string) $batch['status'] !== 'validated') {
-            $this->error('Este lote nao esta pronto para confirmacao.');
+            $this->error('Este lote não esta pronto para confirmacao.');
             $this->redirect('data-imports&batch_id=' . $batchId);
         }
 
@@ -186,7 +186,7 @@ class DataImportController extends BaseController
 
         $rows = $this->imports->validRowsForBatch($batchId);
         if ($rows === []) {
-            $this->error('Nao ha linhas validas para importar.');
+            $this->error('Não há linhas validas para importar.');
             $this->redirect('data-imports&batch_id=' . $batchId);
         }
 
@@ -287,7 +287,7 @@ class DataImportController extends BaseController
     {
         $handle = fopen($path, 'r');
         if (!$handle) {
-            throw new RuntimeException('Nao foi possivel abrir o arquivo salvo.');
+            throw new RuntimeException('Não foi possível abrir o arquivo salvo.');
         }
 
         $header = fgetcsv($handle, 0, ';');
@@ -371,7 +371,7 @@ class DataImportController extends BaseController
             $errors[] = 'Informe o nome do aluno.';
         }
         if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $errors[] = 'Email principal invalido.';
+            $errors[] = 'Email principal inválido.';
         }
 
         $companyInput = $this->field($row, ['filial_id', 'id_filial', 'codigo_filial', 'empresa_id', 'company_id', 'filial', 'empresa', 'nome_filial', 'cnpj_filial']);
@@ -382,7 +382,7 @@ class DataImportController extends BaseController
         $enrolledAt = $this->parseDate($this->field($row, ['data_entrada', 'enrolled_at']), 'Data de entrada', $errors);
         [$isActive, $statusProvided, $statusOk] = $this->parseStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
-            $errors[] = 'Status invalido. Use Ativo ou Inativo.';
+            $errors[] = 'Status inválido. Use Ativo ou Inativo.';
         }
 
         $monthlyRaw = $this->field($row, ['mensalidade', 'monthly_fee']);
@@ -399,11 +399,11 @@ class DataImportController extends BaseController
         $practiceUnitId = null;
         if ($unitName !== '') {
             if (!$this->students->practiceScheduleFeatureAvailable()) {
-                $warnings[] = 'Campos de escala pratica indisponiveis no banco; unidade sera ignorada.';
+                $warnings[] = 'Campos de escala prática indisponiveis no banco; unidade sera ignorada.';
             } else {
                 $unit = $this->imports->findPracticeUnitByName($unitName, $targetCompanyId);
                 if (!$unit) {
-                    $errors[] = 'Unidade pratica nao encontrada: ' . $unitName . '.';
+                    $errors[] = 'Unidade prática não encontrada: ' . $unitName . '.';
                 } else {
                     $practiceUnitId = (int) $unit['id'];
                 }
@@ -413,7 +413,7 @@ class DataImportController extends BaseController
         $residencyRaw = strtoupper($this->field($row, ['nivel_residencia', 'residencia', 'r']));
         $residencyLevel = $residencyRaw !== '' ? $residencyRaw : 'R1';
         if (!in_array($residencyLevel, ['R1', 'R2', 'R3'], true)) {
-            $errors[] = 'Nivel de residencia invalido. Use R1, R2 ou R3.';
+            $errors[] = 'Nivel de residência inválido. Use R1, R2 ou R3.';
         }
 
         $portalLogin = strtolower($this->field($row, ['login_portal', 'portal_login']));
@@ -433,7 +433,7 @@ class DataImportController extends BaseController
                 $portalConflict = $this->imports->findStudentPortalAccountByLogin($portalLogin, $targetCompanyId);
                 $expectedStudentId = $existing ? (int) $existing['id'] : 0;
                 if ($portalConflict && (int) $portalConflict['student_id'] !== $expectedStudentId) {
-                    $errors[] = 'Login do portal ja esta em uso por outro aluno: ' . $portalLogin . '.';
+                    $errors[] = 'Login do portal já esta em uso por outro aluno: ' . $portalLogin . '.';
                 }
                 if (!$existing && $portalPassword === '' && $portalActive === 1) {
                     $errors[] = 'Informe senha_inicial para novo acesso ativo no portal.';
@@ -498,7 +498,7 @@ class DataImportController extends BaseController
         if ($email === '') {
             $errors[] = 'Informe o email do professor.';
         } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $errors[] = 'Email do professor invalido.';
+            $errors[] = 'Email do professor inválido.';
         }
 
         if ($username === '' && $email !== '') {
@@ -507,14 +507,14 @@ class DataImportController extends BaseController
 
         $username = $this->normalizeUsername($username);
         if ($username === '') {
-            $errors[] = 'Informe usuario/login do professor.';
+            $errors[] = 'Informe usuário/login do professor.';
         } elseif (strlen($username) > 80) {
-            $errors[] = 'Usuario/login deve ter no maximo 80 caracteres.';
+            $errors[] = 'Usuário/login deve ter no máximo 80 caracteres.';
         }
 
         [$isActive, $statusProvided, $statusOk] = $this->parseStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
-            $errors[] = 'Status invalido. Use Ativo ou Inativo.';
+            $errors[] = 'Status inválido. Use Ativo ou Inativo.';
         }
 
         $emailUser = $email !== '' ? $this->imports->findUserByEmail($email) : null;
@@ -522,15 +522,15 @@ class DataImportController extends BaseController
         $existing = $emailUser ?: $usernameUser;
 
         if ($emailUser && $usernameUser && (int) $emailUser['id'] !== (int) $usernameUser['id']) {
-            $errors[] = 'Email e usuario pertencem a usuarios diferentes. Corrija a planilha antes de importar.';
+            $errors[] = 'Email e usuário pertencem a usuários diferentes. Corrija a planilha antes de importar.';
         }
 
         if ($existing && (string) ($existing['role'] ?? '') !== 'professor') {
-            $errors[] = 'Usuario ja existe com perfil ' . (string) ($existing['role'] ?? '-') . '. Ajuste manualmente para evitar alterar admin/suporte por importacao.';
+            $errors[] = 'Usuário já existe com perfil ' . (string) ($existing['role'] ?? '-') . '. Ajuste manualmente para evitar alterar admin/suporte por importacao.';
         }
 
         if ($existing && (string) ($existing['email'] ?? '') !== '' && $email !== '' && strtolower((string) $existing['email']) !== $email) {
-            $warnings[] = 'O email do usuario sera atualizado para ' . $email . '.';
+            $warnings[] = 'O email do usuário sera atualizado para ' . $email . '.';
         }
 
         if (!$existing && strlen($password) < 6) {
@@ -570,13 +570,13 @@ class DataImportController extends BaseController
         $role = strtolower($this->normalizeHeader($this->field($row, ['perfil', 'role'])));
 
         if ($name === '') {
-            $errors[] = 'Informe o nome do usuario.';
+            $errors[] = 'Informe o nome do usuário.';
         }
 
         if ($email === '') {
-            $errors[] = 'Informe o email do usuario.';
+            $errors[] = 'Informe o email do usuário.';
         } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $errors[] = 'Email do usuario invalido.';
+            $errors[] = 'Email do usuário inválido.';
         }
 
         if ($username === '' && $email !== '') {
@@ -585,21 +585,21 @@ class DataImportController extends BaseController
 
         $username = $this->normalizeUsername($username);
         if ($username === '') {
-            $errors[] = 'Informe usuario/login.';
+            $errors[] = 'Informe usuário/login.';
         } elseif (strlen($username) > 80) {
-            $errors[] = 'Usuario/login deve ter no maximo 80 caracteres.';
+            $errors[] = 'Usuário/login deve ter no máximo 80 caracteres.';
         }
 
         if ($role === '' || in_array($role, ['administrador', 'administrator'], true)) {
             $role = 'admin';
         }
         if (!in_array($role, ['admin', 'suporte'], true)) {
-            $errors[] = 'Perfil invalido para usuarios administrativos. Use Admin ou Suporte.';
+            $errors[] = 'Perfil inválido para usuários administrativos. Use Admin ou Suporte.';
         }
 
         [$isActive, $statusProvided, $statusOk] = $this->parseStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
-            $errors[] = 'Status invalido. Use Ativo ou Inativo.';
+            $errors[] = 'Status inválido. Use Ativo ou Inativo.';
         }
 
         $emailUser = $email !== '' ? $this->imports->findUserByEmail($email) : null;
@@ -607,15 +607,15 @@ class DataImportController extends BaseController
         $existing = $emailUser ?: $usernameUser;
 
         if ($emailUser && $usernameUser && (int) $emailUser['id'] !== (int) $usernameUser['id']) {
-            $errors[] = 'Email e usuario pertencem a usuarios diferentes. Corrija a planilha antes de importar.';
+            $errors[] = 'Email e usuário pertencem a usuários diferentes. Corrija a planilha antes de importar.';
         }
 
         if ($existing && (string) ($existing['role'] ?? '') === 'professor') {
-            $errors[] = 'Usuario ja existe como professor. Ajuste manualmente para evitar alterar perfil por importacao administrativa.';
+            $errors[] = 'Usuário já existe como professor. Ajuste manualmente para evitar alterar perfil por importacao administrativa.';
         }
 
         if (!$existing && strlen($password) < 6) {
-            $errors[] = 'Informe senha_inicial com ao menos 6 caracteres para novo usuario.';
+            $errors[] = 'Informe senha_inicial com ao menos 6 caracteres para novo usuário.';
         }
 
         if ($existing && $password !== '' && strlen($password) < 6) {
@@ -629,7 +629,7 @@ class DataImportController extends BaseController
         }
         $companyIds = array_values(array_filter(array_unique(array_map('intval', $companyIds)), fn ($id) => $id > 0));
         if ($companyIds === []) {
-            $errors[] = 'Nao foi possivel definir a filial/empresa do usuario.';
+            $errors[] = 'Não foi possível definir a filial/empresa do usuário.';
         }
 
         $permissions = [];
@@ -661,7 +661,7 @@ class DataImportController extends BaseController
         $errors = [];
         $warnings = [];
         if (!$this->imports->practiceUnitsFeatureAvailable()) {
-            $errors[] = 'Modulo de unidades/hospitais indisponivel no banco. Execute a migracao da Escala Aluno.';
+            $errors[] = 'Módulo de unidades/hospitais indisponivel no banco. Execute a migração da Escala Aluno.';
         }
 
         $name = $this->field($row, ['nome', 'unidade', 'hospital', 'nome_unidade', 'name']);
@@ -673,17 +673,17 @@ class DataImportController extends BaseController
         }
 
         if ($state !== '' && strlen($state) > 10) {
-            $errors[] = 'UF/estado deve ter no maximo 10 caracteres.';
+            $errors[] = 'UF/estado deve ter no máximo 10 caracteres.';
         }
 
         [$isActive, $statusProvided, $statusOk] = $this->parseStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
-            $errors[] = 'Status invalido. Use Ativo ou Inativo.';
+            $errors[] = 'Status inválido. Use Ativo ou Inativo.';
         }
 
         $existing = $name !== '' ? $this->imports->findPracticeUnitByName($name) : null;
         if ($existing && (int) ($existing['is_active'] ?? 1) === 0 && $statusProvided === false) {
-            $warnings[] = 'Unidade ja existe como inativa; sem coluna status ela permanecera inativa.';
+            $warnings[] = 'Unidade já existe como inativa; sem coluna status ela permanecera inativa.';
         }
 
         return [
@@ -706,7 +706,7 @@ class DataImportController extends BaseController
         $errors = [];
         $warnings = [];
         if (!$this->imports->arsenalFeatureAvailable()) {
-            $errors[] = 'Modulo Arsenal Digital indisponivel no banco. Execute a migracao 20260313_arsenal_digital.sql.';
+            $errors[] = 'Módulo Arsenal Digital indisponivel no banco. Execute a migração 20260313_arsenal_digital.sql.';
         }
 
         $sourceKey = $this->field($row, ['codigo_material', 'codigo', 'source_key']);
@@ -722,12 +722,12 @@ class DataImportController extends BaseController
         }
 
         if ($title === '') {
-            $errors[] = 'Informe o titulo do material.';
+            $errors[] = 'Informe o título do material.';
         }
 
         [$materialType, $materialTypeOk] = $this->parseArsenalMaterialType($this->field($row, ['tipo', 'tipo_material', 'material_type']));
         if (!$materialTypeOk) {
-            $errors[] = 'Tipo do material invalido. Nesta fase use Link.';
+            $errors[] = 'Tipo do material inválido. Nesta fase use Link.';
         }
 
         if ($materialType !== 'link') {
@@ -737,12 +737,12 @@ class DataImportController extends BaseController
         if ($url === '') {
             $errors[] = 'Informe a URL/link do material.';
         } elseif (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            $errors[] = 'URL/link do material invalido.';
+            $errors[] = 'URL/link do material inválido.';
         }
 
         [$visibilityScope, $visibilityOk] = $this->parseArsenalVisibilityScope($this->field($row, ['escopo', 'visibilidade', 'visibility_scope']));
         if (!$visibilityOk) {
-            $errors[] = 'Escopo invalido. Use Global, Curso ou Aluno.';
+            $errors[] = 'Escopo inválido. Use Global, Curso ou Aluno.';
         }
 
         if ($visibilityScope !== 'global') {
@@ -751,11 +751,11 @@ class DataImportController extends BaseController
 
         [$status, $statusOk] = $this->parseArsenalStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
-            $errors[] = 'Status invalido. Use Rascunho, Publicado ou Arquivado.';
+            $errors[] = 'Status inválido. Use Rascunho, Publicado ou Arquivado.';
         }
 
-        $publishStart = $this->parseDateTime($this->field($row, ['publicar_inicio', 'publish_start_at']), 'Inicio da publicacao', $errors);
-        $publishEnd = $this->parseDateTime($this->field($row, ['publicar_fim', 'publish_end_at']), 'Fim da publicacao', $errors);
+        $publishStart = $this->parseDateTime($this->field($row, ['publicar_inicio', 'publish_start_at']), 'Início da publicação', $errors);
+        $publishEnd = $this->parseDateTime($this->field($row, ['publicar_fim', 'publish_end_at']), 'Fim da publicação', $errors);
 
         $sourceKey = $sourceKey !== '' ? $sourceKey : $this->slug($categoryName . '-' . $title);
         $existing = $title !== '' ? $this->imports->findArsenalItemCandidate($sourceKey, $categoryName, $title) : null;
@@ -787,7 +787,7 @@ class DataImportController extends BaseController
         $errors = [];
         $warnings = [];
         if (!$this->courses->lmsFeatureAvailable()) {
-            $errors[] = 'LMS modular indisponivel no banco. Execute a migration de modulos/aulas.';
+            $errors[] = 'LMS modular indisponivel no banco. Execute a migration de módulos/aulas.';
         }
 
         $code = $this->field($row, ['codigo_curso', 'course_code', 'codigo']);
@@ -807,7 +807,7 @@ class DataImportController extends BaseController
         }
         [$status, $statusOk] = $this->parseCourseStatus($this->field($row, ['status', 'situacao']));
         if (!$statusOk) {
-            $errors[] = 'Status do curso invalido. Use Rascunho ou Publicado.';
+            $errors[] = 'Status do curso inválido. Use Rascunho ou Publicado.';
         }
 
         $moduleOrder = max(1, (int) ($this->field($row, ['ordem_modulo', 'module_order']) ?: 1));
@@ -940,7 +940,7 @@ class DataImportController extends BaseController
 
         if ($username !== '') {
             if (isset($seen['professor_username'][$username])) {
-                $errors[] = 'Usuario/login duplicado na planilha: ' . $username . '. Ja aparece na linha ' . $seen['professor_username'][$username] . '.';
+                $errors[] = 'Usuário/login duplicado na planilha: ' . $username . '. Ja aparece na linha ' . $seen['professor_username'][$username] . '.';
             } else {
                 $seen['professor_username'][$username] = $line;
             }
@@ -965,7 +965,7 @@ class DataImportController extends BaseController
 
         if ($username !== '') {
             if (isset($seen['admin_user_username'][$username])) {
-                $errors[] = 'Usuario/login duplicado na planilha: ' . $username . '. Ja aparece na linha ' . $seen['admin_user_username'][$username] . '.';
+                $errors[] = 'Usuário/login duplicado na planilha: ' . $username . '. Ja aparece na linha ' . $seen['admin_user_username'][$username] . '.';
             } else {
                 $seen['admin_user_username'][$username] = $line;
             }
@@ -1026,7 +1026,7 @@ class DataImportController extends BaseController
         $key = $courseKey . '|' . $moduleKey . '|' . $lessonKey;
         if (isset($seen['course_lesson'][$key])) {
             return [
-                'Aula duplicada na planilha para o mesmo curso/modulo: ' . ($lesson['title'] ?? $lessonKey) . '. Ja aparece na linha ' . $seen['course_lesson'][$key] . '.',
+                'Aula duplicada na planilha para o mesmo curso/módulo: ' . ($lesson['title'] ?? $lessonKey) . '. Já aparece na linha ' . $seen['course_lesson'][$key] . '.',
             ];
         }
 
@@ -1132,14 +1132,14 @@ class DataImportController extends BaseController
         if ($type === 'professors') {
             return [
                 ['nome', 'email', 'usuario', 'senha_inicial', 'status', 'observacoes'],
-                ['Professor Exemplo', 'professor@example.com', 'professor.exemplo', '123456', 'Ativo', 'Usuario professor importado do sistema antigo'],
+                ['Professor Exemplo', 'professor@example.com', 'professor.exemplo', '123456', 'Ativo', 'Usuário professor importado do sistema antigo'],
             ];
         }
 
         if ($type === 'admin_users') {
             return [
                 ['nome', 'email', 'usuario', 'senha_inicial', 'perfil', 'filiais_ids', 'permissoes', 'status'],
-                ['Usuario Suporte', 'suporte@example.com', 'suporte.exemplo', '123456', 'Suporte', '1', 'dashboard;students;courses;arsenal', 'Ativo'],
+                ['Usuário Suporte', 'suporte@example.com', 'suporte.exemplo', '123456', 'Suporte', '1', 'dashboard;students;courses;arsenal', 'Ativo'],
                 ['Administrador Unidade', 'admin.unidade@example.com', 'admin.unidade', '123456', 'Admin', '1', '', 'Ativo'],
             ];
         }
@@ -1161,7 +1161,7 @@ class DataImportController extends BaseController
 
         return [
             ['codigo_curso', 'nome_curso', 'categoria', 'status', 'carga_horaria', 'descricao_curso', 'curriculo', 'materiais', 'link_ao_vivo', 'senha_ao_vivo', 'id_reuniao', 'data_aula_ao_vivo', 'ordem_modulo', 'nome_modulo', 'descricao_modulo', 'modulo_ativo', 'ordem_aula', 'nome_aula', 'descricao_aula', 'url_video', 'duracao_minutos', 'progresso_minimo', 'aula_obrigatoria', 'aula_ativa'],
-            ['CUR-IMPLANTE-01', 'Curso de Implantodontia', 'Implantodontia', 'Publicado', '40', 'Curso completo de implantodontia.', 'Grade resumida', 'Apostilas no Arsenal', '', '', '', '', '1', 'Modulo 1 - Fundamentos', 'Base teorica inicial.', 'Sim', '1', 'Aula 1 - Apresentacao', 'Boas-vindas e objetivos.', 'https://www.youtube.com/watch?v=VIDEO', '15', '70', 'Sim', 'Sim'],
+            ['CUR-IMPLANTE-01', 'Curso de Implantodontia', 'Implantodontia', 'Publicado', '40', 'Curso completo de implantodontia.', 'Grade resumida', 'Apostilas no Arsenal', '', '', '', '', '1', 'Módulo 1 - Fundamentos', 'Base teórica inicial.', 'Sim', '1', 'Aula 1 - Apresentação', 'Boas-vindas e objetivos.', 'https://www.youtube.com/watch?v=VIDEO', '15', '70', 'Sim', 'Sim'],
         ];
     }
 
@@ -1207,13 +1207,13 @@ class DataImportController extends BaseController
             : current_company();
 
         if (!$company) {
-            $errors[] = 'Filial/empresa nao encontrada: ' . ($value !== '' ? $value : 'empresa atual') . '.';
+            $errors[] = 'Filial/empresa não encontrada: ' . ($value !== '' ? $value : 'empresa atual') . '.';
             return [];
         }
 
         $companyId = (int) ($company['id'] ?? 0);
         if ($companyId <= 0 || !has_company_access($companyId)) {
-            $errors[] = 'Usuario logado nao tem acesso a filial/empresa informada: ' . ($value !== '' ? $value : (string) ($company['legal_name'] ?? $companyId)) . '.';
+            $errors[] = 'Usuário logado não tem acesso a filial/empresa informada: ' . ($value !== '' ? $value : (string) ($company['legal_name'] ?? $companyId)) . '.';
             return [];
         }
 
@@ -1237,13 +1237,13 @@ class DataImportController extends BaseController
 
             $company = $this->imports->findCompanyByImportRef($ref);
             if (!$company) {
-                $errors[] = 'Filial/empresa nao encontrada: ' . $ref . '.';
+                $errors[] = 'Filial/empresa não encontrada: ' . $ref . '.';
                 continue;
             }
 
             $companyId = (int) ($company['id'] ?? 0);
             if ($companyId <= 0 || !has_company_access($companyId)) {
-                $errors[] = 'Usuario logado nao tem acesso a filial/empresa informada: ' . $ref . '.';
+                $errors[] = 'Usuário logado não tem acesso a filial/empresa informada: ' . $ref . '.';
                 continue;
             }
 
@@ -1273,7 +1273,7 @@ class DataImportController extends BaseController
                 continue;
             }
             if (!isset($catalog[$permission])) {
-                $warnings[] = 'Permissao ignorada por nao existir no catalogo: ' . $permission . '.';
+                $warnings[] = 'Permissão ignorada por não existir no catálogo: ' . $permission . '.';
                 continue;
             }
             $clean[] = $permission;
@@ -1343,7 +1343,7 @@ class DataImportController extends BaseController
             }
         }
 
-        $errors[] = $label . ' invalida. Use dd/mm/aaaa ou aaaa-mm-dd.';
+        $errors[] = $label . ' inválida. Use dd/mm/aaaa ou aaaa-mm-dd.';
         return null;
     }
 
@@ -1361,7 +1361,7 @@ class DataImportController extends BaseController
             }
         }
 
-        $errors[] = $label . ' invalida. Use dd/mm/aaaa hh:mm ou aaaa-mm-dd hh:mm.';
+        $errors[] = $label . ' inválida. Use dd/mm/aaaa hh:mm ou aaaa-mm-dd hh:mm.';
         return null;
     }
 

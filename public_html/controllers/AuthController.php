@@ -26,7 +26,7 @@ class AuthController extends BaseController
         $password = (string) post('password');
 
         if ($login === '' || $password === '') {
-            $this->error('Informe usuario/email e senha.');
+            $this->error('Informe usuário/email e senha.');
             $this->redirect('login');
         }
 
@@ -38,7 +38,7 @@ class AuthController extends BaseController
         }
 
         if (!$user || !$validPassword) {
-            $this->error('Credenciais invalidas.');
+            $this->error('Credenciais inválidas.');
             $this->redirect('login');
         }
 
@@ -64,7 +64,7 @@ class AuthController extends BaseController
         $companies = $this->users->companiesForUser((int) $user['id']);
         if ($companies === []) {
             $_SESSION = [];
-            $this->error('Usuario sem empresa vinculada. Vincule ao menos um CNPJ para liberar o acesso.');
+            $this->error('Usuário sem empresa vinculada. Vincule ao menos um CNPJ para liberar o acesso.');
             $this->redirect('login');
         }
 
@@ -89,7 +89,7 @@ class AuthController extends BaseController
         $_SESSION['user_companies'] = $companies;
 
         if ($companies === []) {
-            $this->error('Nenhuma empresa ativa vinculada ao usuario.');
+            $this->error('Nenhuma empresa ativa vinculada ao usuário.');
             $this->redirect('logout');
         }
 
@@ -111,7 +111,7 @@ class AuthController extends BaseController
 
         $companyId = (int) post('company_id');
         if ($companyId <= 0 || !$this->users->userCanAccessCompany($userId, $companyId)) {
-            $this->error('Empresa invalida para este usuario.');
+            $this->error('Empresa inválida para este usuário.');
             $this->redirect('select-company');
         }
 
@@ -123,7 +123,7 @@ class AuthController extends BaseController
             }
         }
 
-        $this->error('Empresa nao encontrada na sessao atual.');
+        $this->error('Empresa não encontrada na sessão atual.');
         $this->redirect('select-company');
     }
 

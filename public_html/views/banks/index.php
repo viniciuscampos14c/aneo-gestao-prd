@@ -9,7 +9,7 @@ $banks = is_array($banks ?? null) ? $banks : [];
 
     <?php if ($banks === []): ?>
         <div class="banks-empty rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
-            Nenhum banco disponivel para configurar.
+            Nenhum banco disponível para configurar.
         </div>
     <?php else: ?>
         <div class="banks-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -17,7 +17,7 @@ $banks = is_array($banks ?? null) ? $banks : [];
                 <?php
                 $isEnabled = !empty($bank['enabled']);
                 $environment = (string) ($bank['environment'] ?? 'sandbox');
-                $envLabel = $environment === 'production' ? 'Producao' : 'Sandbox';
+                $envLabel = $environment === 'production' ? 'Produção' : 'Sandbox';
                 $envColor = $environment === 'production'
                     ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
                     : 'text-amber-700 bg-amber-50 border-amber-200';

@@ -60,7 +60,7 @@ class StudentPortalController extends BaseController
         require_student_auth();
 
         if (!$this->portal->portalFeatureAvailable()) {
-            $this->error('Portal do aluno nao configurado no banco.');
+            $this->error('Portal do aluno não configurado no banco.');
             $this->redirect('student/login');
         }
 
@@ -101,7 +101,7 @@ class StudentPortalController extends BaseController
         $this->checkReenrollmentGate($student);
 
         if (!$this->portal->lmsFeatureAvailable()) {
-            $this->error('Trilha de aulas ainda nao habilitada no banco. Execute a migracao LMS.');
+            $this->error('Trilha de aulas ainda não habilitada no banco. Execute a migração LMS.');
             $this->redirect('student/courses');
         }
         $studentId = (int) ($student['id'] ?? 0);
@@ -109,13 +109,13 @@ class StudentPortalController extends BaseController
         $lessonId = (int) request('lesson_id', 0);
 
         if ($courseId <= 0) {
-            $this->error('Curso invalido para abrir o player.');
+            $this->error('Curso inválido para abrir o player.');
             $this->redirect('student/courses');
         }
 
         $path = $this->portal->courseLearningPath($studentId, $courseId, $lessonId > 0 ? $lessonId : null);
         if (!$path) {
-            $this->error('Curso nao encontrado na sua matricula.');
+            $this->error('Curso não encontrado na sua matrícula.');
             $this->redirect('student/courses');
         }
 
@@ -306,7 +306,7 @@ class StudentPortalController extends BaseController
         $studentId = (int) ($student['id'] ?? 0);
 
         if (!$this->portal->arsenalFeatureAvailable()) {
-            $this->error('Arsenal Digital nao habilitado no banco.');
+            $this->error('Arsenal Digital não habilitado no banco.');
             $this->redirect('student/dashboard');
         }
 
@@ -344,13 +344,13 @@ class StudentPortalController extends BaseController
         $studentId = (int) ($student['id'] ?? 0);
         $itemId = (int) request('id');
         if ($itemId <= 0) {
-            $this->error('Item do Arsenal invalido.');
+            $this->error('Item do Arsenal inválido.');
             $this->redirect('student/arsenal');
         }
 
         $item = $this->portal->findAccessibleArsenalItem($studentId, $itemId);
         if (!$item) {
-            $this->error('Item nao encontrado ou sem permissao de acesso.');
+            $this->error('Item não encontrado ou sem permissão de acesso.');
             $this->redirect('student/arsenal');
         }
 
@@ -360,7 +360,7 @@ class StudentPortalController extends BaseController
         if ((string) ($item['material_type'] ?? '') === 'link') {
             $url = trim((string) ($item['external_url'] ?? ''));
             if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
-                $this->error('Link externo invalido.');
+                $this->error('Link externo inválido.');
                 $this->redirect('student/arsenal');
             }
 
@@ -372,7 +372,7 @@ class StudentPortalController extends BaseController
         $relativePath = trim((string) ($item['file_path'] ?? ''));
         $fullPath = $this->resolveArsenalFilePath($relativePath);
         if ($fullPath === null || !is_file($fullPath)) {
-            $this->error('Arquivo nao encontrado para este item.');
+            $this->error('Arquivo não encontrado para este item.');
             $this->redirect('student/arsenal');
         }
 
@@ -430,7 +430,7 @@ class StudentPortalController extends BaseController
         $companyId = (int) ($student['company_id'] ?? 0);
         $studentEmail = trim((string) ($student['email'] ?? ''));
         if ($studentId <= 0 || $companyId <= 0) {
-            $this->error('Aluno ou empresa nao identificado para chamados.');
+            $this->error('Aluno ou empresa não identificado para chamados.');
             $this->redirect('student/dashboard');
         }
 
@@ -485,7 +485,7 @@ class StudentPortalController extends BaseController
         csrf_validate();
 
         if (!$this->tickets->featureAvailable()) {
-            $this->error('Estrutura de chamados indisponivel no banco.');
+            $this->error('Estrutura de chamados indisponível no banco.');
             $this->redirect('student/requests');
         }
 
@@ -493,7 +493,7 @@ class StudentPortalController extends BaseController
         $studentId = (int) ($student['id'] ?? 0);
         $companyId = (int) ($student['company_id'] ?? 0);
         if ($studentId <= 0 || $companyId <= 0) {
-            $this->error('Aluno ou empresa nao identificado para abrir chamado.');
+            $this->error('Aluno ou empresa não identificado para abrir chamado.');
             $this->redirect('student/requests');
         }
 
@@ -502,7 +502,7 @@ class StudentPortalController extends BaseController
         $priority = $this->normalizeTicketPriority((string) post('priority', 'medium'));
 
         if ($subject === '' || $description === '') {
-            $this->error('Assunto e descricao sao obrigatorios para abrir o chamado.');
+            $this->error('Assunto e descrição são obrigatórios para abrir o chamado.');
             $this->redirect('student/requests');
         }
 
@@ -516,7 +516,7 @@ class StudentPortalController extends BaseController
         ], null, 'student_portal');
 
         if ($ticketId <= 0) {
-            $this->error('Nao foi possivel abrir o chamado no momento.');
+            $this->error('Não foi possível abrir o chamado no momento.');
             $this->redirect('student/requests');
         }
 
@@ -561,7 +561,7 @@ class StudentPortalController extends BaseController
         $this->checkReenrollmentGate($student);
         $studentId = (int) ($student['id'] ?? 0);
         if ($studentId <= 0) {
-            $this->error('Aluno invalido para emitir historico academico.');
+            $this->error('Aluno inválido para emitir histórico acadêmico.');
             $this->redirect('student/dashboard');
         }
 
@@ -638,7 +638,7 @@ class StudentPortalController extends BaseController
         $averageScore = $totalResults > 0 ? ($sumScores / $totalResults) : 0.0;
 
         $this->render('student_portal/academic_history', [
-            'title' => 'Historico Academico',
+            'title' => 'Histórico Acadêmico',
             'student' => $student,
             'profile' => $profile,
             'ra' => $ra,
@@ -702,7 +702,7 @@ class StudentPortalController extends BaseController
         $reminders = $this->calendar->studentRecentReminders($studentId, 25);
 
         $this->render('student_portal/calendar', [
-            'title' => 'Agenda Academica',
+            'title' => 'Agenda Acadêmica',
             'student' => $student,
             'fromDate' => $fromDate,
             'toDate' => $toDate,
@@ -723,13 +723,13 @@ class StudentPortalController extends BaseController
         $examId = (int) request('id');
 
         if ($examId <= 0) {
-            $this->error('Exame invalido.');
+            $this->error('Exame inválido.');
             $this->redirect('student/exams');
         }
 
         $exam = $this->portal->findAvailableExam($studentId, $examId);
         if (!$exam) {
-            $this->error('Exame nao encontrado para sua matricula.');
+            $this->error('Exame não encontrado para sua matrícula.');
             $this->redirect('student/exams');
         }
 
@@ -739,18 +739,18 @@ class StudentPortalController extends BaseController
         }
 
         if ($this->portal->hasFinalExamResult($studentId, $examId)) {
-            $this->error('Esse exame ja possui resultado registrado para voce.');
+            $this->error('Esse exame ja possui resultado registrado para você.');
             $this->redirect('student/exams');
         }
 
         if ($this->portal->hasExamSubmission($studentId, $examId)) {
-            $this->error('Esse exame ja foi enviado e aguarda correcao/publicacao do resultado.');
+            $this->error('Esse exame ja foi enviado e aguarda correcao/publicação do resultado.');
             $this->redirect('student/exams');
         }
 
         $questions = $this->portal->examQuestions($examId);
         if ($questions === []) {
-            $this->error('Este exame ainda nao possui questoes cadastradas.');
+            $this->error('Este exame ainda não possui questoes cadastradas.');
             $this->redirect('student/exams');
         }
 
@@ -772,13 +772,13 @@ class StudentPortalController extends BaseController
         $examId = (int) request('id');
 
         if ($examId <= 0) {
-            $this->error('Exame invalido.');
+            $this->error('Exame inválido.');
             $this->redirect('student/exams');
         }
 
         $exam = $this->portal->findAvailableExam($studentId, $examId);
         if (!$exam) {
-            $this->error('Exame nao encontrado para sua matricula.');
+            $this->error('Exame não encontrado para sua matrícula.');
             $this->redirect('student/exams');
         }
 
@@ -796,7 +796,7 @@ class StudentPortalController extends BaseController
 
         $externalUrl = trim((string) ($exam['external_url'] ?? ''));
         if ($externalUrl === '' || !$this->isHttpUrl($externalUrl)) {
-            $this->error('Link externo da prova invalido. Contate seu professor.');
+            $this->error('Link externo da prova inválido. Contate seu professor.');
             $this->redirect('student/exams');
         }
 
@@ -815,23 +815,23 @@ class StudentPortalController extends BaseController
         $examId = (int) post('exam_id');
 
         if ($examId <= 0) {
-            $this->error('Exame invalido.');
+            $this->error('Exame inválido.');
             $this->redirect('student/exams');
         }
 
         $exam = $this->portal->findAvailableExam($studentId, $examId);
         if (!$exam) {
-            $this->error('Exame nao encontrado para sua matricula.');
+            $this->error('Exame não encontrado para sua matrícula.');
             $this->redirect('student/exams');
         }
 
         if (trim((string) ($exam['external_url'] ?? '')) !== '') {
-            $this->error('Esta avaliacao e externa. Use o botao "Abrir prova externa" na lista de avaliacoes.');
+            $this->error('Esta avaliação e externa. Use o botao "Abrir prova externa" na lista de avaliacoes.');
             $this->redirect('student/exams');
         }
 
         if ($this->portal->hasFinalExamResult($studentId, $examId)) {
-            $this->error('Esse exame ja possui resultado registrado para voce.');
+            $this->error('Esse exame ja possui resultado registrado para você.');
             $this->redirect('student/exams');
         }
 
@@ -842,7 +842,7 @@ class StudentPortalController extends BaseController
 
         $questions = $this->portal->examQuestions($examId);
         if ($questions === []) {
-            $this->error('Este exame ainda nao possui questoes cadastradas.');
+            $this->error('Este exame ainda não possui questoes cadastradas.');
             $this->redirect('student/exams');
         }
 
@@ -903,7 +903,7 @@ class StudentPortalController extends BaseController
         ]);
 
         if ($submissionId <= 0 && $score === null) {
-            $this->error('Nao foi possivel registrar envio pendente. Atualize o banco com a migracao de exames do portal.');
+            $this->error('Não foi possível registrar envio pendente. Atualize o banco com a migração de exames do portal.');
             $this->redirect('student/exams');
         }
 
@@ -930,7 +930,7 @@ class StudentPortalController extends BaseController
             $this->notifyStudentExamResult(
                 $student,
                 $examId,
-                (string) ($exam['title'] ?? 'Avaliacao'),
+                (string) ($exam['title'] ?? 'Avaliação'),
                 (string) ($exam['course_name'] ?? 'Curso'),
                 (float) $score,
                 (float) $exam['passing_score']
@@ -980,7 +980,7 @@ class StudentPortalController extends BaseController
                 'company_id' => $companyId,
                 'student_id' => $studentId,
                 'notification_type' => 'exam_result',
-                'title' => 'Resultado de avaliacao publicado',
+                'title' => 'Resultado de avaliação publicado',
                 'message' => sprintf(
                     '%s: sua nota em %s foi %s (minimo %s).',
                     $courseName,
@@ -1001,20 +1001,48 @@ class StudentPortalController extends BaseController
         }
 
         if ($studentEmail !== '' && filter_var($studentEmail, FILTER_VALIDATE_EMAIL)) {
-            $body = '<p>Ola ' . e($studentName) . ',</p>'
-                . '<p>Seu resultado foi publicado no portal do aluno.</p>'
-                . '<p><strong>Curso:</strong> ' . e($courseName) . '<br>'
-                . '<strong>Avaliacao:</strong> ' . e($examTitle) . '<br>'
-                . '<strong>Nota:</strong> ' . e(number_format($score, 2, ',', '.')) . '<br>'
-                . '<strong>Nota minima:</strong> ' . e(number_format($passingScore, 2, ',', '.')) . '<br>'
-                . '<strong>Status:</strong> ' . e($statusLabel) . '</p>'
-                . '<p><a href="' . e($this->absoluteUrl(route('student/exams'))) . '">Abrir portal do aluno</a></p>';
+            $body = $this->renderExamEmailTemplate([
+                'notificationType' => 'result',
+                'studentName' => $studentName,
+                'companyName' => $this->currentCompanyNameForStudent(),
+                'courseName' => $courseName,
+                'examTitle' => $examTitle,
+                'portalUrl' => $this->absoluteUrl(route('student/exams')),
+                'scoreLabel' => number_format($score, 2, ',', '.'),
+                'passingScoreLabel' => number_format($passingScore, 2, ',', '.'),
+                'resultStatus' => $approved ? 'approved' : 'failed',
+            ]);
 
-            $this->emails->send($studentEmail, 'Resultado de avaliacao publicado | ' . $courseName, $body, [
+            $this->emails->send($studentEmail, 'Resultado de avaliação publicado | ' . $courseName, $body, [
                 'company_id' => $companyId,
                 'is_html' => true,
             ]);
         }
+    }
+
+    private function renderExamEmailTemplate(array $vars): string
+    {
+        $publicUrl = rtrim((string) config('app.public_url', ''), '/');
+        if ($publicUrl === '') {
+            $publicUrl = rtrim((string) config('app.base_url', ''), '/');
+        }
+        if ($publicUrl === '') {
+            $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+            if ($host !== '') {
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $publicUrl = $scheme . '://' . $host;
+            }
+        }
+
+        $logoBuild = '20260512-brand-kit-v1';
+        $vars['logoUrl'] = $publicUrl !== ''
+            ? $publicUrl . '/assets/brand/aneo-wordmark-transparente-branco.png?v=' . rawurlencode($logoBuild)
+            : '';
+
+        ob_start();
+        extract($vars, EXTR_SKIP);
+        include __DIR__ . '/../views/email/exam_notification.php';
+        return (string) ob_get_clean();
     }
 
     private function absoluteUrl(string $path): string
@@ -1152,17 +1180,25 @@ class StudentPortalController extends BaseController
         $targetUnit     = trim((string) post('target_unit', ''));
         $desiredMonth   = trim((string) post('desired_month', ''));
         $monthsEnrolled = max(0, (int) post('months_enrolled', 0));
+        $minimumExchangeDate = $this->minimumExchangeRequestDate();
 
         // Validação básica
         $errors = [];
         if ($studentName === '') { $errors[] = 'Nome completo é obrigatório.'; }
         if ($currentUnit === '')  { $errors[] = 'Unidade atual é obrigatória.'; }
         if ($targetUnit === '')   { $errors[] = 'Unidade de destino é obrigatória.'; }
-        if ($desiredMonth === '') { $errors[] = 'Mês desejado é obrigatório.'; }
+        if ($desiredMonth === '') { $errors[] = 'Data pretendida para o intercâmbio é obrigatória.'; }
 
-        // Valida formato YYYY-MM
-        if ($desiredMonth !== '' && !preg_match('/^\d{4}-\d{2}$/', $desiredMonth)) {
-            $errors[] = 'Formato de mês inválido.';
+        // O nome do campo foi mantido por compatibilidade, mas agora recebe YYYY-MM-DD.
+        if ($desiredMonth !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $desiredMonth)) {
+            $errors[] = 'Informe uma data válida para o intercâmbio.';
+        } elseif ($desiredMonth !== '') {
+            [$year, $month, $day] = array_map('intval', explode('-', $desiredMonth));
+            if (!checkdate($month, $day, $year)) {
+                $errors[] = 'Informe uma data válida para o intercâmbio.';
+            } elseif ($desiredMonth < $minimumExchangeDate) {
+                $errors[] = 'A data pretendida precisa ser a partir de ' . date('d/m/Y', strtotime($minimumExchangeDate)) . '.';
+            }
         }
 
         if ($errors !== []) {
@@ -1192,6 +1228,11 @@ class StudentPortalController extends BaseController
         }
 
         $this->redirect('student/exchange');
+    }
+
+    private function minimumExchangeRequestDate(): string
+    {
+        return (new DateTimeImmutable('today'))->modify('+1 month')->format('Y-m-d');
     }
 
     // -------------------------------------------------------------------------
@@ -1276,7 +1317,7 @@ class StudentPortalController extends BaseController
             'portalUrl' => $this->absoluteUrl(route('student/dashboard')),
         ]);
 
-        $result = $this->emails->send($studentEmail, 'Confirmacao de rematricula | ANEO', $body, [
+        $result = $this->emails->send($studentEmail, 'Confirmação de rematrícula | ANEO', $body, [
             'company_id' => (int) ($student['company_id'] ?? 0),
             'is_html' => true,
         ]);

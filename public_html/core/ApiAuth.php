@@ -30,7 +30,7 @@ class ApiAuth
         $token = $model->findByToken($rawToken);
 
         if ($token === null) {
-            self::abort(401, 'Token invalido ou expirado.');
+            self::abort(401, 'Token inválido ou expirado.');
         }
 
         // Atualiza last_used_at de forma assíncrona (best-effort)
@@ -63,7 +63,7 @@ class ApiAuth
     public static function requirePermission(array $token, string $resource, string $cap): void
     {
         if (!self::hasPermission($token, $resource, $cap)) {
-            self::abort(403, "Permissao insuficiente: {$resource}.{$cap}");
+            self::abort(403, "Permissão insuficiente: {$resource}.{$cap}");
         }
     }
 

@@ -71,7 +71,7 @@ $hasPaymentData = $bankSlipUrl !== '' || $bankSlipDigitableLine !== '' || $bankS
             <p style="margin:0 0 24px;font-size:15px;color:#334155;line-height:1.6;">
               <?php if ($isIssued): ?>
                 <?php if ($isStudent): ?>
-                  Seu boleto foi emitido com sucesso. Abaixo estao os dados da fatura para acompanhamento.
+                  Seu boleto foi emitido com sucesso. Abaixo estão os dados da fatura para acompanhamento.
                 <?php else: ?>
                   Um boleto foi emitido para o aluno abaixo e esta copia foi enviada para controle interno da ANEO.
                 <?php endif; ?>

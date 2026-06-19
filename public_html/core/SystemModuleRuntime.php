@@ -124,7 +124,7 @@ class SystemModuleRuntime
             return;
         }
 
-        throw new RuntimeException('Rota de modulo sem controller/action ou view.');
+        throw new RuntimeException('Rota de módulo sem controller/action ou view.');
     }
 
     private function dispatchControllerRoute(array $routeDef): void
@@ -133,16 +133,16 @@ class SystemModuleRuntime
         $action = trim((string) ($routeDef['action'] ?? ''));
 
         if (!$this->isSafeClassName($controllerClass) || !$this->isSafeMethodName($action)) {
-            throw new RuntimeException('Controller ou action invalido no modulo.');
+            throw new RuntimeException('Controller ou action inválido no módulo.');
         }
 
         if (!class_exists($controllerClass)) {
-            throw new RuntimeException('Controller do modulo nao encontrado: ' . $controllerClass);
+            throw new RuntimeException('Controller do módulo não encontrado: ' . $controllerClass);
         }
 
         $controller = new $controllerClass();
         if (!method_exists($controller, $action)) {
-            throw new RuntimeException('Action do modulo nao encontrada: ' . $controllerClass . '::' . $action);
+            throw new RuntimeException('Action do módulo não encontrada: ' . $controllerClass . '::' . $action);
         }
 
         $controller->$action();
@@ -152,16 +152,16 @@ class SystemModuleRuntime
     {
         $view = str_replace('\\', '/', $view);
         if (!$this->isSafeRelativePath($view)) {
-            throw new RuntimeException('View invalida no modulo.');
+            throw new RuntimeException('View inválida no módulo.');
         }
 
         $viewPath = $modulePath . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $view) . '.php';
         if (!is_file($viewPath)) {
-            throw new RuntimeException('View do modulo nao encontrada: ' . $view);
+            throw new RuntimeException('View do módulo não encontrada: ' . $view);
         }
         $this->assertInside($viewPath, $modulePath . DIRECTORY_SEPARATOR . 'views');
 
-        $title = (string) ($routeDef['title'] ?? $module['title'] ?? 'Modulo');
+        $title = (string) ($routeDef['title'] ?? $module['title'] ?? 'Módulo');
         $moduleInfo = $module;
         $moduleRoute = $routeDef;
         $moduleKey = (string) ($module['module_key'] ?? '');
@@ -235,7 +235,7 @@ class SystemModuleRuntime
         $realBase = realpath($base);
         $realPath = realpath($path);
         if ($realBase === false || $realPath === false || !str_starts_with($realPath, $realBase . DIRECTORY_SEPARATOR)) {
-            throw new RuntimeException('Caminho fora da pasta permitida do modulo.');
+            throw new RuntimeException('Caminho fora da pasta permitida do módulo.');
         }
     }
 
