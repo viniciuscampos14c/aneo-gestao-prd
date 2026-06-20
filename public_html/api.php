@@ -20,8 +20,16 @@ if (ob_get_level() === 0) {
 
 require __DIR__ . '/core/bootstrap.php';
 
-// Headers CORS: permite chamadas de qualquer origem
-header('Access-Control-Allow-Origin: *');
+// CORS: libera apenas aplicações oficiais configuradas.
+$origin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+$allowedOrigins = array_values(array_filter(array_map(
+    static fn ($value): string => rtrim(trim((string) $value), '/'),
+    (array) config('security.cors_allowed_origins', [])
+)));
+if ($origin !== '' && in_array(rtrim($origin, '/'), $allowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Vary: Origin');
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
 header('Content-Type: application/json; charset=utf-8');

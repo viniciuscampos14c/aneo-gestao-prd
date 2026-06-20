@@ -544,14 +544,9 @@ class SignatureController extends BaseController
             return null;
         }
 
-        $extension = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
-        if (!in_array($extension, ['pdf', 'doc', 'docx'], true)) {
-            $this->error('Formato inválido para contrato. Use PDF, DOC ou DOCX.');
-            return null;
-        }
-
-        if ((int) ($file['size'] ?? 0) > (10 * 1024 * 1024)) {
-            $this->error('Contrato acima de 10MB.');
+        $validation = UploadSecurity::validate($file, ['pdf', 'doc', 'docx'], 10 * 1024 * 1024);
+        if (empty($validation['ok'])) {
+            $this->error((string) ($validation['message'] ?? 'Contrato inválido para upload.'));
             return null;
         }
 
@@ -560,11 +555,11 @@ class SignatureController extends BaseController
             mkdir($targetDir, 0775, true);
         }
 
-        $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $file['name']);
+        $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $validation['original_name']);
         $storedName = 'signature_' . $studentId . '_' . date('YmdHis') . '_' . $safeName;
         $targetPath = $targetDir . '/' . $storedName;
 
-        if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $targetPath)) {
+        if (!move_uploaded_file((string) $validation['tmp_path'], $targetPath)) {
             $this->error('Não foi possível salvar o contrato no servidor.');
             return null;
         }

@@ -42,6 +42,12 @@ class SupportDeskController extends BaseController
             $this->redirectTo('support/login');
         }
 
+        $rateLimit = LoginRateLimiter::check('support', $login);
+        if (empty($rateLimit['allowed'])) {
+            flash('error', 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.');
+            $this->redirectTo('support/login');
+        }
+
         $user = $this->users->findByLogin($login);
         $validPassword = false;
         if ($user) {
@@ -49,9 +55,12 @@ class SupportDeskController extends BaseController
         }
 
         if (!$user || !$validPassword) {
+            LoginRateLimiter::recordFailure('support', $login);
             flash('error', 'Credenciais inválidas.');
             $this->redirectTo('support/login');
         }
+
+        LoginRateLimiter::clear('support', $login);
 
         if (hash_equals((string) $user['password_hash'], $password)) {
             $rehash = db()->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');

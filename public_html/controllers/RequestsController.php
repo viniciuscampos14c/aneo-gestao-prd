@@ -484,20 +484,23 @@ class RequestsController extends BaseController
                 continue;
             }
 
-            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-            if (!in_array($ext, $allowedExt, true)) {
+            $file = [
+                'name' => $name,
+                'tmp_name' => (string) ($tmpNames[$idx] ?? ''),
+                'error' => $errorCode,
+                'size' => (int) ($sizes[$idx] ?? 0),
+            ];
+            $validation = UploadSecurity::validate($file, $allowedExt, 8 * 1024 * 1024);
+            if (empty($validation['ok'])) {
                 continue;
             }
-
-            $size = (int) ($sizes[$idx] ?? 0);
-            if ($size <= 0 || $size > (8 * 1024 * 1024)) {
-                continue;
-            }
+            $ext = (string) $validation['extension'];
+            $size = (int) $validation['size'];
 
             $safeOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', $name);
             $storedName = 'print_' . date('YmdHis') . '_' . $idx . '_' . $safeOriginal;
             $finalPath = $targetDir . '/' . $storedName;
-            $tmpPath = (string) ($tmpNames[$idx] ?? '');
+            $tmpPath = (string) $validation['tmp_path'];
 
             if (!move_uploaded_file($tmpPath, $finalPath)) {
                 continue;
@@ -507,7 +510,7 @@ class RequestsController extends BaseController
                 $ticketId,
                 $name,
                 'uploads/support_tickets/' . $ticketId . '/' . $storedName,
-                (string) ($types[$idx] ?? ''),
+                (string) $validation['mime'],
                 $size,
                 $createdBy
             );

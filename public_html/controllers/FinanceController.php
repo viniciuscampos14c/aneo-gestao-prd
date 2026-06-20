@@ -1773,25 +1773,14 @@ class FinanceController extends BaseController
             return ['ok' => false, 'message' => 'Falha no upload do arquivo.'];
         }
 
-        if (!is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
-            return ['ok' => false, 'message' => 'Arquivo inválido para upload.'];
-        }
-
-        $size = (int) ($file['size'] ?? 0);
-        if ($size <= 0) {
-            return ['ok' => false, 'message' => 'Arquivo vazio ou inválido.'];
-        }
-
-        if ($size > (20 * 1024 * 1024)) {
-            return ['ok' => false, 'message' => 'Arquivo acima do limite de 20MB.'];
-        }
-
-        $originalName = basename((string) ($file['name'] ?? ''));
-        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $allowed = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'txt'];
-        if (!in_array($extension, $allowed, true)) {
-            return ['ok' => false, 'message' => 'Extensão não permitida para anexos financeiros.'];
+        $validation = UploadSecurity::validate($file, $allowed, 20 * 1024 * 1024);
+        if (empty($validation['ok'])) {
+            return ['ok' => false, 'message' => (string) ($validation['message'] ?? 'Arquivo inválido para upload.')];
         }
+        $size = (int) $validation['size'];
+        $originalName = (string) $validation['original_name'];
+        $extension = (string) $validation['extension'];
 
         $targetDir = __DIR__ . '/../uploads/payables';
         if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true)) {
@@ -1806,7 +1795,7 @@ class FinanceController extends BaseController
         $storedName = 'payable_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '_' . $safeOriginal;
         $finalPath = $targetDir . '/' . $storedName;
 
-        if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $finalPath)) {
+        if (!move_uploaded_file((string) $validation['tmp_path'], $finalPath)) {
             return ['ok' => false, 'message' => 'Não foi possível salvar o arquivo no servidor.'];
         }
 

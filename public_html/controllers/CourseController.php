@@ -1461,14 +1461,14 @@ class CourseController extends BaseController
         $cover = trim((string) post('cover_image'));
 
         if (!empty($_FILES['cover_file']['name']) && ($_FILES['cover_file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-            $ext = strtolower(pathinfo((string) $_FILES['cover_file']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'], true)) {
+            $validation = UploadSecurity::validate($_FILES['cover_file'], ['png', 'jpg', 'jpeg', 'webp'], 5 * 1024 * 1024);
+            if (!empty($validation['ok'])) {
                 $targetDir = __DIR__ . '/../uploads/courses';
                 if (!is_dir($targetDir)) {
                     mkdir($targetDir, 0775, true);
                 }
-                $fileName = 'course_' . date('YmdHis') . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $_FILES['cover_file']['name']);
-                if (move_uploaded_file((string) $_FILES['cover_file']['tmp_name'], $targetDir . '/' . $fileName)) {
+                $fileName = 'course_' . date('YmdHis') . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $validation['original_name']);
+                if (move_uploaded_file((string) $validation['tmp_path'], $targetDir . '/' . $fileName)) {
                     $cover = 'uploads/courses/' . $fileName;
                 }
             }
@@ -1521,16 +1521,23 @@ class CourseController extends BaseController
                 continue;
             }
 
-            $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-            if (!in_array($extension, $allowed, true)) {
+            $file = [
+                'name' => $name,
+                'tmp_name' => (string) ($tmpNames[$idx] ?? ''),
+                'error' => $errorCode,
+                'size' => (int) ($sizes[$idx] ?? 0),
+            ];
+            $validation = UploadSecurity::validate($file, $allowed, 100 * 1024 * 1024);
+            if (empty($validation['ok'])) {
                 continue;
             }
+            $extension = (string) $validation['extension'];
 
             $safeOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', $name);
             $fileName = 'course_material_' . $courseId . '_' . date('YmdHis') . '_' . $idx . '_' . $safeOriginal;
             $finalPath = $targetDir . '/' . $fileName;
 
-            if (!move_uploaded_file((string) ($tmpNames[$idx] ?? ''), $finalPath)) {
+            if (!move_uploaded_file((string) $validation['tmp_path'], $finalPath)) {
                 continue;
             }
 
@@ -1539,7 +1546,7 @@ class CourseController extends BaseController
                 $name,
                 'uploads/course_materials/' . $fileName,
                 $extension,
-                (int) ($sizes[$idx] ?? 0),
+                (int) $validation['size'],
                 (int) current_user()['id']
             );
 

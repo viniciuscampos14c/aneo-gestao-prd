@@ -543,21 +543,14 @@ class ArsenalController extends BaseController
             return ['ok' => false, 'message' => 'Falha no upload do arquivo do Arsenal.'];
         }
 
-        $size = (int) ($file['size'] ?? 0);
-        if ($size <= 0) {
-            return ['ok' => false, 'message' => 'Arquivo inválido para upload.'];
-        }
-
-        if ($size > (100 * 1024 * 1024)) {
-            return ['ok' => false, 'message' => 'Arquivo acima do limite de 100MB.'];
-        }
-
-        $originalName = (string) ($file['name'] ?? '');
-        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'txt', 'mp4', 'mp3', 'png', 'jpg', 'jpeg', 'webp'];
-        if (!in_array($extension, $allowed, true)) {
-            return ['ok' => false, 'message' => 'Extensão não permitida no Arsenal.'];
+        $validation = UploadSecurity::validate($file, $allowed, 100 * 1024 * 1024);
+        if (empty($validation['ok'])) {
+            return ['ok' => false, 'message' => (string) ($validation['message'] ?? 'Arquivo inválido para upload.')];
         }
+        $size = (int) $validation['size'];
+        $originalName = (string) $validation['original_name'];
+        $extension = (string) $validation['extension'];
 
         $targetDir = __DIR__ . '/../uploads/arsenal';
         if (!is_dir($targetDir)) {
@@ -568,7 +561,7 @@ class ArsenalController extends BaseController
         $storedName = 'arsenal_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '_' . $safeOriginal;
         $finalPath = $targetDir . '/' . $storedName;
 
-        if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $finalPath)) {
+        if (!move_uploaded_file((string) $validation['tmp_path'], $finalPath)) {
             return ['ok' => false, 'message' => 'Não foi possível salvar arquivo no servidor.'];
         }
 

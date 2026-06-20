@@ -99,7 +99,7 @@ test('valida HML real da ANEO', async ({ browser, request }) => {
   });
 
   await test.step('alunos QA e fluxo de rematrícula', async () => {
-    await adminPage.goto(`${baseUrl}/index.php?route=students&q=QA`, { waitUntil: 'domcontentloaded' });
+    await adminPage.goto(`${baseUrl}/index.php?route=students&q=QA%20Aluno&per_page=200`, { waitUntil: 'domcontentloaded' });
     await clearAdminOverlay(adminPage);
     await expect(adminPage.locator('body')).toContainText('QA Aluno Portal');
     await expect(adminPage.locator('body')).toContainText('QA Aluno Reenroll OK');

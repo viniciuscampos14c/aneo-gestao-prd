@@ -814,13 +814,14 @@ class GestaoAlunoController extends BaseController
             return ['ok' => false, 'message' => 'Arquivo inválido.'];
         }
 
-        if (!is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
-            return ['ok' => false, 'message' => 'Falha no upload.'];
+        $allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'webp', 'txt'];
+        $validation = UploadSecurity::validate($file, $allowed, 20 * 1024 * 1024);
+        if (empty($validation['ok'])) {
+            return ['ok' => false, 'message' => (string) ($validation['message'] ?? 'Arquivo inválido.')];
         }
 
-        $originalName = basename((string) $file['name']);
-        $ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-        $ext          = preg_replace('/[^a-z0-9]/', '', $ext);
+        $originalName = (string) $validation['original_name'];
+        $ext = (string) $validation['extension'];
         $storedName   = uniqid('gda_', true) . ($ext ? '.' . $ext : '');
         $targetDir    = __DIR__ . '/../uploads/gestao_aluno';
 
@@ -833,7 +834,7 @@ class GestaoAlunoController extends BaseController
         }
 
         $finalPath = $targetDir . '/' . $storedName;
-        if (!move_uploaded_file((string) $file['tmp_name'], $finalPath)) {
+        if (!move_uploaded_file((string) $validation['tmp_path'], $finalPath)) {
             return ['ok' => false, 'message' => 'Não foi possível salvar o arquivo.'];
         }
 
@@ -841,8 +842,8 @@ class GestaoAlunoController extends BaseController
             'ok'            => true,
             'file_name'     => 'uploads/gestao_aluno/' . $storedName,
             'original_file_name' => $originalName,
-            'file_type'     => (string) ($file['type'] ?? ''),
-            'file_size'     => (int) ($file['size'] ?? 0),
+            'file_type'     => (string) $validation['mime'],
+            'file_size'     => (int) $validation['size'],
         ];
     }
 }

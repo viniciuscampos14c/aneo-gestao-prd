@@ -119,9 +119,9 @@ class DataImportController extends BaseController
         }
 
         $originalName = (string) ($_FILES['csv_file']['name'] ?? 'importacao.csv');
-        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-        if ($extension !== 'csv') {
-            $this->error('Nesta primeira fase, envie arquivos no formato CSV.');
+        $uploadValidation = UploadSecurity::validate($_FILES['csv_file'], ['csv'], 20 * 1024 * 1024);
+        if (empty($uploadValidation['ok'])) {
+            $this->error((string) ($uploadValidation['message'] ?? 'Arquivo CSV inválido.'));
             $this->redirect('data-imports');
         }
 
@@ -1290,18 +1290,18 @@ class DataImportController extends BaseController
     {
         $value = strtolower(trim($value));
         $value = strtr($value, [
-            'Ã¡' => 'a', 'Ã ' => 'a', 'Ã£' => 'a', 'Ã¢' => 'a', 'Ã¤' => 'a',
-            'Ã©' => 'e', 'Ãª' => 'e', 'Ã¨' => 'e', 'Ã«' => 'e',
-            'Ã­' => 'i', 'Ã¬' => 'i', 'Ã®' => 'i', 'Ã¯' => 'i',
-            'Ã³' => 'o', 'Ã²' => 'o', 'Ãµ' => 'o', 'Ã´' => 'o', 'Ã¶' => 'o',
-            'Ãº' => 'u', 'Ã¹' => 'u', 'Ã»' => 'u', 'Ã¼' => 'u',
-            'Ã§' => 'c', 'Ã±' => 'n',
-            'Ã' => 'a', 'Ã€' => 'a', 'Ãƒ' => 'a', 'Ã‚' => 'a', 'Ã„' => 'a',
-            'Ã‰' => 'e', 'ÃŠ' => 'e', 'Ãˆ' => 'e', 'Ã‹' => 'e',
-            'Ã' => 'i', 'ÃŒ' => 'i', 'ÃŽ' => 'i', 'Ã' => 'i',
-            'Ã“' => 'o', 'Ã’' => 'o', 'Ã•' => 'o', 'Ã”' => 'o', 'Ã–' => 'o',
-            'Ãš' => 'u', 'Ã™' => 'u', 'Ã›' => 'u', 'Ãœ' => 'u',
-            'Ã‡' => 'c', 'Ã‘' => 'n',
+            'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a', 'ä' => 'a',
+            'é' => 'e', 'ê' => 'e', 'è' => 'e', 'ë' => 'e',
+            'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'õ' => 'o', 'ô' => 'o', 'ö' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ç' => 'c', 'ñ' => 'n',
+            'Á' => 'a', 'À' => 'a', 'Ã' => 'a', 'Â' => 'a', 'Ä' => 'a',
+            'É' => 'e', 'Ê' => 'e', 'È' => 'e', 'Ë' => 'e',
+            'Í' => 'i', 'Ì' => 'i', 'Î' => 'i', 'Ï' => 'i',
+            'Ó' => 'o', 'Ò' => 'o', 'Õ' => 'o', 'Ô' => 'o', 'Ö' => 'o',
+            'Ú' => 'u', 'Ù' => 'u', 'Û' => 'u', 'Ü' => 'u',
+            'Ç' => 'c', 'Ñ' => 'n',
         ]);
         $value = preg_replace('/[^a-z0-9_.-]+/', '.', $value);
         return trim((string) $value, '.-_');

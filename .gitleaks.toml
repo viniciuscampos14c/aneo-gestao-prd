@@ -1,0 +1,5 @@
+[allowlist]
+description = "Marcador didático usado nos exemplos públicos da documentação da API."
+regexes = [
+  '''Authorization:\s*Bearer\s+SEU_TOKEN''',
+]

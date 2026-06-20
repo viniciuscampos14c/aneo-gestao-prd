@@ -3,6 +3,9 @@ public_html/config.local.php
 
 # Uploads e arquivos gerados
 public_html/uploads/
+!public_html/uploads/
+public_html/uploads/*
+!public_html/uploads/.htaccess
 
 # Arquivos temporários e de diagnóstico
 check_*.php
@@ -35,7 +38,9 @@ playwright-report/
 
 # Evidencias operacionais locais
 audit/
-deploy/
+deploy/*
+!deploy/preview_student_ra_backfill.php
+!deploy/apply_student_ra_backfill.php
 
 # Credenciais locais de carga / QA
 tests/load/credentials.local.json

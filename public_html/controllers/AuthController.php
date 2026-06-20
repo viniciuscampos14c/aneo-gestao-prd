@@ -30,6 +30,12 @@ class AuthController extends BaseController
             $this->redirect('login');
         }
 
+        $rateLimit = LoginRateLimiter::check('admin', $login);
+        if (empty($rateLimit['allowed'])) {
+            $this->error('Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.');
+            $this->redirect('login');
+        }
+
         $user = $this->users->findByLogin($login);
 
         $validPassword = false;
@@ -38,9 +44,12 @@ class AuthController extends BaseController
         }
 
         if (!$user || !$validPassword) {
+            LoginRateLimiter::recordFailure('admin', $login);
             $this->error('Credenciais inválidas.');
             $this->redirect('login');
         }
+
+        LoginRateLimiter::clear('admin', $login);
 
         if (hash_equals((string) $user['password_hash'], $password)) {
             $rehash = db()->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');

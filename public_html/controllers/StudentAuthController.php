@@ -35,8 +35,15 @@ class StudentAuthController extends BaseController
             $this->redirect('student/login');
         }
 
+        $rateLimit = LoginRateLimiter::check('student', $login);
+        if (empty($rateLimit['allowed'])) {
+            $this->error('Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.');
+            $this->redirect('student/login');
+        }
+
         $account = $this->portal->findAccountByLogin($login);
         if (!$account || (int) $account['is_active'] !== 1 || (int) $account['student_is_active'] !== 1) {
+            LoginRateLimiter::recordFailure('student', $login);
             $this->error('Acesso do aluno inválido ou inativo.');
             $this->redirect('student/login');
         }
@@ -45,9 +52,12 @@ class StudentAuthController extends BaseController
             || hash_equals((string) $account['password_hash'], $password);
 
         if (!$validPassword) {
+            LoginRateLimiter::recordFailure('student', $login);
             $this->error('Credenciais inválidas.');
             $this->redirect('student/login');
         }
+
+        LoginRateLimiter::clear('student', $login);
 
         $trialContext = $this->portal->trialAccessContext((int) $account['student_id']);
         if (!empty($trialContext['is_trial']) && empty($trialContext['allowed_today'])) {

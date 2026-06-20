@@ -706,28 +706,27 @@ class StudentController extends BaseController
             return;
         }
 
-        $allowed = ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'];
-        $extension = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
-
-        if (!in_array($extension, $allowed, true)) {
+        $validation = UploadSecurity::validate($file, ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'], 20 * 1024 * 1024);
+        if (empty($validation['ok'])) {
             return;
         }
+        $extension = (string) $validation['extension'];
 
         $targetDir = __DIR__ . '/../uploads/documents';
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0775, true);
         }
 
-        $safeName = 'student_' . $studentId . '_' . date('YmdHis') . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $file['name']);
+        $safeName = 'student_' . $studentId . '_' . date('YmdHis') . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $validation['original_name']);
         $targetPath = $targetDir . '/' . $safeName;
 
-        if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
+        if (!move_uploaded_file((string) $validation['tmp_path'], $targetPath)) {
             return;
         }
 
         $this->students->addDocument(
             $studentId,
-            (string) $file['name'],
+            (string) $validation['original_name'],
             'uploads/documents/' . $safeName,
             $extension,
             (int) current_user()['id']
@@ -755,28 +754,23 @@ class StudentController extends BaseController
             return ($currentPhoto ?? '') !== '' ? $currentPhoto : null;
         }
 
-        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        if (!in_array($extension, ['png', 'jpg', 'jpeg', 'webp'], true)) {
-            $this->error('Foto do aluno inválida. Use PNG, JPG, JPEG ou WEBP.');
+        $validation = UploadSecurity::validate($file, ['png', 'jpg', 'jpeg', 'webp'], 5 * 1024 * 1024);
+        if (empty($validation['ok'])) {
+            $this->error((string) ($validation['message'] ?? 'Foto do aluno inválida.'));
             return ($currentPhoto ?? '') !== '' ? $currentPhoto : null;
         }
-
-        $maxSize = 5 * 1024 * 1024;
-        if ((int) ($file['size'] ?? 0) > $maxSize) {
-            $this->error('Foto do aluno acima de 5MB.');
-            return ($currentPhoto ?? '') !== '' ? $currentPhoto : null;
-        }
+        $extension = (string) $validation['extension'];
 
         $targetDir = __DIR__ . '/../uploads/students';
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0775, true);
         }
 
-        $safeOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', $fileName);
+        $safeOriginal = preg_replace('/[^a-zA-Z0-9._-]/', '_', (string) $validation['original_name']);
         $storedFileName = 'student_photo_' . $studentId . '_' . date('YmdHis') . '_' . $safeOriginal;
         $targetPath = $targetDir . '/' . $storedFileName;
 
-        if (!move_uploaded_file((string) ($file['tmp_name'] ?? ''), $targetPath)) {
+        if (!move_uploaded_file((string) $validation['tmp_path'], $targetPath)) {
             $this->error('Não foi possível salvar a foto do aluno.');
             return ($currentPhoto ?? '') !== '' ? $currentPhoto : null;
         }

@@ -22,10 +22,19 @@ class MobileAuthApiController extends BaseController
             ApiAuth::abort(422, 'Informe usuário/email e senha.');
         }
 
+        $rateLimit = LoginRateLimiter::check('mobile', $login);
+        if (empty($rateLimit['allowed'])) {
+            header('Retry-After: ' . max(1, (int) ($rateLimit['retry_after'] ?? 1)));
+            ApiAuth::abort(429, 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.');
+        }
+
         $user = $this->users->findByLogin($login);
         if (!$user || !$this->isValidPassword($user, $password)) {
+            LoginRateLimiter::recordFailure('mobile', $login);
             ApiAuth::abort(401, 'Credenciais inválidas.');
         }
+
+        LoginRateLimiter::clear('mobile', $login);
 
         if ($this->isLegacyPasswordHash($user, $password)) {
             $stmt = db()->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');

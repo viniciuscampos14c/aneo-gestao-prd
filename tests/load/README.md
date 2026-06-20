@@ -17,6 +17,8 @@ Simular:
   Cenário principal para rodar com `k6`.
 - `smoke-student-portal.mjs`
   Runner de smoke concorrente em `Node`, util quando `k6` nao estiver instalado localmente.
+- `authenticated-student-portal.mjs`
+  Separa o login em lotes da navegação simultânea, permitindo identificar se o gargalo está na autenticação ou no uso do portal.
 - `credentials.example.json`
   Exemplo de pool de credenciais para testes.
 
@@ -36,6 +38,14 @@ Exemplo:
 
 ```bash
 node tests/load/smoke-student-portal.mjs --baseUrl=https://erp-hml.aneobrasil.com.br --vus=5 --iterations=2 --credentials=tests/load/credentials.local.json
+```
+
+## Carga com sessões autenticadas
+
+Exemplo:
+
+```bash
+node tests/load/authenticated-student-portal.mjs --baseUrl=https://erp-hml.aneobrasil.com.br --loginConcurrency=10 --credentials=tests/load/credentials.local.json
 ```
 
 ## k6

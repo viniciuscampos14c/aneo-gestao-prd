@@ -14,6 +14,7 @@
     "test:e2e:hml:jully": "npx playwright test --config=playwright.hml.jully.config.ts",
     "test:e2e:hml:jully:list": "npx playwright test --config=playwright.hml.jully.config.ts --list",
     "load:student:smoke": "node tests/load/smoke-student-portal.mjs",
+    "load:student:authenticated": "node tests/load/authenticated-student-portal.mjs",
     "load:student:k6": "k6 run tests/load/k6-student-portal.js"
   },
   "repository": {
