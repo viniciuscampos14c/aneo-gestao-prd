@@ -1,5 +1,6 @@
 # Configurações locais / produção — nunca versionar
 public_html/config.local.php
+rotacao_hml.local.env
 
 # Uploads e arquivos gerados
 public_html/uploads/
