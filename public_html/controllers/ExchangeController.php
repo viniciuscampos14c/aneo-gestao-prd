@@ -52,12 +52,15 @@ class ExchangeController extends BaseController
             $this->redirect('exchange');
         }
 
-        // Marca como visualizado se ainda pendente
-        $this->exchange->markViewed($id);
+        // Professor acompanha a solicitação apenas em modo consulta.
+        if (!is_professor()) {
+            $this->exchange->markViewed($id);
+        }
 
         $this->render('exchange/show', [
             'title'   => 'Intercambio - Solicitacao #' . $id,
             'request' => $request,
+            'readOnly' => is_professor(),
         ]);
     }
 
@@ -66,6 +69,11 @@ class ExchangeController extends BaseController
         require_auth();
         require_permission('students');
         csrf_validate();
+
+        if (is_professor()) {
+            flash('error', 'Perfil professor possui acesso somente de visualização nesta área.');
+            $this->redirect('exchange/show?id=' . max(0, (int) post('id')));
+        }
 
         $id        = max(0, (int) post('id'));
         $status    = trim((string) post('status', ''));

@@ -1,12 +1,13 @@
 <?php
 $canCategory = has_permission('courses.category');
-$canEnrollment = has_permission('courses.enrollment');
+$showEnrollmentData = !is_professor();
+$canEnrollment = has_permission('courses.enrollment') && $showEnrollmentData;
 $canExam = has_permission('courses.exam');
 $canComment = has_permission('courses.comment');
 $canCreate = has_permission('courses.create');
 $canEdit = has_permission('courses.edit');
 $canDelete = has_permission('courses.delete');
-$canTrial = has_permission('courses.enrollment');
+$canTrial = has_permission('courses.enrollment') && $showEnrollmentData;
 $useCourseDashboard = (bool) ($useCourseDashboard ?? false);
 $viewMode = (string) ($viewMode ?? ($useCourseDashboard ? 'cards' : 'list'));
 $stats = $stats ?? [
@@ -490,14 +491,16 @@ $statusBadgeClass = static function (string $status): string {
                 <p class="text-3xl font-semibold text-white"><?= (int) ($stats['published_courses'] ?? 0); ?></p>
                 <p class="mt-1 text-sm text-slate-400">Disponiveis agora</p>
             </article>
-            <article class="course-stat-card rounded-2xl p-4">
-                <div class="mb-3 flex items-center justify-between">
-                    <span class="text-xs uppercase tracking-[0.18em] text-sky-300">Volume</span>
-                    <span class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-100">Matrículas</span>
-                </div>
-                <p class="text-3xl font-semibold text-white"><?= (int) ($stats['enrollments_total'] ?? 0); ?></p>
-                <p class="mt-1 text-sm text-slate-400">Ativas e concluidas</p>
-            </article>
+            <?php if ($showEnrollmentData): ?>
+                <article class="course-stat-card rounded-2xl p-4">
+                    <div class="mb-3 flex items-center justify-between">
+                        <span class="text-xs uppercase tracking-[0.18em] text-sky-300">Volume</span>
+                        <span class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-100">Matrículas</span>
+                    </div>
+                    <p class="text-3xl font-semibold text-white"><?= (int) ($stats['enrollments_total'] ?? 0); ?></p>
+                    <p class="mt-1 text-sm text-slate-400">Ativas e concluídas</p>
+                </article>
+            <?php endif; ?>
             <article class="course-stat-card rounded-2xl p-4">
                 <div class="mb-3 flex items-center justify-between">
                     <span class="text-xs uppercase tracking-[0.18em] text-violet-300">Interacao</span>

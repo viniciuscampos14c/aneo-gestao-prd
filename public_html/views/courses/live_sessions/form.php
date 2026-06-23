@@ -47,7 +47,7 @@ if ($isEdit && !empty($session['scheduled_at'])) {
 
         <?php if (!$isEdit): ?>
             <label class="course-live-global-option flex gap-3 rounded-lg border px-3 py-3 text-sm">
-                <input type="checkbox" name="is_global" value="1" class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
+                <input type="checkbox" name="is_global" value="1" checked class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
                 <span>
                     <strong class="block">Aula global para todas as unidades deste curso</strong>
                     <span class="course-live-global-help mt-1 block text-xs">

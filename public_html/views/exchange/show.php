@@ -1,5 +1,8 @@
 <?php
 /** @var array $request dados completos da solicitacao */
+/** @var bool  $readOnly professor visualiza sem editar */
+
+$readOnly = (bool) ($readOnly ?? false);
 
 $statusLabels = [
     'pending'  => 'Aguardando',
@@ -96,35 +99,56 @@ $dateFmt = $createdAt !== '' ? date('d/m/Y H:i', strtotime($createdAt)) : '-';
 
     <div class="exchange-panel rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-6 py-4">
-            <h3 class="font-semibold text-slate-800">Atualizar Status</h3>
+            <h3 class="font-semibold text-slate-800"><?= $readOnly ? 'Status da Solicitação' : 'Atualizar Status'; ?></h3>
         </div>
-        <form method="POST" action="<?= route('exchange/update-status'); ?>" class="space-y-4 px-6 py-6">
-            <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
-            <input type="hidden" name="id" value="<?= (int) ($request['id'] ?? 0); ?>">
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="status">Status</label>
-                <select id="status" name="status"
-                        class="exchange-form-select w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
-                    <?php foreach ($statusLabels as $val => $lbl): ?>
-                        <option value="<?= e($val); ?>" <?= $st === $val ? 'selected' : ''; ?>><?= e($lbl); ?></option>
-                    <?php endforeach; ?>
-                </select>
+        <?php if ($readOnly): ?>
+            <div class="space-y-4 px-6 py-6 text-sm">
+                <div>
+                    <p class="mb-1 font-medium text-slate-700">Status</p>
+                    <span class="exchange-status-pill inline-block rounded-full px-3 py-1 text-xs font-semibold <?= $badge; ?>">
+                        <?= e($slabel); ?>
+                    </span>
+                </div>
+                <div>
+                    <p class="mb-1 font-medium text-slate-700">Observação da equipe</p>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-slate-700">
+                        <?= trim((string) ($request['admin_notes'] ?? '')) !== '' ? nl2br(e((string) $request['admin_notes'])) : 'Nenhuma observação registrada.'; ?>
+                    </div>
+                </div>
+                <p class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
+                    Perfil professor: acesso somente para visualização.
+                </p>
             </div>
+        <?php else: ?>
+            <form method="POST" action="<?= route('exchange/update-status'); ?>" class="space-y-4 px-6 py-6">
+                <input type="hidden" name="_csrf" value="<?= csrf_token(); ?>">
+                <input type="hidden" name="id" value="<?= (int) ($request['id'] ?? 0); ?>">
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700" for="admin_notes">
-                    Observacao para o aluno <span class="font-normal text-slate-400">(opcional)</span>
-                </label>
-                <textarea id="admin_notes" name="admin_notes" rows="3"
-                          placeholder="Ex.: Aprovado! Entraremos em contato para agendar..."
-                          class="exchange-form-textarea w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"><?= e((string) ($request['admin_notes'] ?? '')); ?></textarea>
-            </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700" for="status">Status</label>
+                    <select id="status" name="status"
+                            class="exchange-form-select w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                        <?php foreach ($statusLabels as $val => $lbl): ?>
+                            <option value="<?= e($val); ?>" <?= $st === $val ? 'selected' : ''; ?>><?= e($lbl); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <button type="submit"
-                    class="exchange-save-btn rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition">
-                Salvar
-            </button>
-        </form>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700" for="admin_notes">
+                        Observacao para o aluno <span class="font-normal text-slate-400">(opcional)</span>
+                    </label>
+                    <textarea id="admin_notes" name="admin_notes" rows="3"
+                              placeholder="Ex.: Aprovado! Entraremos em contato para agendar..."
+                              class="exchange-form-textarea w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"><?= e((string) ($request['admin_notes'] ?? '')); ?></textarea>
+                </div>
+
+                <button type="submit"
+                        class="exchange-save-btn rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 transition">
+                    Salvar
+                </button>
+            </form>
+        <?php endif; ?>
     </div>
 </div>

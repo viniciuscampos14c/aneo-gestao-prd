@@ -515,7 +515,7 @@ $formatLessonDuration = static function (int $seconds): string {
                     <input type="hidden" name="redirect_to" value="<?= e($backToCourse); ?>">
 
                     <label class="flex gap-3 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-3 text-xs text-cyan-900">
-                        <input type="checkbox" name="is_global" value="1" class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
+                        <input type="checkbox" name="is_global" value="1" checked class="mt-0.5 h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500">
                         <span>
                             <strong class="block text-sm">Aula global para todas as unidades deste curso</strong>
                             O sistema criara uma unica reunião Zoom e vinculara o mesmo link aos cursos equivalentes das empresas ativas.

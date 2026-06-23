@@ -9,8 +9,8 @@ $firstName = trim((string) preg_replace('/\s+.*/', '', $professorName));
 $firstName = $firstName !== '' ? $firstName : 'Professor';
 
 $publishedCourses = (int) ($overview['published_courses'] ?? 0);
-$activeEnrollments = (int) ($overview['active_enrollments'] ?? 0);
 $averageProgress = max(0, min(100, (float) ($overview['average_progress'] ?? 0)));
+$attendanceRate = max(0, min(100, (float) ($overview['attendance_rate'] ?? 0)));
 $pendingReviews = (int) ($overview['pending_reviews'] ?? 0);
 $pendingQuestions = (int) ($overview['pending_questions'] ?? 0);
 $questionsAvailable = !empty($overview['questions_available']);
@@ -48,14 +48,14 @@ $approvalRate = max(0, min(100, (float) ($overview['exam_approval_rate'] ?? 0)))
                 <p class="dashboard-preview-subtitle mt-2 text-xs">Conteúdos disponíveis no portal</p>
             </a>
 
-            <a href="<?= route('courses/enrollments'); ?>" class="dashboard-preview-kpi group p-5">
+            <div class="dashboard-preview-kpi p-5">
                 <div class="flex items-start justify-between gap-3">
-                    <p class="dashboard-preview-kpi-title text-xs font-semibold uppercase tracking-[0.16em]">Matrículas ativas</p>
-                    <span class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[10px] font-semibold text-sky-200">Cursos</span>
+                    <p class="dashboard-preview-kpi-title text-xs font-semibold uppercase tracking-[0.16em]">Assiduidade EAD</p>
+                    <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-200">15 dias</span>
                 </div>
-                <p class="dashboard-preview-kpi-value mt-4 text-4xl font-bold"><?= $activeEnrollments; ?></p>
-                <p class="dashboard-preview-subtitle mt-2 text-xs">Matrículas ativas ou concluídas</p>
-            </a>
+                <p class="dashboard-preview-kpi-value mt-4 text-4xl font-bold"><?= e(number_format($attendanceRate, 1, ',', '.')); ?>%</p>
+                <p class="dashboard-preview-subtitle mt-2 text-xs">Participação recente nas aulas do portal</p>
+            </div>
 
             <div class="dashboard-preview-kpi p-5">
                 <div class="flex items-start justify-between gap-3">
@@ -99,7 +99,7 @@ $approvalRate = max(0, min(100, (float) ($overview['exam_approval_rate'] ?? 0)))
                                 <div>
                                     <p class="text-sm font-semibold text-slate-100"><?= e((string) ($course['name'] ?? 'Curso')); ?></p>
                                     <p class="mt-0.5 text-xs text-slate-500">
-                                        <?= (int) ($course['enrollments_total'] ?? 0); ?> matrícula(s)
+                                        Assiduidade: <?= e(number_format(max(0, min(100, (float) ($course['attendance_rate'] ?? 0))), 1, ',', '.')); ?>%
                                         <?php if ($risk > 0): ?>
                                             <span class="text-rose-300"> | <?= $risk; ?> abaixo de 40%</span>
                                         <?php endif; ?>
@@ -247,9 +247,6 @@ $approvalRate = max(0, min(100, (float) ($overview['exam_approval_rate'] ?? 0)))
             </a>
             <a href="<?= route('courses/live-sessions'); ?>" class="dashboard-preview-btn-link rounded-xl px-4 py-3 text-sm font-semibold transition">
                 Aulas Zoom
-            </a>
-            <a href="<?= route('courses/enrollments'); ?>" class="dashboard-preview-btn-link rounded-xl px-4 py-3 text-sm font-semibold transition">
-                Matrículas
             </a>
             <a href="<?= route('escala-aluno'); ?>" class="dashboard-preview-btn-link rounded-xl px-4 py-3 text-sm font-semibold transition">
                 Escala aluno

@@ -11,6 +11,7 @@ $statusLabel = match ($courseStatus) {
 $menuId = 'course-menu-' . $courseId;
 $commentsNew = (int) ($row['comments_new_total'] ?? 0);
 $updatedAgo = $formatRelativeTime((string) ($row['updated_at'] ?? ''));
+$showEnrollmentData = !is_professor();
 ?>
 <article class="course-card overflow-hidden rounded-2xl">
     <div class="course-card-cover">
@@ -29,15 +30,17 @@ $updatedAgo = $formatRelativeTime((string) ($row['updated_at'] ?? ''));
             <h3 class="course-card-title text-lg font-semibold text-white"><?= e((string) ($row['name'] ?? '')); ?></h3>
         </div>
 
-        <div class="grid grid-cols-3 gap-2 text-xs">
+        <div class="grid <?= $showEnrollmentData ? 'grid-cols-3' : 'grid-cols-2'; ?> gap-2 text-xs">
             <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
                 <p class="text-slate-400">Módulos</p>
                 <p class="mt-1 text-sm font-semibold text-white"><?= (int) ($row['modules_total'] ?? 0); ?></p>
             </div>
-            <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
-                <p class="text-slate-400">Matrículas</p>
-                <p class="mt-1 text-sm font-semibold text-white"><?= (int) ($row['enrollments_total'] ?? 0); ?></p>
-            </div>
+            <?php if ($showEnrollmentData): ?>
+                <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
+                    <p class="text-slate-400">Matrículas</p>
+                    <p class="mt-1 text-sm font-semibold text-white"><?= (int) ($row['enrollments_total'] ?? 0); ?></p>
+                </div>
+            <?php endif; ?>
             <div class="rounded-xl border border-slate-700 bg-slate-900/60 px-3 py-2">
                 <p class="text-slate-400">Avaliacoes</p>
                 <p class="mt-1 text-sm font-semibold text-white"><?= (int) ($row['exams_total'] ?? 0); ?></p>
@@ -100,9 +103,11 @@ $updatedAgo = $formatRelativeTime((string) ($row['updated_at'] ?? ''));
                 <a href="<?= route('courses/edit&id=' . $courseId) . '#lms-builder'; ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Conteudo / Módulos" aria-label="Conteudo e módulos do curso">
                     Conteudo
                 </a>
-                <a href="<?= route('courses/enrollments&course_id=' . $courseId); ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Matrículas" aria-label="Abrir matrículas do curso">
-                    Matrículas
-                </a>
+                <?php if ($showEnrollmentData): ?>
+                    <a href="<?= route('courses/enrollments&course_id=' . $courseId); ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Matrículas" aria-label="Abrir matrículas do curso">
+                        Matrículas
+                    </a>
+                <?php endif; ?>
                 <a href="<?= route('courses/exams&course_id=' . $courseId); ?>" class="course-card-action rounded-xl px-2.5 py-2 text-center text-sm" title="Exames" aria-label="Abrir exames do curso">
                     Exames
                 </a>

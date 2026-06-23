@@ -30,6 +30,7 @@ class ProfessorDashboardModel extends BaseModel
                AND e.status IN ('active', 'completed')",
             [':company_id' => $companyId]
         ), 1);
+        $overview['attendance_rate'] = $this->attendanceRate($companyId);
         $overview['students_at_risk'] = $this->count(
             "SELECT COUNT(*)
              FROM enrollments e
@@ -84,9 +85,20 @@ class ProfessorDashboardModel extends BaseModel
                 c.status,
                 SUM(CASE WHEN e.status IN ('active', 'completed') THEN 1 ELSE 0 END) AS enrollments_total,
                 COALESCE(AVG(CASE WHEN e.status IN ('active', 'completed') THEN e.progress_percent END), 0) AS average_progress,
+                COALESCE(
+                    100 * COUNT(DISTINCT CASE WHEN e.status IN ('active', 'completed') AND recent.student_id IS NOT NULL THEN e.id END)
+                    / NULLIF(COUNT(DISTINCT CASE WHEN e.status IN ('active', 'completed') THEN e.id END), 0),
+                    0
+                ) AS attendance_rate,
                 SUM(CASE WHEN e.status = 'active' AND e.progress_percent < 40 THEN 1 ELSE 0 END) AS students_at_risk
              FROM courses c
              LEFT JOIN enrollments e ON e.course_id = c.id
+             LEFT JOIN (
+                SELECT student_id, course_id
+                FROM student_lesson_progress
+                WHERE last_event_at >= DATE_SUB(NOW(), INTERVAL 15 DAY)
+                GROUP BY student_id, course_id
+             ) recent ON recent.student_id = e.student_id AND recent.course_id = e.course_id
              WHERE c.company_id = :company_id
              GROUP BY c.id
              ORDER BY
@@ -242,6 +254,32 @@ class ProfessorDashboardModel extends BaseModel
         return (int) $this->value($sql, $params);
     }
 
+    private function attendanceRate(int $companyId): float
+    {
+        if (!$this->schemaTableExists('student_lesson_progress')) {
+            return 0.0;
+        }
+
+        return round((float) $this->value(
+            "SELECT COALESCE(
+                100 * COUNT(DISTINCT CASE WHEN recent.student_id IS NOT NULL THEN e.id END)
+                / NULLIF(COUNT(DISTINCT e.id), 0),
+                0
+             )
+             FROM enrollments e
+             INNER JOIN courses c ON c.id = e.course_id
+             LEFT JOIN (
+                SELECT student_id, course_id
+                FROM student_lesson_progress
+                WHERE last_event_at >= DATE_SUB(NOW(), INTERVAL 15 DAY)
+                GROUP BY student_id, course_id
+             ) recent ON recent.student_id = e.student_id AND recent.course_id = e.course_id
+             WHERE c.company_id = :company_id
+               AND e.status IN ('active', 'completed')",
+            [':company_id' => $companyId]
+        ), 1);
+    }
+
     private function value(string $sql, array $params): mixed
     {
         $stmt = $this->db->prepare($sql);
@@ -256,6 +294,7 @@ class ProfessorDashboardModel extends BaseModel
             'published_courses' => 0,
             'active_enrollments' => 0,
             'average_progress' => 0.0,
+            'attendance_rate' => 0.0,
             'students_at_risk' => 0,
             'exam_results' => 0,
             'exam_approval_rate' => 0.0,
