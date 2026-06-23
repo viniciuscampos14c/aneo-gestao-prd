@@ -9,6 +9,9 @@ const studentUser = process.env.ANEO_HML_STUDENT_USER || 'qa.aluno.portal';
 const studentPassword = process.env.ANEO_HML_STUDENT_PASSWORD || '';
 const youtubeUsers = Math.max(1, Number(process.env.ANEO_HML_YOUTUBE_USERS || 10));
 const mediaMode = String(process.env.ANEO_HML_MEDIA_MODE || 'all').toLowerCase();
+const loadCredentialsPath = path.resolve(
+  process.env.ANEO_LOAD_CREDENTIALS || path.join('tests', 'load', 'credentials.local.json')
+);
 
 if (!adminPassword || !studentPassword) {
   throw new Error('Defina ANEO_HML_ADMIN_PASSWORD e ANEO_HML_STUDENT_PASSWORD.');
@@ -41,7 +44,7 @@ async function loginAdmin(page) {
 
 async function validateYouTube(browser) {
   const credentials = JSON.parse(
-    fs.readFileSync(path.resolve('tests', 'load', 'credentials.local.json'), 'utf8')
+    fs.readFileSync(loadCredentialsPath, 'utf8').replace(/^\uFEFF+/, '')
   ).slice(0, youtubeUsers);
 
   const startedAt = Date.now();
@@ -139,7 +142,7 @@ async function validateYouTube(browser) {
 
 async function validateZoomPortalConcurrency(joinUrl, marker) {
   const credentials = JSON.parse(
-    fs.readFileSync(path.resolve('tests', 'load', 'credentials.local.json'), 'utf8')
+    fs.readFileSync(loadCredentialsPath, 'utf8').replace(/^\uFEFF+/, '')
   );
   const startedAt = Date.now();
   const results = await Promise.all(
