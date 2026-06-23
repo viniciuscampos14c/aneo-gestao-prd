@@ -946,6 +946,88 @@ class CourseController extends BaseController
         $this->redirect('courses/exams');
     }
 
+    public function importInternalExams(): void
+    {
+        require_auth();
+        require_permission('courses.exam');
+        csrf_validate();
+
+        if (empty($_FILES['exam_import_file']['tmp_name']) || ($_FILES['exam_import_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $this->error('Envie um arquivo CSV para importar as provas.');
+            $this->redirect('courses/exams');
+        }
+
+        $originalName = (string) ($_FILES['exam_import_file']['name'] ?? '');
+        if (!str_ends_with(strtolower($originalName), '.csv')) {
+            $this->error('Neste momento o importador aceita apenas arquivo CSV.');
+            $this->redirect('courses/exams');
+        }
+
+        $parsed = $this->parseInternalExamImportCsv((string) $_FILES['exam_import_file']['tmp_name']);
+        if ($parsed['errors'] !== []) {
+            $this->error($parsed['errors'][0]);
+            $this->redirect('courses/exams');
+        }
+
+        $groups = $parsed['groups'];
+        if ($groups === []) {
+            $this->error('Nenhuma questão válida encontrada no arquivo.');
+            $this->redirect('courses/exams');
+        }
+
+        $createdExams = 0;
+        $createdQuestions = 0;
+        $notifiedExams = 0;
+        $currentUserId = (int) current_user()['id'];
+
+        foreach ($groups as $group) {
+            $data = [
+                'course_id' => (int) $group['course_id'],
+                'title' => (string) $group['title'],
+                'description' => (string) ($group['description'] ?? ''),
+                'passing_score' => (float) ($group['passing_score'] ?? 7),
+                'scheduled_at' => $group['scheduled_at'] ?? null,
+            ];
+
+            $examId = $this->courses->createExam($data, $currentUserId);
+            if ($examId <= 0) {
+                continue;
+            }
+
+            $createdExams++;
+            foreach ($group['questions'] as $questionRow) {
+                $this->courses->createQuestion(
+                    $examId,
+                    (string) $questionRow['question_type'],
+                    (string) $questionRow['question_text'],
+                    $questionRow['options_json'] !== null ? (string) $questionRow['options_json'] : null,
+                    $questionRow['correct_answer'] !== null ? (string) $questionRow['correct_answer'] : null,
+                    $currentUserId
+                );
+                $createdQuestions++;
+            }
+
+            if ($this->courses->internalExamAudienceFeatureAvailable()) {
+                $audience = $this->courses->upsertInternalExamAudienceForExamCourse($examId, $currentUserId);
+                if ((int) ($audience['linked_total'] ?? 0) > 0) {
+                    $this->notifyStudentsAboutPublishedExam($examId, [], false, null);
+                    $notifiedExams++;
+                }
+            } else {
+                $this->notifyStudentsAboutPublishedExam($examId, [], false, null);
+                $notifiedExams++;
+            }
+        }
+
+        if ($createdExams <= 0) {
+            $this->error('Não foi possível criar provas a partir do arquivo. Confira curso e dados obrigatórios.');
+            $this->redirect('courses/exams');
+        }
+
+        $this->success("Importação concluída: {$createdExams} prova(s), {$createdQuestions} questão(ões). Alertas enviados para {$notifiedExams} prova(s).");
+        $this->redirect('courses/exams');
+    }
+
     private function normalizeSelectedStudentIds($raw): array
     {
         if (!is_array($raw)) {
@@ -961,6 +1043,152 @@ class CourseController extends BaseController
         }
 
         return array_values($ids);
+    }
+
+    private function parseInternalExamImportCsv(string $path): array
+    {
+        $handle = fopen($path, 'rb');
+        if (!$handle) {
+            return ['groups' => [], 'errors' => ['Não foi possível ler o arquivo CSV.']];
+        }
+
+        $header = fgetcsv($handle, 0, ';');
+        if ($header === false || count($header) <= 1) {
+            rewind($handle);
+            $header = fgetcsv($handle, 0, ',');
+            $delimiter = ',';
+        } else {
+            $delimiter = ';';
+        }
+
+        if ($header === false) {
+            fclose($handle);
+            return ['groups' => [], 'errors' => ['Arquivo CSV vazio.']];
+        }
+
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]);
+        $columns = [];
+        foreach ($header as $index => $name) {
+            $columns[$this->normalizeImportHeader((string) $name)] = $index;
+        }
+
+        $required = ['curso_id', 'titulo_prova', 'tipo_questao', 'enunciado'];
+        foreach ($required as $column) {
+            if (!isset($columns[$column])) {
+                fclose($handle);
+                return ['groups' => [], 'errors' => ['Coluna obrigatória ausente no CSV: ' . $column . '.']];
+            }
+        }
+
+        $groups = [];
+        $errors = [];
+        $line = 1;
+
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $line++;
+            if ($row === [null] || implode('', array_map('trim', array_map('strval', $row))) === '') {
+                continue;
+            }
+
+            $get = function (string $column) use ($columns, $row): string {
+                $index = $columns[$column] ?? null;
+                return $index === null ? '' : trim((string) ($row[$index] ?? ''));
+            };
+
+            $courseId = (int) $get('curso_id');
+            $title = $get('titulo_prova');
+            $questionType = strtolower($get('tipo_questao'));
+            $questionText = $get('enunciado');
+
+            if ($courseId <= 0 || $title === '' || $questionText === '') {
+                $errors[] = "Linha {$line}: curso_id, titulo_prova e enunciado são obrigatórios.";
+                continue;
+            }
+
+            if (in_array($questionType, ['objetiva', 'objective'], true)) {
+                $questionType = 'objective';
+            } elseif (in_array($questionType, ['dissertativa', 'essay'], true)) {
+                $questionType = 'essay';
+            } else {
+                $errors[] = "Linha {$line}: tipo_questao deve ser objetiva ou dissertativa.";
+                continue;
+            }
+
+            $options = array_values(array_filter([
+                $get('alternativa_a'),
+                $get('alternativa_b'),
+                $get('alternativa_c'),
+                $get('alternativa_d'),
+                $get('alternativa_e'),
+            ], static fn (string $value): bool => $value !== ''));
+            $correctAnswer = $get('resposta_correta');
+
+            if ($questionType === 'objective') {
+                if (count($options) < 2) {
+                    $errors[] = "Linha {$line}: questão objetiva precisa de pelo menos duas alternativas.";
+                    continue;
+                }
+                if ($correctAnswer === '') {
+                    $errors[] = "Linha {$line}: questão objetiva precisa de resposta_correta.";
+                    continue;
+                }
+
+                if (preg_match('/^[A-E]$/i', $correctAnswer)) {
+                    $letterIndex = ord(strtoupper($correctAnswer)) - ord('A');
+                    $correctAnswer = $options[$letterIndex] ?? $correctAnswer;
+                }
+            }
+
+            $groupKey = $courseId . '|' . mb_strtolower($title);
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'course_id' => $courseId,
+                    'title' => $title,
+                    'description' => $get('descricao_prova'),
+                    'passing_score' => parse_decimal($get('nota_minima') !== '' ? $get('nota_minima') : '7'),
+                    'scheduled_at' => $this->normalizeDateTime($get('data_prova')),
+                    'questions' => [],
+                    'types' => [],
+                ];
+            }
+
+            $groups[$groupKey]['types'][$questionType] = true;
+            $groups[$groupKey]['questions'][] = [
+                'question_type' => $questionType,
+                'question_text' => $questionText,
+                'options_json' => $questionType === 'objective' ? json_encode($options, JSON_UNESCAPED_UNICODE) : null,
+                'correct_answer' => $correctAnswer !== '' ? $correctAnswer : null,
+            ];
+        }
+
+        fclose($handle);
+
+        foreach ($groups as $group) {
+            if (count($group['types']) > 1) {
+                $errors[] = 'A prova "' . $group['title'] . '" mistura questões objetivas e dissertativas. Separe em provas diferentes.';
+            }
+        }
+
+        if ($errors !== []) {
+            return ['groups' => [], 'errors' => $errors];
+        }
+
+        return ['groups' => array_values($groups), 'errors' => []];
+    }
+
+    private function normalizeImportHeader(string $value): string
+    {
+        $value = trim(mb_strtolower($value));
+        $value = strtr($value, [
+            'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a',
+            'é' => 'e', 'ê' => 'e',
+            'í' => 'i',
+            'ó' => 'o', 'õ' => 'o', 'ô' => 'o',
+            'ú' => 'u',
+            'ç' => 'c',
+        ]);
+        $value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? $value;
+        return trim($value, '_');
     }
 
     public function storeExamResult(): void

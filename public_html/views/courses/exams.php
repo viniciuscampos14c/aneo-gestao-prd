@@ -88,14 +88,14 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
     <?php if (!$externalFeatureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Vinculo de prova externa por aluno indisponivel nesta base. Execute a migração
+            Vínculo de prova externa por aluno indisponível nesta base. Execute a migração
             <code>migrations/20260317_professor_external_exam_links.sql</code>.
         </div>
     <?php endif; ?>
 
     <?php if (!$internalAudienceFeatureAvailable): ?>
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Direcionamento de prova interna (aluno especifico/turma) indisponivel nesta base. Execute a migração
+            Direcionamento de prova interna (aluno específico/turma) indisponível nesta base. Execute a migração
             <code>migrations/20260427_exam_internal_audience.sql</code>.
         </div>
     <?php endif; ?>
@@ -151,7 +151,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     <section class="rounded-xl border border-slate-200 bg-white p-4">
         <div class="mb-4">
             <h3 class="text-lg font-semibold text-slate-900">Criar prova interna</h3>
-            <p class="text-sm text-slate-500">Fluxo para montar a avaliação no proprio sistema e liberar para o curso ou para um aluno especifico.</p>
+            <p class="text-sm text-slate-500">Fluxo para montar a avaliação no próprio sistema e liberar para o curso ou para um aluno específico.</p>
         </div>
 
         <form method="post" action="<?= route('courses/exams/store'); ?>" class="space-y-4" id="internal-exam-form">
@@ -190,11 +190,11 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                 </div>
 
                 <div class="lg:col-span-3">
-                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Publico da prova *</label>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Público da prova *</label>
                     <div class="grid gap-2 md:grid-cols-2">
                         <select name="delivery_scope_internal" id="internal-delivery-scope" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                             <option value="course">Todos os alunos matriculados no curso</option>
-                            <option value="student">Apenas um aluno especifico</option>
+                            <option value="student">Apenas um aluno específico</option>
                         </select>
                         <div id="internal-target-student-list" class="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
                             <div class="mb-2 text-xs font-medium text-slate-500">Selecione um ou mais alunos</div>
@@ -208,17 +208,35 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                             </div>
                         </div>
                     </div>
-                    <p id="internal-audience-hint" class="mt-1 text-xs text-slate-500">A prova sera liberada para todos os alunos ativos/concluidos matriculados no curso.</p>
+                    <p id="internal-audience-hint" class="mt-1 text-xs text-slate-500">A prova será liberada para todos os alunos ativos/concluídos matriculados no curso.</p>
                 </div>
             </div>
 
             <section class="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <h4 class="text-sm font-semibold text-slate-900">Questoes da prova *</h4>
+                        <h4 class="text-sm font-semibold text-slate-900">Questões da prova *</h4>
                         <p class="text-xs text-slate-500">Adicione perguntas objetivas ou dissertativas.</p>
                     </div>
-                    <button type="button" id="add-exam-question" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">+ Adicionar pergunta</button>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="toggle-internal-exam-import" class="rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 hover:bg-cyan-100">Importar CSV</button>
+                        <button type="button" id="add-exam-question" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">+ Adicionar pergunta</button>
+                    </div>
+                </div>
+
+                <div id="internal-exam-import-panel" class="mb-3 hidden rounded-xl border border-cyan-200 bg-white p-3">
+                    <div class="grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-end">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Arquivo CSV</label>
+                            <input type="file" id="internal-exam-question-import-file" accept=".csv,text/csv" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        </div>
+                        <button type="button" id="internal-exam-template-download" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">Baixar modelo</button>
+                        <button type="button" id="internal-exam-question-import-load" class="rounded-lg bg-cyan-700 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-800">Carregar questões</button>
+                    </div>
+                    <textarea id="internal-exam-template-csv" readonly class="sr-only">tipo_questao;enunciado;alternativa_a;alternativa_b;alternativa_c;alternativa_d;alternativa_e;resposta_correta
+objetiva;Quanto é 1 + 1?;1;2;3;4;5;B
+dissertativa;Explique o conceito principal apresentado na aula;;;;;;</textarea>
+                    <p class="mt-2 text-xs text-slate-500">Use o modelo para carregar perguntas no formulário atual. Curso, data e público continuam sendo definidos acima.</p>
                 </div>
 
                 <div id="exam-questions-wrap" class="space-y-3"></div>
@@ -238,7 +256,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     Fluxo externo
                 </div>
                 <h3 class="text-lg font-semibold text-white">Criar prova externa</h3>
-                <p class="text-sm text-slate-300">Cadastre a prova normalmente, informe o link do Forms/Quiz e envie para o curso inteiro ou para um aluno especifico.</p>
+                <p class="text-sm text-slate-300">Cadastre a prova normalmente, informe o link do Forms/Quiz e envie para o curso inteiro ou para um aluno específico.</p>
             </div>
 
             <form method="post" action="<?= route('courses/exams/store'); ?>" class="space-y-4 rounded-2xl border border-slate-700/90 bg-slate-950/45 p-4 shadow-inner shadow-slate-950/30">
@@ -282,15 +300,15 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     </div>
 
                     <div class="lg:col-span-2">
-                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Publico da prova *</label>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Público da prova *</label>
                         <select name="delivery_scope_external" id="external-delivery-scope" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/20">
                             <option value="course">Todos os alunos matriculados no curso</option>
-                            <option value="student">Apenas um aluno especifico</option>
+                            <option value="student">Apenas um aluno específico</option>
                         </select>
                     </div>
 
                     <div class="lg:col-span-2">
-                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Aluno especifico</label>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Aluno específico</label>
                         <div id="external-target-student-list" class="max-h-52 overflow-y-auto rounded-lg border border-slate-600 bg-slate-950/80 p-2">
                             <div class="mb-2 text-xs font-medium text-slate-400">Selecione um ou mais alunos</div>
                             <div class="space-y-2">
@@ -312,7 +330,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     <div class="lg:col-span-6">
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-cyan-100/85">Instrucoes para o aluno</label>
                         <textarea name="external_instructions" rows="2" placeholder="Orientacoes para realizacao da prova externa (opcional)" class="w-full rounded-lg border border-slate-600 bg-slate-950/80 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"></textarea>
-                        <p id="external-audience-hint" class="mt-1 text-xs text-cyan-200/80">A prova externa sera vinculada automaticamente para todos os alunos ativos/concluidos do curso.</p>
+                        <p id="external-audience-hint" class="mt-1 text-xs text-cyan-200/80">A prova externa será vinculada automaticamente para todos os alunos ativos/concluídos do curso.</p>
                     </div>
                 </div>
 
@@ -401,14 +419,14 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-sky-800 bg-slate-900/85 p-5 shadow-sm">
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Ultimas notas</p>
-                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Resultados recentes dos alunos</h3>
-                    <p class="text-sm text-slate-500">Desempenho mais recente nas avaliacoes corrigidas ou publicadas.</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Últimas notas</p>
+                    <h3 class="mt-1 text-lg font-semibold text-white">Resultados recentes dos alunos</h3>
+                    <p class="text-sm text-slate-300">Desempenho mais recente nas avaliações corrigidas ou publicadas.</p>
                 </div>
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"><?= count($recentResults); ?> resultado(s)</span>
+                <span class="rounded-full border border-sky-700 bg-sky-950/80 px-3 py-1 text-xs font-semibold text-sky-100"><?= count($recentResults); ?> resultado(s)</span>
             </div>
             <div class="space-y-3">
                 <?php foreach ($recentResults as $result): ?>
@@ -418,32 +436,32 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     $passingScore = (float) ($result['passing_score'] ?? 0);
                     $scorePercent = max(0, min(100, ($score / 10) * 100));
                     ?>
-                    <article class="rounded-2xl border <?= $approved ? 'border-emerald-100 bg-emerald-50/50' : 'border-rose-100 bg-rose-50/45'; ?> p-4">
+                    <article class="rounded-2xl border border-sky-800 bg-slate-950/40 p-4 <?= $approved ? 'border-l-4 border-l-emerald-400/70' : 'border-l-4 border-l-rose-400/70'; ?>">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <p class="font-semibold text-slate-950"><?= e((string) ($result['student_name'] ?? '-')); ?></p>
-                                    <span class="rounded-full px-2 py-1 text-[11px] font-semibold <?= $approved ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'; ?>">
+                                    <p class="font-semibold text-white"><?= e((string) ($result['student_name'] ?? '-')); ?></p>
+                                    <span class="rounded-full border px-2 py-1 text-[11px] font-semibold <?= $approved ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100' : 'border-rose-400/40 bg-rose-400/10 text-rose-100'; ?>">
                                         <?= $approved ? 'Aprovado' : 'Reprovado'; ?>
                                     </span>
                                 </div>
-                                <p class="mt-1 text-sm text-slate-700"><?= e((string) ($result['exam_title'] ?? '-')); ?></p>
-                                <p class="mt-0.5 text-xs text-slate-500"><?= e((string) ($result['course_name'] ?? '-')); ?><?= !empty($result['submitted_at']) ? ' | ' . e(date('d/m/Y H:i', strtotime((string) $result['submitted_at']))) : ''; ?></p>
+                                <p class="mt-1 text-sm text-slate-100"><?= e((string) ($result['exam_title'] ?? '-')); ?></p>
+                                <p class="mt-0.5 text-xs text-slate-400"><?= e((string) ($result['course_name'] ?? '-')); ?><?= !empty($result['submitted_at']) ? ' | ' . e(date('d/m/Y H:i', strtotime((string) $result['submitted_at']))) : ''; ?></p>
                             </div>
-                            <div class="min-w-[118px] rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
+                            <div class="min-w-[118px] rounded-2xl border border-sky-800 bg-slate-900 px-4 py-3 text-right shadow-sm">
                                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Nota</p>
-                                <p class="text-2xl font-black <?= $approved ? 'text-emerald-700' : 'text-rose-700'; ?>"><?= e(number_format($score, 2, ',', '.')); ?></p>
-                                <p class="text-xs text-slate-500">min. <?= e(number_format($passingScore, 2, ',', '.')); ?></p>
+                                <p class="text-2xl font-black <?= $approved ? 'text-emerald-300' : 'text-rose-300'; ?>"><?= e(number_format($score, 2, ',', '.')); ?></p>
+                                <p class="text-xs text-slate-400">min. <?= e(number_format($passingScore, 2, ',', '.')); ?></p>
                             </div>
                         </div>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                            <div class="h-full rounded-full <?= $approved ? 'bg-emerald-500' : 'bg-rose-500'; ?>" style="width: <?= $scorePercent; ?>%"></div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+                            <div class="h-full rounded-full <?= $approved ? 'bg-emerald-400' : 'bg-rose-400'; ?>" style="width: <?= $scorePercent; ?>%"></div>
                         </div>
                         <?php if ($isAdminResultEditor): ?>
                             <div class="mt-3 flex justify-end">
                                 <button
                                     type="button"
-                                    class="exam-result-edit rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                                    class="exam-result-edit rounded-lg border border-sky-700 bg-sky-950/60 px-3 py-1.5 text-xs font-semibold text-sky-100 shadow-sm hover:bg-sky-900"
                                     data-result-id="<?= (int) ($result['id'] ?? 0); ?>"
                                     data-exam-id="<?= (int) ($result['exam_id'] ?? 0); ?>"
                                     data-student-id="<?= (int) ($result['student_id'] ?? 0); ?>"
@@ -461,16 +479,16 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     </article>
                 <?php endforeach; ?>
                 <?php if ($recentResults === []): ?>
-                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Nenhum resultado de avaliação registrado ate o momento.</div>
+                    <div class="rounded-2xl border border-dashed border-sky-800 bg-slate-950/40 px-4 py-8 text-center text-sm text-slate-300">Nenhum resultado de avaliação registrado até o momento.</div>
                 <?php endif; ?>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-sky-800 bg-slate-900/85 p-5 shadow-sm">
             <div class="mb-4">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Consolidado</p>
-                <h3 class="mt-1 text-lg font-semibold text-slate-900">Resumo por avaliação</h3>
-                <p class="text-sm text-slate-500">Leitura rapida de aprovacao por prova.</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Consolidado</p>
+                <h3 class="mt-1 text-lg font-semibold text-white">Resumo por avaliação</h3>
+                <p class="text-sm text-slate-300">Leitura rápida de aprovação por prova.</p>
             </div>
             <div class="space-y-3">
                 <?php foreach ($resultsByExamRows as $examSummary): ?>
@@ -478,29 +496,29 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     $summaryTotal = max(1, (int) ($examSummary['total'] ?? 0));
                     $approvedPercent = min(100, ((int) ($examSummary['approved'] ?? 0) / $summaryTotal) * 100);
                     ?>
-                    <article class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                    <article class="rounded-lg border border-sky-800 bg-slate-950/40 px-3 py-3">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-sm font-semibold text-slate-900"><?= e($examSummary['exam_title']); ?></p>
-                                <p class="text-xs text-slate-500"><?= e($examSummary['course_name']); ?></p>
+                                <p class="text-sm font-semibold text-white"><?= e($examSummary['exam_title']); ?></p>
+                                <p class="text-xs text-slate-400"><?= e($examSummary['course_name']); ?></p>
                             </div>
-                            <span class="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-700"><?= (int) $examSummary['total']; ?> nota(s)</span>
+                            <span class="rounded-full border border-sky-800 bg-slate-900 px-2 py-1 text-xs font-semibold text-slate-200"><?= (int) $examSummary['total']; ?> nota(s)</span>
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-                            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">Aprovados: <strong><?= (int) $examSummary['approved']; ?></strong></div>
-                            <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">Reprovados: <strong><?= (int) $examSummary['failed']; ?></strong></div>
+                            <div class="rounded-lg border border-emerald-400/35 bg-emerald-400/10 px-3 py-2 text-emerald-100">Aprovados: <strong><?= (int) $examSummary['approved']; ?></strong></div>
+                            <div class="rounded-lg border border-rose-400/35 bg-rose-400/10 px-3 py-2 text-rose-100">Reprovados: <strong><?= (int) $examSummary['failed']; ?></strong></div>
                         </div>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                            <div class="h-full rounded-full bg-emerald-500" style="width: <?= $approvedPercent; ?>%"></div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+                            <div class="h-full rounded-full bg-emerald-400" style="width: <?= $approvedPercent; ?>%"></div>
                         </div>
                         <?php if (!empty($examSummary['last_submitted_at'])): ?>
-                            <p class="mt-2 text-xs text-slate-500">Ultimo resultado em <?= e(date('d/m/Y H:i', strtotime((string) $examSummary['last_submitted_at']))); ?></p>
+                            <p class="mt-2 text-xs text-slate-400">Último resultado em <?= e(date('d/m/Y H:i', strtotime((string) $examSummary['last_submitted_at']))); ?></p>
                         <?php endif; ?>
                     </article>
                 <?php endforeach; ?>
                 <?php if ($resultsByExamRows === []): ?>
-                    <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                        Os resultados por avaliação aparecerao aqui assim que as primeiras notas forem registradas.
+                    <div class="rounded-lg border border-dashed border-sky-800 bg-slate-950/40 px-4 py-5 text-sm text-slate-300">
+                        Os resultados por avaliação aparecerão aqui assim que as primeiras notas forem registradas.
                     </div>
                 <?php endif; ?>
             </div>
@@ -585,7 +603,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
     <section class="rounded-xl border border-slate-200 bg-white">
         <div class="border-b border-slate-200 px-4 py-4">
-            <h3 class="text-lg font-semibold text-slate-900">Catalogo de avaliacoes</h3>
+            <h3 class="text-lg font-semibold text-slate-900">Catálogo de avaliações</h3>
             <p class="text-sm text-slate-500">Lista completa das provas cadastradas com seu tipo, publico e quantidade de links externos.</p>
         </div>
         <div class="overflow-x-auto">
@@ -599,7 +617,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                         <th class="px-3 py-3">Tipo</th>
                         <th class="px-3 py-3">Descrição</th>
                         <th class="px-3 py-3">Nota minima</th>
-                        <th class="px-3 py-3">Publico</th>
+                        <th class="px-3 py-3">Público</th>
                         <th class="px-3 py-3">Links externos</th>
                         <th class="px-3 py-3">Resultados</th>
                     </tr>
@@ -712,11 +730,31 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
             const resultEditCourse = document.getElementById('exam-result-edit-course');
             const resultEditExam = document.getElementById('exam-result-edit-exam');
             const resultEditStudent = document.getElementById('exam-result-edit-student');
+            const templateDownloadButton = document.getElementById('internal-exam-template-download');
+            const templateCsvField = document.getElementById('internal-exam-template-csv');
+            const importToggleButton = document.getElementById('toggle-internal-exam-import');
+            const importPanel = document.getElementById('internal-exam-import-panel');
+            const questionImportFile = document.getElementById('internal-exam-question-import-file');
+            const questionImportLoadButton = document.getElementById('internal-exam-question-import-load');
+
+            if (templateDownloadButton && templateCsvField) {
+                templateDownloadButton.addEventListener('click', () => {
+                    const blob = new Blob([templateCsvField.value], { type: 'text/csv;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'modelo_importacao_provas_internas.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    URL.revokeObjectURL(url);
+                });
+            }
 
             if (questionsWrap && addQuestionButton && audienceScopeField && targetStudentField) {
                 let questionIndex = 0;
 
-                const buildQuestionCard = () => {
+                const buildQuestionCard = (initial = {}) => {
                     questionIndex += 1;
                     const card = document.createElement('article');
                     card.className = 'rounded-lg border border-slate-200 bg-white p-3';
@@ -738,7 +776,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                                 <input type="text" name="question_text[]" required placeholder="Digite a pergunta" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                             </div>
                             <div class="lg:col-span-2">
-                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Opcoes (uma por linha)</label>
+                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Opções (uma por linha)</label>
                                 <textarea name="options_text[]" rows="3" placeholder="Opcao A&#10;Opcao B&#10;Opcao C" class="internal-options-field w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
                             </div>
                             <div class="lg:col-span-2">
@@ -750,6 +788,7 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                     `;
 
                     const typeField = card.querySelector('.internal-question-type');
+                    const questionTextField = card.querySelector('input[name="question_text[]"]');
                     const optionsField = card.querySelector('.internal-options-field');
                     const answerField = card.querySelector('.internal-answer-field');
                     const removeButton = card.querySelector('.internal-question-remove');
@@ -772,9 +811,125 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
                         card.remove();
                     });
 
+                    if (initial.questionType) {
+                        typeField.value = initial.questionType;
+                    }
+                    if (initial.questionText) {
+                        questionTextField.value = initial.questionText;
+                    }
+                    if (initial.optionsText) {
+                        optionsField.value = initial.optionsText;
+                    }
+                    if (initial.correctAnswer) {
+                        answerField.value = initial.correctAnswer;
+                    }
+
                     typeField.addEventListener('change', syncTypeFields);
                     syncTypeFields();
                     return card;
+                };
+
+                const parseCsvLine = (line) => {
+                    const result = [];
+                    let current = '';
+                    let insideQuotes = false;
+
+                    for (let i = 0; i < line.length; i += 1) {
+                        const char = line[i];
+                        const next = line[i + 1];
+
+                        if (char === '"' && insideQuotes && next === '"') {
+                            current += '"';
+                            i += 1;
+                            continue;
+                        }
+
+                        if (char === '"') {
+                            insideQuotes = !insideQuotes;
+                            continue;
+                        }
+
+                        if (char === ';' && !insideQuotes) {
+                            result.push(current.trim());
+                            current = '';
+                            continue;
+                        }
+
+                        current += char;
+                    }
+
+                    result.push(current.trim());
+                    return result;
+                };
+
+                const normalizeHeader = (value) => value
+                    .trim()
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_+|_+$/g, '');
+
+                const normalizeQuestionType = (value) => {
+                    const normalized = normalizeHeader(value);
+                    return ['dissertativa', 'essay'].includes(normalized) ? 'essay' : 'objective';
+                };
+
+                const importQuestionsFromCsv = (content) => {
+                    const lines = content.split(/\r\n|\n|\r/).filter((line) => line.trim() !== '');
+                    if (lines.length < 2) {
+                        alert('O CSV precisa ter cabeçalho e pelo menos uma questão.');
+                        return;
+                    }
+
+                    const headers = parseCsvLine(lines[0]).map(normalizeHeader);
+                    const columnIndex = (name) => headers.indexOf(name);
+                    const questionTypeIndex = columnIndex('tipo_questao');
+                    const questionTextIndex = columnIndex('enunciado');
+
+                    if (questionTypeIndex < 0 || questionTextIndex < 0) {
+                        alert('O CSV precisa conter as colunas tipo_questao e enunciado.');
+                        return;
+                    }
+
+                    const optionColumns = ['alternativa_a', 'alternativa_b', 'alternativa_c', 'alternativa_d', 'alternativa_e'].map(columnIndex);
+                    const correctAnswerIndex = columnIndex('resposta_correta');
+                    const importedCards = [];
+
+                    lines.slice(1).forEach((line) => {
+                        const row = parseCsvLine(line);
+                        const questionText = (row[questionTextIndex] || '').trim();
+                        if (!questionText) {
+                            return;
+                        }
+
+                        const questionType = normalizeQuestionType(row[questionTypeIndex] || '');
+                        const options = optionColumns
+                            .map((index) => index >= 0 ? (row[index] || '').trim() : '')
+                            .filter((value) => value !== '');
+                        let correctAnswer = correctAnswerIndex >= 0 ? (row[correctAnswerIndex] || '').trim() : '';
+
+                        if (/^[A-E]$/i.test(correctAnswer)) {
+                            const letterIndex = correctAnswer.toUpperCase().charCodeAt(0) - 65;
+                            correctAnswer = options[letterIndex] || correctAnswer;
+                        }
+
+                        importedCards.push(buildQuestionCard({
+                            questionType,
+                            questionText,
+                            optionsText: questionType === 'objective' ? options.join('\n') : '',
+                            correctAnswer: questionType === 'objective' ? correctAnswer : '',
+                        }));
+                    });
+
+                    if (importedCards.length === 0) {
+                        alert('Nenhuma questão válida foi encontrada no CSV.');
+                        return;
+                    }
+
+                    questionsWrap.innerHTML = '';
+                    importedCards.forEach((card) => questionsWrap.appendChild(card));
+                    alert(`${importedCards.length} questão(ões) carregada(s). Revise antes de criar a prova.`);
                 };
 
                 const syncAudienceScope = () => {
@@ -792,14 +947,34 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
                     if (audienceHintField) {
                         audienceHintField.textContent = byStudent
-                            ? 'A prova sera enviada somente para os alunos selecionados.'
-                            : 'A prova sera liberada para todos os alunos ativos/concluidos matriculados no curso.';
+                            ? 'A prova será enviada somente para os alunos selecionados.'
+                            : 'A prova será liberada para todos os alunos ativos/concluídos matriculados no curso.';
                     }
                 };
 
                 addQuestionButton.addEventListener('click', () => {
                     questionsWrap.appendChild(buildQuestionCard());
                 });
+
+                if (importToggleButton && importPanel) {
+                    importToggleButton.addEventListener('click', () => {
+                        importPanel.classList.toggle('hidden');
+                    });
+                }
+
+                if (questionImportLoadButton && questionImportFile) {
+                    questionImportLoadButton.addEventListener('click', () => {
+                        const file = questionImportFile.files && questionImportFile.files[0];
+                        if (!file) {
+                            alert('Selecione um arquivo CSV para carregar as questões.');
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = () => importQuestionsFromCsv(String(reader.result || ''));
+                        reader.readAsText(file, 'UTF-8');
+                    });
+                }
 
                 audienceScopeField.addEventListener('change', syncAudienceScope);
                 targetStudentCheckboxes.forEach((checkbox) => checkbox.addEventListener('change', syncAudienceScope));
@@ -821,8 +996,8 @@ usort($resultsByExamRows, static function (array $a, array $b): int {
 
                     if (externalHintField) {
                         externalHintField.textContent = byStudent
-                            ? 'A prova externa sera vinculada somente para os alunos selecionados.'
-                            : 'A prova externa sera vinculada automaticamente para todos os alunos ativos/concluidos do curso.';
+                            ? 'A prova externa será vinculada somente para os alunos selecionados.'
+                            : 'A prova externa será vinculada automaticamente para todos os alunos ativos/concluídos do curso.';
                     }
                 };
 
