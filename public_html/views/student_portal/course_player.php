@@ -79,8 +79,9 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                             <?php
                             $lessonSelected = $selectedLesson && (int) ($selectedLesson['id'] ?? 0) === (int) ($lesson['id'] ?? 0);
                             $lessonCompleted = !empty($lesson['is_completed']);
+                            $lessonUnlocked = !empty($lesson['is_unlocked']);
                             ?>
-                            <?php if ($moduleUnlocked): ?>
+                            <?php if ($moduleUnlocked && $lessonUnlocked): ?>
                                 <a href="<?= route('student/course&course_id=' . (int) ($course['course_id'] ?? 0) . '&lesson_id=' . (int) $lesson['id']); ?>" class="student-lesson-card block rounded-lg border px-3 py-2 text-sm <?= $lessonSelected ? 'student-lesson-card-selected border-cyan-300 bg-cyan-50' : 'student-lesson-card-default border-slate-200 hover:bg-slate-50'; ?>">
                                     <div class="flex items-center justify-between gap-2">
                                         <p class="student-lesson-title font-medium text-slate-800"><?= e((string) $lesson['title']); ?></p>
@@ -93,6 +94,9 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
                             <?php else: ?>
                                 <div class="student-lesson-card-locked rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
                                     <p class="font-medium student-lesson-title"><?= e((string) $lesson['title']); ?></p>
+                                    <?php if ($moduleUnlocked): ?>
+                                        <p class="mt-1 text-[11px] text-slate-400">Conclua a aula anterior para liberar.</p>
+                                    <?php endif; ?>
                                 </div>
                             <?php endif; ?>
                         <?php endforeach; ?>
@@ -304,6 +308,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         completed: player.dataset.initialCompleted === '1',
         readyToComplete: <?= !empty($selectedLesson['ready_to_complete']) ? 'true' : 'false'; ?>,
         completeInFlight: false,
+        refreshScheduled: false,
     };
 
     const toPositiveInt = (value, fallback = 1) => {
@@ -369,6 +374,16 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         }
     };
 
+    const scheduleLearningPathRefresh = (delay = 700) => {
+        if (state.refreshScheduled) {
+            return;
+        }
+        state.refreshScheduled = true;
+        window.setTimeout(() => {
+            window.location.reload();
+        }, delay);
+    };
+
     const confirmCompletion = async () => {
         if (state.completeInFlight || state.completed || !state.readyToComplete) {
             return;
@@ -407,10 +422,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
             state.readyToComplete = false;
             refreshLessonUi(Number(data.progress_percent || 100), true, false);
             refreshCourseUi(Number(data.course_progress_percent || 0));
-
-            window.setTimeout(() => {
-                window.location.reload();
-            }, 800);
+            scheduleLearningPathRefresh(800);
         } catch (error) {
             // Ignore transient errors and keep the player available.
         } finally {
@@ -462,17 +474,16 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
             const lessonProgress = Number(data.progress_percent || 0);
             const lessonCompleted = !!data.lesson_completed;
             const readyToComplete = !!data.lesson_ready_to_complete;
+            const wasCompleted = state.completed;
+            state.completed = lessonCompleted;
             state.readyToComplete = readyToComplete;
             refreshLessonUi(lessonProgress, lessonCompleted, readyToComplete);
 
             const courseProgress = Number(data.course_progress_percent || 0);
             refreshCourseUi(courseProgress);
 
-            if (!state.completed && data.lesson_just_completed) {
-                state.completed = true;
-                window.setTimeout(() => {
-                    window.location.reload();
-                }, 900);
+            if (!wasCompleted && lessonCompleted) {
+                scheduleLearningPathRefresh(900);
             }
         } catch (error) {
             // Ignore transient network errors while the user is watching.
@@ -558,6 +569,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         readyToComplete: <?= !empty($selectedLesson['ready_to_complete']) ? 'true' : 'false'; ?>,
         completeInFlight: false,
         ticker: null,
+        refreshScheduled: false,
     };
 
     const refreshLessonUi = (progress, completed, readyToComplete = false) => {
@@ -601,6 +613,12 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
         if (courseProgressBar)   { courseProgressBar.style.width = p + '%'; }
     };
 
+    const scheduleLearningPathRefresh = (delay = 700) => {
+        if (state.refreshScheduled) { return; }
+        state.refreshScheduled = true;
+        window.setTimeout(() => window.location.reload(), delay);
+    };
+
     const confirmCompletion = async () => {
         if (state.completeInFlight || state.completed || !state.readyToComplete) { return; }
         if (!window.confirm('Confirmar que você assistiu a aula e deseja concluir este conteudo?')) {
@@ -632,7 +650,7 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
             state.readyToComplete = false;
             refreshLessonUi(Number(data.progress_percent || 100), true, false);
             refreshCourseUi(Number(data.course_progress_percent || 0));
-            window.setTimeout(() => window.location.reload(), 800);
+            scheduleLearningPathRefresh(800);
         } catch (_) {
         } finally {
             state.completeInFlight = false;
@@ -673,14 +691,16 @@ $courseCommentsFeatureAvailable = $courseCommentsFeatureAvailable ?? false;
             const data = await res.json();
             if (!res.ok || !data || !data.ok) { return; }
 
+            const lessonCompleted = !!data.lesson_completed;
             const readyToComplete = !!data.lesson_ready_to_complete;
+            const wasCompleted = state.completed;
+            state.completed = lessonCompleted;
             state.readyToComplete = readyToComplete;
-            refreshLessonUi(Number(data.progress_percent || 0), !!data.lesson_completed, readyToComplete);
+            refreshLessonUi(Number(data.progress_percent || 0), lessonCompleted, readyToComplete);
             refreshCourseUi(Number(data.course_progress_percent || 0));
 
-            if (!state.completed && data.lesson_just_completed) {
-                state.completed = true;
-                window.setTimeout(() => window.location.reload(), 900);
+            if (!wasCompleted && lessonCompleted) {
+                scheduleLearningPathRefresh(900);
             }
         } catch (_) {
         } finally {
