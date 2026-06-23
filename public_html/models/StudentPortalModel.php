@@ -182,6 +182,66 @@ class StudentPortalModel extends BaseModel
         return $created;
     }
 
+    public function notifyStudentsAboutAcademicActivity(int $activityId, int $courseId, string $title, string $dueDatetime): int
+    {
+        if ($activityId <= 0 || $courseId <= 0 || !$this->studentPortalNotificationsFeatureAvailable()) {
+            return 0;
+        }
+
+        $title = trim($title);
+        if ($title === '') {
+            return 0;
+        }
+
+        $course = $this->findCourseForNotifications($courseId);
+        if (!$course) {
+            return 0;
+        }
+
+        $students = $this->listStudentsToNotifyForCourse($courseId, (int) ($course['company_id'] ?? 0));
+        if ($students === []) {
+            return 0;
+        }
+
+        $dueLabel = trim($dueDatetime) !== '' ? date('d/m/Y H:i', strtotime($dueDatetime)) : '';
+        $courseName = trim((string) ($course['name'] ?? 'seu curso'));
+        $notificationTitle = 'Nova agenda acadêmica';
+        $message = 'Nova atividade "' . $title . '" publicada no curso "' . $courseName . '".';
+        if ($dueLabel !== '') {
+            $message .= ' Data: ' . $dueLabel . '.';
+        }
+
+        $created = 0;
+        foreach ($students as $student) {
+            $studentId = (int) ($student['id'] ?? 0);
+            $companyId = (int) ($student['company_id'] ?? 0);
+            if ($studentId <= 0 || $companyId <= 0) {
+                continue;
+            }
+
+            $notificationId = $this->createPortalNotification([
+                'company_id' => $companyId,
+                'student_id' => $studentId,
+                'notification_type' => 'academic_activity',
+                'title' => $notificationTitle,
+                'message' => $message,
+                'link_url' => route('student/calendar'),
+                'meta' => [
+                    'activity_id' => $activityId,
+                    'course_id' => $courseId,
+                    'course_name' => $courseName,
+                    'due_datetime' => $dueDatetime,
+                ],
+            ]);
+
+            if ($notificationId > 0) {
+                $created++;
+            }
+        }
+
+        return $created;
+    }
+
     public function myDutySchedule(int $studentId, bool $onlyPublished = true): array
     {
         if ($studentId <= 0 || !$this->studentDutyScheduleFeatureAvailable()) {

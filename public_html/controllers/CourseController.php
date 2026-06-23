@@ -1285,8 +1285,15 @@ class CourseController extends BaseController
         $companyId = (int) (current_company_id() ?? 0);
         $activityId = $this->calendar->createActivity($data, (int) current_user()['id'], $companyId);
         if ($activityId > 0) {
+            $portalNotifications = $this->portal->notifyStudentsAboutAcademicActivity(
+                $activityId,
+                (int) $data['course_id'],
+                (string) $data['title'],
+                (string) $data['due_datetime']
+            );
             $this->calendar->processAutomaticReminders(45, $companyId);
-            $this->success('Atividade cadastrada e calendário atualizado.');
+            $suffix = $portalNotifications > 0 ? ' Alerta enviado para ' . $portalNotifications . ' aluno(s).' : '';
+            $this->success('Atividade cadastrada e calendário atualizado.' . $suffix);
         } else {
             $this->error('Não foi possível cadastrar a atividade.');
         }

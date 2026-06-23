@@ -114,7 +114,7 @@ class ZoomService
                 'mute_upon_entry'      => true,
                 'participant_video'    => false,
                 'host_video'           => true,
-                'auto_recording'       => 'none',
+                'auto_recording'       => 'cloud',
             ],
         ]);
 

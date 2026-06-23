@@ -1,11 +1,24 @@
 Options -Indexes
 
+<IfModule mod_mime.c>
+    RemoveHandler .php .phtml .phar .cgi .pl .py .sh .shtml
+    RemoveType .php .phtml .phar .cgi .pl .py .sh .shtml
+</IfModule>
+
 <IfModule mod_authz_core.c>
     Require all denied
+
+    <FilesMatch "\.(?:png|jpe?g|gif|webp|pdf|txt|csv|doc|docx|xls|xlsx|ppt|pptx)$">
+        Require all granted
+    </FilesMatch>
 </IfModule>
 
 <IfModule !mod_authz_core.c>
     Deny from all
+
+    <FilesMatch "\.(?:png|jpe?g|gif|webp|pdf|txt|csv|doc|docx|xls|xlsx|ppt|pptx)$">
+        Allow from all
+    </FilesMatch>
 </IfModule>
 
 <IfModule mod_authz_core.c>

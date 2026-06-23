@@ -56,7 +56,6 @@ $menu = $isTrialAccess
         ['label' => 'Arsenal', 'route' => 'student/arsenal'],
         ['label' => 'Progresso', 'route' => 'student/progress'],
         ['label' => 'Avaliações', 'route' => 'student/exams'],
-        ['label' => 'Histórico Acadêmico', 'route' => 'student/academic-history'],
     ];
 $logoBuild = '20260512-brand-kit-v1';
 $studentTicketAlerts = isset($studentTicketAlerts) && is_array($studentTicketAlerts) ? $studentTicketAlerts : [];
@@ -176,6 +175,18 @@ $studentCsrfToken = csrf_token();
                                         <p class="text-xs text-slate-500 dark:text-slate-400">Consulte boletos e pagamentos</p>
                                     </div>
                                 </a>
+                                <a href="<?= route('student/academic-history'); ?>"
+                                   class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-cyan-200">
+                                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-900/50 dark:text-cyan-300">
+                                        <svg class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
+                                        </svg>
+                                    </span>
+                                    <div class="text-left">
+                                        <p class="font-medium">Histórico Acadêmico</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Consulte notas, provas e evolução</p>
+                                    </div>
+                                </a>
                             </div>
                             <div class="border-t border-slate-200 bg-slate-50/70 px-2 py-2 dark:border-slate-700 dark:bg-slate-950/60">
                                 <p class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Sessão</p>
@@ -251,6 +262,7 @@ $studentCsrfToken = csrf_token();
                             $alertSectionLabel = match ($alertType) {
                                 'exam_published' => 'Avaliação',
                                 'exam_result' => 'Resultado',
+                                'academic_activity' => 'Agenda',
                                 'exchange_request' => 'Intercâmbio',
                                 'live_class' => 'Aula ao vivo',
                                 'support_ticket_pending' => 'Chamado',
@@ -261,6 +273,7 @@ $studentCsrfToken = csrf_token();
                             $alertButtonLabel = match ($alertType) {
                                 'exam_published' => 'Abrir Avaliações',
                                 'exam_result' => 'Ver Resultado',
+                                'academic_activity' => 'Abrir Agenda',
                                 'exchange_request' => 'Abrir Intercâmbio',
                                 'live_class' => 'Abrir Aulas ao Vivo',
                                 'support_ticket_pending' => 'Abrir Chamados',
@@ -271,6 +284,7 @@ $studentCsrfToken = csrf_token();
                             $alertCardClass = match ($alertType) {
                                 'exam_published' => 'border-sky-100 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/30',
                                 'exam_result' => 'border-indigo-100 bg-indigo-50/70 dark:border-indigo-900/60 dark:bg-indigo-950/30',
+                                'academic_activity' => 'border-cyan-100 bg-cyan-50/70 dark:border-cyan-900/60 dark:bg-cyan-950/30',
                                 'exchange_request' => 'border-amber-100 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/30',
                                 'live_class' => 'border-cyan-100 bg-cyan-50/70 dark:border-cyan-900/60 dark:bg-cyan-950/30',
                                 'support_ticket_pending' => 'border-amber-100 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/30',
