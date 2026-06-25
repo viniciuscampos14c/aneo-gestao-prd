@@ -14,6 +14,7 @@ return [
         'rate_limit_dir' => '',
         'cors_allowed_origins' => [
             'https://mobile.aneobrasil.com.br',
+            'https://diretoria.aneobrasil.com.br',
             'https://erp-hml.aneobrasil.com.br',
             'https://sistema.aneobrasil.com.br',
         ],
