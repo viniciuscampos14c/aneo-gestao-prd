@@ -1397,7 +1397,7 @@ class StudentPortalModel extends BaseModel
                 $moduleLesson['is_unlocked'] = !empty($moduleStatus['is_unlocked']) && $previousLessonCompleted;
                 $moduleLessons[$lessonIndex] = $moduleLesson;
 
-                if (!$lessonCompleted) {
+                if (!$lessonCompleted && !empty($moduleLesson['is_required'])) {
                     $previousLessonCompleted = false;
                 }
             }
