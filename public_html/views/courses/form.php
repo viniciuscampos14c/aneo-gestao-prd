@@ -364,6 +364,9 @@ $formatLessonDuration = static function (int $seconds): string {
                                             <label class="block lg:col-span-5">
                                                 <span class="mb-1 block text-xs font-semibold text-slate-700">URL do video *</span>
                                                 <input type="text" name="video_url" required value="<?= e((string) ($lesson['video_url'] ?? '')); ?>" placeholder="YouTube, Vimeo ou MP4/WebM" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                                <span class="mt-1 block text-[11px] leading-snug text-amber-700">
+                                                    Se o YouTube exigir assistir fora do portal ou tiver restrição de idade, marque a aula como opcional para não bloquear o aluno.
+                                                </span>
                                             </label>
 
                                             <label class="block lg:col-span-1">
@@ -425,6 +428,9 @@ $formatLessonDuration = static function (int $seconds): string {
                                     <label class="block lg:col-span-5">
                                         <span class="mb-1 block text-xs font-semibold text-slate-700">URL do video *</span>
                                         <input type="text" name="video_url" required placeholder="Cole aqui o link da aula" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                        <span class="mt-1 block text-[11px] leading-snug text-amber-700">
+                                            Se o YouTube exigir assistir fora do portal ou tiver restrição de idade, marque a aula como opcional para não bloquear o aluno.
+                                        </span>
                                     </label>
 
                                     <label class="block lg:col-span-1">
