@@ -770,7 +770,13 @@ class CourseModel extends BaseModel
             ':updated_at' => now(),
         ]);
 
-        return (int) $this->db->lastInsertId();
+        $moduleId = (int) $this->db->lastInsertId();
+        $module = $this->findCourseModule($moduleId);
+        if ($module) {
+            $this->syncCourseModuleAcrossEquivalentCourses($module);
+        }
+
+        return $moduleId;
     }
 
     public function updateCourseModule(int $moduleId, array $data): bool
@@ -797,6 +803,8 @@ class CourseModel extends BaseModel
 
         $isActive = !empty($data['is_active']) ? 1 : 0;
 
+        $oldTitle = (string) ($module['title'] ?? '');
+
         $stmt = $this->db->prepare('UPDATE course_modules SET
             title = :title,
             description = :description,
@@ -814,6 +822,11 @@ class CourseModel extends BaseModel
             ':id' => $moduleId,
             ':course_id' => (int) $module['course_id'],
         ]);
+
+        $updatedModule = $this->findCourseModule($moduleId);
+        if ($updatedModule) {
+            $this->syncCourseModuleAcrossEquivalentCourses($updatedModule, $oldTitle);
+        }
 
         return true;
     }
@@ -834,6 +847,8 @@ class CourseModel extends BaseModel
             ':id' => $moduleId,
             ':course_id' => (int) $module['course_id'],
         ]);
+
+        $this->deleteCourseModuleAcrossEquivalentCourses($module);
 
         return true;
     }
@@ -924,7 +939,13 @@ class CourseModel extends BaseModel
             ':updated_at' => now(),
         ]);
 
-        return (int) $this->db->lastInsertId();
+        $lessonId = (int) $this->db->lastInsertId();
+        $lesson = $this->findCourseLesson($lessonId);
+        if ($lesson) {
+            $this->syncCourseLessonAcrossEquivalentCourses($lesson, $module);
+        }
+
+        return $lessonId;
     }
 
     public function updateCourseLesson(int $lessonId, array $data): bool
@@ -964,6 +985,9 @@ class CourseModel extends BaseModel
         $isRequired = !empty($data['is_required']) ? 1 : 0;
         $isActive = !empty($data['is_active']) ? 1 : 0;
 
+        $oldTitle = (string) ($lesson['title'] ?? '');
+        $sourceModule = $this->findCourseModule((int) ($lesson['module_id'] ?? 0));
+
         $stmt = $this->db->prepare('UPDATE course_lessons SET
             title = :title,
             description = :description,
@@ -990,6 +1014,11 @@ class CourseModel extends BaseModel
             ':course_id' => (int) $lesson['course_id'],
         ]);
 
+        $updatedLesson = $this->findCourseLesson($lessonId);
+        if ($updatedLesson && $sourceModule) {
+            $this->syncCourseLessonAcrossEquivalentCourses($updatedLesson, $sourceModule, $oldTitle);
+        }
+
         return true;
     }
 
@@ -1004,11 +1033,17 @@ class CourseModel extends BaseModel
             return false;
         }
 
+        $sourceModule = $this->findCourseModule((int) ($lesson['module_id'] ?? 0));
+
         $stmt = $this->db->prepare('DELETE FROM course_lessons WHERE id = :id AND course_id = :course_id');
         $stmt->execute([
             ':id' => $lessonId,
             ':course_id' => (int) $lesson['course_id'],
         ]);
+
+        if ($sourceModule) {
+            $this->deleteCourseLessonAcrossEquivalentCourses($lesson, $sourceModule);
+        }
 
         return true;
     }
@@ -2457,6 +2492,318 @@ class CourseModel extends BaseModel
                 ]);
             }
         }
+    }
+
+    private function equivalentPublishedCourses(int $courseId): array
+    {
+        if ($courseId <= 0 || !$this->hasCourseCompanyColumn()) {
+            return [];
+        }
+
+        $course = $this->findCourse($courseId);
+        if (!$course) {
+            return [];
+        }
+
+        $courseName = trim((string) ($course['name'] ?? ''));
+        if ($courseName === '') {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT c.id AS course_id, c.company_id
+            FROM courses c
+            INNER JOIN companies co ON co.id = c.company_id
+            WHERE c.name = :name
+              AND c.status = 'published'
+              AND co.is_active = 1
+              AND c.id <> :course_id
+            ORDER BY c.company_id ASC, c.id ASC");
+        $stmt->execute([
+            ':name' => $courseName,
+            ':course_id' => $courseId,
+        ]);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function syncCourseModuleAcrossEquivalentCourses(array $sourceModule, ?string $oldTitle = null): void
+    {
+        if (!$this->hasCourseModulesTable()) {
+            return;
+        }
+
+        $sourceCourseId = (int) ($sourceModule['course_id'] ?? 0);
+        $title = trim((string) ($sourceModule['title'] ?? ''));
+        if ($sourceCourseId <= 0 || $title === '') {
+            return;
+        }
+
+        foreach ($this->equivalentPublishedCourses($sourceCourseId) as $targetCourse) {
+            $targetCourseId = (int) ($targetCourse['course_id'] ?? 0);
+            if ($targetCourseId <= 0) {
+                continue;
+            }
+
+            $targetModule = $this->findEquivalentCourseModule($targetCourseId, $title, $oldTitle);
+            if ($targetModule) {
+                $stmt = $this->db->prepare('UPDATE course_modules SET
+                    title = :title,
+                    description = :description,
+                    display_order = :display_order,
+                    is_active = :is_active,
+                    updated_at = :updated_at
+                    WHERE id = :id');
+                $stmt->execute([
+                    ':title' => $title,
+                    ':description' => $sourceModule['description'] ?? null,
+                    ':display_order' => (int) ($sourceModule['display_order'] ?? 0),
+                    ':is_active' => (int) ($sourceModule['is_active'] ?? 1),
+                    ':updated_at' => now(),
+                    ':id' => (int) $targetModule['id'],
+                ]);
+                continue;
+            }
+
+            $stmt = $this->db->prepare('INSERT INTO course_modules (
+                course_id, title, description, display_order, is_active, created_by, created_at, updated_at
+            ) VALUES (
+                :course_id, :title, :description, :display_order, :is_active, :created_by, :created_at, :updated_at
+            )');
+            $stmt->execute([
+                ':course_id' => $targetCourseId,
+                ':title' => $title,
+                ':description' => $sourceModule['description'] ?? null,
+                ':display_order' => (int) ($sourceModule['display_order'] ?? 0),
+                ':is_active' => (int) ($sourceModule['is_active'] ?? 1),
+                ':created_by' => (int) ($sourceModule['created_by'] ?? 0),
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function deleteCourseModuleAcrossEquivalentCourses(array $sourceModule): void
+    {
+        $sourceCourseId = (int) ($sourceModule['course_id'] ?? 0);
+        $title = trim((string) ($sourceModule['title'] ?? ''));
+        if ($sourceCourseId <= 0 || $title === '') {
+            return;
+        }
+
+        foreach ($this->equivalentPublishedCourses($sourceCourseId) as $targetCourse) {
+            $targetModule = $this->findEquivalentCourseModule((int) $targetCourse['course_id'], $title);
+            if (!$targetModule) {
+                continue;
+            }
+
+            $stmt = $this->db->prepare('DELETE FROM course_modules WHERE id = :id AND course_id = :course_id');
+            $stmt->execute([
+                ':id' => (int) $targetModule['id'],
+                ':course_id' => (int) $targetModule['course_id'],
+            ]);
+        }
+    }
+
+    private function syncCourseLessonAcrossEquivalentCourses(array $sourceLesson, array $sourceModule, ?string $oldTitle = null): void
+    {
+        if (!$this->hasCourseModulesTable() || !$this->hasCourseLessonsTable()) {
+            return;
+        }
+
+        $sourceCourseId = (int) ($sourceLesson['course_id'] ?? 0);
+        $sourceModuleTitle = trim((string) ($sourceModule['title'] ?? ''));
+        $title = trim((string) ($sourceLesson['title'] ?? ''));
+        if ($sourceCourseId <= 0 || $sourceModuleTitle === '' || $title === '') {
+            return;
+        }
+
+        foreach ($this->equivalentPublishedCourses($sourceCourseId) as $targetCourse) {
+            $targetCourseId = (int) ($targetCourse['course_id'] ?? 0);
+            if ($targetCourseId <= 0) {
+                continue;
+            }
+
+            $targetModule = $this->findEquivalentCourseModule($targetCourseId, $sourceModuleTitle);
+            if (!$targetModule) {
+                $targetModule = $this->createEquivalentCourseModule($targetCourseId, $sourceModule);
+            }
+
+            $targetLesson = $this->findEquivalentCourseLesson(
+                $targetCourseId,
+                (int) $targetModule['id'],
+                $title,
+                $oldTitle
+            );
+
+            if ($targetLesson) {
+                $stmt = $this->db->prepare('UPDATE course_lessons SET
+                    title = :title,
+                    description = :description,
+                    lesson_type = :lesson_type,
+                    video_url = :video_url,
+                    duration_seconds = :duration_seconds,
+                    min_progress_percent = :min_progress_percent,
+                    is_required = :is_required,
+                    is_active = :is_active,
+                    display_order = :display_order,
+                    updated_at = :updated_at
+                    WHERE id = :id');
+                $stmt->execute([
+                    ':title' => $title,
+                    ':description' => $sourceLesson['description'] ?? null,
+                    ':lesson_type' => (string) ($sourceLesson['lesson_type'] ?? 'video'),
+                    ':video_url' => (string) ($sourceLesson['video_url'] ?? ''),
+                    ':duration_seconds' => $sourceLesson['duration_seconds'] ?? null,
+                    ':min_progress_percent' => (int) ($sourceLesson['min_progress_percent'] ?? 70),
+                    ':is_required' => (int) ($sourceLesson['is_required'] ?? 1),
+                    ':is_active' => (int) ($sourceLesson['is_active'] ?? 1),
+                    ':display_order' => (int) ($sourceLesson['display_order'] ?? 0),
+                    ':updated_at' => now(),
+                    ':id' => (int) $targetLesson['id'],
+                ]);
+                continue;
+            }
+
+            $stmt = $this->db->prepare('INSERT INTO course_lessons (
+                course_id, module_id, title, description, lesson_type, video_url, duration_seconds,
+                min_progress_percent, is_required, is_active, display_order, created_by, created_at, updated_at
+            ) VALUES (
+                :course_id, :module_id, :title, :description, :lesson_type, :video_url, :duration_seconds,
+                :min_progress_percent, :is_required, :is_active, :display_order, :created_by, :created_at, :updated_at
+            )');
+            $stmt->execute([
+                ':course_id' => $targetCourseId,
+                ':module_id' => (int) $targetModule['id'],
+                ':title' => $title,
+                ':description' => $sourceLesson['description'] ?? null,
+                ':lesson_type' => (string) ($sourceLesson['lesson_type'] ?? 'video'),
+                ':video_url' => (string) ($sourceLesson['video_url'] ?? ''),
+                ':duration_seconds' => $sourceLesson['duration_seconds'] ?? null,
+                ':min_progress_percent' => (int) ($sourceLesson['min_progress_percent'] ?? 70),
+                ':is_required' => (int) ($sourceLesson['is_required'] ?? 1),
+                ':is_active' => (int) ($sourceLesson['is_active'] ?? 1),
+                ':display_order' => (int) ($sourceLesson['display_order'] ?? 0),
+                ':created_by' => (int) ($sourceLesson['created_by'] ?? 0),
+                ':created_at' => now(),
+                ':updated_at' => now(),
+            ]);
+        }
+
+        $this->syncEnrollmentProgressFromLessons();
+    }
+
+    private function deleteCourseLessonAcrossEquivalentCourses(array $sourceLesson, array $sourceModule): void
+    {
+        $sourceCourseId = (int) ($sourceLesson['course_id'] ?? 0);
+        $sourceModuleTitle = trim((string) ($sourceModule['title'] ?? ''));
+        $title = trim((string) ($sourceLesson['title'] ?? ''));
+        if ($sourceCourseId <= 0 || $sourceModuleTitle === '' || $title === '') {
+            return;
+        }
+
+        foreach ($this->equivalentPublishedCourses($sourceCourseId) as $targetCourse) {
+            $targetModule = $this->findEquivalentCourseModule((int) $targetCourse['course_id'], $sourceModuleTitle);
+            if (!$targetModule) {
+                continue;
+            }
+
+            $targetLesson = $this->findEquivalentCourseLesson(
+                (int) $targetCourse['course_id'],
+                (int) $targetModule['id'],
+                $title
+            );
+            if (!$targetLesson) {
+                continue;
+            }
+
+            $stmt = $this->db->prepare('DELETE FROM course_lessons WHERE id = :id AND course_id = :course_id');
+            $stmt->execute([
+                ':id' => (int) $targetLesson['id'],
+                ':course_id' => (int) $targetLesson['course_id'],
+            ]);
+        }
+
+        $this->syncEnrollmentProgressFromLessons();
+    }
+
+    private function createEquivalentCourseModule(int $targetCourseId, array $sourceModule): array
+    {
+        $stmt = $this->db->prepare('INSERT INTO course_modules (
+            course_id, title, description, display_order, is_active, created_by, created_at, updated_at
+        ) VALUES (
+            :course_id, :title, :description, :display_order, :is_active, :created_by, :created_at, :updated_at
+        )');
+        $stmt->execute([
+            ':course_id' => $targetCourseId,
+            ':title' => trim((string) ($sourceModule['title'] ?? '')),
+            ':description' => $sourceModule['description'] ?? null,
+            ':display_order' => (int) ($sourceModule['display_order'] ?? 0),
+            ':is_active' => (int) ($sourceModule['is_active'] ?? 1),
+            ':created_by' => (int) ($sourceModule['created_by'] ?? 0),
+            ':created_at' => now(),
+            ':updated_at' => now(),
+        ]);
+
+        return [
+            'id' => (int) $this->db->lastInsertId(),
+            'course_id' => $targetCourseId,
+        ];
+    }
+
+    private function findEquivalentCourseModule(int $courseId, string $title, ?string $fallbackTitle = null): ?array
+    {
+        $titles = array_values(array_unique(array_filter([
+            trim($fallbackTitle ?? ''),
+            trim($title),
+        ], static fn (string $value): bool => $value !== '')));
+
+        foreach ($titles as $candidateTitle) {
+            $stmt = $this->db->prepare('SELECT *
+                FROM course_modules
+                WHERE course_id = :course_id
+                  AND title = :title
+                ORDER BY id ASC
+                LIMIT 1');
+            $stmt->execute([
+                ':course_id' => $courseId,
+                ':title' => $candidateTitle,
+            ]);
+            $row = $stmt->fetch();
+            if ($row) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    private function findEquivalentCourseLesson(int $courseId, int $moduleId, string $title, ?string $fallbackTitle = null): ?array
+    {
+        $titles = array_values(array_unique(array_filter([
+            trim($fallbackTitle ?? ''),
+            trim($title),
+        ], static fn (string $value): bool => $value !== '')));
+
+        foreach ($titles as $candidateTitle) {
+            $stmt = $this->db->prepare('SELECT *
+                FROM course_lessons
+                WHERE course_id = :course_id
+                  AND module_id = :module_id
+                  AND title = :title
+                ORDER BY id ASC
+                LIMIT 1');
+            $stmt->execute([
+                ':course_id' => $courseId,
+                ':module_id' => $moduleId,
+                ':title' => $candidateTitle,
+            ]);
+            $row = $stmt->fetch();
+            if ($row) {
+                return $row;
+            }
+        }
+
+        return null;
     }
 
     public function createComment(int $courseId, string $comment, int $createdBy): bool
