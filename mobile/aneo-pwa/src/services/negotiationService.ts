@@ -60,7 +60,7 @@ export async function loadDebtProfilesFromApi(config: ApiConfig): Promise<Studen
       .filter((invoice) => invoice.status === 'overdue')
       .map((invoice) => ({
         id: asNumber(invoice.id),
-        number: String(invoice.invoice_number ?? '').trim() || `Titulo ${invoice.id}`,
+        number: String(invoice.invoice_number ?? '').trim() || `Título ${invoice.id}`,
         dueDate: safeIsoDate(invoice.due_date),
         amount: asNumber(invoice.amount),
         paidAmount: asNumber(invoice.paid_amount),
@@ -80,7 +80,7 @@ export async function loadDebtProfilesFromApi(config: ApiConfig): Promise<Studen
       id: studentId,
       name: student.full_name,
       document,
-      course: 'Nao informado',
+      course: 'Não informado',
       invoicesOpen: openInvoices.length,
       openAmount,
       overdueAmount,

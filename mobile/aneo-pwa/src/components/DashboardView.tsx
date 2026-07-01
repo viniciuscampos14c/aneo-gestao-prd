@@ -36,7 +36,7 @@ export function DashboardView({ apiConfig, onNavigateTab }: DashboardViewProps) 
         setLastSync(new Date());
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Falha ao carregar indicadores.';
-        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
+        setError(mode === 'manual' ? `Atualização manual falhou: ${message}` : message);
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -47,14 +47,21 @@ export function DashboardView({ apiConfig, onNavigateTab }: DashboardViewProps) 
 
   useEffect(() => {
     if (!apiConfig) {
-      setDashboard(null);
-      setLoading(false);
-      setError('');
-      setLastSync(null);
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setDashboard(null);
+        setLoading(false);
+        setError('');
+        setLastSync(null);
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
 
-    void refreshData('initial');
+    const timeoutId = window.setTimeout(() => {
+      void refreshData('initial');
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [apiConfig, refreshData]);
 
   useEffect(() => {
@@ -93,14 +100,14 @@ export function DashboardView({ apiConfig, onNavigateTab }: DashboardViewProps) 
     <>
       <section className={toneClass}>
         <div className="summary-copy">
-          <p className="eyebrow">Visao do dia</p>
+          <p className="eyebrow">Visão do dia</p>
           <h2>{dashboard?.summary.headline ?? 'Painel executivo'}</h2>
           <p className="summary-message">
-            {dashboard?.summary.message ?? 'Conecte a API para acompanhar a operacao em tempo real.'}
+            {dashboard?.summary.message ?? 'Conecte a API para acompanhar a operação em tempo real.'}
           </p>
           {loading && connected ? <div className="loading-chip">Sincronizando painel...</div> : null}
           {!loading && connected && lastSync ? (
-            <p className="muted">Ultima sincronizacao: {formatDateTime(lastSync)}</p>
+            <p className="muted">Última sincronização: {formatDateTime(lastSync)}</p>
           ) : null}
           {error ? <p className="alert-text">{error}</p> : null}
         </div>
@@ -131,7 +138,7 @@ export function DashboardView({ apiConfig, onNavigateTab }: DashboardViewProps) 
             <p className="eyebrow">Painel prioritario</p>
             <h3>O que decidir primeiro</h3>
             <p className="muted">
-              Leitura curta para a diretoria entender pressao financeira, carteira ativa e proximos passos.
+              Leitura curta para a diretoria entender pressão financeira, carteira ativa e próximos passos.
             </p>
           </div>
         </div>
@@ -189,8 +196,8 @@ export function DashboardView({ apiConfig, onNavigateTab }: DashboardViewProps) 
           </div>
         ) : (
           <div className="status-card" style={{ marginTop: 16 }}>
-            <h3>Sessao indisponivel</h3>
-            <p className="muted">Se os dados nao carregarem, encerre a sessao e entre novamente para renovar o acesso.</p>
+            <h3>Sessão indisponível</h3>
+            <p className="muted">Se os dados não carregarem, encerre a sessão e entre novamente para renovar o acesso.</p>
           </div>
         )}
       </section>
@@ -199,7 +206,7 @@ export function DashboardView({ apiConfig, onNavigateTab }: DashboardViewProps) 
         <div className="section-head">
           <div>
             <p className="eyebrow">Panorama geral</p>
-            <h3>Resumo rapido da operacao</h3>
+            <h3>Resumo rápido da operação</h3>
             <p className="muted">Uma leitura unica da base, carteira, chamados e degustacoes.</p>
           </div>
         </div>

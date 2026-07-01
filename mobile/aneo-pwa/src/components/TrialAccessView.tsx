@@ -101,22 +101,25 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
           setTrialApiReady(true);
         } catch (trialErr) {
           const trialMessage =
-            trialErr instanceof Error ? trialErr.message : 'Falha ao carregar acessos de degustacao.';
+            trialErr instanceof Error ? trialErr.message : 'Falha ao carregar acessos de degustação.';
 
           setRows([]);
           setTrialApiReady(false);
 
           if (trialMessage.includes('Recurso desconhecido: trial_accesses')) {
-            setError('API do ERP sem o recurso trial_accesses. Publique a atualizacao no ambiente alvo.');
-          } else if (trialMessage.includes('Permissao insuficiente: trial_accesses.search')) {
-            setError('Token sem permissao de degustacao. Faca logout/login para renovar.');
+            setError('API do ERP sem o recurso trial_accesses. Publique a atualização no ambiente-alvo.');
+          } else if (
+            trialMessage.includes('Permissão insuficiente: trial_accesses.search')
+            || trialMessage.includes('Permissao insuficiente: trial_accesses.search')
+          ) {
+            setError('Token sem permissão de degustação. Faça logout/login para renovar.');
           } else {
-            setError(mode === 'manual' ? `Atualizacao manual falhou: ${trialMessage}` : trialMessage);
+            setError(mode === 'manual' ? `Atualização manual falhou: ${trialMessage}` : trialMessage);
           }
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Falha ao carregar cursos publicados.';
-        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
+        setError(mode === 'manual' ? `Atualização manual falhou: ${message}` : message);
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -127,25 +130,40 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
 
   useEffect(() => {
     if (!apiConfig) {
-      setCourses([]);
-      setRows([]);
-      setSelectedCourseId(null);
-      setTrialApiReady(true);
-      setLoading(false);
-      setError('');
-      setLastCreated(null);
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setCourses([]);
+        setRows([]);
+        setSelectedCourseId(null);
+        setTrialApiReady(true);
+        setLoading(false);
+        setError('');
+        setLastCreated(null);
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
 
-    void refreshData('initial');
+    const timeoutId = window.setTimeout(() => {
+      void refreshData('initial');
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [apiConfig, refreshData]);
 
   useEffect(() => {
-    setVisibleCourseCount(COURSE_PAGE_SIZE);
+    const timeoutId = window.setTimeout(() => {
+      setVisibleCourseCount(COURSE_PAGE_SIZE);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [courseQuery, courses]);
 
   useEffect(() => {
-    setVisibleHistoryCount(HISTORY_PAGE_SIZE);
+    const timeoutId = window.setTimeout(() => {
+      setVisibleHistoryCount(HISTORY_PAGE_SIZE);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [rows]);
 
   useEffect(() => {
@@ -162,17 +180,17 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
 
   async function handleCreateAccess() {
     if (!apiConfig) {
-      setError('Conecte a API para criar acesso de degustacao.');
+      setError('Conecte a API para criar acesso de degustação.');
       return;
     }
 
     if (!trialApiReady) {
-      setError('Recurso de degustacao indisponivel no backend/token atual. Atualize e reconecte o app.');
+      setError('Recurso de degustação indisponível no backend/token atual. Atualize e reconecte o app.');
       return;
     }
 
     if (studentName.trim() === '') {
-      setError('Informe o nome do aluno para degustacao.');
+      setError('Informe o nome do aluno para degustação.');
       return;
     }
 
@@ -208,7 +226,7 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
       const latestRows = await listTrialAccessesForMobile(apiConfig);
       setRows(latestRows);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao criar acesso de degustacao.';
+      const message = err instanceof Error ? err.message : 'Falha ao criar acesso de degustação.';
       setError(message);
     } finally {
       setCreating(false);
@@ -376,7 +394,7 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
           </>
         ) : (
           <div className="status-card" style={{ marginTop: 16 }}>
-            <p className="muted">Conecte a API para usar o modulo de degustacao.</p>
+            <p className="muted">Conecte a API para usar o módulo de degustação.</p>
           </div>
         )}
       </section>
@@ -397,8 +415,8 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
 
       {connected ? (
         <section className="surface-card">
-          <p className="eyebrow">Historico</p>
-          <h3>Ultimos acessos de degustacao</h3>
+          <p className="eyebrow">Histórico</p>
+          <h3>Últimos acessos de degustação</h3>
           <div className="list-stack" style={{ marginTop: 16 }}>
             <div className="list-results-meta">
               <span className="muted">
@@ -425,7 +443,7 @@ export function TrialAccessView({ apiConfig }: TrialAccessViewProps) {
             {!loading && rows.length === 0 ? (
               <div className="empty-state">
                 <h4>Nenhum acesso cadastrado</h4>
-                <p className="muted">Crie uma degustacao acima para acompanhar os acessos recentes.</p>
+                <p className="muted">Crie uma degustação acima para acompanhar os acessos recentes.</p>
               </div>
             ) : null}
             {visibleHistory.map((row) => {

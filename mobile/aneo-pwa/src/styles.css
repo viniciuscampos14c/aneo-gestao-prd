@@ -520,6 +520,41 @@ strong,
   letter-spacing: -0.5px;
 }
 
+.student-plan-card {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(109, 203, 255, 0.16);
+}
+
+.student-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.student-plan-grid span {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid rgba(109, 203, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(10, 36, 58, 0.36);
+  color: var(--aneo-text);
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.student-plan-grid strong {
+  color: var(--aneo-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .summary-refresh,
 .list-load-more {
   width: 100%;
@@ -970,7 +1005,8 @@ strong,
   .card-grid,
   .alert-grid,
   .snapshot-grid,
-  .pulse-grid {
+  .pulse-grid,
+  .student-plan-grid {
     grid-template-columns: 1fr;
   }
 

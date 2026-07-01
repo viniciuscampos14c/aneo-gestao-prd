@@ -231,8 +231,8 @@ function buildAlerts(input: {
       category: 'Conversao',
       priority: 'Media',
       title: 'Degustacoes prontas para conversao',
-      detail: `${input.activeTrials} acessos ativos podem virar matricula ou follow-up comercial.`,
-      actionLabel: 'Abrir degustacao',
+      detail: `${input.activeTrials} acessos ativos podem virar matrícula ou follow-up comercial.`,
+      actionLabel: 'Abrir degustação',
       targetTab: 'trial-access',
       tone: 'positive',
     });
@@ -360,7 +360,7 @@ function buildPulses(input: {
             : 'Estavel',
       detail: input.ticketApiAvailable
         ? `${input.openTickets} chamados abertos, ${input.urgentTickets} urgentes.`
-        : 'Modulo de chamados indisponivel no ambiente atual.',
+        : 'Módulo de chamados indisponível no ambiente atual.',
       tone: operationsTone,
     },
     {
@@ -371,10 +371,10 @@ function buildPulses(input: {
           ? 'Oportunidade ativa'
           : conversionTone === 'warning'
             ? 'Sem tracao'
-            : 'Nao monitorado',
+            : 'Não monitorado',
       detail: input.trialApiAvailable
         ? `${input.activeTrials} degustacoes ativas para follow-up comercial.`
-        : 'Modulo de degustacao indisponivel no ambiente atual.',
+        : 'Módulo de degustação indisponível no ambiente atual.',
       tone: conversionTone,
     },
   ];

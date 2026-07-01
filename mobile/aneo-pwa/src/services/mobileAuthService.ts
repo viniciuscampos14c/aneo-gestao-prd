@@ -73,7 +73,7 @@ function normalizeCompanies(rows: MobileCompanyRaw[] | undefined): MobileCompany
 
 export async function connectWithMobileCredentials(input: ConnectMobileInput): Promise<MobileConnectResult> {
   const baseUrl = normalizeApiBaseUrl(requiredText(input.baseUrl, 'a URL da API'));
-  const login = requiredText(input.login, 'usuario/email');
+  const login = requiredText(input.login, 'usuário/e-mail');
   const password = requiredText(input.password, 'a senha');
 
   const payload: MobileAuthPayload = {
@@ -95,7 +95,7 @@ export async function connectWithMobileCredentials(input: ConnectMobileInput): P
   if (status === 'company_required') {
     const companies = normalizeCompanies(response.data?.companies);
     if (companies.length === 0) {
-      throw new Error('Nao foi possivel carregar as empresas deste usuario.');
+      throw new Error('Não foi possível carregar as empresas deste usuário.');
     }
 
     return {
@@ -103,13 +103,13 @@ export async function connectWithMobileCredentials(input: ConnectMobileInput): P
       companies,
       message:
         String(response.data?.message ?? '').trim() ||
-        'Este usuario possui mais de uma empresa. Selecione uma para continuar.',
+        'Este usuário possui mais de uma empresa. Selecione uma para continuar.',
     };
   }
 
   const token = String(response.data?.token ?? '').trim();
   if (!token) {
-    throw new Error('API nao retornou token para o app.');
+    throw new Error('API não retornou token para o app.');
   }
 
   const apiFromServer = String(response.data?.base_url ?? '').trim();

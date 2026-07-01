@@ -105,6 +105,16 @@ export type ApiStudent = {
   rg?: string | null;
   ra?: string | null;
   is_active?: number | string | boolean;
+  enrolled_at?: string | null;
+  monthly_fee?: number | string | null;
+  billing_day?: number | string | null;
+  financial_plan_profile?: string | null;
+  financial_plan_installments?: number | string | null;
+  financial_plan_first_due_date?: string | null;
+  financial_plan_payment_method_id?: number | string | null;
+  financial_plan_auto_generate?: number | string | boolean | null;
+  financial_plan_boleto_days_before?: number | string | null;
+  financial_plan_generated_at?: string | null;
 };
 
 export type ApiInvoice = {

@@ -17,7 +17,7 @@ function isAdditiveTicket(ticket: ApiTicket): boolean {
 function extractStudentName(ticket: ApiTicket): string {
   const subject = String(ticket.subject ?? '').trim();
   if (/^aditivo financeiro - /i.test(subject)) {
-    return subject.replace(/^aditivo financeiro - /i, '').trim() || 'Aluno nao identificado';
+    return subject.replace(/^aditivo financeiro - /i, '').trim() || 'Aluno não identificado';
   }
 
   const description = String(ticket.description ?? '');
@@ -26,7 +26,7 @@ function extractStudentName(ticket: ApiTicket): string {
     return descriptionMatch[1].trim();
   }
 
-  return 'Aluno nao identificado';
+  return 'Aluno não identificado';
 }
 
 function statusLabel(status: string | null | undefined): string {
@@ -40,7 +40,7 @@ function statusLabel(status: string | null | undefined): string {
 
 function additiveStatusLabel(status: string | null | undefined): string {
   const normalized = String(status ?? '').trim().toLowerCase();
-  if (normalized === 'open') return 'Aguardando analise';
+  if (normalized === 'open') return 'Aguardando análise';
   if (normalized === 'in_progress') return 'Solicitar ajuste';
   if (normalized === 'resolved') return 'Aprovado';
   if (normalized === 'closed') return 'Reprovado';
@@ -88,7 +88,7 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
         setRows(tickets);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Falha ao carregar chamados.';
-        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
+        setError(mode === 'manual' ? `Atualização manual falhou: ${message}` : message);
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -99,13 +99,20 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
 
   useEffect(() => {
     if (!apiConfig) {
-      setRows([]);
-      setLoading(false);
-      setError('');
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setRows([]);
+        setLoading(false);
+        setError('');
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
 
-    void refreshData('initial');
+    const timeoutId = window.setTimeout(() => {
+      void refreshData('initial');
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [apiConfig, refreshData]);
 
   useEffect(() => {
@@ -162,7 +169,11 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
   }, [filtered]);
 
   useEffect(() => {
-    setVisibleCount(RESULTS_PAGE_SIZE);
+    const timeoutId = window.setTimeout(() => {
+      setVisibleCount(RESULTS_PAGE_SIZE);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [query, rows]);
 
   return (
@@ -171,7 +182,7 @@ export function TicketCenterView({ apiConfig }: TicketCenterViewProps) {
         <div>
           <p className="eyebrow">Fluxo mobile</p>
           <h3>Acompanhamento de aditivos</h3>
-          <p className="muted">Acompanhe por aluno se o aditivo está aguardando analise, em ajuste, aprovado ou reprovado.</p>
+          <p className="muted">Acompanhe por aluno se o aditivo está aguardando análise, em ajuste, aprovado ou reprovado.</p>
           {error ? <p className="alert-text">{error}</p> : null}
         </div>
 

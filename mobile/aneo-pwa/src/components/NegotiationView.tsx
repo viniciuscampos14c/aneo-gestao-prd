@@ -63,8 +63,8 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
         setProfiles(rows);
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'Falha ao carregar negociacoes em tempo real.';
-        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
+          err instanceof Error ? err.message : 'Falha ao carregar negociações em tempo real.';
+        setError(mode === 'manual' ? `Atualização manual falhou: ${message}` : message);
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -94,19 +94,26 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
 
   useEffect(() => {
     if (!apiConfig) {
-      setProfiles([]);
-      setSelectedId(null);
-      setListCollapsed(false);
-      setLoading(false);
-      setError('');
-      setLastAction('');
-      setPaymentMethods([]);
-      setPaymentMethodsError('');
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setProfiles([]);
+        setSelectedId(null);
+        setListCollapsed(false);
+        setLoading(false);
+        setError('');
+        setLastAction('');
+        setPaymentMethods([]);
+        setPaymentMethodsError('');
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
 
-    void refreshProfiles('initial');
-    void refreshPaymentMethods();
+    const timeoutId = window.setTimeout(() => {
+      void refreshProfiles('initial');
+      void refreshPaymentMethods();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [apiConfig, refreshPaymentMethods, refreshProfiles]);
 
   useEffect(() => {
@@ -126,11 +133,13 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
       return;
     }
 
-    setNegotiationScope('total');
-    setListCollapsed(true);
-    window.setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
+      setNegotiationScope('total');
+      setListCollapsed(true);
       simulatorSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 80);
+
+    return () => window.clearTimeout(timeoutId);
   }, [selected]);
 
   const filtered = useMemo(() => {
@@ -152,7 +161,11 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
   const hasMoreResults = visibleProfiles.length < filtered.length;
 
   useEffect(() => {
-    setVisibleCount(RESULTS_PAGE_SIZE);
+    const timeoutId = window.setTimeout(() => {
+      setVisibleCount(RESULTS_PAGE_SIZE);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [query, profiles]);
 
   const scopedInvoices = useMemo(() => {
@@ -231,29 +244,41 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
 
   useEffect(() => {
     if (!availableChannels.includes(paymentChannel)) {
-      setPaymentChannel(availableChannels[0] ?? 'pix');
+      const timeoutId = window.setTimeout(() => {
+        setPaymentChannel(availableChannels[0] ?? 'pix');
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
   }, [availableChannels, paymentChannel]);
 
   useEffect(() => {
+    let nextPaymentMethodId: string | null = null;
+
     if (paymentMethods.length === 0) {
       if (paymentMethodId !== '') {
-        setPaymentMethodId('');
+        nextPaymentMethodId = '';
       }
-      return;
-    }
-
-    if (channelPaymentMethods.length === 0) {
+    } else if (channelPaymentMethods.length === 0) {
       if (paymentMethodId !== '') {
-        setPaymentMethodId('');
+        nextPaymentMethodId = '';
       }
+    } else {
+      const exists = channelPaymentMethods.some((method) => String(method.id) === paymentMethodId);
+      if (!exists) {
+        nextPaymentMethodId = String(channelPaymentMethods[0]?.id ?? '');
+      }
+    }
+
+    if (nextPaymentMethodId === null) {
       return;
     }
 
-    const exists = channelPaymentMethods.some((method) => String(method.id) === paymentMethodId);
-    if (!exists) {
-      setPaymentMethodId(String(channelPaymentMethods[0]?.id ?? ''));
-    }
+    const timeoutId = window.setTimeout(() => {
+      setPaymentMethodId(nextPaymentMethodId);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [channelPaymentMethods, paymentMethodId, paymentMethods.length]);
 
   async function handleSend(mode: 'aditivo' | 'negociacao') {
@@ -267,7 +292,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
     setLastAction('');
 
     if (paymentMethods.length > 0 && channelPaymentMethods.length === 0) {
-      setError('Nao ha formas de pagamento ativas no painel administrativo para o canal selecionado.');
+      setError('Não há formas de pagamento ativas no painel administrativo para o canal selecionado.');
       setSending('none');
       return;
     }
@@ -446,7 +471,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
           </>
         ) : (
           <div className="status-card" style={{ marginTop: 16 }}>
-            <p className="muted">Entre novamente no APP para renovar a sessao e carregar os dados de negociacao.</p>
+            <p className="muted">Entre novamente no APP para renovar a sessão e carregar os dados de negociação.</p>
           </div>
         )}
       </section>
@@ -514,7 +539,7 @@ export function NegotiationView({ apiConfig }: NegotiationViewProps) {
             )}
 
             {selected.overdueInvoices.length === 0 ? (
-              <p className="muted">Este aluno nao possui parcelas vencidas no momento.</p>
+              <p className="muted">Este aluno não possui parcelas vencidas no momento.</p>
             ) : null}
           </div>
 

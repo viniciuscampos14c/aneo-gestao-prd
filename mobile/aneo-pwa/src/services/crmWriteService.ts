@@ -75,7 +75,7 @@ function ticketDescription(input: SendNegotiationInput): string {
     `Novo valor total: ${formatCurrency(discountedTotal)}`,
     `Parcelamento: ${installments}x de ${formatCurrency(installmentValue)}`,
     `Primeiro vencimento: ${firstDueDate}`,
-    `Canal de pagamento: ${paymentChannel || 'nao informado'}`,
+    `Canal de pagamento: ${paymentChannel || 'não informado'}`,
     `Saldo aberto atual: ${formatCurrency(profile.openAmount)}`,
     `Saldo vencido atual: ${formatCurrency(profile.overdueAmount)}`,
     ...invoiceLines,

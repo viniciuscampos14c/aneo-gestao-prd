@@ -26,12 +26,11 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
   const requiresCompany = companyOptions.length > 0;
 
   useEffect(() => {
-    if (apiConfig?.baseUrl) {
-      setBaseUrl(apiConfig.baseUrl);
-      return;
-    }
+    const timeoutId = window.setTimeout(() => {
+      setBaseUrl(apiConfig?.baseUrl ?? DEFAULT_API_BASE_URL);
+    }, 0);
 
-    setBaseUrl(DEFAULT_API_BASE_URL);
+    return () => window.clearTimeout(timeoutId);
   }, [apiConfig?.baseUrl]);
 
   function resetCompanySelection() {
@@ -64,7 +63,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
       onConnect(result.config);
       setPassword('');
       resetCompanySelection();
-      setMessage('Conexao realizada com sucesso. O token foi gerado automaticamente.');
+      setMessage('Conexão realizada com sucesso. O token foi gerado automaticamente.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao autenticar no ERP.';
       setError(msg);
@@ -77,8 +76,8 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
   return (
     <div className="field-grid">
       <section className="surface-card">
-        <p className="eyebrow">Sessao</p>
-        <h3>Conexao com a API ANEO</h3>
+        <p className="eyebrow">Sessão</p>
+        <h3>Conexão com a API ANEO</h3>
         <p className="muted">O APP usa exatamente o fluxo de token que ja existe no backend.</p>
 
         <div className="status-card">
@@ -105,12 +104,12 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
                 setBaseUrl(event.target.value);
                 resetCompanySelection();
               }}
-              placeholder="https://erp-hml.aneobrasil.com.br/api.php"
+              placeholder="https://aneo.aneobrasil.com.br/api.php"
             />
           </div>
 
           <div className="field-wrap">
-            <label htmlFor="conn-login">Usuario ou e-mail</label>
+            <label htmlFor="conn-login">Usuário ou e-mail</label>
             <input
               id="conn-login"
               className="text-input"
@@ -156,7 +155,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
             onClick={() => {
               onDisconnect();
               setPassword('');
-              setMessage('Conexao removida. O APP aguarda novo login.');
+              setMessage('Conexão removida. O APP aguarda novo login.');
               setError('');
               resetCompanySelection();
             }}
@@ -165,7 +164,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
           </button>
         </div>
 
-        {loading ? <div className="loading-chip">Atualizando sessao segura...</div> : null}
+        {loading ? <div className="loading-chip">Atualizando sessão segura...</div> : null}
 
         {requiresCompany ? (
           <div className="detail-card">
@@ -209,7 +208,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
       </section>
 
       <section className="surface-card">
-        <p className="eyebrow">Permissoes</p>
+        <p className="eyebrow">Permissões</p>
         <h3>Escopo atual do APP</h3>
         <div className="list-stack">
           <div className="list-card">
@@ -218,7 +217,7 @@ export function ConnectionPanel({ apiConfig, onConnect, onDisconnect }: Connecti
           </div>
           <div className="list-card">
             <strong>Escrita</strong>
-            <p className="muted">`tickets.create` para negociacoes e `trial_accesses.create` para degustacao.</p>
+            <p className="muted">`tickets.create` para negociações e `trial_accesses.create` para degustação.</p>
           </div>
           <div className="list-card">
             <strong>Fonte</strong>

@@ -45,7 +45,7 @@ async function parseApiResponse<TData>(response: Response): Promise<ApiEnvelope<
   try {
     payload = JSON.parse(raw) as ApiEnvelope<TData>;
   } catch {
-    payload = null;
+    // A resposta sem JSON válido será tratada pela validação abaixo.
   }
 
   if (!response.ok) {
@@ -54,7 +54,7 @@ async function parseApiResponse<TData>(response: Response): Promise<ApiEnvelope<
   }
 
   if (!payload || payload.ok !== true) {
-    throw new Error(payload?.message ?? 'Resposta invalida da API.');
+    throw new Error(payload?.message ?? 'Resposta inválida da API.');
   }
 
   return payload;

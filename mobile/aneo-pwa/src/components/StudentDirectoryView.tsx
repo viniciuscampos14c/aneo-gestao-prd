@@ -23,6 +23,57 @@ function isActive(value: unknown): boolean {
   return Number(value) === 1;
 }
 
+function parseNumber(value: unknown): number {
+  if (value === null || value === undefined || value === '') return 0;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatOptionalDate(value: unknown): string {
+  return formatDateIso(String(value ?? ''));
+}
+
+function contractEndDate(student: ApiStudent): string {
+  const firstDueDate = String(student.financial_plan_first_due_date ?? '');
+  const installments = Math.trunc(parseNumber(student.financial_plan_installments));
+
+  if (!firstDueDate || installments <= 0) {
+    return '-';
+  }
+
+  const [year, month, day] = firstDueDate.split('-').map((part) => Number(part));
+  if (!year || !month || !day) {
+    return '-';
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCMonth(date.getUTCMonth() + installments - 1);
+
+  return formatDateIso(date.toISOString().slice(0, 10));
+}
+
+function financialPlanLabel(student: ApiStudent): string {
+  const profile = String(student.financial_plan_profile ?? '').trim();
+  const presetMatch = profile.match(/^PRESET_(\d+)_(\d+(?:[.,]\d+)?)$/i);
+
+  if (presetMatch) {
+    const installments = Number(presetMatch[1]);
+    const amount = Number(String(presetMatch[2]).replace(',', '.'));
+
+    if (installments > 0 && Number.isFinite(amount)) {
+      return `Plano ${installments}x de ${formatCurrency(amount)}`;
+    }
+  }
+
+  if (profile) {
+    return profile.replace(/_/g, ' ');
+  }
+
+  return parseNumber(student.monthly_fee) > 0 || parseNumber(student.financial_plan_installments) > 0
+    ? 'Plano financeiro'
+    : 'Não informado';
+}
+
 export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
   const [rows, setRows] = useState<ApiStudent[]>([]);
   const [financialByStudentId, setFinancialByStudentId] = useState<Record<number, FinancialSummary>>({});
@@ -64,7 +115,7 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
         setFinancialByStudentId(map);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Falha ao carregar alunos.';
-        setError(mode === 'manual' ? `Atualizacao manual falhou: ${message}` : message);
+        setError(mode === 'manual' ? `Atualização manual falhou: ${message}` : message);
       } finally {
         loadingRef.current = false;
         setLoading(false);
@@ -75,15 +126,22 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
 
   useEffect(() => {
     if (!apiConfig) {
-      setRows([]);
-      setFinancialByStudentId({});
-      setExpandedStudentId(null);
-      setLoading(false);
-      setError('');
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setRows([]);
+        setFinancialByStudentId({});
+        setExpandedStudentId(null);
+        setLoading(false);
+        setError('');
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
     }
 
-    void refreshData('initial');
+    const timeoutId = window.setTimeout(() => {
+      void refreshData('initial');
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [apiConfig, refreshData]);
 
   useEffect(() => {
@@ -114,7 +172,11 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
   const hasMoreResults = visibleRows.length < filtered.length;
 
   useEffect(() => {
-    setVisibleCount(RESULTS_PAGE_SIZE);
+    const timeoutId = window.setTimeout(() => {
+      setVisibleCount(RESULTS_PAGE_SIZE);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [query, rows]);
 
   return (
@@ -122,8 +184,8 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
       <div className="module-toolbar">
         <div>
           <p className="eyebrow">Base de alunos</p>
-          <h3>Consulta rapida</h3>
-          <p className="muted">Expanda um aluno para ver a situacao financeira resumida.</p>
+          <h3>Consulta rápida</h3>
+          <p className="muted">Expanda um aluno para ver a situação financeira resumida.</p>
           {error ? <p className="alert-text">{error}</p> : null}
         </div>
 
@@ -183,6 +245,8 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
               const totalPending = overdue + open;
               const financialStatus = totalPending > 0 ? 'inadimplente' : 'adimplente';
               const isExpanded = expandedStudentId === student.id;
+              const monthlyFee = parseNumber(student.monthly_fee);
+              const installments = Math.trunc(parseNumber(student.financial_plan_installments));
 
               return (
                 <article key={student.id} className="list-card">
@@ -212,7 +276,7 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
                   {isExpanded ? (
                     <div className="detail-card">
                       <div className="inline-between">
-                        <h4>Situacao Financeira</h4>
+                        <h4>Situação Financeira</h4>
                         <span className={`pill ${financialStatus === 'adimplente' ? 'pill-success' : 'pill-danger'}`}>
                           {financialStatus === 'adimplente' ? 'Adimplente' : 'Inadimplente'}
                         </span>
@@ -224,6 +288,39 @@ export function StudentDirectoryView({ apiConfig }: StudentDirectoryViewProps) {
                       <p className="muted">
                         Ultimo pagamento: {formatDateIso(String(financial?.lastPaymentDate ?? ''))}
                       </p>
+
+                      <div className="student-plan-card">
+                        <div className="inline-between">
+                          <h4>Dados para renegociacao</h4>
+                          <span className="pill pill-warning">{financialPlanLabel(student)}</span>
+                        </div>
+                        <div className="student-plan-grid">
+                          <span>
+                            <strong>Entrada do aluno</strong>
+                            {formatOptionalDate(student.enrolled_at)}
+                          </span>
+                          <span>
+                            <strong>Fim estimado do contrato</strong>
+                            {contractEndDate(student)}
+                          </span>
+                          <span>
+                            <strong>Mensalidade</strong>
+                            {monthlyFee > 0 ? formatCurrency(monthlyFee) : '-'}
+                          </span>
+                          <span>
+                            <strong>Parcelas do plano</strong>
+                            {installments > 0 ? installments : '-'}
+                          </span>
+                          <span>
+                            <strong>Primeiro vencimento</strong>
+                            {formatOptionalDate(student.financial_plan_first_due_date)}
+                          </span>
+                          <span>
+                            <strong>Dia de vencimento</strong>
+                            {student.billing_day ? String(student.billing_day) : '-'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ) : null}
                 </article>

@@ -93,7 +93,7 @@ export function InstallCard({ compact = false }: InstallCardProps) {
       ) : (
         <div className="install-guide">
           <p className="muted">
-            A instalacao nao depende de login. Primeiro instale o app no navegador, depois abra o atalho e faca o acesso seguro.
+            A instalação não depende de login. Primeiro instale o app no navegador, depois abra o atalho e faça o acesso seguro.
           </p>
 
           {platform === 'android' ? (
@@ -101,7 +101,7 @@ export function InstallCard({ compact = false }: InstallCardProps) {
               <li>Abra este link no Chrome do celular.</li>
               <li>Se aparecer, toque em <strong>Instalar app</strong>.</li>
               <li>
-                Se nao aparecer, abra o menu do Chrome e toque em <strong>Adicionar a tela inicial</strong> ou <strong>Instalar app</strong>.
+                Se não aparecer, abra o menu do Chrome e toque em <strong>Adicionar à tela inicial</strong> ou <strong>Instalar app</strong>.
               </li>
             </ol>
           ) : null}
@@ -133,7 +133,7 @@ export function InstallCard({ compact = false }: InstallCardProps) {
 
       {!installed && platform === 'android' && !promptEvent ? (
         <div className="install-hint-box">
-          <strong>Botao nao apareceu?</strong>
+          <strong>Botão não apareceu?</strong>
           <p className="muted">
             Isso pode acontecer no primeiro acesso. Tente abrir o menu do Chrome e instalar manualmente.
           </p>
